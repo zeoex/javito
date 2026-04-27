@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Consulta de Artículos</title>
+  <style>
+    :root {
+      --primary: #0f2d52;
+      --primary-light: #1a4a80;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --muted: #64748b;
+      --success-bg: #dcfce7;
+      --success-text: #15803d;
+      --danger-bg: #fee2e2;
+      --danger-text: #b91c1c;
+      --radius: 10px;
+      --shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+      padding: 0 32px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-icon {
+      width: 36px;
+      height: 36px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .header-title { font-size: 1.1rem; font-weight: 700; letter-spacing: 0.3px; }
+    .header-sub   { font-size: 0.75rem; opacity: 0.7; margin-top: 1px; }
+
+    .header-badge {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.78rem;
+      opacity: 0.9;
+    }
+
+    /* ── LAYOUT ── */
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 28px 24px;
+    }
+
+    /* ── SEARCH ── */
+    .search-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px 24px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .search-icon {
+      color: var(--muted);
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .search-card input {
+      flex: 1;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 11px 16px;
+      font-size: 0.95rem;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      background: #f8fafc;
+    }
+
+    .search-card input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+      background: white;
+    }
+
+    .search-card input::placeholder { color: #a0aec0; }
+
+    .btn-search {
+      padding: 11px 28px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-search:hover  { background: var(--accent-hover); }
+    .btn-search:active { transform: scale(0.98); }
+
+    /* ── INFO BAR ── */
+    .info-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      min-height: 24px;
+    }
+
+    .info-text { font-size: 0.83rem; color: var(--muted); }
+
+    .hint {
+      font-size: 0.78rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* ── FILTERS ── */
+    .filter-bar {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px 20px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .filter-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .filter-select {
+      padding: 8px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 7px;
+      font-size: 0.875rem;
+      color: var(--text);
+      background: #f8fafc;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s;
+      min-width: 160px;
+    }
+
+    .filter-select:focus { border-color: var(--accent); }
+
+    .filter-select.active {
+      border-color: var(--accent);
+      background: #eff6ff;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .btn-clear-filters {
+      padding: 7px 14px;
+      border: 1.5px solid #fca5a5;
+      background: #fff5f5;
+      color: #dc2626;
+      border-radius: 7px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn-clear-filters:hover { background: #fee2e2; }
+
+    /* ── TABLE ── */
+    .table-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .table-wrapper { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    thead { background: var(--primary); }
+
+    thead th {
+      padding: 13px 16px;
+      text-align: left;
+      color: white;
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      white-space: nowrap;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+
+    tbody tr:hover {
+      background: #eff6ff;
+      transform: scale(1.003);
+      box-shadow: 0 2px 12px rgba(37,99,235,0.1);
+      position: relative;
+      z-index: 1;
+    }
+
+    tbody tr:nth-child(even) { background: #f8fafc; }
+    tbody tr:nth-child(even):hover { background: #eff6ff; }
+
+    tbody td {
+      padding: 11px 16px;
+      white-space: nowrap;
+      color: var(--text);
+    }
+
+    .col-codigo { font-weight: 600; color: var(--accent); font-family: monospace; font-size: 0.85rem; }
+    .col-desc   { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+    .col-precio { font-weight: 700; color: #059669; }
+    .col-stock  { font-weight: 600; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+
+    .badge-active  { background: var(--success-bg); color: var(--success-text); }
+    .badge-inactive{ background: var(--danger-bg);  color: var(--danger-text); }
+
+    /* ── EMPTY / LOADING ── */
+    .state-row td {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      cursor: default !important;
+    }
+
+    .state-row:hover {
+      background: transparent !important;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    .state-icon { font-size: 2.5rem; display: block; margin-bottom: 10px; opacity: 0.4; }
+
+    /* ── PAGINATION ── */
+    .paginacion {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      padding: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn-pag {
+      padding: 7px 16px;
+      border: 1.5px solid var(--border);
+      background: white;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 0.84rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+
+    .btn-pag:hover:not(:disabled) {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    .btn-pag:disabled { opacity: 0.35; cursor: default; }
+    .pag-info { font-size: 0.84rem; color: var(--muted); padding: 0 8px; }
+
+    /* ── MODAL OVERLAY ── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 20, 40, 0.55);
+      backdrop-filter: blur(4px);
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .overlay.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* ── MODAL ── */
+    .modal {
+      background: var(--card);
+      border-radius: 14px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+      width: 100%;
+      max-width: 720px;
+      max-height: 90vh;
+      overflow-y: auto;
+      transform: scale(0.92) translateY(20px);
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .overlay.visible .modal {
+      transform: scale(1) translateY(0);
+    }
+
+    .modal-header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+      padding: 20px 24px;
+      border-radius: 14px 14px 0 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .modal-codigo { font-size: 0.78rem; opacity: 0.7; font-family: monospace; margin-bottom: 4px; }
+    .modal-titulo { font-size: 1.15rem; font-weight: 700; line-height: 1.3; }
+    .modal-subtitulo { font-size: 0.82rem; opacity: 0.75; margin-top: 4px; }
+
+    .modal-price-bar {
+      background: #f0fdf4;
+      border-bottom: 1px solid #bbf7d0;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+
+    .price-featured {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .price-featured-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #15803d;
+      margin-bottom: 2px;
+    }
+
+    .price-featured-value {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #15803d;
+      line-height: 1;
+    }
+
+    .price-secondary {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .price-secondary-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+
+    .price-secondary-value {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .price-divider {
+      width: 1px;
+      height: 36px;
+      background: #bbf7d0;
+    }
+
+    .btn-close {
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+
+    .btn-close:hover { background: rgba(255,255,255,0.25); }
+
+    .modal-body { padding: 24px; }
+
+    .modal-section { margin-bottom: 22px; }
+
+    .modal-section-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+    }
+
+    .modal-field { }
+
+    .field-label {
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 3px;
+    }
+
+    .field-value {
+      font-size: 0.92rem;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .field-value.price {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #059669;
+    }
+
+    .field-value.mono { font-family: monospace; }
+
+    .modal-loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 28px;
+      height: 28px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-bottom: 12px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* scrollbar */
+    .modal::-webkit-scrollbar { width: 6px; }
+    .modal::-webkit-scrollbar-track { background: transparent; }
+    .modal::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-brand">
+    <div class="header-icon">📦</div>
+    <div>
+      <div class="header-title">Consulta de Artículos</div>
+      <div class="header-sub">Base de datos: javier &nbsp;·&nbsp; Tabla: fact0007</div>
+    </div>
+  </div>
+  <div class="header-badge">SQL Server 2016</div>
+</header>
+
+<div class="container">
+
+  <div class="search-card">
+    <span class="search-icon">🔍</span>
+    <input
+      id="inputBusqueda"
+      type="text"
+      placeholder="Buscar por código de artículo o descripción..."
+      autofocus
+    />
+    <button class="btn-search" onclick="buscar(1)">
+      <span>Buscar</span>
+    </button>
+  </div>
+
+  <div class="filter-bar" id="filterBar" style="display:none">
+    <span class="filter-label">🔽 Filtrar por:</span>
+    <select class="filter-select" id="filtroTipo" onchange="buscar(1)">
+      <option value="">Todos los tipos</option>
+    </select>
+    <select class="filter-select" id="filtroMarca" onchange="buscar(1)">
+      <option value="">Todas las marcas</option>
+    </select>
+    <select class="filter-select" id="filtroEstado" onchange="buscar(1)">
+      <option value="">Todos los estados</option>
+    </select>
+    <button class="btn-clear-filters" onclick="limpiarFiltros()" id="btnLimpiar" style="display:none">✕ Limpiar filtros</button>
+  </div>
+
+  <div class="info-bar">
+    <span class="info-text" id="infoText"></span>
+    <span class="hint" id="hintClick" style="display:none">👆 Clic en una fila para ver el detalle</span>
+  </div>
+
+  <div class="table-card">
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Descripción</th>
+            <th>Precio</th>
+            <th>Tipo</th>
+            <th>Unidad</th>
+            <th>Stock</th>
+            <th>Marca</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr class="state-row">
+            <td colspan="8">
+              <span class="state-icon">🔍</span>
+              Ingresá un término para comenzar la búsqueda
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="paginacion" id="paginacion"></div>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay" onclick="cerrarModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-loading">
+      <div class="spinner"></div>
+      <div>Cargando detalle...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('inputBusqueda').addEventListener('keydown', e => {
+    if (e.key === 'Enter') buscar(1);
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') cerrarOverlay();
+  });
+
+  async function cargarFiltros() {
+    try {
+      const res = await fetch('/api/filtros');
+      const data = await res.json();
+
+      const llenar = (selectId, valores) => {
+        const sel = document.getElementById(selectId);
+        valores.forEach(v => {
+          const opt = document.createElement('option');
+          opt.value = v;
+          opt.textContent = v;
+          sel.appendChild(opt);
+        });
+      };
+
+      llenar('filtroTipo',   data.tipos);
+      llenar('filtroMarca',  data.marcas);
+      llenar('filtroEstado', data.estados);
+
+      document.getElementById('filterBar').style.display = 'flex';
+    } catch {}
+  }
+
+  function limpiarFiltros() {
+    document.getElementById('filtroTipo').value   = '';
+    document.getElementById('filtroMarca').value  = '';
+    document.getElementById('filtroEstado').value = '';
+    actualizarBtnLimpiar();
+    buscar(1);
+  }
+
+  function actualizarBtnLimpiar() {
+    const tipo   = document.getElementById('filtroTipo').value;
+    const marca  = document.getElementById('filtroMarca').value;
+    const estado = document.getElementById('filtroEstado').value;
+    const activo = tipo || marca || estado;
+    document.getElementById('btnLimpiar').style.display = activo ? 'block' : 'none';
+    document.getElementById('filtroTipo').classList.toggle('active',   !!tipo);
+    document.getElementById('filtroMarca').classList.toggle('active',  !!marca);
+    document.getElementById('filtroEstado').classList.toggle('active', !!estado);
+  }
+
+  cargarFiltros();
+
+  async function buscar(pagina) {
+    const q      = document.getElementById('inputBusqueda').value.trim();
+    const tipo   = document.getElementById('filtroTipo')?.value   || '';
+    const marca  = document.getElementById('filtroMarca')?.value  || '';
+    const estado = document.getElementById('filtroEstado')?.value || '';
+    const tbody    = document.getElementById('tbody');
+    const infoText = document.getElementById('infoText');
+    const hintClick = document.getElementById('hintClick');
+    const paginacion = document.getElementById('paginacion');
+
+    actualizarBtnLimpiar();
+    infoText.textContent = '';
+    hintClick.style.display = 'none';
+    paginacion.innerHTML = '';
+    tbody.innerHTML = `<tr class="state-row"><td colspan="8"><div class="spinner" style="margin:0 auto"></div></td></tr>`;
+
+    try {
+      const params = new URLSearchParams({ q, pagina, tipo, marca, estado });
+      const res = await fetch(`/api/buscar?${params}`);
+      const data = await res.json();
+
+      if (data.error) {
+        tbody.innerHTML = `<tr class="state-row"><td colspan="8"><span class="state-icon">⚠️</span>Error: ${esc(data.error)}</td></tr>`;
+        return;
+      }
+
+      if (data.datos.length === 0) {
+        tbody.innerHTML = `<tr class="state-row"><td colspan="8"><span class="state-icon">📭</span>Sin resultados para "<strong>${esc(q)}</strong>"</td></tr>`;
+        infoText.textContent = '0 resultados encontrados.';
+        return;
+      }
+
+      const totalPaginas = Math.ceil(data.total / data.porPagina);
+      const desde = (pagina - 1) * data.porPagina + 1;
+      const hasta = Math.min(pagina * data.porPagina, data.total);
+      infoText.textContent = `${desde}–${hasta} de ${data.total} resultados`;
+      hintClick.style.display = 'flex';
+
+      tbody.innerHTML = data.datos.map(row => {
+        const estado = (row.ESTADO || '').toUpperCase();
+        const badgeClass = estado === 'A' ? 'badge-active' : 'badge-inactive';
+        const badgeLabel = estado === 'A' ? 'Activo' : (row.ESTADO || '-');
+        const precio = row.PRECIO != null ? `$ ${num(row.PRECIO)}` : '-';
+        const stock = row.STOCK_ACTUAL != null ? num(row.STOCK_ACTUAL) : '-';
+
+        return `<tr onclick="abrirDetalle('${esc(row.ARTICULO)}')">
+          <td class="col-codigo">${esc(row.ARTICULO)}</td>
+          <td class="col-desc">${esc(row.DESCRIPCION)}</td>
+          <td class="col-precio">${precio}</td>
+          <td>${esc(row.TIPOARTICULO)}</td>
+          <td>${esc(row.UNIDAD)}</td>
+          <td class="col-stock">${stock}</td>
+          <td>${esc(row.MARCA)}</td>
+          <td><span class="badge ${badgeClass}">${badgeLabel}</span></td>
+        </tr>`;
+      }).join('');
+
+      if (totalPaginas > 1) {
+        paginacion.innerHTML = `
+          <button class="btn-pag" onclick="buscar(${pagina - 1})" ${pagina === 1 ? 'disabled' : ''}>← Anterior</button>
+          <span class="pag-info">Página ${pagina} de ${totalPaginas}</span>
+          <button class="btn-pag" onclick="buscar(${pagina + 1})" ${pagina === totalPaginas ? 'disabled' : ''}>Siguiente →</button>
+        `;
+      }
+
+    } catch {
+      tbody.innerHTML = `<tr class="state-row"><td colspan="8"><span class="state-icon">🔌</span>No se pudo conectar con el servidor</td></tr>`;
+    }
+  }
+
+  async function abrirDetalle(codigo) {
+    const overlay = document.getElementById('overlay');
+    const modal = document.getElementById('modal');
+
+    modal.innerHTML = `<div class="modal-loading"><div class="spinner"></div><div>Cargando detalle...</div></div>`;
+    overlay.classList.add('visible');
+
+    try {
+      const res = await fetch(`/api/articulo?codigo=${encodeURIComponent(codigo)}`);
+      const d = await res.json();
+
+      if (d.error) {
+        modal.innerHTML = `<div class="modal-loading">⚠️ ${esc(d.error)}</div>`;
+        return;
+      }
+
+      const estado = (d.ESTADO || '').toUpperCase();
+      const badgeClass = estado === 'A' ? 'badge-active' : 'badge-inactive';
+      const badgeLabel = estado === 'A' ? 'Activo' : (d.ESTADO || '-');
+
+      modal.innerHTML = `
+        <div class="modal-header">
+          <div>
+            <div class="modal-codigo">CÓDIGO: ${esc(d.ARTICULO)}</div>
+            <div class="modal-titulo">${esc(d.DESCRIPCION)}</div>
+            ${d.DESCRIPCIONEXTRA1 ? `<div class="modal-subtitulo">${esc(d.DESCRIPCIONEXTRA1)}</div>` : ''}
+          </div>
+          <button class="btn-close" onclick="cerrarOverlay()">✕</button>
+        </div>
+        <div class="modal-price-bar">
+          <div class="price-featured">
+            <div class="price-featured-label">💰 Precio Lista 1</div>
+            <div class="price-featured-value">$ ${num(d.PRECIO_LISTA1)}</div>
+          </div>
+          <div class="price-divider"></div>
+          <div class="price-secondary">
+            <div class="price-secondary-label">Precio Venta</div>
+            <div class="price-secondary-value">$ ${num(d.PRECIO)}</div>
+          </div>
+          <div class="price-divider"></div>
+          <div class="price-secondary">
+            <div class="price-secondary-label">Precio Oferta</div>
+            <div class="price-secondary-value">${d.PRECIOOFERTA ? `$ ${num(d.PRECIOOFERTA)}` : '-'}</div>
+          </div>
+        </div>
+
+        <div class="modal-body">
+
+          <div class="modal-section">
+            <div class="modal-section-title">💰 Precios</div>
+            <div class="modal-grid">
+              ${campo('Precio Venta', `$ ${num(d.PRECIO)}`, 'price')}
+              ${campo('Precio Costo', `$ ${num(d.PRECIO_DE_COSTO)}`)}
+              ${campo('Costo Proveedor', `$ ${num(d.COSTOPROVEEDOR)}`)}
+              ${campo('Lista 1', `$ ${num(d.PRECIO_LISTA1)}`)}
+              ${campo('Lista 2', `$ ${num(d.PRECIO_LISTA2)}`)}
+              ${campo('Lista 3', `$ ${num(d.PRECIO_LISTA3)}`)}
+              ${campo('Precio Oferta', `$ ${num(d.PRECIOOFERTA)}`)}
+              ${campo('% Descuento', d.PORCENTAJEOFERTA != null ? `${num(d.PORCENTAJEOFERTA)} %` : '-')}
+              ${campo('Usa Oferta', esc(d.UTILIZAPRECIOOFERTA))}
+              ${campo('Bonificación', d.BONIFICACION != null ? `${num(d.BONIFICACION)} %` : '-')}
+              ${campo('Tasa IVA', d.TASA_IVA != null ? `${num(d.TASA_IVA)} %` : '-')}
+            </div>
+          </div>
+
+          <div class="modal-section">
+            <div class="modal-section-title">📦 Stock y Unidades</div>
+            <div class="modal-grid">
+              ${campo('Stock Actual', num(d.STOCK_ACTUAL))}
+              ${campo('Punto Pedido', num(d.PUNTO_PEDIDO))}
+              ${campo('Tope Reposición', num(d.TOPE_REPOSIC))}
+              ${campo('Unidad', esc(d.UNIDAD))}
+              ${campo('Unidad Proveedor', esc(d.UNIDADPROVEEDOR))}
+              ${campo('Cant. Presentación', num(d.CANTPRESENTACION))}
+            </div>
+          </div>
+
+          <div class="modal-section">
+            <div class="modal-section-title">🏷️ Clasificación</div>
+            <div class="modal-grid">
+              ${campo('Tipo Artículo', esc(d.TIPOARTICULO))}
+              ${campo('Marca', esc(d.MARCA))}
+              ${campo('Rubro', esc(d.RUBRO))}
+              ${campo('Sub-Rubro', esc(d.SUB_RUBRO))}
+              ${campo('PLU', esc(d.PLU), 'mono')}
+              ${campo('Fabricación', esc(d.FABRICACION))}
+              ${campo('Estantería', esc(d.ESTANTERIA))}
+              ${campo('Gaveta', esc(d.GAVETA))}
+              ${campo('Último Proveedor', esc(d.ULTIMO_PROVEEDOR))}
+              ${campo('Estado', `<span class="badge ${badgeClass}">${badgeLabel}</span>`)}
+            </div>
+          </div>
+
+          <div class="modal-section">
+            <div class="modal-section-title">📅 Fechas</div>
+            <div class="modal-grid">
+              ${campo('Fecha Alta', fecha(d.FECHAALTA))}
+              ${campo('Act. Precios', fecha(d.FECHAACTPRECIOS))}
+              ${campo('Vigencia', fecha(d.FECHAVIGENCIA))}
+            </div>
+          </div>
+
+          ${d.DESCRIPCIONEXTRA2 ? `
+          <div class="modal-section">
+            <div class="modal-section-title">📝 Información adicional</div>
+            <div style="font-size:0.9rem; color:var(--text); line-height:1.5">${esc(d.DESCRIPCIONEXTRA2)}</div>
+          </div>` : ''}
+
+        </div>
+      `;
+    } catch {
+      modal.innerHTML = `<div class="modal-loading">🔌 Error al cargar el detalle.</div>`;
+    }
+  }
+
+  function cerrarModal(e) {
+    if (e.target === document.getElementById('overlay')) cerrarOverlay();
+  }
+
+  function cerrarOverlay() {
+    document.getElementById('overlay').classList.remove('visible');
+  }
+
+  function campo(label, valor, extraClass = '') {
+    return `<div class="modal-field">
+      <div class="field-label">${label}</div>
+      <div class="field-value ${extraClass}">${valor ?? '-'}</div>
+    </div>`;
+  }
+
+  function num(val) {
+    if (val == null) return '-';
+    return Number(val).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function fecha(val) {
+    if (!val) return '-';
+    return new Date(val).toLocaleDateString('es-AR');
+  }
+
+  function esc(val) {
+    if (val == null) return '-';
+    return String(val)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+</script>
+
+</body>
+</html>
