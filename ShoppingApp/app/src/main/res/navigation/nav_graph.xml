@@ -4,24 +4,36 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/nav_shopping">
+    app:startDestination="@id/nav_lista">
 
     <fragment
-        android:id="@+id/nav_shopping"
+        android:id="@+id/nav_lista"
         android:name="com.javito.shoplist.ui.shopping.ShoppingListFragment"
-        android:label="@string/title_shopping_list"
+        android:label="@string/nav_lista"
         tools:layout="@layout/fragment_shopping_list" />
 
     <fragment
-        android:id="@+id/nav_purchase"
-        android:name="com.javito.shoplist.ui.purchase.AddPurchaseFragment"
-        android:label="@string/title_add_purchase"
-        tools:layout="@layout/fragment_add_purchase" />
+        android:id="@+id/nav_facturas"
+        android:name="com.javito.shoplist.ui.facturas.FacturasFragment"
+        android:label="@string/nav_facturas"
+        tools:layout="@layout/fragment_facturas" />
 
     <fragment
-        android:id="@+id/nav_history"
-        android:name="com.javito.shoplist.ui.history.HistoryFragment"
-        android:label="@string/title_history"
-        tools:layout="@layout/fragment_history" />
+        android:id="@+id/nav_varios"
+        android:name="com.javito.shoplist.ui.varios.VariosFragment"
+        android:label="@string/nav_varios"
+        tools:layout="@layout/fragment_varios" />
+
+    <fragment
+        android:id="@+id/nav_resumen"
+        android:name="com.javito.shoplist.ui.resumen.ResumenFragment"
+        android:label="@string/nav_resumen"
+        tools:layout="@layout/fragment_resumen" />
+
+    <fragment
+        android:id="@+id/nav_estadisticas"
+        android:name="com.javito.shoplist.ui.estadisticas.EstadisticasFragment"
+        android:label="@string/nav_estadisticas"
+        tools:layout="@layout/fragment_estadisticas" />
 
 </navigation>

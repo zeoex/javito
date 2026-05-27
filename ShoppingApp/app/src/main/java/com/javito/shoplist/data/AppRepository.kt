@@ -1,0 +1,42 @@
+package com.javito.shoplist.data
+
+import kotlinx.coroutines.flow.Flow
+
+class AppRepository(
+    private val shoppingItemDao: ShoppingItemDao,
+    private val invoiceDao: InvoiceDao,
+    private val gastoDao: GastoDao
+) {
+
+    // ── Shopping list ──────────────────────────────────────────────────────────
+
+    val allShoppingItems: Flow<List<ShoppingItem>> = shoppingItemDao.getAllItems()
+
+    suspend fun insertShoppingItem(item: ShoppingItem) = shoppingItemDao.insert(item)
+
+    suspend fun updateShoppingItem(item: ShoppingItem) = shoppingItemDao.update(item)
+
+    suspend fun deleteShoppingItem(item: ShoppingItem) = shoppingItemDao.delete(item)
+
+    suspend fun deleteCheckedItems() = shoppingItemDao.deleteCheckedItems()
+
+    // ── Invoices ───────────────────────────────────────────────────────────────
+
+    suspend fun saveInvoice(invoice: Invoice) = invoiceDao.insert(invoice)
+
+    suspend fun deleteInvoice(invoice: Invoice) = invoiceDao.delete(invoice)
+
+    fun getInvoicesByMonth(month: String): Flow<List<Invoice>> = invoiceDao.getByMonth(month)
+
+    fun getInvoiceTotalByMonth(month: String): Flow<Double?> = invoiceDao.getTotalByMonth(month)
+
+    // ── Gastos ─────────────────────────────────────────────────────────────────
+
+    suspend fun saveGasto(gasto: Gasto) = gastoDao.insert(gasto)
+
+    suspend fun deleteGasto(gasto: Gasto) = gastoDao.delete(gasto)
+
+    fun getGastosByMonth(month: String): Flow<List<Gasto>> = gastoDao.getByMonth(month)
+
+    fun getGastoTotalByMonth(month: String): Flow<Double?> = gastoDao.getTotalByMonth(month)
+}

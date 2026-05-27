@@ -5,15 +5,15 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.javito.shoplist.data.AppDatabase
+import com.javito.shoplist.data.AppRepository
 import com.javito.shoplist.data.ShoppingItem
-import com.javito.shoplist.data.ShoppingRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class ShoppingViewModel(application: Application) : AndroidViewModel(application) {
 
     private val db = AppDatabase.getInstance(application)
-    private val repository = ShoppingRepository(db.shoppingItemDao(), db.purchaseDao())
+    private val repository = AppRepository(db.shoppingItemDao(), db.invoiceDao(), db.gastoDao())
 
     val allItems = repository.allShoppingItems.asLiveData()
 
