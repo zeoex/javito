@@ -25,7 +25,7 @@ class IngresosViewModel(application: Application) : AndroidViewModel(application
 
     init {
         val db = AppDatabase.getInstance(application)
-        repository = AppRepository(db.shoppingItemDao(), db.invoiceDao(), db.gastoDao(), db.ingresoDao())
+        repository = AppRepository(db.shoppingItemDao(), db.gastoDao(), db.ingresoDao())
 
         val cal = Calendar.getInstance()
         _currentMonth.value = String.format("%02d/%04d",

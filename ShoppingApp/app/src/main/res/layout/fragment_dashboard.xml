@@ -151,9 +151,9 @@
             android:orientation="horizontal"
             android:layout_marginBottom="12dp">
 
-            <!-- Facturas -->
+            <!-- Gastos Varios -->
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/card_facturas"
+                android:id="@+id/card_varios"
                 android:layout_width="0dp"
                 android:layout_height="170dp"
                 android:layout_weight="1"
@@ -175,15 +175,15 @@
                     <ImageView
                         android:layout_width="52dp"
                         android:layout_height="52dp"
-                        android:src="@drawable/ic_receipt"
+                        android:src="@drawable/ic_list"
                         app:tint="?attr/colorOnSecondaryContainer"
-                        android:contentDescription="Facturas" />
+                        android:contentDescription="Gastos Varios" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        android:text="Registro de"
+                        android:text="Gastos"
                         android:textAppearance="?attr/textAppearanceTitleMedium"
                         android:textColor="?attr/colorOnSecondaryContainer"
                         android:gravity="center"
@@ -193,7 +193,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Facturas"
+                        android:text="Varios"
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSecondaryContainer"
                         android:alpha="0.75"
@@ -203,9 +203,9 @@
 
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Gastos Varios -->
+            <!-- Estadísticas -->
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/card_varios"
+                android:id="@+id/card_estadisticas"
                 android:layout_width="0dp"
                 android:layout_height="170dp"
                 android:layout_weight="1"
@@ -227,15 +227,15 @@
                     <ImageView
                         android:layout_width="52dp"
                         android:layout_height="52dp"
-                        android:src="@drawable/ic_list"
+                        android:src="@drawable/ic_bar_chart"
                         app:tint="?attr/colorOnTertiaryContainer"
-                        android:contentDescription="Gastos Varios" />
+                        android:contentDescription="Estadísticas" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        android:text="Gastos"
+                        android:text="Ver"
                         android:textAppearance="?attr/textAppearanceTitleMedium"
                         android:textColor="?attr/colorOnTertiaryContainer"
                         android:gravity="center"
@@ -245,7 +245,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Varios"
+                        android:text="Estadísticas"
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         android:textColor="?attr/colorOnTertiaryContainer"
                         android:alpha="0.75"

@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.javito.shoplist.R
 import com.javito.shoplist.databinding.FragmentDashboardBinding
 
@@ -24,20 +25,22 @@ class DashboardFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val bottomNav = requireActivity().findViewById<BottomNavigationView>(R.id.bottom_navigation)
+
         binding.cardLista.setOnClickListener {
-            findNavController().navigate(R.id.nav_lista)
+            bottomNav.selectedItemId = R.id.nav_lista
         }
         binding.cardIngresos.setOnClickListener {
-            findNavController().navigate(R.id.nav_ingresos)
-        }
-        binding.cardFacturas.setOnClickListener {
-            findNavController().navigate(R.id.nav_facturas)
+            bottomNav.selectedItemId = R.id.nav_ingresos
         }
         binding.cardVarios.setOnClickListener {
-            findNavController().navigate(R.id.nav_varios)
+            bottomNav.selectedItemId = R.id.nav_varios
+        }
+        binding.cardEstadisticas.setOnClickListener {
+            findNavController().navigate(R.id.nav_estadisticas)
         }
         binding.cardResumen.setOnClickListener {
-            findNavController().navigate(R.id.nav_resumen)
+            bottomNav.selectedItemId = R.id.nav_resumen
         }
     }
 

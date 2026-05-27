@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 class ShoppingViewModel(application: Application) : AndroidViewModel(application) {
 
     private val db = AppDatabase.getInstance(application)
-    private val repository = AppRepository(db.shoppingItemDao(), db.invoiceDao(), db.gastoDao(), db.ingresoDao())
+    private val repository = AppRepository(db.shoppingItemDao(), db.gastoDao(), db.ingresoDao())
 
     val allItems = repository.allShoppingItems.asLiveData()
 

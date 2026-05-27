@@ -4,10 +4,11 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import com.javito.shoplist.R
 import com.javito.shoplist.databinding.FragmentResumenBinding
-import androidx.core.content.ContextCompat
 
 class ResumenFragment : Fragment() {
 
@@ -46,21 +47,15 @@ class ResumenFragment : Fragment() {
     }
 
     private fun observeData() {
-        viewModel.invoiceTotal.observe(viewLifecycleOwner) {
-            binding.tvFacturasTotal.text = "$${fmt(it ?: 0.0)}"
-        }
         viewModel.gastoTotal.observe(viewLifecycleOwner) {
-            binding.tvVariosTotal.text = "$${fmt(it ?: 0.0)}"
-        }
-        viewModel.grandTotal.observe(viewLifecycleOwner) {
-            binding.tvGrandTotal.text = "$${fmt(it)}"
+            binding.tvGrandTotal.text = "$${fmt(it ?: 0.0)}"
         }
         viewModel.ingresoTotal.observe(viewLifecycleOwner) {
             binding.tvIngresosTotal.text = "$${fmt(it ?: 0.0)}"
         }
         viewModel.balance.observe(viewLifecycleOwner) { bal ->
             binding.tvBalance.text = "$${fmt(bal)}"
-            val color = if (bal >= 0) android.R.color.holo_green_dark else android.R.color.holo_red_dark
+            val color = if (bal >= 0) R.color.balance_positive else R.color.balance_negative
             binding.tvBalance.setTextColor(ContextCompat.getColor(requireContext(), color))
         }
     }

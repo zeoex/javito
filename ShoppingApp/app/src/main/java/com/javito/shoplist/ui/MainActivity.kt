@@ -45,14 +45,8 @@ class MainActivity : AppCompatActivity() {
             binding.tvHeaderIngresos.text = "$${String.format("%.2f", total ?: 0.0)}"
         }
 
-        viewModel.gastoTotal.observe(this) { gastos ->
-            val facturas = viewModel.invoiceTotal.value ?: 0.0
-            binding.tvHeaderGastos.text = "$${String.format("%.2f", (gastos ?: 0.0) + facturas)}"
-        }
-
-        viewModel.invoiceTotal.observe(this) { facturas ->
-            val gastos = viewModel.gastoTotal.value ?: 0.0
-            binding.tvHeaderGastos.text = "$${String.format("%.2f", (facturas ?: 0.0) + gastos)}"
+        viewModel.gastoTotal.observe(this) { gasto ->
+            binding.tvHeaderGastos.text = "$${String.format("%.2f", gasto ?: 0.0)}"
         }
     }
 

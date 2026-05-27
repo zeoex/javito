@@ -8,7 +8,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.javito.shoplist.databinding.FragmentEstadisticasBinding
-import com.javito.shoplist.ui.facturas.InvoiceAdapter
+import com.javito.shoplist.ui.ingresos.IngresoAdapter
 import com.javito.shoplist.ui.varios.GastoAdapter
 
 class EstadisticasFragment : Fragment() {
@@ -17,8 +17,8 @@ class EstadisticasFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: EstadisticasViewModel by viewModels()
-    private lateinit var invoiceAdapter: InvoiceAdapter
     private lateinit var gastoAdapter: GastoAdapter
+    private lateinit var ingresoAdapter: IngresoAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -35,16 +35,16 @@ class EstadisticasFragment : Fragment() {
     }
 
     private fun setupRecyclers() {
-        invoiceAdapter = InvoiceAdapter(onDeleteClick = {})
-        binding.recyclerInvoicesStat.apply {
-            adapter = invoiceAdapter
+        gastoAdapter = GastoAdapter(onDeleteClick = {})
+        binding.recyclerGastosStat.apply {
+            adapter = gastoAdapter
             layoutManager = LinearLayoutManager(requireContext())
             isNestedScrollingEnabled = false
         }
 
-        gastoAdapter = GastoAdapter(onDeleteClick = {})
-        binding.recyclerGastosStat.apply {
-            adapter = gastoAdapter
+        ingresoAdapter = IngresoAdapter(onDeleteClick = {})
+        binding.recyclerIngresosStat.apply {
+            adapter = ingresoAdapter
             layoutManager = LinearLayoutManager(requireContext())
             isNestedScrollingEnabled = false
         }
@@ -67,37 +67,35 @@ class EstadisticasFragment : Fragment() {
     }
 
     private fun observeData() {
-        viewModel.grandTotal.observe(viewLifecycleOwner) {
+        viewModel.balance.observe(viewLifecycleOwner) {
             binding.tvGrandTotal.text = "$${fmt(it)}"
         }
-
-        viewModel.invoiceTotal.observe(viewLifecycleOwner) {
-            binding.tvFacturasTotalStat.text = "$${fmt(it ?: 0.0)}"
-        }
-
-        viewModel.invoices.observe(viewLifecycleOwner) { list ->
-            invoiceAdapter.submitList(list)
-            binding.tvFacturasCount.text = "${list.size} factura${if (list.size != 1) "s" else ""}"
-        }
-
         viewModel.gastoTotal.observe(viewLifecycleOwner) {
             binding.tvVariosTotalStat.text = "$${fmt(it ?: 0.0)}"
         }
-
         viewModel.gastos.observe(viewLifecycleOwner) { list ->
             gastoAdapter.submitList(list)
         }
-
+        viewModel.ingresoTotal.observe(viewLifecycleOwner) {
+            binding.tvIngresosTotalStat.text = "$${fmt(it ?: 0.0)}"
+        }
+        viewModel.ingresos.observe(viewLifecycleOwner) { list ->
+            ingresoAdapter.submitList(list)
+        }
         viewModel.categoryBreakdown.observe(viewLifecycleOwner) { map ->
             binding.tvCatCarniceria.text = "$${fmt(map["Carnicería"] ?: 0.0)}"
             binding.tvCatDespensa.text = "$${fmt(map["Despensa"] ?: 0.0)}"
             binding.tvCatVerduleria.text = "$${fmt(map["Verdulería"] ?: 0.0)}"
             binding.tvCatVarios.text = "$${fmt(map["Varios"] ?: 0.0)}"
         }
-
         viewModel.paymentBreakdown.observe(viewLifecycleOwner) { map ->
             binding.tvEfectivoTotal.text = "$${fmt(map["Efectivo"] ?: 0.0)}"
             binding.tvDigitalTotal.text = "$${fmt(map["Digital"] ?: 0.0)}"
+        }
+        viewModel.sourceBreakdown.observe(viewLifecycleOwner) { map ->
+            binding.tvSrcSalario.text = "$${fmt(map["Salario"] ?: 0.0)}"
+            binding.tvSrcFreelance.text = "$${fmt(map["Freelance"] ?: 0.0)}"
+            binding.tvSrcOtros.text = "$${fmt((map["Venta"] ?: 0.0) + (map["Alquiler"] ?: 0.0) + (map["Otros"] ?: 0.0))}"
         }
     }
 
