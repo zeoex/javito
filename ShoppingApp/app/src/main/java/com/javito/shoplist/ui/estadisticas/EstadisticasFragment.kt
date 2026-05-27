@@ -86,6 +86,8 @@ class EstadisticasFragment : Fragment() {
             binding.tvCatCarniceria.text = "$${fmt(map["Carnicería"] ?: 0.0)}"
             binding.tvCatDespensa.text = "$${fmt(map["Despensa"] ?: 0.0)}"
             binding.tvCatVerduleria.text = "$${fmt(map["Verdulería"] ?: 0.0)}"
+            binding.tvCatCuidadoPersonal.text = "$${fmt(map["Cuidado Personal"] ?: 0.0)}"
+            binding.tvCatViajes.text = "$${fmt(map["Viajes"] ?: 0.0)}"
             binding.tvCatVarios.text = "$${fmt(map["Varios"] ?: 0.0)}"
         }
         viewModel.paymentBreakdown.observe(viewLifecycleOwner) { map ->

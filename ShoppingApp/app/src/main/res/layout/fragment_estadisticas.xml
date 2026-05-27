@@ -200,6 +200,7 @@
                         android:textAppearance="?attr/textAppearanceLabelLarge"
                         android:textColor="?attr/colorOnSecondaryContainer" />
 
+                    <!-- Fila 1: Carnicería / Despensa / Verdulería -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -216,6 +217,22 @@
                         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Verdulería" android:textAppearance="?attr/textAppearanceBodySmall" android:textColor="?attr/colorOnSecondaryContainer" android:alpha="0.7" />
                             <TextView android:id="@+id/tv_cat_verduleria" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="$0.00" android:textAppearance="?attr/textAppearanceLabelLarge" android:textColor="?attr/colorOnSecondaryContainer" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Fila 2: Cuidado Personal / Viajes / Varios -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:orientation="horizontal">
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Cuidado Personal" android:textAppearance="?attr/textAppearanceBodySmall" android:textColor="?attr/colorOnSecondaryContainer" android:alpha="0.7" />
+                            <TextView android:id="@+id/tv_cat_cuidado_personal" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="$0.00" android:textAppearance="?attr/textAppearanceLabelLarge" android:textColor="?attr/colorOnSecondaryContainer" />
+                        </LinearLayout>
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Viajes" android:textAppearance="?attr/textAppearanceBodySmall" android:textColor="?attr/colorOnSecondaryContainer" android:alpha="0.7" />
+                            <TextView android:id="@+id/tv_cat_viajes" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="$0.00" android:textAppearance="?attr/textAppearanceLabelLarge" android:textColor="?attr/colorOnSecondaryContainer" />
                         </LinearLayout>
                         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Varios" android:textAppearance="?attr/textAppearanceBodySmall" android:textColor="?attr/colorOnSecondaryContainer" android:alpha="0.7" />

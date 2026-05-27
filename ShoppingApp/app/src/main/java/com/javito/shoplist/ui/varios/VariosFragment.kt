@@ -24,7 +24,7 @@ class VariosFragment : Fragment() {
     private val viewModel: VariosViewModel by viewModels()
     private lateinit var adapter: GastoAdapter
 
-    private val categories = listOf("Carnicería", "Despensa", "Verdulería", "Varios")
+    private val categories = listOf("Carnicería", "Despensa", "Verdulería", "Cuidado Personal", "Viajes", "Varios")
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
