@@ -25,7 +25,7 @@ class FacturasViewModel(application: Application) : AndroidViewModel(application
 
     init {
         val db = AppDatabase.getInstance(application)
-        repository = AppRepository(db.shoppingItemDao(), db.invoiceDao(), db.gastoDao())
+        repository = AppRepository(db.shoppingItemDao(), db.invoiceDao(), db.gastoDao(), db.ingresoDao())
 
         val cal = Calendar.getInstance()
         val month = String.format("%02d", cal.get(Calendar.MONTH) + 1)

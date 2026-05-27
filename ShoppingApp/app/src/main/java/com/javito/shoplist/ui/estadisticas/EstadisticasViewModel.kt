@@ -16,7 +16,7 @@ import java.util.Calendar
 class EstadisticasViewModel(application: Application) : AndroidViewModel(application) {
 
     private val db = AppDatabase.getInstance(application)
-    private val repository = AppRepository(db.shoppingItemDao(), db.invoiceDao(), db.gastoDao())
+    private val repository = AppRepository(db.shoppingItemDao(), db.invoiceDao(), db.gastoDao(), db.ingresoDao())
 
     private val _selectedMonth = MutableLiveData<String>()
     val selectedMonth: LiveData<String> get() = _selectedMonth

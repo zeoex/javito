@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.javito.shoplist.databinding.FragmentResumenBinding
+import androidx.core.content.ContextCompat
 
 class ResumenFragment : Fragment() {
 
@@ -53,6 +54,14 @@ class ResumenFragment : Fragment() {
         }
         viewModel.grandTotal.observe(viewLifecycleOwner) {
             binding.tvGrandTotal.text = "$${fmt(it)}"
+        }
+        viewModel.ingresoTotal.observe(viewLifecycleOwner) {
+            binding.tvIngresosTotal.text = "$${fmt(it ?: 0.0)}"
+        }
+        viewModel.balance.observe(viewLifecycleOwner) { bal ->
+            binding.tvBalance.text = "$${fmt(bal)}"
+            val color = if (bal >= 0) android.R.color.holo_green_dark else android.R.color.holo_red_dark
+            binding.tvBalance.setTextColor(ContextCompat.getColor(requireContext(), color))
         }
     }
 

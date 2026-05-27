@@ -14,7 +14,7 @@ import java.util.Calendar
 class ResumenViewModel(application: Application) : AndroidViewModel(application) {
 
     private val db = AppDatabase.getInstance(application)
-    private val repository = AppRepository(db.shoppingItemDao(), db.invoiceDao(), db.gastoDao())
+    private val repository = AppRepository(db.shoppingItemDao(), db.invoiceDao(), db.gastoDao(), db.ingresoDao())
 
     private val _selectedMonth = MutableLiveData<String>()
     val selectedMonth: LiveData<String> get() = _selectedMonth
@@ -27,8 +27,21 @@ class ResumenViewModel(application: Application) : AndroidViewModel(application)
         repository.getGastoTotalByMonth(m).asLiveData()
     }
 
+    val ingresoTotal: LiveData<Double?> = _selectedMonth.switchMap { m ->
+        repository.getIngresoTotalByMonth(m).asLiveData()
+    }
+
     val grandTotal: LiveData<Double> = MediatorLiveData<Double>().apply {
         fun recalc() { value = (invoiceTotal.value ?: 0.0) + (gastoTotal.value ?: 0.0) }
+        addSource(invoiceTotal) { recalc() }
+        addSource(gastoTotal) { recalc() }
+    }
+
+    val balance: LiveData<Double> = MediatorLiveData<Double>().apply {
+        fun recalc() {
+            value = (ingresoTotal.value ?: 0.0) - (invoiceTotal.value ?: 0.0) - (gastoTotal.value ?: 0.0)
+        }
+        addSource(ingresoTotal) { recalc() }
         addSource(invoiceTotal) { recalc() }
         addSource(gastoTotal) { recalc() }
     }

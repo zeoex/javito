@@ -25,6 +25,12 @@
         tools:layout="@layout/fragment_varios" />
 
     <fragment
+        android:id="@+id/nav_ingresos"
+        android:name="com.javito.shoplist.ui.ingresos.IngresosFragment"
+        android:label="@string/nav_ingresos"
+        tools:layout="@layout/fragment_ingresos" />
+
+    <fragment
         android:id="@+id/nav_resumen"
         android:name="com.javito.shoplist.ui.resumen.ResumenFragment"
         android:label="@string/nav_resumen"

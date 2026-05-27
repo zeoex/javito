@@ -5,7 +5,8 @@ import kotlinx.coroutines.flow.Flow
 class AppRepository(
     private val shoppingItemDao: ShoppingItemDao,
     private val invoiceDao: InvoiceDao,
-    private val gastoDao: GastoDao
+    private val gastoDao: GastoDao,
+    private val ingresoDao: IngresoDao
 ) {
 
     // ── Shopping list ──────────────────────────────────────────────────────────
@@ -39,4 +40,14 @@ class AppRepository(
     fun getGastosByMonth(month: String): Flow<List<Gasto>> = gastoDao.getByMonth(month)
 
     fun getGastoTotalByMonth(month: String): Flow<Double?> = gastoDao.getTotalByMonth(month)
+
+    // ── Ingresos ───────────────────────────────────────────────────────────────
+
+    suspend fun saveIngreso(ingreso: Ingreso) = ingresoDao.insert(ingreso)
+
+    suspend fun deleteIngreso(ingreso: Ingreso) = ingresoDao.delete(ingreso)
+
+    fun getIngresosByMonth(month: String): Flow<List<Ingreso>> = ingresoDao.getByMonth(month)
+
+    fun getIngresoTotalByMonth(month: String): Flow<Double?> = ingresoDao.getTotalByMonth(month)
 }
