@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- App name -->
+    <string name="app_name">ListaCompras</string>
+
+    <!-- Navigation titles -->
+    <string name="title_shopping_list">Lista de Compras</string>
+    <string name="title_add_purchase">Agregar Compra</string>
+    <string name="title_history">Historial</string>
+
+    <!-- Bottom navigation labels -->
+    <string name="nav_lista">Lista</string>
+    <string name="nav_agregar">Agregar</string>
+    <string name="nav_historial">Historial</string>
+
+    <!-- Hints / field labels -->
+    <string name="hint_item_name">Nombre del artículo</string>
+    <string name="hint_quantity">Cantidad</string>
+    <string name="hint_qty_short">Cant.</string>
+    <string name="hint_unit">Unidad</string>
+    <string name="hint_category">Categoría</string>
+    <string name="hint_receipt_number">Nro de Comprobante</string>
+    <string name="hint_store_name">Nombre de Comercio</string>
+    <string name="hint_date">Fecha (DD/MM/AAAA)</string>
+    <string name="hint_total_amount">Monto Total</string>
+    <string name="hint_price">Precio</string>
+    <string name="hint_notes">Notas (opcional)</string>
+
+    <!-- Helper texts -->
+    <string name="helper_item_name">Ej: Leche, Pan, Arroz…</string>
+
+    <!-- Section titles -->
+    <string name="title_purchase_items">Artículos de la compra</string>
+    <string name="label_add_item_row">Agregar artículo</string>
+    <string name="label_monthly_total">Total del mes</string>
+
+    <!-- Units dropdown -->
+    <string-array name="units_array">
+        <item>kg</item>
+        <item>g</item>
+        <item>litros</item>
+        <item>ml</item>
+        <item>unidades</item>
+        <item>docena</item>
+        <item>paquete</item>
+    </string-array>
+
+    <!-- Categories dropdown -->
+    <string-array name="categories_array">
+        <item>Lácteos</item>
+        <item>Carnes</item>
+        <item>Verduras</item>
+        <item>Frutas</item>
+        <item>Panadería</item>
+        <item>Bebidas</item>
+        <item>Limpieza</item>
+        <item>Higiene personal</item>
+        <item>Congelados</item>
+        <item>Enlatados</item>
+        <item>Cereales</item>
+        <item>Snacks</item>
+        <item>Otros</item>
+    </string-array>
+
+    <!-- Buttons -->
+    <string name="btn_add_item">Agregar artículo</string>
+    <string name="btn_save_purchase">Guardar Compra</string>
+    <string name="btn_show_items">Ver artículos</string>
+    <string name="btn_hide_items">Ocultar artículos</string>
+
+    <!-- Empty states -->
+    <string name="empty_state_title">Tu lista está vacía</string>
+    <string name="empty_state_subtitle">Toca el botón + para agregar\ntu primer artículo</string>
+    <string name="empty_history_title">Sin compras este mes</string>
+    <string name="empty_history_subtitle">Registra una compra desde\nla pestaña Agregar</string>
+
+    <!-- Content descriptions (accessibility) -->
+    <string name="cd_add_item">Agregar artículo</string>
+    <string name="cd_check_item">Marcar artículo como comprado</string>
+    <string name="cd_delete_item">Eliminar artículo</string>
+    <string name="cd_empty_list">Lista vacía</string>
+    <string name="cd_empty_history">Sin historial</string>
+    <string name="cd_prev_month">Mes anterior</string>
+    <string name="cd_next_month">Mes siguiente</string>
+
+    <!-- Dialogs -->
+    <string name="dialog_title_add_item">Nuevo artículo</string>
+    <string name="dialog_btn_add">Agregar</string>
+    <string name="dialog_btn_cancel">Cancelar</string>
+
+    <!-- Snackbar / Toast messages -->
+    <string name="msg_item_added">Artículo agregado</string>
+    <string name="msg_item_deleted">Artículo eliminado</string>
+    <string name="msg_purchase_saved">Compra guardada correctamente</string>
+    <string name="msg_fill_required">Completá los campos obligatorios</string>
+    <string name="msg_undo">Deshacer</string>
+
+    <!-- Purchase card labels -->
+    <string name="label_receipt_prefix">Comprobante #</string>
+    <string name="label_purchases_count">%d compras</string>
+    <string name="label_purchase_single">1 compra</string>
+
+</resources>

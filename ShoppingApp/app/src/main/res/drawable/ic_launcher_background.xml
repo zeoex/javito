@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher background: green gradient circle -->
+<vector
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Background gradient fill using two overlaid rects -->
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M0,0h108v108h-108z" />
+
+    <!-- Lighter center highlight -->
+    <path
+        android:fillColor="#66BB6A"
+        android:fillAlpha="0.5"
+        android:pathData="M54,0 C83.82,0 108,24.18 108,54 C108,83.82 83.82,108 54,108 C24.18,108 0,83.82 0,54 C0,24.18 24.18,0 54,0 Z" />
+
+    <!-- Dark green accent at bottom -->
+    <path
+        android:fillColor="#388E3C"
+        android:fillAlpha="0.4"
+        android:pathData="M0,72 Q54,108 108,72 L108,108 L0,108 Z" />
+
+</vector>
