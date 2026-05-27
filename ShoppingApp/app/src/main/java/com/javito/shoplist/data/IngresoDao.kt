@@ -19,4 +19,7 @@ interface IngresoDao {
 
     @Query("SELECT SUM(amount) FROM ingresos WHERE ingresoMonth = :month")
     fun getTotalByMonth(month: String): Flow<Double?>
+
+    @Query("SELECT COALESCE(SUM(amount), 0.0) FROM ingresos WHERE ingresoMonth = :month AND paymentMethod = :method")
+    fun getTotalByMonthAndMethod(month: String, method: String): Flow<Double>
 }

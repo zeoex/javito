@@ -22,6 +22,8 @@ class IngresosViewModel(application: Application) : AndroidViewModel(application
 
     val ingresos: LiveData<List<Ingreso>>
     val ingresoTotal: LiveData<Double?>
+    val efectivoTotal: LiveData<Double>
+    val digitalTotal: LiveData<Double>
 
     init {
         val db = AppDatabase.getInstance(application)
@@ -37,6 +39,14 @@ class IngresosViewModel(application: Application) : AndroidViewModel(application
 
         ingresoTotal = _currentMonth.switchMap { month ->
             repository.getIngresoTotalByMonth(month).asLiveData()
+        }
+
+        efectivoTotal = _currentMonth.switchMap { month ->
+            repository.getIngresoEfectivoByMonth(month).asLiveData()
+        }
+
+        digitalTotal = _currentMonth.switchMap { month ->
+            repository.getIngresoDigitalByMonth(month).asLiveData()
         }
     }
 

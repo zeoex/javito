@@ -12,5 +12,6 @@ data class ShoppingItem(
     val unit: String,
     val category: String,
     val isChecked: Boolean = false,
+    val isTemplate: Boolean = false,
     val createdAt: Long = System.currentTimeMillis()
 )

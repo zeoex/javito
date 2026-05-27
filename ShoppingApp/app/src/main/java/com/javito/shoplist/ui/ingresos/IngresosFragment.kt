@@ -55,13 +55,19 @@ class IngresosFragment : Fragment() {
     private fun observeViewModel() {
         viewModel.ingresos.observe(viewLifecycleOwner) { list ->
             adapter.submitList(list)
-            val empty = list.isEmpty()
-            binding.emptyIngresos.visibility = if (empty) View.VISIBLE else View.GONE
-            binding.recyclerIngresos.visibility = if (empty) View.GONE else View.VISIBLE
+            binding.emptyIngresos.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
         }
 
         viewModel.ingresoTotal.observe(viewLifecycleOwner) { total ->
-            binding.tvIngresoTotal.text = "Total: $${String.format("%.2f", total ?: 0.0)}"
+            binding.tvIngresoTotal.text = "$${String.format("%.2f", total ?: 0.0)}"
+        }
+
+        viewModel.efectivoTotal.observe(viewLifecycleOwner) { total ->
+            binding.tvEfectivoTotal.text = "$${String.format("%.2f", total)}"
+        }
+
+        viewModel.digitalTotal.observe(viewLifecycleOwner) { total ->
+            binding.tvDigitalTotal.text = "$${String.format("%.2f", total)}"
         }
     }
 

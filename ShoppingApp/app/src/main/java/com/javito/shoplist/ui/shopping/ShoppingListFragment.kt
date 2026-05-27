@@ -10,6 +10,7 @@ import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import com.javito.shoplist.R
 import com.javito.shoplist.data.ShoppingItem
 import com.javito.shoplist.databinding.DialogAddItemBinding
 import com.javito.shoplist.databinding.FragmentShoppingListBinding
@@ -49,6 +50,7 @@ class ShoppingListFragment : Fragment() {
         setupRecyclerView()
         setupFab()
         observeItems()
+        setupToolbarMenu()
     }
 
     private fun setupRecyclerView() {
@@ -76,6 +78,48 @@ class ShoppingListFragment : Fragment() {
         viewModel.allItems.observe(viewLifecycleOwner) { items ->
             adapter.submitList(items)
             binding.emptyState.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
+        }
+        viewModel.templateItems.observe(viewLifecycleOwner) { /* keep live */ }
+    }
+
+    private fun setupToolbarMenu() {
+        binding.toolbar.inflateMenu(R.menu.menu_shopping)
+        binding.toolbar.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                R.id.action_save_template -> {
+                    val current = viewModel.allItems.value ?: emptyList()
+                    if (current.isEmpty()) {
+                        Snackbar.make(binding.root, "La lista está vacía", Snackbar.LENGTH_SHORT).show()
+                    } else {
+                        viewModel.saveAsTemplate(current)
+                        Snackbar.make(binding.root, "Plantilla guardada (${current.size} productos)", Snackbar.LENGTH_SHORT).show()
+                    }
+                    true
+                }
+                R.id.action_load_template -> {
+                    val template = viewModel.templateItems.value ?: emptyList()
+                    if (template.isEmpty()) {
+                        Snackbar.make(binding.root, "No hay plantilla guardada aún", Snackbar.LENGTH_SHORT).show()
+                    } else {
+                        MaterialAlertDialogBuilder(requireContext())
+                            .setTitle("Cargar plantilla")
+                            .setMessage("Se agregarán ${template.size} productos a la lista actual. ¿Continuar?")
+                            .setPositiveButton("Cargar") { _, _ ->
+                                viewModel.loadTemplate(template)
+                                Snackbar.make(binding.root, "Plantilla cargada", Snackbar.LENGTH_SHORT).show()
+                            }
+                            .setNegativeButton("Cancelar", null)
+                            .show()
+                    }
+                    true
+                }
+                R.id.action_delete_checked -> {
+                    viewModel.deleteCheckedItems()
+                    Snackbar.make(binding.root, "Tachados eliminados", Snackbar.LENGTH_SHORT).show()
+                    true
+                }
+                else -> false
+            }
         }
     }
 
