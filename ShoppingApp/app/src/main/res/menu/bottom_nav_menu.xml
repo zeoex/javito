@@ -2,6 +2,11 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
+        android:id="@+id/nav_home"
+        android:icon="@drawable/ic_home"
+        android:title="@string/nav_home" />
+
+    <item
         android:id="@+id/nav_lista"
         android:icon="@drawable/ic_list"
         android:title="@string/nav_lista" />
@@ -20,10 +25,5 @@
         android:id="@+id/nav_ingresos"
         android:icon="@drawable/ic_income"
         android:title="@string/nav_ingresos" />
-
-    <item
-        android:id="@+id/nav_resumen"
-        android:icon="@drawable/ic_resumen"
-        android:title="@string/nav_resumen" />
 
 </menu>

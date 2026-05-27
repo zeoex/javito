@@ -18,6 +18,7 @@
     <string name="nav_resumen">Resumen</string>
     <string name="nav_estadisticas">Stats</string>
     <string name="nav_ingresos">Ingresos</string>
+    <string name="nav_home">Inicio</string>
 
     <!-- Hints / field labels -->
     <string name="hint_item_name">Nombre del artículo</string>
