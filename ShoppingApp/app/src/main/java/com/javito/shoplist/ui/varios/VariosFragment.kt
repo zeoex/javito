@@ -5,10 +5,10 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.javito.shoplist.data.Gasto
@@ -24,7 +24,6 @@ class VariosFragment : Fragment() {
     private val viewModel: VariosViewModel by viewModels()
     private lateinit var adapter: GastoAdapter
 
-    private val categories = listOf("Carnicería", "Despensa", "Verdulería", "Cuidado Personal", "Viajes", "Varios")
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -64,10 +63,6 @@ class VariosFragment : Fragment() {
     private fun showAddGastoDialog() {
         val db = DialogAddGastoBinding.inflate(layoutInflater)
 
-        val catAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, categories)
-        db.acvCategory.setAdapter(catAdapter)
-        db.acvCategory.setText(categories[0], false)
-
         val cal = Calendar.getInstance()
         db.etDate.setText(String.format("%02d/%02d/%04d",
             cal.get(Calendar.DAY_OF_MONTH), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.YEAR)))
@@ -79,7 +74,8 @@ class VariosFragment : Fragment() {
             .setView(db.root)
             .setPositiveButton("Guardar") { dialog, _ ->
                 val description = db.etDescription.text.toString().trim()
-                val category = db.acvCategory.text.toString().trim().ifBlank { categories[0] }
+                val checkedId = db.cgCategory.checkedChipId
+                val category = db.cgCategory.findViewById<Chip>(checkedId)?.text?.toString() ?: "Varios"
                 val amountStr = db.etAmount.text.toString().trim()
                 val dateStr = db.etDate.text.toString().trim()
                 val notes = db.etNotes.text.toString().trim()

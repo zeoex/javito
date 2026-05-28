@@ -87,6 +87,7 @@ class EstadisticasFragment : Fragment() {
             binding.tvCatDespensa.text = "$${fmt(map["Despensa"] ?: 0.0)}"
             binding.tvCatVerduleria.text = "$${fmt(map["Verdulería"] ?: 0.0)}"
             binding.tvCatCuidadoPersonal.text = "$${fmt(map["Cuidado Personal"] ?: 0.0)}"
+            binding.tvCatMedicamentos.text = "$${fmt(map["Medicamentos"] ?: 0.0)}"
             binding.tvCatViajes.text = "$${fmt(map["Viajes"] ?: 0.0)}"
             binding.tvCatVarios.text = "$${fmt(map["Varios"] ?: 0.0)}"
         }
