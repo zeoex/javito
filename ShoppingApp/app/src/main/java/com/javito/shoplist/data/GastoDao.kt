@@ -23,4 +23,10 @@ interface GastoDao {
 
     @Query("SELECT DISTINCT gastoMonth FROM gastos ORDER BY createdAt DESC")
     fun getAvailableMonths(): Flow<List<String>>
+
+    @Insert
+    suspend fun insertAll(gastos: List<Gasto>)
+
+    @Query("SELECT * FROM gastos ORDER BY createdAt DESC")
+    suspend fun getAllGastosOnce(): List<Gasto>
 }

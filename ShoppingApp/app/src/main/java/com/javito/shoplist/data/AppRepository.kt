@@ -29,4 +29,14 @@ class AppRepository(
     fun getIngresoTotalByMonth(month: String): Flow<Double?> = ingresoDao.getTotalByMonth(month)
     fun getIngresoEfectivoByMonth(month: String) = ingresoDao.getTotalByMonthAndMethod(month, "Efectivo")
     fun getIngresoDigitalByMonth(month: String) = ingresoDao.getTotalByMonthAndMethod(month, "Digital")
+
+    // Backup/restore
+    suspend fun getAllItemsForBackup(): List<ShoppingItem> = shoppingItemDao.getAllItemsOnce()
+    suspend fun getAllTemplateItemsForBackup(): List<ShoppingItem> = shoppingItemDao.getAllTemplateItemsOnce()
+    suspend fun getAllGastosForBackup(): List<Gasto> = gastoDao.getAllGastosOnce()
+    suspend fun getAllIngresosForBackup(): List<Ingreso> = ingresoDao.getAllIngresosOnce()
+
+    suspend fun restoreGastos(gastos: List<Gasto>) = gastoDao.insertAll(gastos)
+    suspend fun restoreIngresos(ingresos: List<Ingreso>) = ingresoDao.insertAll(ingresos)
+    suspend fun restoreShoppingItems(items: List<ShoppingItem>) = shoppingItemDao.insertAll(items)
 }

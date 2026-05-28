@@ -34,4 +34,10 @@ interface ShoppingItemDao {
 
     @Query("DELETE FROM shopping_items WHERE isChecked = 1")
     suspend fun deleteCheckedItems()
+
+    @Query("SELECT * FROM shopping_items WHERE isTemplate = 0")
+    suspend fun getAllItemsOnce(): List<ShoppingItem>
+
+    @Query("SELECT * FROM shopping_items WHERE isTemplate = 1")
+    suspend fun getAllTemplateItemsOnce(): List<ShoppingItem>
 }
