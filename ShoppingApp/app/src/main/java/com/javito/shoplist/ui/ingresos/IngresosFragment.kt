@@ -5,10 +5,10 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.javito.shoplist.data.Ingreso
@@ -23,8 +23,6 @@ class IngresosFragment : Fragment() {
 
     private val viewModel: IngresosViewModel by viewModels()
     private lateinit var adapter: IngresoAdapter
-
-    private val sources = listOf("Salario", "Freelance", "Venta", "Alquiler", "Otros")
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -74,10 +72,6 @@ class IngresosFragment : Fragment() {
     private fun showAddIngresoDialog() {
         val db = DialogAddIngresoBinding.inflate(layoutInflater)
 
-        val srcAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, sources)
-        db.acvSource.setAdapter(srcAdapter)
-        db.acvSource.setText(sources[0], false)
-
         val cal = Calendar.getInstance()
         db.etDate.setText(String.format("%02d/%02d/%04d",
             cal.get(Calendar.DAY_OF_MONTH), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.YEAR)))
@@ -89,7 +83,8 @@ class IngresosFragment : Fragment() {
             .setView(db.root)
             .setPositiveButton("Guardar") { dialog, _ ->
                 val description = db.etDescription.text.toString().trim()
-                val source = db.acvSource.text.toString().trim().ifBlank { sources[0] }
+                val checkedSrcId = db.cgSource.checkedChipId
+                val source = db.cgSource.findViewById<Chip>(checkedSrcId)?.text?.toString() ?: "Salario"
                 val amountStr = db.etAmount.text.toString().trim()
                 val dateStr = db.etDate.text.toString().trim()
                 val notes = db.etNotes.text.toString().trim()
