@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Fudo POS – Raquitos</title>
+<title>La Isla POS – Raquitos</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -14,8 +14,8 @@ a{text-decoration:none;color:inherit}
 #login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1a202c 0%,#2d3748 100%)}
 .login-box{background:#fff;border-radius:12px;padding:48px 40px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
 .login-logo{text-align:center;margin-bottom:32px}
-.fudo-logo-text{font-size:36px;font-weight:700;color:#ff5023;letter-spacing:-1px}
-.fudo-logo-sub{font-size:12px;color:#718096;margin-top:4px}
+.la-isla-logo-text{font-size:36px;font-weight:700;color:#ff5023;letter-spacing:-1px}
+.la-isla-logo-sub{font-size:12px;color:#718096;margin-top:4px}
 .login-box h2{font-size:20px;font-weight:600;color:#2d3748;margin-bottom:24px;text-align:center}
 .form-group{margin-bottom:18px}
 .form-group label{display:block;font-size:13px;font-weight:500;color:#4a5568;margin-bottom:6px}
@@ -218,8 +218,8 @@ a{text-decoration:none;color:inherit}
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">
-      <div class="fudo-logo-text">fudo</div>
-      <div class="fudo-logo-sub">Sistema de gestión gastronómica</div>
+      <div class="la-isla-logo-text">La Isla</div>
+      <div class="la-isla-logo-sub">Sistema de gestión gastronómica</div>
     </div>
     <h2>Iniciar sesión</h2>
     <div class="login-error" id="login-error">Usuario o contraseña incorrectos</div>
@@ -232,7 +232,7 @@ a{text-decoration:none;color:inherit}
       <input type="password" id="login-pass" placeholder="••••••••" value="123456" autocomplete="current-password"/>
     </div>
     <button class="btn-login" onclick="doLogin()">Iniciar sesión</button>
-    <div class="login-footer">Fudo POS © 2026 · Todos los derechos reservados</div>
+    <div class="login-footer">La Isla POS © 2026 · Todos los derechos reservados</div>
   </div>
 </div>
 
@@ -246,7 +246,7 @@ a{text-decoration:none;color:inherit}
     <div class="sb-logo">
       <div class="sb-logo-icon">f</div>
       <div>
-        <div class="sb-logo-name">fudo</div>
+        <div class="sb-logo-name">La Isla</div>
         <div class="sb-logo-plan">PRO</div>
       </div>
     </div>
@@ -295,7 +295,7 @@ a{text-decoration:none;color:inherit}
     <div class="sb-sep"></div>
     <div class="ni" onclick="nav('payments')" id="nav-payments">
       <svg viewBox="0 0 20 20"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"/><path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"/></svg>
-      Fudo Pagos
+      La Isla Pagos
     </div>
     <div class="ni" onclick="nav('kds')" id="nav-kds">
       <svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clip-rule="evenodd"/></svg>
@@ -607,13 +607,13 @@ a{text-decoration:none;color:inherit}
       </div>
     </div>
 
-    <!-- FUDO PAGOS -->
+    <!-- LA ISLA PAGOS -->
     <div class="section" id="section-payments">
-      <div class="ph"><h1>Fudo Pagos</h1></div>
+      <div class="ph"><h1>La Isla Pagos</h1></div>
       <div class="card">
         <div style="padding:56px;text-align:center">
           <div style="font-size:64px;margin-bottom:16px">💳</div>
-          <h3 style="font-size:22px;font-weight:700;color:#2d3748;margin-bottom:8px">Activá Fudo Pagos</h3>
+          <h3 style="font-size:22px;font-weight:700;color:#2d3748;margin-bottom:8px">Activá La Isla Pagos</h3>
           <p style="color:#718096;font-size:14px;max-width:420px;margin:0 auto 24px;line-height:1.6">Cobrá con tarjeta directamente desde tu POS. Sin costos fijos mensuales.</p>
           <div style="background:#fffbeb;border:1px solid #f6e05e;border-radius:8px;padding:11px 20px;display:inline-block;margin-bottom:28px">
             <span style="font-size:13px;color:#744210">⚠ KYC no iniciado — Completá tu verificación para comenzar</span>
@@ -714,7 +714,7 @@ a{text-decoration:none;color:inherit}
         <div class="card-b">
           <table style="width:100%;border-collapse:collapse">
             <tr><td style="padding:10px 0 10px;color:#718096;font-size:13px;width:190px;border-bottom:1px solid #f0f4f8">Nombre</td><td style="font-size:14px;font-weight:500;border-bottom:1px solid #f0f4f8">Raquitos</td></tr>
-            <tr><td style="padding:10px 0;color:#718096;font-size:13px;border-bottom:1px solid #f0f4f8">Código promocional</td><td style="font-size:14px;border-bottom:1px solid #f0f4f8">FUDO.RAQUITOS</td></tr>
+            <tr><td style="padding:10px 0;color:#718096;font-size:13px;border-bottom:1px solid #f0f4f8">Código promocional</td><td style="font-size:14px;border-bottom:1px solid #f0f4f8">LAISLA.RAQUITOS</td></tr>
             <tr><td style="padding:10px 0;color:#718096;font-size:13px;border-bottom:1px solid #f0f4f8">País</td><td style="font-size:14px;border-bottom:1px solid #f0f4f8">Argentina</td></tr>
             <tr><td style="padding:10px 0;color:#718096;font-size:13px;border-bottom:1px solid #f0f4f8">Zona horaria</td><td style="font-size:14px;border-bottom:1px solid #f0f4f8">America/Argentina/Buenos_Aires</td></tr>
             <tr><td style="padding:10px 0;color:#718096;font-size:13px;border-bottom:1px solid #f0f4f8">Email</td><td style="font-size:14px;border-bottom:1px solid #f0f4f8">bear_japy@hotmail.com</td></tr>
@@ -732,18 +732,18 @@ a{text-decoration:none;color:inherit}
       <div class="ph"><h1>Primeros pasos</h1></div>
       <div class="ob-banner">
         <h2>¡Comienza a configurar tu cuenta!</h2>
-        <p>Completa las tareas iniciales para activar tu restaurante en Fudo y empezar a vender desde hoy.</p>
+        <p>Completa las tareas iniciales para activar tu restaurante en La Isla y empezar a vender desde hoy.</p>
         <button class="ob-btn">Comenzar →</button>
       </div>
       <h3 style="font-size:15px;font-weight:600;color:#2d3748;margin-bottom:14px">Progreso de configuración</h3>
       <div class="steps-g">
-        <div class="step"><div class="step-ck done">✓</div><div><h4>Crear tu cuenta</h4><p>Tu cuenta Fudo fue creada el 30 de mayo de 2026.</p></div></div>
+        <div class="step"><div class="step-ck done">✓</div><div><h4>Crear tu cuenta</h4><p>Tu cuenta La Isla fue creada el 30 de mayo de 2026.</p></div></div>
         <div class="step"><div class="step-ck done">✓</div><div><h4>Configurar productos</h4><p>Tienes 9 productos activos en 4 categorías.</p></div></div>
         <div class="step"><div class="step-ck done">✓</div><div><h4>Configurar mesas</h4><p>20 mesas configuradas — Salón y Terraza.</p></div></div>
         <div class="step"><div class="step-ck done">✓</div><div><h4>Configurar métodos de pago</h4><p>Efectivo, Cta. Cte., Tarj. Crédito y Débito.</p></div></div>
         <div class="step"><div class="step-ck">○</div><div><h4>Realizar primera venta</h4><p>Registra tu primera transacción desde Restaurante.</p></div></div>
         <div class="step"><div class="step-ck">○</div><div><h4>Activar facturación electrónica</h4><p>Emite facturas A y B desde el módulo Facturación.</p></div></div>
-        <div class="step"><div class="step-ck">○</div><div><h4>Activar Fudo Pagos</h4><p>Completa tu verificación KYC para cobrar con tarjeta.</p></div></div>
+        <div class="step"><div class="step-ck">○</div><div><h4>Activar La Isla Pagos</h4><p>Completa tu verificación KYC para cobrar con tarjeta.</p></div></div>
         <div class="step"><div class="step-ck">○</div><div><h4>Configurar Monitor de Cocina</h4><p>Conecta una pantalla KDS para tu equipo de cocina.</p></div></div>
       </div>
     </div>
@@ -789,7 +789,7 @@ const PRODUCTS = [
 const SECTION_TITLES = {
   tables:'Restaurante',sales:'Ventas',expenses:'Gastos',finance:'Finanzas',
   invoices:'Facturación',products:'Productos',customers:'Clientes',
-  providers:'Proveedores',reports:'Reportes',payments:'Fudo Pagos',
+  providers:'Proveedores',reports:'Reportes',payments:'La Isla Pagos',
   kds:'Monitor de Cocina',delivery:'Tu Delivery',admin:'Administración',
   'mi-negocio':'Mi Negocio','primeros-pasos':'Primeros pasos'
 };
