@@ -43,10 +43,11 @@ body{font-family:'Inter',sans-serif;background:var(--light);color:#212529;overfl
 /* === LAYOUT === */
 #app{display:none;height:100vh;overflow:hidden}
 .sidebar{position:fixed;top:0;left:0;width:240px;height:100vh;background:var(--blue);display:flex;flex-direction:column;z-index:100}
-.sidebar-logo{padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,0.1)}
-.sidebar-logo .s-emoji{font-size:28px}
-.sidebar-logo h2{font-size:16px;font-weight:700;color:#fff;margin-top:4px}
-.sidebar-logo p{font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px}
+.sidebar-logo{padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;gap:10px;overflow:hidden}
+.sidebar-logo .s-emoji{font-size:28px;flex-shrink:0}
+.sidebar-logo-text{overflow:hidden;min-width:0}
+.sidebar-logo h2{font-size:16px;font-weight:700;color:#fff;margin-top:4px;white-space:nowrap}
+.sidebar-logo p{font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;white-space:nowrap}
 .sidebar-nav{flex:1;overflow-y:auto;padding:12px 0}
 .sidebar-nav::-webkit-scrollbar{width:4px}
 .sidebar-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.2);border-radius:2px}
@@ -187,23 +188,93 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 
 /* ===== RESPONSIVE ===== */
 
-/* Hamburger button (hidden on desktop) */
-.hamburger{display:none;background:none;border:none;cursor:pointer;padding:8px;color:var(--blue);font-size:22px;line-height:1;flex-shrink:0}
+/* Hamburger button — visible on all breakpoints */
+.hamburger{display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;padding:8px;color:var(--blue);font-size:22px;line-height:1;flex-shrink:0}
 
-/* Sidebar overlay for mobile */
+/* Sidebar overlay for mobile/tablet */
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99}
 .sidebar-overlay.open{display:block}
 
-/* ---- Tablet + small desktop (< 1024px) ---- */
-@media (max-width:1023px){
-  .sidebar{position:fixed;left:-240px;transition:left .25s ease;z-index:100}
-  .sidebar.open{left:0}
-  .main{margin-left:0 !important}
-  .hamburger{display:flex;align-items:center;justify-content:center}
+/* ===== SIDEBAR COLLAPSE (Desktop ≥ 1024px) ===== */
+.sidebar{transition:width 0.25s ease;overflow:hidden}
+.sidebar.collapsed{width:64px}
+
+/* Nav items in collapsed mode */
+.sidebar.collapsed .nav-item{justify-content:center;padding:11px 0}
+.sidebar.collapsed .nav-text{display:none}
+.sidebar.collapsed .nav-badge{display:none}
+.sidebar.collapsed .sidebar-logo-text{display:none}
+.sidebar.collapsed .user-details{display:none}
+.sidebar.collapsed .user-info{justify-content:center}
+.sidebar.collapsed .sidebar-footer .btn{display:none}
+
+/* Tooltip on collapsed nav items */
+.sidebar.collapsed .nav-item{position:relative}
+.sidebar.collapsed .nav-item::after{
+  content:attr(data-tooltip);
+  position:absolute;
+  left:70px;
+  top:50%;
+  transform:translateY(-50%);
+  background:#1d3557;
+  color:white;
+  padding:5px 10px;
+  border-radius:6px;
+  font-size:12px;
+  white-space:nowrap;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 0.15s;
+  z-index:200;
+}
+.sidebar.collapsed .nav-item:hover::after{opacity:1}
+
+/* Main content transition */
+.main{transition:margin-left 0.25s ease}
+
+/* ---- Tablet (768px – 1023px) ---- */
+@media (min-width:768px) and (max-width:1023px){
+  .sidebar{position:fixed;width:64px;z-index:100;transition:width 0.25s ease}
+  .sidebar.tablet-open{width:240px}
+  .main{margin-left:64px !important}
+
+  /* icon-only mode by default on tablet */
+  .sidebar:not(.tablet-open) .nav-item{justify-content:center;padding:11px 0}
+  .sidebar:not(.tablet-open) .nav-text{display:none}
+  .sidebar:not(.tablet-open) .nav-badge{display:none}
+  .sidebar:not(.tablet-open) .sidebar-logo-text{display:none}
+  .sidebar:not(.tablet-open) .user-details{display:none}
+  .sidebar:not(.tablet-open) .user-info{justify-content:center}
+  .sidebar:not(.tablet-open) .sidebar-footer .btn{display:none}
+
+  /* tooltips on tablet collapsed */
+  .sidebar:not(.tablet-open) .nav-item{position:relative}
+  .sidebar:not(.tablet-open) .nav-item::after{
+    content:attr(data-tooltip);
+    position:absolute;
+    left:70px;
+    top:50%;
+    transform:translateY(-50%);
+    background:#1d3557;
+    color:white;
+    padding:5px 10px;
+    border-radius:6px;
+    font-size:12px;
+    white-space:nowrap;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.15s;
+    z-index:200;
+  }
+  .sidebar:not(.tablet-open) .nav-item:hover::after{opacity:1}
 }
 
 /* ---- Mobile (< 768px) ---- */
 @media (max-width:767px){
+  .sidebar{position:fixed;left:-240px;width:240px !important;transition:left 0.25s ease;z-index:100}
+  .sidebar.mobile-open{left:0}
+  .main{margin-left:0 !important}
+
   /* topbar */
   .topbar{padding:0 14px}
   .topbar-title{font-size:16px}
@@ -280,48 +351,50 @@ input.form-control:focus{outline:none;border-color:var(--red)}
   <div class="sidebar">
     <div class="sidebar-logo">
       <span class="s-emoji">🍕</span>
-      <h2>PIZZERÍA PRO</h2>
-      <p id="sidebarBiz">Sistema POS</p>
+      <span class="sidebar-logo-text">
+        <h2>PIZZERÍA PRO</h2>
+        <p id="sidebarBiz">Sistema POS</p>
+      </span>
     </div>
     <nav class="sidebar-nav">
-      <div class="nav-item active" data-section="dashboard" onclick="navTo('dashboard',this);closeSidebar()">
-        <span class="nav-icon">📊</span> Dashboard
+      <div class="nav-item active" data-section="dashboard" data-tooltip="Dashboard" onclick="navTo('dashboard',this);closeSidebar()">
+        <span class="nav-icon">📊</span><span class="nav-text">Dashboard</span>
       </div>
-      <div class="nav-item" data-section="mesas" onclick="navTo('mesas',this);closeSidebar()">
-        <span class="nav-icon">🪑</span> Mesas <span class="nav-badge" id="mesasBadge">0</span>
+      <div class="nav-item" data-section="mesas" data-tooltip="Mesas" onclick="navTo('mesas',this);closeSidebar()">
+        <span class="nav-icon">🪑</span><span class="nav-text">Mesas</span> <span class="nav-badge" id="mesasBadge">0</span>
       </div>
-      <div class="nav-item" data-section="delivery" onclick="navTo('delivery',this);closeSidebar()">
-        <span class="nav-icon">🛵</span> Delivery <span class="nav-badge" id="deliveryBadge">0</span>
+      <div class="nav-item" data-section="delivery" data-tooltip="Delivery" onclick="navTo('delivery',this);closeSidebar()">
+        <span class="nav-icon">🛵</span><span class="nav-text">Delivery</span> <span class="nav-badge" id="deliveryBadge">0</span>
       </div>
-      <div class="nav-item" data-section="productos" onclick="navTo('productos',this);closeSidebar()">
-        <span class="nav-icon">🍕</span> Productos
+      <div class="nav-item" data-section="productos" data-tooltip="Productos" onclick="navTo('productos',this);closeSidebar()">
+        <span class="nav-icon">🍕</span><span class="nav-text">Productos</span>
       </div>
-      <div class="nav-item" data-section="stock" onclick="navTo('stock',this);closeSidebar()">
-        <span class="nav-icon">📦</span> Stock
+      <div class="nav-item" data-section="stock" data-tooltip="Stock" onclick="navTo('stock',this);closeSidebar()">
+        <span class="nav-icon">📦</span><span class="nav-text">Stock</span>
       </div>
-      <div class="nav-item" data-section="caja" onclick="navTo('caja',this);closeSidebar()">
-        <span class="nav-icon">💰</span> Caja
+      <div class="nav-item" data-section="caja" data-tooltip="Caja" onclick="navTo('caja',this);closeSidebar()">
+        <span class="nav-icon">💰</span><span class="nav-text">Caja</span>
       </div>
-      <div class="nav-item" data-section="facturacion" onclick="navTo('facturacion',this);closeSidebar()">
-        <span class="nav-icon">🧾</span> Facturación
+      <div class="nav-item" data-section="facturacion" data-tooltip="Facturación" onclick="navTo('facturacion',this);closeSidebar()">
+        <span class="nav-icon">🧾</span><span class="nav-text">Facturación</span>
       </div>
-      <div class="nav-item" data-section="clientes" onclick="navTo('clientes',this);closeSidebar()">
-        <span class="nav-icon">👥</span> Clientes
+      <div class="nav-item" data-section="clientes" data-tooltip="Clientes" onclick="navTo('clientes',this);closeSidebar()">
+        <span class="nav-icon">👥</span><span class="nav-text">Clientes</span>
       </div>
-      <div class="nav-item" data-section="reportes" onclick="navTo('reportes',this);closeSidebar()">
-        <span class="nav-icon">📈</span> Reportes
+      <div class="nav-item" data-section="reportes" data-tooltip="Reportes" onclick="navTo('reportes',this);closeSidebar()">
+        <span class="nav-icon">📈</span><span class="nav-text">Reportes</span>
       </div>
-      <div class="nav-item" data-section="usuarios" onclick="navTo('usuarios',this);closeSidebar()" id="navUsuarios">
-        <span class="nav-icon">👤</span> Usuarios
+      <div class="nav-item" data-section="usuarios" data-tooltip="Usuarios" onclick="navTo('usuarios',this);closeSidebar()" id="navUsuarios">
+        <span class="nav-icon">👤</span><span class="nav-text">Usuarios</span>
       </div>
-      <div class="nav-item" data-section="config" onclick="navTo('config',this);closeSidebar()">
-        <span class="nav-icon">⚙️</span> Configuración
+      <div class="nav-item" data-section="config" data-tooltip="Configuración" onclick="navTo('config',this);closeSidebar()">
+        <span class="nav-icon">⚙️</span><span class="nav-text">Configuración</span>
       </div>
     </nav>
     <div class="sidebar-footer">
       <div class="user-info">
         <div class="user-avatar" id="userAvatar">A</div>
-        <div>
+        <div class="user-details">
           <div class="user-name" id="userName">Admin</div>
           <div class="user-role" id="userRole">Administrador</div>
         </div>
@@ -1601,14 +1674,39 @@ function openModalProducto() {
 // Override button to reset form
 document.querySelector('[onclick="openModal(\'modalProducto\')"]').setAttribute('onclick','openModalProducto()');
 
-// ======= SIDEBAR MOBILE =======
+// ======= SIDEBAR TOGGLE =======
 function toggleSidebar() {
-  document.querySelector('.sidebar').classList.toggle('open');
-  document.getElementById('sidebarOverlay').classList.toggle('open');
+  const sb = document.querySelector('.sidebar');
+  const isMobile = window.innerWidth < 768;
+  const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+
+  if (isMobile) {
+    sb.classList.toggle('mobile-open');
+    document.getElementById('sidebarOverlay').classList.toggle('open');
+  } else if (isTablet) {
+    sb.classList.toggle('tablet-open');
+    document.getElementById('sidebarOverlay').classList.toggle('open');
+  } else {
+    // Desktop: toggle collapsed
+    sb.classList.toggle('collapsed');
+    const main = document.querySelector('.main');
+    main.style.marginLeft = sb.classList.contains('collapsed') ? '64px' : '240px';
+  }
 }
+
 function closeSidebar() {
-  document.querySelector('.sidebar').classList.remove('open');
-  document.getElementById('sidebarOverlay').classList.remove('open');
+  const sb = document.querySelector('.sidebar');
+  const isMobile = window.innerWidth < 768;
+  const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+
+  if (isMobile) {
+    sb.classList.remove('mobile-open');
+    document.getElementById('sidebarOverlay').classList.remove('open');
+  } else if (isTablet) {
+    sb.classList.remove('tablet-open');
+    document.getElementById('sidebarOverlay').classList.remove('open');
+  }
+  // Desktop: clicking a nav item doesn't close the sidebar (it stays expanded/collapsed as-is)
 }
 </script>
 </body>
