@@ -189,7 +189,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 <body>
 
 <!-- LOGIN -->
-<div id="loginScreen">
+<div id="loginScreen" style="display:none">
   <div class="login-card">
     <div class="login-logo">
       <span class="emoji">🍕</span>
@@ -719,7 +719,7 @@ input:checked+.slider:before{transform:translateX(20px)}
 <script>
 const API = '';
 let token = localStorage.getItem('pizzeria_token');
-let currentUser = JSON.parse(localStorage.getItem('pizzeria_user') || 'null');
+let currentUser = (() => { try { return JSON.parse(localStorage.getItem('pizzeria_user') || 'null'); } catch(e) { return null; } })();
 let socket = null;
 let currentMesaTab = 'salon';
 let editingProdId = null;
@@ -822,7 +822,7 @@ async function doLogin() {
     if (res.ok) {
       const data = await res.json();
       token = data.token;
-      currentUser = data.user;
+      currentUser = data.usuario || data.user;
       localStorage.setItem('pizzeria_token', token);
       localStorage.setItem('pizzeria_user', JSON.stringify(currentUser));
     } else {
@@ -900,7 +900,11 @@ function initApp() {
   loadDashboard();
 }
 
-if (token && currentUser) { initApp(); }
+if (token && currentUser) {
+  initApp();
+} else {
+  document.getElementById('loginScreen').style.display = 'flex';
+}
 
 function updateClock() {
   const now = new Date();
