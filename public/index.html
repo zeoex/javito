@@ -293,28 +293,28 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <div class="nav-item" data-section="delivery" onclick="navTo('delivery',this);closeSidebar()">
         <span class="nav-icon">🛵</span> Delivery <span class="nav-badge" id="deliveryBadge">0</span>
       </div>
-      <div class="nav-item" data-section="productos" onclick="navTo('productos',this)">
+      <div class="nav-item" data-section="productos" onclick="navTo('productos',this);closeSidebar()">
         <span class="nav-icon">🍕</span> Productos
       </div>
-      <div class="nav-item" data-section="stock" onclick="navTo('stock',this)">
+      <div class="nav-item" data-section="stock" onclick="navTo('stock',this);closeSidebar()">
         <span class="nav-icon">📦</span> Stock
       </div>
-      <div class="nav-item" data-section="caja" onclick="navTo('caja',this)">
+      <div class="nav-item" data-section="caja" onclick="navTo('caja',this);closeSidebar()">
         <span class="nav-icon">💰</span> Caja
       </div>
-      <div class="nav-item" data-section="facturacion" onclick="navTo('facturacion',this)">
+      <div class="nav-item" data-section="facturacion" onclick="navTo('facturacion',this);closeSidebar()">
         <span class="nav-icon">🧾</span> Facturación
       </div>
-      <div class="nav-item" data-section="clientes" onclick="navTo('clientes',this)">
+      <div class="nav-item" data-section="clientes" onclick="navTo('clientes',this);closeSidebar()">
         <span class="nav-icon">👥</span> Clientes
       </div>
-      <div class="nav-item" data-section="reportes" onclick="navTo('reportes',this)">
+      <div class="nav-item" data-section="reportes" onclick="navTo('reportes',this);closeSidebar()">
         <span class="nav-icon">📈</span> Reportes
       </div>
-      <div class="nav-item" data-section="usuarios" onclick="navTo('usuarios',this)" id="navUsuarios">
+      <div class="nav-item" data-section="usuarios" onclick="navTo('usuarios',this);closeSidebar()" id="navUsuarios">
         <span class="nav-icon">👤</span> Usuarios
       </div>
-      <div class="nav-item" data-section="config" onclick="navTo('config',this)">
+      <div class="nav-item" data-section="config" onclick="navTo('config',this);closeSidebar()">
         <span class="nav-icon">⚙️</span> Configuración
       </div>
     </nav>
@@ -1600,6 +1600,16 @@ function openModalProducto() {
 }
 // Override button to reset form
 document.querySelector('[onclick="openModal(\'modalProducto\')"]').setAttribute('onclick','openModalProducto()');
+
+// ======= SIDEBAR MOBILE =======
+function toggleSidebar() {
+  document.querySelector('.sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+function closeSidebar() {
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+}
 </script>
 </body>
 </html>
