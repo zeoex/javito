@@ -1,15 +1,21 @@
 {
-  "name": "javito-portal",
+  "name": "pizzeria-pro",
   "version": "1.0.0",
-  "description": "Portal Raquitos - Replica Fudo POS",
+  "description": "Pizzería PRO - Sistema de gestión completo para pizzerías",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node app.js",
+    "dev": "node app.js"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "express": "^4.18.2"
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "socket.io": "^4.7.2",
+    "uuid": "^9.0.0"
   }
 }

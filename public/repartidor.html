@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<title>Repartidor - PIZZERÍA PRO</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#1d3557;
+  --bg2:#142844;
+  --bg3:#0e1f33;
+  --accent:#e63946;
+  --accent2:#457b9d;
+  --success:#2a9d8f;
+  --warn:#f4a261;
+  --white:#ffffff;
+  --card:#ffffff;
+  --card-shadow:0 2px 12px rgba(0,0,0,0.18);
+  --text:#1d3557;
+  --text2:#6b7a99;
+  --text3:#a0b0c8;
+  --border:#e8edf5;
+  --radius:12px;
+}
+
+html, body{
+  height:100%;
+  background:var(--bg);
+  font-family:'Barlow',sans-serif;
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+}
+
+/* Centra en desktop, full-width en móvil */
+.app-wrapper{
+  max-width:480px;
+  margin:0 auto;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  background:var(--bg);
+  position:relative;
+  box-shadow:0 0 60px rgba(0,0,0,0.5);
+}
+
+/* ── HEADER ── */
+.app-header{
+  background:var(--bg3);
+  padding:16px 20px 14px;
+  flex-shrink:0;
+  position:sticky;top:0;z-index:100;
+  border-bottom:1px solid rgba(255,255,255,0.08);
+}
+.header-top{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:10px;
+}
+.header-brand{display:flex;align-items:center;gap:10px}
+.header-brand .icon{font-size:24px}
+.header-brand h1{
+  font-size:18px;font-weight:800;color:#fff;
+  letter-spacing:.5px;
+}
+.header-brand span{
+  font-size:10px;font-weight:600;color:var(--text3);
+  display:block;letter-spacing:1.5px;text-transform:uppercase;
+}
+
+/* Estado toggle */
+.estado-toggle{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:20px;padding:6px 12px;
+  cursor:pointer;transition:all .2s;
+  user-select:none;
+}
+.estado-toggle:hover{background:rgba(255,255,255,0.13)}
+.estado-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:#6b7a99;transition:background .3s;
+}
+.estado-toggle.disponible .estado-dot{
+  background:#4ade80;
+  animation:pulse-green 2s infinite;
+}
+@keyframes pulse-green{
+  0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,0.5)}
+  50%{box-shadow:0 0 0 5px rgba(74,222,128,0)}
+}
+.estado-label{
+  font-size:12px;font-weight:700;color:var(--text3);
+  letter-spacing:.5px;text-transform:uppercase;
+  transition:color .3s;
+}
+.estado-toggle.disponible .estado-label{color:#4ade80}
+
+/* Repartidor info */
+.header-repartidor{
+  display:flex;align-items:center;gap:10px;
+}
+.rep-avatar{
+  width:34px;height:34px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent2),#2d6a8f);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:800;color:#fff;flex-shrink:0;
+}
+.rep-info .rep-name{font-size:14px;font-weight:700;color:#fff}
+.rep-info .rep-stats{font-size:11px;color:var(--text3);margin-top:1px}
+
+/* ── TAB BAR ── */
+.tab-bar{
+  background:var(--bg2);
+  display:flex;
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  flex-shrink:0;
+}
+.tab-btn{
+  flex:1;padding:13px 4px 11px;
+  background:transparent;border:none;
+  font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;
+  color:var(--text3);cursor:pointer;transition:all .2s;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  position:relative;
+}
+.tab-btn .tab-icon{font-size:16px;line-height:1}
+.tab-btn .tab-label{font-size:11px;letter-spacing:.3px;text-transform:uppercase}
+.tab-btn.active{color:#fff}
+.tab-btn.active::after{
+  content:'';position:absolute;bottom:0;left:20%;right:20%;
+  height:2px;background:var(--accent);border-radius:2px 2px 0 0;
+}
+.tab-badge{
+  position:absolute;top:8px;right:calc(50% - 18px);
+  background:var(--accent);color:#fff;
+  font-size:9px;font-weight:700;
+  min-width:16px;height:16px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  padding:0 4px;
+}
+
+/* ── CONTENT ── */
+.tab-content{
+  display:none;flex:1;overflow-y:auto;
+  padding:14px 14px 80px;
+  -webkit-overflow-scrolling:touch;
+}
+.tab-content.active{display:flex;flex-direction:column;gap:14px}
+.tab-content::-webkit-scrollbar{display:none}
+
+/* ── PEDIDO CARD ── */
+.pedido-card{
+  background:var(--card);
+  border-radius:var(--radius);
+  box-shadow:var(--card-shadow);
+  overflow:hidden;
+  transition:transform .15s,box-shadow .15s;
+}
+.pedido-card.new-arrival{animation:slide-up .4s ease-out}
+@keyframes slide-up{
+  from{opacity:0;transform:translateY(16px) scale(.97)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+
+/* Card header */
+.pedido-head{
+  padding:14px 16px 12px;
+  display:flex;align-items:flex-start;justify-content:space-between;
+  border-bottom:1px solid var(--border);
+  background:linear-gradient(135deg,#f8fafc,#f0f5ff);
+}
+.pedido-num{
+  font-size:26px;font-weight:900;color:var(--text);letter-spacing:-1px;
+}
+.pedido-num span{font-size:14px;font-weight:500;color:var(--text2)}
+.pedido-estado{
+  display:flex;flex-direction:column;align-items:flex-end;gap:5px;
+}
+.badge-estado{
+  font-size:10px;font-weight:800;
+  padding:4px 10px;border-radius:10px;
+  letter-spacing:1px;text-transform:uppercase;
+}
+.badge-asignado{background:rgba(230,57,70,0.12);color:var(--accent);border:1px solid rgba(230,57,70,0.25)}
+.badge-en-camino{background:rgba(69,123,157,0.12);color:var(--accent2);border:1px solid rgba(69,123,157,0.25)}
+.badge-pendiente-e{background:rgba(244,162,97,0.15);color:#c27a34;border:1px solid rgba(244,162,97,0.3)}
+.badge-entregado{background:rgba(42,157,143,0.12);color:var(--success);border:1px solid rgba(42,157,143,0.25)}
+.pedido-tiempo{font-size:11px;font-weight:600;color:var(--text2)}
+
+/* Items */
+.pedido-items-line{
+  padding:10px 16px;
+  font-size:13px;font-weight:600;color:var(--text);
+  border-bottom:1px solid var(--border);
+  background:#fafbfc;
+}
+
+/* Info rows */
+.pedido-info{padding:10px 16px;display:flex;flex-direction:column;gap:8px}
+.info-row{display:flex;align-items:flex-start;gap:10px}
+.info-icon{font-size:16px;flex-shrink:0;width:20px;text-align:center;line-height:1.4}
+.info-text{font-size:13px;color:var(--text);line-height:1.4;flex:1}
+.info-text strong{font-weight:700;display:block}
+.info-text .info-sub{font-size:12px;color:var(--text2);font-weight:400}
+.info-ref{font-size:12px;color:var(--accent2);font-style:italic;margin-top:1px}
+
+/* Pago */
+.pago-row{
+  margin:0 16px 10px;
+  background:linear-gradient(135deg,#fff8e1,#fff3cd);
+  border:1px solid #fce082;
+  border-radius:8px;
+  padding:10px 14px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.pago-monto{font-size:22px;font-weight:900;color:#9c5e00}
+.pago-method{
+  font-size:12px;font-weight:700;
+  padding:4px 10px;border-radius:8px;
+  text-transform:uppercase;letter-spacing:.5px;
+}
+.pago-efectivo{background:rgba(42,157,143,0.15);color:#1a7a6e;border:1px solid rgba(42,157,143,0.3)}
+.pago-tarjeta{background:rgba(69,123,157,0.15);color:#2c5f7a;border:1px solid rgba(69,123,157,0.3)}
+
+/* Horarios */
+.horarios-row{
+  margin:0 16px 12px;
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;
+}
+.horario-box{
+  background:#f8fafc;border:1px solid var(--border);border-radius:8px;
+  padding:8px 12px;text-align:center;
+}
+.horario-label{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
+.horario-val{font-size:16px;font-weight:800;color:var(--text);margin-top:2px;font-variant-numeric:tabular-nums}
+.horario-val.pendiente-val{color:var(--text3);font-style:italic;font-size:13px}
+
+/* Action buttons */
+.pedido-actions{
+  padding:0 14px 14px;
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;
+}
+.btn-action{
+  padding:14px 8px;
+  border:none;border-radius:10px;
+  font-family:'Barlow',sans-serif;
+  font-size:12px;font-weight:700;
+  letter-spacing:.3px;text-transform:uppercase;
+  cursor:pointer;transition:all .2s;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  touch-action:manipulation;
+  min-height:56px;
+  text-decoration:none;
+}
+.btn-action .btn-icon{font-size:18px;line-height:1}
+.btn-llamar{background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9}
+.btn-llamar:hover{background:#c8e6c9}
+.btn-mapa{background:#e3f2fd;color:#1565c0;border:1px solid #bbdefb}
+.btn-mapa:hover{background:#bbdefb}
+.btn-confirmar{
+  background:linear-gradient(135deg,var(--success),#52b788);
+  color:#fff;
+  grid-column:span 2;
+  flex-direction:row;justify-content:center;gap:8px;
+  font-size:15px;padding:16px;
+}
+.btn-confirmar:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.btn-problema{
+  background:#fff0f0;color:var(--accent);
+  border:1px solid #ffd5d5;
+  grid-column:span 2;
+  flex-direction:row;justify-content:center;gap:8px;
+  font-size:13px;padding:13px;
+}
+.btn-problema:hover{background:#ffe0e0}
+
+/* Wide single button for asignado state */
+.btn-iniciar-viaje{
+  grid-column:span 2;
+  background:linear-gradient(135deg,var(--accent),#c1121f);
+  color:#fff;
+  font-size:15px;padding:16px;
+  flex-direction:row;justify-content:center;gap:8px;
+}
+.btn-iniciar-viaje:hover{filter:brightness(1.08);transform:translateY(-1px)}
+
+/* Disabled card */
+.pedido-card.estado-entregado{opacity:.6;pointer-events:none}
+
+/* ── HISTORIAL ── */
+.historial-summary{
+  background:var(--card);border-radius:var(--radius);
+  box-shadow:var(--card-shadow);padding:16px;
+}
+.historial-summary h3{font-size:14px;font-weight:700;color:var(--text);margin-bottom:12px}
+.resumen-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.resumen-box{
+  background:#f8fafc;border:1px solid var(--border);border-radius:8px;
+  padding:10px 8px;text-align:center;
+}
+.resumen-num{font-size:24px;font-weight:900;color:var(--text)}
+.resumen-label{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;margin-top:2px}
+.resumen-total{
+  background:linear-gradient(135deg,var(--bg),var(--bg2));
+  border-radius:8px;padding:12px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.resumen-total span{font-size:13px;font-weight:600;color:#a0b8d0}
+.resumen-total strong{font-size:20px;font-weight:900;color:#fff}
+
+.historial-list{display:flex;flex-direction:column;gap:8px}
+.historial-item{
+  background:var(--card);border-radius:10px;
+  box-shadow:0 1px 6px rgba(0,0,0,0.1);
+  padding:12px 14px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.hist-num{font-size:16px;font-weight:900;color:var(--text);min-width:50px}
+.hist-info{flex:1;padding:0 10px}
+.hist-cliente{font-size:13px;font-weight:600;color:var(--text)}
+.hist-items{font-size:11px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
+.hist-right{text-align:right}
+.hist-monto{font-size:15px;font-weight:800;color:var(--text)}
+.hist-hora{font-size:11px;color:var(--text2);margin-top:2px}
+.hist-badge{
+  font-size:9px;font-weight:700;
+  padding:2px 7px;border-radius:6px;
+  text-transform:uppercase;letter-spacing:.5px;margin-top:3px;display:inline-block;
+  background:rgba(42,157,143,0.12);color:var(--success);border:1px solid rgba(42,157,143,0.25);
+}
+
+/* ── EMPTY STATE ── */
+.empty-state{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:48px 24px;gap:12px;
+  text-align:center;
+}
+.empty-state .es-icon{font-size:48px;opacity:.4}
+.empty-state p{font-size:14px;font-weight:600;color:rgba(255,255,255,.4)}
+
+/* ── NOTIF BANNER ── */
+.notif-banner{
+  position:fixed;top:0;left:50%;transform:translateX(-50%);
+  max-width:480px;width:100%;z-index:999;
+  background:var(--accent);color:#fff;
+  padding:14px 20px;
+  display:flex;align-items:center;gap:12px;
+  font-size:14px;font-weight:700;
+  box-shadow:0 4px 20px rgba(0,0,0,0.4);
+  animation:notif-drop .35s ease-out;
+  cursor:pointer;
+}
+@keyframes notif-drop{
+  from{transform:translateX(-50%) translateY(-100%)}
+  to{transform:translateX(-50%) translateY(0)}
+}
+.notif-banner .nb-icon{font-size:24px;flex-shrink:0}
+.notif-banner .nb-close{
+  margin-left:auto;font-size:18px;opacity:.7;cursor:pointer;
+}
+
+/* ── CONN PILL ── */
+.conn-pill{
+  display:flex;align-items:center;gap:5px;
+  font-size:10px;font-weight:700;letter-spacing:.5px;
+  padding:3px 8px;border-radius:10px;
+}
+.conn-online{background:rgba(74,222,128,0.15);color:#4ade80;border:1px solid rgba(74,222,128,0.3)}
+.conn-offline{background:rgba(244,162,97,0.12);color:#fbbf24;border:1px solid rgba(244,162,97,0.25)}
+.conn-dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.conn-online .conn-dot{animation:blink-dot 1.5s infinite}
+@keyframes blink-dot{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── MODAL PROBLEMA ── */
+.modal-backdrop{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,0.7);z-index:500;
+  align-items:flex-end;justify-content:center;
+}
+.modal-backdrop.open{display:flex;animation:fade-in .2s}
+@keyframes fade-in{from{opacity:0}to{opacity:1}}
+.modal-sheet{
+  background:#fff;border-radius:16px 16px 0 0;
+  width:100%;max-width:480px;padding:20px;
+  animation:sheet-up .3s ease-out;
+}
+@keyframes sheet-up{
+  from{transform:translateY(40px);opacity:0}
+  to{transform:translateY(0);opacity:1}
+}
+.modal-sheet h3{font-size:16px;font-weight:800;color:var(--text);margin-bottom:14px}
+.problema-options{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.prob-opt{
+  padding:14px;border-radius:10px;border:1.5px solid var(--border);
+  background:#fff;font-family:'Barlow',sans-serif;
+  font-size:14px;font-weight:600;color:var(--text);
+  cursor:pointer;text-align:left;transition:all .15s;
+}
+.prob-opt:hover{border-color:var(--accent);background:#fff5f5;color:var(--accent)}
+.btn-cancel-modal{
+  width:100%;padding:14px;border:none;border-radius:10px;
+  background:#f0f4f8;color:var(--text2);
+  font-family:'Barlow',sans-serif;font-size:14px;font-weight:700;
+  cursor:pointer;
+}
+.btn-cancel-modal:hover{background:#e2e8f0}
+
+/* ── RESPONSIVE desktop preview ── */
+@media(min-width:481px){
+  .app-wrapper{border-left:1px solid rgba(255,255,255,0.05);border-right:1px solid rgba(255,255,255,0.05)}
+}
+</style>
+</head>
+<body>
+
+<!-- NOTIFICATION BANNER (hidden by default) -->
+<div class="notif-banner" id="notif-banner" style="display:none" onclick="closeNotif()">
+  <div class="nb-icon">&#x1F6F5;</div>
+  <span id="notif-text">Nuevo pedido asignado!</span>
+  <div class="nb-close">&#x2715;</div>
+</div>
+
+<!-- MODAL PROBLEMA -->
+<div class="modal-backdrop" id="modal-problema" onclick="closeProblema(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <h3>Reportar problema</h3>
+    <div class="problema-options">
+      <button class="prob-opt" onclick="reportarProblema('No encuentra la dirección')">&#x1F4CD; No encuentra la dirección</button>
+      <button class="prob-opt" onclick="reportarProblema('Cliente no atiende')">&#x1F4F5; Cliente no atiende el teléfono</button>
+      <button class="prob-opt" onclick="reportarProblema('Problema con el pago')">&#x1F4B3; Problema con el método de pago</button>
+      <button class="prob-opt" onclick="reportarProblema('Pedido incorrecto')">&#x26A0;&#xFE0F; Pedido incorrecto</button>
+      <button class="prob-opt" onclick="reportarProblema('Otro problema')">&#x2026; Otro problema</button>
+    </div>
+    <button class="btn-cancel-modal" onclick="closeProblema()">Cancelar</button>
+  </div>
+</div>
+
+<div class="app-wrapper">
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="header-top">
+      <div class="header-brand">
+        <div class="icon">&#x1F6F5;</div>
+        <div>
+          <h1>Pizzería Pro</h1>
+          <span>App Repartidor</span>
+        </div>
+      </div>
+      <div class="conn-pill conn-offline" id="conn-pill">
+        <div class="conn-dot"></div>
+        <span id="conn-pill-text">DEMO</span>
+      </div>
+    </div>
+    <div class="header-repartidor">
+      <div class="rep-avatar" id="rep-avatar">M</div>
+      <div class="rep-info">
+        <div class="rep-name" id="rep-name">Miguel Torres</div>
+        <div class="rep-stats" id="rep-stats">0 entregas hoy &middot; $0 recaudado</div>
+      </div>
+      <div class="estado-toggle disponible" id="estado-toggle" onclick="toggleEstado()">
+        <div class="estado-dot"></div>
+        <span class="estado-label" id="estado-label">Disponible</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- TAB BAR -->
+  <nav class="tab-bar">
+    <button class="tab-btn active" id="tab-pendientes" onclick="setTab('pendientes')">
+      <span class="tab-icon">&#x23F3;</span>
+      <span class="tab-label">Pendientes</span>
+      <div class="tab-badge" id="badge-pendientes" style="display:none">0</div>
+    </button>
+    <button class="tab-btn" id="tab-en-curso" onclick="setTab('en-curso')">
+      <span class="tab-icon">&#x1F6F5;</span>
+      <span class="tab-label">En Curso</span>
+      <div class="tab-badge" id="badge-encurso" style="display:none">0</div>
+    </button>
+    <button class="tab-btn" id="tab-historial" onclick="setTab('historial')">
+      <span class="tab-icon">&#x1F4CB;</span>
+      <span class="tab-label">Historial</span>
+    </button>
+  </nav>
+
+  <!-- CONTENT -->
+  <div class="tab-content active" id="content-pendientes"></div>
+  <div class="tab-content" id="content-en-curso"></div>
+  <div class="tab-content" id="content-historial"></div>
+
+</div><!-- /app-wrapper -->
+
+<script>
+/* ── DEMO DATA ──────────────────────────────────────────────────────────────── */
+const ENTREGAS_DEMO = [
+  {
+    id: 1, numero: '002', estado: 'asignado',
+    cliente: 'Juan García', telefono: '1145678901',
+    direccion: 'Av. Corrientes 1234, piso 2, depto B',
+    barrio: 'Centro', referencia: 'Edificio rojo con portero',
+    items: 'Pizza Napolitana x2, Empanada de Carne x4',
+    total: 3200, metodoPago: 'tarjeta',
+    hora_salida: '20:15', hora_estimada: '20:35'
+  },
+  {
+    id: 2, numero: '005', estado: 'pendiente',
+    cliente: 'María López', telefono: '1198765432',
+    direccion: 'Lavalle 567, 3°A',
+    barrio: 'Once', referencia: 'Timbre 3A',
+    items: 'Pizza Fugazzeta Grande x1, Agua Mineral x3',
+    total: 2600, metodoPago: 'efectivo',
+    hora_salida: null, hora_estimada: '20:50'
+  }
+];
+
+const HISTORIAL_DEMO = [
+  { id:10, numero:'001', cliente:'Roberto Silva', items:'Pizza Muzarella Grande x1', total:1800, metodoPago:'efectivo', hora_entrega:'19:42' },
+  { id:11, numero:'003', cliente:'Laura Fernández', items:'Pizza Napolitana x2, Bebida x2', total:3400, metodoPago:'tarjeta', hora_entrega:'19:58' },
+];
+
+/* ── STATE ──────────────────────────────────────────────────────────────────── */
+let entregas = ENTREGAS_DEMO.map(e => ({...e}));
+let historial = HISTORIAL_DEMO.map(e => ({...e}));
+let disponible = true;
+let currentTab = 'pendientes';
+let problemaPedidoId = null;
+let socket = null;
+
+/* ── UTILS ──────────────────────────────────────────────────────────────────── */
+function fmt$(n){ return '$' + Number(n).toLocaleString('es-AR'); }
+
+function mapsLink(direccion, barrio) {
+  const q = encodeURIComponent(`${direccion}, ${barrio}, Buenos Aires, Argentina`);
+  return `https://maps.google.com/?q=${q}`;
+}
+
+/* ── RENDER PEDIDO CARD ─────────────────────────────────────────────────────── */
+function renderPedidoCard(e) {
+  // Estado badge
+  const badgeMap = {
+    pendiente:  ['badge-pendiente-e', '&#x23F3; PENDIENTE'],
+    asignado:   ['badge-asignado',    '&#x26A1; ASIGNADO'],
+    'en-camino':['badge-en-camino',   '&#x1F6F5; EN CAMINO'],
+    entregado:  ['badge-entregado',   '&#x2713; ENTREGADO']
+  };
+  const [badgeClass, badgeLabel] = badgeMap[e.estado] || ['badge-pendiente-e', e.estado.toUpperCase()];
+
+  const horaSalida = e.hora_salida
+    ? `<div class="horario-val">${e.hora_salida}</div>`
+    : `<div class="horario-val pendiente-val">por salir</div>`;
+
+  const pagoClass = e.metodoPago === 'efectivo' ? 'pago-efectivo' : 'pago-tarjeta';
+  const pagoLabel = e.metodoPago === 'efectivo' ? '&#x1F4B5; EFECTIVO' : '&#x1F4B3; TARJETA';
+
+  // Action buttons según estado
+  let actionsHtml = '';
+  if (e.estado === 'asignado') {
+    actionsHtml = `
+      <div class="pedido-actions">
+        <a class="btn-action btn-llamar" href="tel:${e.telefono}">
+          <span class="btn-icon">&#x1F4DE;</span>LLAMAR
+        </a>
+        <a class="btn-action btn-mapa" href="${mapsLink(e.direccion, e.barrio)}" target="_blank" rel="noopener">
+          <span class="btn-icon">&#x1F5FA;&#xFE0F;</span>MAPA
+        </a>
+        <button class="btn-action btn-iniciar-viaje" onclick="iniciarViaje(${e.id})">
+          <span class="btn-icon">&#x1F6F5;</span>INICIAR VIAJE
+        </button>
+        <button class="btn-action btn-problema" onclick="openProblema(${e.id})">
+          <span class="btn-icon">&#x26A0;&#xFE0F;</span>REPORTAR PROBLEMA
+        </button>
+      </div>`;
+  } else if (e.estado === 'en-camino') {
+    actionsHtml = `
+      <div class="pedido-actions">
+        <a class="btn-action btn-llamar" href="tel:${e.telefono}">
+          <span class="btn-icon">&#x1F4DE;</span>LLAMAR
+        </a>
+        <a class="btn-action btn-mapa" href="${mapsLink(e.direccion, e.barrio)}" target="_blank" rel="noopener">
+          <span class="btn-icon">&#x1F5FA;&#xFE0F;</span>MAPA
+        </a>
+        <button class="btn-action btn-confirmar" onclick="confirmarEntrega(${e.id})">
+          <span class="btn-icon">&#x2705;</span>CONFIRMAR ENTREGA
+        </button>
+        <button class="btn-action btn-problema" onclick="openProblema(${e.id})">
+          <span class="btn-icon">&#x26A0;&#xFE0F;</span>REPORTAR PROBLEMA
+        </button>
+      </div>`;
+  } else {
+    actionsHtml = `
+      <div class="pedido-actions">
+        <a class="btn-action btn-llamar" href="tel:${e.telefono}">
+          <span class="btn-icon">&#x1F4DE;</span>LLAMAR
+        </a>
+        <a class="btn-action btn-mapa" href="${mapsLink(e.direccion, e.barrio)}" target="_blank" rel="noopener">
+          <span class="btn-icon">&#x1F5FA;&#xFE0F;</span>MAPA
+        </a>
+      </div>`;
+  }
+
+  return `
+    <div class="pedido-card" id="pedido-${e.id}">
+      <div class="pedido-head">
+        <div class="pedido-num"><span>#</span>${e.numero}</div>
+        <div class="pedido-estado">
+          <span class="badge-estado ${badgeClass}">${badgeLabel}</span>
+          ${e.hora_estimada ? `<div class="pedido-tiempo">Est. entrega: <strong>${e.hora_estimada}</strong></div>` : ''}
+        </div>
+      </div>
+
+      <div class="pedido-items-line">&#x1F355; ${e.items}</div>
+
+      <div class="pedido-info">
+        <div class="info-row">
+          <span class="info-icon">&#x1F464;</span>
+          <div class="info-text">
+            <strong>${e.cliente}</strong>
+          </div>
+        </div>
+        <div class="info-row">
+          <span class="info-icon">&#x1F4DE;</span>
+          <div class="info-text">
+            <a href="tel:${e.telefono}" style="color:var(--accent2);font-weight:700;text-decoration:none">
+              ${e.telefono.replace(/(\d{2})(\d{4})(\d{4})/, '$1-$2-$3')}
+            </a>
+          </div>
+        </div>
+        <div class="info-row">
+          <span class="info-icon">&#x1F4CD;</span>
+          <div class="info-text">
+            <strong>${e.direccion}</strong>
+            <span class="info-sub">Barrio: ${e.barrio}</span>
+            ${e.referencia ? `<div class="info-ref">Ref: ${e.referencia}</div>` : ''}
+          </div>
+        </div>
+      </div>
+
+      <div class="pago-row">
+        <div>
+          <div style="font-size:10px;font-weight:700;color:#9c7a00;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Total a cobrar</div>
+          <div class="pago-monto">${fmt$(e.total)}</div>
+        </div>
+        <span class="pago-method ${pagoClass}">${pagoLabel}</span>
+      </div>
+
+      <div class="horarios-row">
+        <div class="horario-box">
+          <div class="horario-label">&#x1F551; Sale</div>
+          ${horaSalida}
+        </div>
+        <div class="horario-box">
+          <div class="horario-label">&#x1F3AF; Est. llegada</div>
+          <div class="horario-val">${e.hora_estimada || '--'}</div>
+        </div>
+      </div>
+
+      ${actionsHtml}
+    </div>
+  `;
+}
+
+/* ── RENDER HISTORIAL ───────────────────────────────────────────────────────── */
+function renderHistorial() {
+  const container = document.getElementById('content-historial');
+  if (historial.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="es-icon">&#x1F4CB;</div>
+        <p>No hay entregas registradas hoy</p>
+      </div>`;
+    return;
+  }
+
+  const totalRecaudado = historial.reduce((s, e) => s + e.total, 0);
+  const totalEfectivo = historial.filter(e => e.metodoPago === 'efectivo').reduce((s, e) => s + e.total, 0);
+  const totalTarjeta = historial.filter(e => e.metodoPago === 'tarjeta').reduce((s, e) => s + e.total, 0);
+
+  const summaryHtml = `
+    <div class="historial-summary">
+      <h3>Resumen del día</h3>
+      <div class="resumen-grid">
+        <div class="resumen-box">
+          <div class="resumen-num">${historial.length}</div>
+          <div class="resumen-label">Entregas</div>
+        </div>
+        <div class="resumen-box">
+          <div class="resumen-num">${fmt$(totalEfectivo)}</div>
+          <div class="resumen-label">Efectivo</div>
+        </div>
+        <div class="resumen-box">
+          <div class="resumen-num">${fmt$(totalTarjeta)}</div>
+          <div class="resumen-label">Tarjeta</div>
+        </div>
+      </div>
+      <div class="resumen-total">
+        <span>Total recaudado</span>
+        <strong>${fmt$(totalRecaudado)}</strong>
+      </div>
+    </div>`;
+
+  const listHtml = `
+    <div class="historial-list">
+      ${historial.map(e => `
+        <div class="historial-item">
+          <div class="hist-num">#${e.numero}</div>
+          <div class="hist-info">
+            <div class="hist-cliente">${e.cliente}</div>
+            <div class="hist-items">${e.items}</div>
+          </div>
+          <div class="hist-right">
+            <div class="hist-monto">${fmt$(e.total)}</div>
+            <div class="hist-hora">${e.hora_entrega}</div>
+            <div class="hist-badge">Entregado</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>`;
+
+  container.innerHTML = summaryHtml + listHtml;
+}
+
+/* ── RENDER ALL ─────────────────────────────────────────────────────────────── */
+function renderAll(newId) {
+  const pendientes = entregas.filter(e => e.estado === 'pendiente' || e.estado === 'asignado');
+  const enCurso    = entregas.filter(e => e.estado === 'en-camino');
+
+  // Pendientes tab
+  const pContainer = document.getElementById('content-pendientes');
+  if (pendientes.length === 0) {
+    pContainer.innerHTML = `
+      <div class="empty-state">
+        <div class="es-icon">&#x1F7E2;</div>
+        <p>Sin pedidos pendientes</p>
+      </div>`;
+  } else {
+    pContainer.innerHTML = pendientes.map(e => renderPedidoCard(e)).join('');
+  }
+
+  // En curso tab
+  const cContainer = document.getElementById('content-en-curso');
+  if (enCurso.length === 0) {
+    cContainer.innerHTML = `
+      <div class="empty-state">
+        <div class="es-icon">&#x1F6F5;</div>
+        <p>Ningún pedido en camino</p>
+      </div>`;
+  } else {
+    cContainer.innerHTML = enCurso.map(e => renderPedidoCard(e)).join('');
+  }
+
+  // Historial tab
+  renderHistorial();
+
+  // Badges
+  const bPend = document.getElementById('badge-pendientes');
+  bPend.textContent = pendientes.length;
+  bPend.style.display = pendientes.length > 0 ? 'flex' : 'none';
+
+  const bCurso = document.getElementById('badge-encurso');
+  bCurso.textContent = enCurso.length;
+  bCurso.style.display = enCurso.length > 0 ? 'flex' : 'none';
+
+  // Resumen repartidor
+  document.getElementById('rep-stats').textContent =
+    `${historial.length} entregas hoy · ${fmt$(historial.reduce((s,e)=>s+e.total,0))} recaudado`;
+
+  // New arrival animation
+  if (newId != null) {
+    const el = document.getElementById(`pedido-${newId}`);
+    if (el) el.classList.add('new-arrival');
+  }
+}
+
+/* ── TABS ───────────────────────────────────────────────────────────────────── */
+function setTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById(`tab-${tab}`).classList.add('active');
+  document.getElementById(`content-${tab}`).classList.add('active');
+}
+
+/* ── ACCIONES PEDIDO ────────────────────────────────────────────────────────── */
+function iniciarViaje(id) {
+  const e = entregas.find(x => x.id === id);
+  if (!e) return;
+  e.estado = 'en-camino';
+  const now = new Date();
+  if (!e.hora_salida) {
+    e.hora_salida = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  }
+  renderAll(null);
+  setTab('en-curso');
+  showNotif(`Viaje iniciado — #${e.numero} en camino`);
+  if (socket && socket.connected) socket.emit('entrega:update', { id, estado: 'en-camino' });
+}
+
+function confirmarEntrega(id) {
+  const e = entregas.find(x => x.id === id);
+  if (!e) return;
+  entregas = entregas.filter(x => x.id !== id);
+  const now = new Date();
+  historial.unshift({
+    id: e.id,
+    numero: e.numero,
+    cliente: e.cliente,
+    items: e.items,
+    total: e.total,
+    metodoPago: e.metodoPago,
+    hora_entrega: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`
+  });
+  vibrateDevice([100, 50, 100]);
+  renderAll(null);
+  setTab('historial');
+  showNotif(`Entrega confirmada — #${e.numero} ✓`);
+  if (socket && socket.connected) socket.emit('entrega:update', { id, estado: 'entregado' });
+}
+
+/* ── PROBLEMA ───────────────────────────────────────────────────────────────── */
+function openProblema(id) {
+  problemaPedidoId = id;
+  document.getElementById('modal-problema').classList.add('open');
+}
+function closeProblema(e) {
+  if (e && e.target !== document.getElementById('modal-problema')) return;
+  document.getElementById('modal-problema').classList.remove('open');
+  problemaPedidoId = null;
+}
+function reportarProblema(motivo) {
+  document.getElementById('modal-problema').classList.remove('open');
+  if (problemaPedidoId) {
+    const e = entregas.find(x => x.id === problemaPedidoId);
+    const num = e ? `#${e.numero}` : '';
+    showNotif(`Problema reportado ${num}: ${motivo}`);
+    if (socket && socket.connected) {
+      socket.emit('entrega:problema', { id: problemaPedidoId, motivo });
+    }
+  }
+  problemaPedidoId = null;
+}
+
+/* ── ESTADO TOGGLE ──────────────────────────────────────────────────────────── */
+function toggleEstado() {
+  disponible = !disponible;
+  const toggle = document.getElementById('estado-toggle');
+  const label  = document.getElementById('estado-label');
+  if (disponible) {
+    toggle.classList.add('disponible');
+    label.textContent = 'Disponible';
+  } else {
+    toggle.classList.remove('disponible');
+    label.textContent = 'No disponible';
+  }
+  if (socket && socket.connected) {
+    socket.emit('repartidor:estado', { disponible });
+  }
+}
+
+/* ── NOTIF BANNER ───────────────────────────────────────────────────────────── */
+function showNotif(msg) {
+  const banner = document.getElementById('notif-banner');
+  document.getElementById('notif-text').textContent = msg;
+  banner.style.display = 'flex';
+  clearTimeout(banner._timeout);
+  banner._timeout = setTimeout(closeNotif, 4000);
+}
+function closeNotif() {
+  document.getElementById('notif-banner').style.display = 'none';
+}
+
+/* ── VIBRATION ──────────────────────────────────────────────────────────────── */
+function vibrateDevice(pattern) {
+  try {
+    if (navigator.vibrate) navigator.vibrate(pattern);
+  } catch(e) {}
+}
+
+/* ── SOCKET.IO ──────────────────────────────────────────────────────────────── */
+function initSocket() {
+  try {
+    if (typeof io === 'undefined') return;
+    socket = io({ transports: ['websocket', 'polling'] });
+
+    socket.on('connect', () => {
+      const pill = document.getElementById('conn-pill');
+      pill.className = 'conn-pill conn-online';
+      document.getElementById('conn-pill-text').textContent = 'EN VIVO';
+    });
+
+    socket.on('disconnect', () => {
+      const pill = document.getElementById('conn-pill');
+      pill.className = 'conn-pill conn-offline';
+      document.getElementById('conn-pill-text').textContent = 'DEMO';
+    });
+
+    socket.on('entrega:nueva', (entrega) => {
+      if (entregas.find(e => e.id === entrega.id)) return;
+      entregas.push(entrega);
+      vibrateDevice([200, 100, 200, 100, 400]);
+      renderAll(entrega.id);
+      setTab('pendientes');
+      showNotif(`Nuevo pedido asignado — #${entrega.numero}!`);
+    });
+
+    socket.on('entrega:update', ({ id, estado }) => {
+      const e = entregas.find(x => x.id === id);
+      if (e) { e.estado = estado; renderAll(null); }
+    });
+
+  } catch(e) {
+    console.warn('Socket.io no disponible — modo demo');
+  }
+}
+
+/* ── INIT ───────────────────────────────────────────────────────────────────── */
+renderAll(null);
+
+const script = document.createElement('script');
+script.src = '/socket.io/socket.io.js';
+script.onload = () => initSocket();
+script.onerror = () => console.info('Socket.io no disponible — modo demo');
+document.head.appendChild(script);
+</script>
+</body>
+</html>
