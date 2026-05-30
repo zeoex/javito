@@ -3,953 +3,1536 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>La Isla POS – Raquitos</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<title>PIZZERÍA PRO – Sistema POS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Barlow',sans-serif;background:#f7fafc;color:#2d3748;overflow-x:hidden}
-a{text-decoration:none;color:inherit}
-
-/* LOGIN */
-#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1a202c 0%,#2d3748 100%)}
-.login-box{background:#fff;border-radius:12px;padding:48px 40px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+:root{--red:#e63946;--blue:#1d3557;--light:#f8f9fa;--white:#fff;--gray:#6c757d;--border:#dee2e6;--success:#28a745;--warning:#fd7e14;--danger:#dc3545;--info:#17a2b8}
+body{font-family:'Inter',sans-serif;background:var(--light);color:#212529;overflow-x:hidden}
+/* === LOGIN === */
+#loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,#0d1b2a 0%,#1d3557 60%,#2a4a7f 100%);display:flex;align-items:center;justify-content:center;z-index:9999}
+.login-card{background:#fff;border-radius:16px;padding:48px 40px;width:100%;max-width:420px;box-shadow:0 24px 64px rgba(0,0,0,0.4)}
 .login-logo{text-align:center;margin-bottom:32px}
-.la-isla-logo-text{font-size:36px;font-weight:700;color:#ff5023;letter-spacing:-1px}
-.la-isla-logo-sub{font-size:12px;color:#718096;margin-top:4px}
-.login-box h2{font-size:20px;font-weight:600;color:#2d3748;margin-bottom:24px;text-align:center}
+.login-logo .emoji{font-size:56px;display:block;margin-bottom:8px}
+.login-logo h1{font-size:28px;font-weight:800;color:var(--blue);letter-spacing:-0.5px}
+.login-logo p{color:var(--gray);font-size:14px;margin-top:4px}
 .form-group{margin-bottom:18px}
-.form-group label{display:block;font-size:13px;font-weight:500;color:#4a5568;margin-bottom:6px}
-.form-group input{width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:'Barlow',sans-serif;font-size:14px;color:#2d3748;transition:border-color .2s}
-.form-group input:focus{outline:none;border-color:#ff5023}
-.btn-login{width:100%;padding:12px;background:#ff5023;color:#fff;border:none;border-radius:8px;font-family:'Barlow',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:background .2s;margin-top:8px}
-.btn-login:hover{background:#e8441e}
-.login-footer{text-align:center;margin-top:20px;font-size:12px;color:#a0aec0}
-.login-error{display:none;background:#fff5f5;border:1px solid #fc8181;color:#c53030;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px}
-
-/* APP */
+.form-group label{display:block;font-size:13px;font-weight:600;color:#495057;margin-bottom:6px}
+.form-group input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;font-family:'Inter',sans-serif;transition:border-color .2s}
+.form-group input:focus{outline:none;border-color:var(--red)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;border:none;border-radius:8px;font-size:14px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn-primary{background:var(--red);color:#fff}
+.btn-primary:hover{background:#c0392b}
+.btn-success{background:var(--success);color:#fff}
+.btn-success:hover{background:#218838}
+.btn-warning{background:var(--warning);color:#fff}
+.btn-warning:hover{background:#e36209}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-danger:hover{background:#c82333}
+.btn-secondary{background:#6c757d;color:#fff}
+.btn-secondary:hover{background:#545b62}
+.btn-outline{background:transparent;border:1.5px solid var(--border);color:#495057}
+.btn-outline:hover{background:var(--light)}
+.btn-sm{padding:7px 12px;font-size:13px}
+.btn-block{width:100%;margin-top:8px}
+.btn-lg{padding:14px 24px;font-size:16px}
+.login-demo{margin-top:20px;padding:14px;background:#f8f9fa;border-radius:8px;font-size:12.5px;color:#6c757d;text-align:center}
+.login-demo strong{color:#495057}
+.login-error{color:var(--danger);font-size:13px;text-align:center;margin-top:10px;display:none}
+/* === LAYOUT === */
 #app{display:none;height:100vh;overflow:hidden}
-.app-layout{display:flex;height:100vh}
-
-/* SIDEBAR */
-.sidebar{width:240px;background:#1a202c;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
-.sidebar-header{padding:18px 16px 14px;border-bottom:1px solid #2d3748}
-.sb-logo{display:flex;align-items:center;gap:10px}
-.sb-logo-icon{width:36px;height:36px;background:#ff5023;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;flex-shrink:0}
-.sb-logo-name{font-size:18px;font-weight:700;color:#fff;letter-spacing:-0.5px}
-.sb-logo-plan{font-size:10px;font-weight:700;color:#ff5023;letter-spacing:1px;margin-top:1px}
-.sb-biz{padding:10px 16px;border-bottom:1px solid #2d3748}
-.sb-biz-name{font-size:13px;font-weight:600;color:#e2e8f0}
-.sb-biz-user{font-size:11px;color:#718096;margin-top:2px}
-.sb-nav{padding:6px 0;flex:1}
-.ni{display:flex;align-items:center;gap:11px;padding:9px 16px;cursor:pointer;transition:all .15s;border-left:3px solid transparent;color:#a0aec0;font-size:13.5px;font-weight:400;user-select:none}
-.ni:hover{background:#2d3748;color:#e2e8f0}
-.ni.active{background:rgba(255,80,35,0.12);color:#ff5023;border-left-color:#ff5023;font-weight:500}
-.ni svg{width:17px;height:17px;flex-shrink:0;fill:currentColor;opacity:.85}
-.ni.active svg{opacity:1}
-.sb-sep{height:1px;background:#2d3748;margin:6px 12px}
-.sb-foot{padding:10px 14px;border-top:1px solid #2d3748;margin-top:auto}
-.sb-user{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:8px;cursor:pointer;transition:background .15s}
-.sb-user:hover{background:#2d3748}
-.sb-avatar{width:32px;height:32px;background:#ff5023;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:600;flex-shrink:0}
-.sb-uname{font-size:13px;color:#e2e8f0;font-weight:500}
-.sb-urole{font-size:11px;color:#718096}
-
-/* MAIN */
-.main-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
-
-/* TOPBAR */
-.topbar{height:60px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,.06)}
-.topbar-title{font-size:17px;font-weight:600;color:#2d3748}
-.topbar-right{display:flex;align-items:center;gap:14px}
-.topbar-clock{font-size:12px;color:#718096}
-.badge-pro{background:#ff5023;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:12px;letter-spacing:.6px}
-.badge-biz{font-size:13px;color:#4a5568;font-weight:500}
-.topbar-user{display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 10px;border-radius:8px;transition:background .15s;position:relative}
-.topbar-user:hover{background:#f7fafc}
-.t-avatar{width:32px;height:32px;background:#ff5023;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:600}
-.t-uname{font-size:13px;color:#2d3748;font-weight:500}
-.drop-arrow{font-size:9px;color:#718096;transition:transform .2s}
-.udrop{position:absolute;top:calc(100% + 8px);right:0;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);min-width:210px;z-index:1000;display:none;overflow:hidden}
-.udrop.open{display:block}
-.udrop-item{padding:10px 16px;font-size:13px;color:#2d3748;cursor:pointer;transition:background .15s;display:flex;align-items:center;gap:10px}
-.udrop-item:hover{background:#f7fafc}
-.udrop-item.danger{color:#e53e3e}
-.udrop-sep{height:1px;background:#e2e8f0}
-
-/* CONTENT */
-.content{flex:1;overflow-y:auto;padding:24px;background:#f7fafc}
+.sidebar{position:fixed;top:0;left:0;width:240px;height:100vh;background:var(--blue);display:flex;flex-direction:column;z-index:100}
+.sidebar-logo{padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,0.1)}
+.sidebar-logo .s-emoji{font-size:28px}
+.sidebar-logo h2{font-size:16px;font-weight:700;color:#fff;margin-top:4px}
+.sidebar-logo p{font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px}
+.sidebar-nav{flex:1;overflow-y:auto;padding:12px 0}
+.sidebar-nav::-webkit-scrollbar{width:4px}
+.sidebar-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.2);border-radius:2px}
+.nav-item{display:flex;align-items:center;gap:12px;padding:11px 20px;color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;cursor:pointer;transition:all .15s;border-left:3px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,0.07);color:#fff}
+.nav-item.active{background:rgba(230,57,70,0.2);color:#fff;border-left-color:var(--red)}
+.nav-item .nav-icon{font-size:18px;width:22px;text-align:center}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px}
+.sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,0.1)}
+.user-info{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.user-avatar{width:36px;height:36px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;flex-shrink:0}
+.user-name{font-size:13px;font-weight:600;color:#fff}
+.user-role{font-size:11px;color:rgba(255,255,255,0.5)}
+.main{margin-left:240px;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:60px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;flex-shrink:0}
+.topbar-title{font-size:20px;font-weight:700;color:var(--blue);flex:1}
+.topbar-badge{background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px}
+.topbar-time{font-size:13px;color:var(--gray)}
+.content{flex:1;overflow-y:auto;padding:24px}
+.content::-webkit-scrollbar{width:6px}
+.content::-webkit-scrollbar-thumb{background:#dee2e6;border-radius:3px}
 .section{display:none}
 .section.active{display:block}
-
-/* PAGE HEADER */
-.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.ph h1{font-size:20px;font-weight:700;color:#1a202c}
-.ph-actions{display:flex;gap:10px}
-
-/* CARDS */
-.card{background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.08);border:1px solid #e2e8f0}
-.card-h{padding:14px 20px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.card-title{font-size:14px;font-weight:600;color:#2d3748}
-.card-b{padding:20px}
-
-/* BUTTONS */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;line-height:1.4}
-.btn-pri{background:#ff5023;color:#fff}.btn-pri:hover{background:#e8441e}
-.btn-sec{background:#edf2f7;color:#4a5568;border:1px solid #e2e8f0}.btn-sec:hover{background:#e2e8f0}
-.btn-out{background:transparent;color:#ff5023;border:1.5px solid #ff5023}.btn-out:hover{background:#fff5f2}
-.btn-sm{padding:5px 10px;font-size:12px}
-.btn-full{width:100%;justify-content:center;padding:11px}
-
-/* TABLES */
-.dt{width:100%;border-collapse:collapse}
-.dt th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:#718096;text-transform:uppercase;letter-spacing:.5px;background:#f7fafc;border-bottom:2px solid #e2e8f0;white-space:nowrap}
-.dt td{padding:11px 14px;font-size:13px;color:#2d3748;border-bottom:1px solid #f0f4f8}
-.dt tr:hover td{background:#fafbfc}
-.dt tr:last-child td{border-bottom:none}
-
-/* STATS */
-.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
-.sc{background:#fff;border-radius:8px;padding:18px 20px;box-shadow:0 1px 3px rgba(0,0,0,.08);border:1px solid #e2e8f0}
-.sc-ico{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;font-size:18px}
-.sc-lbl{font-size:11px;color:#718096;font-weight:500;text-transform:uppercase;letter-spacing:.4px}
-.sc-val{font-size:24px;font-weight:700;color:#2d3748;margin-top:4px}
-.sc-sub{font-size:11px;color:#a0aec0;margin-top:3px}
-
-/* TABLE GRID */
-.room-tabs{display:flex;border-bottom:2px solid #e2e8f0;margin-bottom:20px}
-.rt{padding:9px 18px;font-size:13px;font-weight:500;color:#718096;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
-.rt.active{color:#ff5023;border-bottom-color:#ff5023}
-.tg{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:12px}
-.tc{background:#fff;border:2px solid #e2e8f0;border-radius:10px;padding:14px 10px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
-.tc:hover{border-color:#ff5023;box-shadow:0 4px 12px rgba(255,80,35,.15);transform:translateY(-1px)}
-.tc.occupied{border-color:#48bb78;background:#f0fff4}
-.tc.reserved{border-color:#f6ad55;background:#fffaf0}
-.tc.round{border-radius:50%;width:90px;height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.tc-num{font-size:20px;font-weight:700;color:#2d3748}
-.tc-lbl{font-size:11px;color:#718096;margin-top:3px}
-.status-bar{display:flex;gap:16px;margin-bottom:14px;padding:10px 14px;background:#f7fafc;border-radius:7px;font-size:12px;color:#4a5568}
-.sdot{width:9px;height:9px;border-radius:50%;margin-right:5px;display:inline-block}
-.sdot.free{background:#e2e8f0;border:2px solid #cbd5e0}
-.sdot.busy{background:#48bb78}
-.sdot.res{background:#f6ad55}
-
-/* PRODUCTS */
-.filter-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.fb{padding:6px 13px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1.5px solid #e2e8f0;background:#fff;color:#4a5568;transition:all .15s}
-.fb.active{border-color:#ff5023;background:#fff5f2;color:#ff5023}
-.fb:hover{border-color:#ff5023;color:#ff5023}
-.si{padding:8px 13px;border:1.5px solid #e2e8f0;border-radius:7px;font-family:'Barlow',sans-serif;font-size:13px;color:#2d3748;flex:1;max-width:240px}
-.si:focus{outline:none;border-color:#ff5023}
-
-/* FINANCE */
-.fs{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
-.fc{background:#fff;border-radius:8px;padding:20px;border:1px solid #e2e8f0;text-align:center}
-.fc-lbl{font-size:11px;color:#718096;font-weight:500;text-transform:uppercase;letter-spacing:.4px}
-.fc-val{font-size:28px;font-weight:700;margin-top:8px;color:#2d3748}
-.cbw{display:flex;flex-direction:column;gap:10px}
-.cbr{display:flex;align-items:center;gap:10px}
-.cb-lbl{width:75px;font-size:12px;color:#718096;text-align:right;flex-shrink:0}
-.cb-trk{flex:1;height:22px;background:#f0f4f8;border-radius:4px;overflow:hidden}
-.cb-fil{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:11px;font-weight:600;color:#fff}
-.cb-val{width:70px;font-size:12px;color:#2d3748;font-weight:500}
-
-/* ONBOARDING */
-.ob-banner{background:linear-gradient(135deg,#ff5023 0%,#ff7043 100%);border-radius:12px;padding:36px 40px;color:#fff;margin-bottom:24px;position:relative;overflow:hidden}
-.ob-banner::after{content:'';position:absolute;right:-20px;top:-20px;width:140px;height:140px;background:rgba(255,255,255,.1);border-radius:50%}
-.ob-banner::before{content:'';position:absolute;right:60px;bottom:-30px;width:100px;height:100px;background:rgba(255,255,255,.07);border-radius:50%}
-.ob-banner h2{font-size:22px;font-weight:700;margin-bottom:8px;position:relative}
-.ob-banner p{font-size:14px;opacity:.92;max-width:500px;line-height:1.6;position:relative}
-.ob-btn{margin-top:20px;background:#fff;color:#ff5023;padding:10px 24px;border-radius:8px;font-weight:600;font-size:14px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:all .15s;position:relative}
-.ob-btn:hover{background:#fff5f2;transform:translateY(-1px)}
-.steps-g{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
-.step{background:#fff;border-radius:8px;padding:18px;border:1px solid #e2e8f0;display:flex;gap:12px;align-items:flex-start}
-.step-ck{width:26px;height:26px;border-radius:50%;border:2px solid #e2e8f0;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;font-size:12px;color:#a0aec0}
-.step-ck.done{background:#48bb78;border-color:#48bb78;color:#fff}
-.step h4{font-size:13px;font-weight:600;color:#2d3748;margin-bottom:3px}
-.step p{font-size:12px;color:#718096;line-height:1.4}
-
-/* KDS */
-.kds-g{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-
-/* ADMIN */
-.ag{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.ac{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:18px;cursor:pointer;transition:all .2s}
-.ac:hover{border-color:#ff5023;box-shadow:0 4px 12px rgba(255,80,35,.1);transform:translateY(-1px)}
-.ac-ico{font-size:26px;margin-bottom:12px}
-.ac h4{font-size:13px;font-weight:600;color:#2d3748;margin-bottom:5px}
-.ac p{font-size:12px;color:#718096;line-height:1.4}
-
-/* DELIVERY */
-.tog{width:44px;height:24px;background:#e2e8f0;border-radius:12px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
-.tog.on{background:#48bb78}
-.tog::after{content:'';position:absolute;width:20px;height:20px;background:#fff;border-radius:50%;top:2px;left:2px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
-.tog.on::after{left:22px}
-
-/* TAGS */
-.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
-.tg-green{background:#c6f6d5;color:#276749}
-.tg-red{background:#fed7d7;color:#9b2c2c}
-.tg-yellow{background:#fefcbf;color:#744210}
-.tg-blue{background:#bee3f8;color:#2a4365}
-.tg-gray{background:#e2e8f0;color:#4a5568}
-.tg-orange{background:#fde8e1;color:#c05621}
-.tg-purple{background:#e9d8fd;color:#553c9a}
-
-/* EMPTY */
-.empty{text-align:center;padding:44px 24px;color:#a0aec0}
-.empty-ico{font-size:44px;margin-bottom:10px}
-.empty p{font-size:13px}
-
-/* MODAL */
-.m-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;align-items:center;justify-content:center}
-.m-overlay.open{display:flex}
-.modal{background:#fff;border-radius:12px;min-width:400px;max-width:90vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25)}
-.m-head{padding:18px 22px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between}
-.m-head h3{font-size:16px;font-weight:600;color:#2d3748}
-.m-close{cursor:pointer;color:#718096;font-size:20px;line-height:1;padding:4px 6px;border-radius:4px}
-.m-close:hover{background:#f7fafc}
-.m-body{padding:24px;overflow-y:auto}
-.m-foot{padding:14px 22px;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;gap:10px}
+/* === CARDS === */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;margin-bottom:24px}
+.stat-card{background:#fff;border-radius:10px;padding:18px 16px;box-shadow:0 1px 4px rgba(0,0,0,0.07);border-left:4px solid transparent}
+.stat-card.red{border-color:var(--red)}
+.stat-card.blue{border-color:var(--blue)}
+.stat-card.green{border-color:var(--success)}
+.stat-card.orange{border-color:var(--warning)}
+.stat-card.teal{border-color:var(--info)}
+.stat-card.purple{border-color:#6f42c1}
+.stat-label{font-size:12px;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.5px}
+.stat-value{font-size:28px;font-weight:800;color:var(--blue);margin:6px 0 2px;line-height:1}
+.stat-sub{font-size:11px;color:var(--gray)}
+.card{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.07);margin-bottom:20px}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.card-header h3{font-size:15px;font-weight:700;color:var(--blue);flex:1}
+.card-body{padding:20px}
+/* === TABLES === */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{background:#f8f9fa;padding:10px 14px;text-align:left;font-size:12px;font-weight:700;color:#495057;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid var(--border)}
+td{padding:11px 14px;border-bottom:1px solid #f1f3f4;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafafa}
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11.5px;font-weight:600}
+.badge-success{background:#d4edda;color:#155724}
+.badge-warning{background:#fff3cd;color:#856404}
+.badge-danger{background:#f8d7da;color:#721c24}
+.badge-info{background:#d1ecf1;color:#0c5460}
+.badge-secondary{background:#e2e3e5;color:#383d41}
+.badge-primary{background:#cce5ff;color:#004085}
+/* === MESAS === */
+.mesas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px}
+.mesa-card{border-radius:10px;padding:16px 14px;cursor:pointer;transition:all .2s;border:2px solid transparent;text-align:center;position:relative}
+.mesa-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.12)}
+.mesa-card.libre{background:#d4edda;border-color:#c3e6cb}
+.mesa-card.ocupada{background:#fff3cd;border-color:#ffeeba}
+.mesa-card.cuenta{background:#f8d7da;border-color:#f5c6cb}
+.mesa-num{font-size:28px;font-weight:800;color:var(--blue)}
+.mesa-estado{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:4px 0}
+.mesa-libre .mesa-estado,.mesa-card.libre .mesa-estado{color:#155724}
+.mesa-card.ocupada .mesa-estado{color:#856404}
+.mesa-card.cuenta .mesa-estado{color:#721c24}
+.mesa-info{font-size:11px;color:#6c757d;margin-top:4px}
+/* === DELIVERY === */
+.delivery-pipeline{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;margin-bottom:20px}
+.pipeline-col{flex:0 0 220px;background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
+.pipeline-header{padding:12px 16px;border-radius:10px 10px 0 0;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:center}
+.pipeline-nuevo .pipeline-header{background:#cce5ff;color:#004085}
+.pipeline-cocina .pipeline-header{background:#fff3cd;color:#856404}
+.pipeline-listo .pipeline-header{background:#d4edda;color:#155724}
+.pipeline-camino .pipeline-header{background:#d1ecf1;color:#0c5460}
+.pipeline-entregado .pipeline-header{background:#e2e3e5;color:#383d41}
+.pipeline-body{padding:10px;display:flex;flex-direction:column;gap:8px;min-height:100px}
+.delivery-card{background:#f8f9fa;border-radius:8px;padding:12px;font-size:12.5px}
+.delivery-card-num{font-weight:700;color:var(--blue);font-size:13px}
+.delivery-card-client{color:#495057;margin:3px 0}
+.delivery-card-items{color:var(--gray);font-size:11.5px;margin:3px 0}
+.delivery-card-total{font-weight:700;color:var(--blue);margin-top:6px}
+.delivery-card-actions{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
+/* === FORMS === */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-row.cols-3{grid-template-columns:1fr 1fr 1fr}
+/* === MODAL === */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:560px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+.modal-lg{max-width:720px}
+.modal-header{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.modal-header h3{font-size:16px;font-weight:700;color:var(--blue);flex:1}
+.modal-close{background:none;border:none;font-size:22px;color:var(--gray);cursor:pointer;line-height:1;padding:2px}
+.modal-close:hover{color:var(--danger)}
+.modal-body{padding:20px;overflow-y:auto;flex:1}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+/* === CHART === */
+.chart-wrap{overflow-x:auto}
+.bar-chart{display:flex;align-items:flex-end;gap:8px;height:140px;padding-top:10px}
+.bar-group{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:28px}
+.bar{width:100%;background:linear-gradient(180deg,var(--red),#c0392b);border-radius:4px 4px 0 0;transition:height .5s}
+.bar-label{font-size:10px;color:var(--gray);white-space:nowrap}
+.bar-val{font-size:10px;font-weight:600;color:#495057}
+/* === REPORTES PIE === */
+.pie-legend{display:flex;flex-direction:column;gap:8px}
+.pie-item{display:flex;align-items:center;gap:8px;font-size:13px}
+.pie-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+/* === MISC === */
+.section-header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.section-header h2{font-size:22px;font-weight:800;color:var(--blue);flex:1}
+.tabs{display:flex;gap:4px;margin-bottom:20px;background:#f1f3f4;padding:4px;border-radius:8px;width:fit-content}
+.tab{padding:7px 18px;border-radius:6px;font-size:13px;font-weight:600;color:var(--gray);cursor:pointer;transition:all .15s}
+.tab.active{background:#fff;color:var(--blue);box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+.filter-bar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.search-input{padding:9px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:13.5px;font-family:'Inter',sans-serif;width:260px}
+.search-input:focus{outline:none;border-color:var(--red)}
+select.form-control{padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13.5px;font-family:'Inter',sans-serif;background:#fff}
+select.form-control:focus{outline:none;border-color:var(--red)}
+input.form-control{padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13.5px;font-family:'Inter',sans-serif;width:100%}
+input.form-control:focus{outline:none;border-color:var(--red)}
+.text-muted{color:var(--gray)}
+.text-right{text-align:right}
+.mt-1{margin-top:8px}.mt-2{margin-top:16px}.mt-3{margin-top:24px}
+.mb-1{margin-bottom:8px}.mb-2{margin-bottom:16px}
+.flex{display:flex}.items-center{align-items:center}.gap-2{gap:8px}.gap-3{gap:12px}
+.ml-auto{margin-left:auto}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.empty-state{text-align:center;padding:48px 20px;color:var(--gray)}
+.empty-state .empty-icon{font-size:48px;margin-bottom:12px}
+.empty-state p{font-size:14px}
+.toast{position:fixed;bottom:24px;right:24px;background:#333;color:#fff;padding:12px 20px;border-radius:8px;font-size:13.5px;font-weight:500;z-index:9999;transform:translateY(80px);opacity:0;transition:all .3s}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{background:var(--success)}
+.toast.error{background:var(--danger)}
+.caja-total{font-size:32px;font-weight:800;color:var(--blue)}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#e9ecef;color:#495057}
 </style>
 </head>
 <body>
 
 <!-- LOGIN -->
-<div id="login-screen">
-  <div class="login-box">
+<div id="loginScreen">
+  <div class="login-card">
     <div class="login-logo">
-      <div class="la-isla-logo-text">La Isla</div>
-      <div class="la-isla-logo-sub">Sistema de gestión gastronómica</div>
+      <span class="emoji">🍕</span>
+      <h1>PIZZERÍA PRO</h1>
+      <p>Sistema de gestión integral</p>
     </div>
-    <h2>Iniciar sesión</h2>
-    <div class="login-error" id="login-error">Usuario o contraseña incorrectos</div>
     <div class="form-group">
-      <label>Usuario</label>
-      <input type="text" id="login-user" placeholder="admin@raquitos" value="admin@raquitos" autocomplete="username"/>
+      <label>Email</label>
+      <input type="email" id="loginEmail" class="form-control" placeholder="admin@pizzeriapro.com" value="admin@pizzeriapro.com"/>
     </div>
     <div class="form-group">
       <label>Contraseña</label>
-      <input type="password" id="login-pass" placeholder="••••••••" value="123456" autocomplete="current-password"/>
+      <input type="password" id="loginPass" class="form-control" placeholder="••••••••" value="admin123"/>
     </div>
-    <button class="btn-login" onclick="doLogin()">Iniciar sesión</button>
-    <div class="login-footer">La Isla POS © 2026 · Todos los derechos reservados</div>
+    <button class="btn btn-primary btn-block btn-lg" onclick="doLogin()">Ingresar</button>
+    <div class="login-error" id="loginError">Email o contraseña incorrectos</div>
+    <div class="login-demo">
+      <strong>Demo:</strong> admin@pizzeriapro.com / admin123<br>
+      <strong>Mozo:</strong> carlos@pizzeriapro.com / mozo123
+    </div>
   </div>
 </div>
 
 <!-- APP -->
 <div id="app">
-<div class="app-layout">
-
-<!-- SIDEBAR -->
-<nav class="sidebar">
-  <div class="sidebar-header">
-    <div class="sb-logo">
-      <div class="sb-logo-icon">f</div>
-      <div>
-        <div class="sb-logo-name">La Isla</div>
-        <div class="sb-logo-plan">PRO</div>
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <span class="s-emoji">🍕</span>
+      <h2>PIZZERÍA PRO</h2>
+      <p id="sidebarBiz">Sistema POS</p>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" data-section="dashboard" onclick="navTo('dashboard',this)">
+        <span class="nav-icon">📊</span> Dashboard
       </div>
-    </div>
-  </div>
-  <div class="sb-biz">
-    <div class="sb-biz-name">Raquitos</div>
-    <div class="sb-biz-user">Ricardo Gonzalez · admin</div>
-  </div>
-  <div class="sb-nav">
-    <div class="ni active" onclick="nav('tables')" id="nav-tables">
-      <svg viewBox="0 0 20 20"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h5a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zm9 0a1 1 0 011-1h3a1 1 0 011 1v6a1 1 0 01-1 1h-3a1 1 0 01-1-1v-6z"/></svg>
-      Restaurante
-    </div>
-    <div class="ni" onclick="nav('sales')" id="nav-sales">
-      <svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg>
-      Ventas
-    </div>
-    <div class="ni" onclick="nav('expenses')" id="nav-expenses">
-      <svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd"/></svg>
-      Gastos
-    </div>
-    <div class="ni" onclick="nav('finance')" id="nav-finance">
-      <svg viewBox="0 0 20 20"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>
-      Finanzas
-    </div>
-    <div class="ni" onclick="nav('invoices')" id="nav-invoices">
-      <svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>
-      Facturación
-    </div>
-    <div class="ni" onclick="nav('products')" id="nav-products">
-      <svg viewBox="0 0 20 20"><path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/></svg>
-      Productos
-    </div>
-    <div class="ni" onclick="nav('customers')" id="nav-customers">
-      <svg viewBox="0 0 20 20"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/></svg>
-      Clientes
-    </div>
-    <div class="ni" onclick="nav('providers')" id="nav-providers">
-      <svg viewBox="0 0 20 20"><path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/><path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/></svg>
-      Proveedores
-    </div>
-    <div class="ni" onclick="nav('reports')" id="nav-reports">
-      <svg viewBox="0 0 20 20"><path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"/><path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z"/></svg>
-      Reportes
-    </div>
-    <div class="sb-sep"></div>
-    <div class="ni" onclick="nav('payments')" id="nav-payments">
-      <svg viewBox="0 0 20 20"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"/><path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"/></svg>
-      La Isla Pagos
-    </div>
-    <div class="ni" onclick="nav('kds')" id="nav-kds">
-      <svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clip-rule="evenodd"/></svg>
-      Monitor de Cocina
-    </div>
-    <div class="ni" onclick="nav('delivery')" id="nav-delivery">
-      <svg viewBox="0 0 20 20"><path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/><path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1v-3h2.586l2.707-2.707A1 1 0 0016.293 9H15V6a1 1 0 00-1-1h-1V4a1 1 0 00-1-1H3z"/></svg>
-      Tu Delivery
-    </div>
-    <div class="ni" onclick="nav('admin')" id="nav-admin">
-      <svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
-      Administración
-    </div>
-  </div>
-  <div class="sb-foot">
-    <div class="sb-user">
-      <div class="sb-avatar">R</div>
-      <div>
-        <div class="sb-uname">Ricardo G.</div>
-        <div class="sb-urole">Administrador</div>
+      <div class="nav-item" data-section="mesas" onclick="navTo('mesas',this)">
+        <span class="nav-icon">🪑</span> Mesas <span class="nav-badge" id="mesasBadge">0</span>
       </div>
-    </div>
-  </div>
-</nav>
-
-<!-- MAIN -->
-<div class="main-area">
-  <div class="topbar">
-    <div class="topbar-title" id="page-title">Restaurante</div>
-    <div class="topbar-right">
-      <div class="topbar-clock" id="clock"></div>
-      <span class="badge-pro">PRO</span>
-      <span class="badge-biz">Raquitos</span>
-      <div class="topbar-user" onclick="toggleUD(event)">
-        <div class="t-avatar">R</div>
-        <span class="t-uname">admin</span>
-        <span class="drop-arrow" id="darrow">▼</span>
-        <div class="udrop" id="udrop">
-          <div class="udrop-item" onclick="nav('mi-negocio')">🏪 Mi Negocio</div>
-          <div class="udrop-item" onclick="nav('primeros-pasos')">🚀 Primeros pasos</div>
-          <div class="udrop-item">💳 Pagos</div>
-          <div class="udrop-item">📦 Planes y módulos</div>
-          <div class="udrop-sep"></div>
-          <div class="udrop-item">🗑️ Borrado de datos</div>
-          <div class="udrop-item" style="color:#ff5023;font-weight:500">🎁 Gana 2 meses gratis</div>
-          <div class="udrop-sep"></div>
-          <div class="udrop-item danger" onclick="doLogout()">↩ Cerrar sesión</div>
+      <div class="nav-item" data-section="delivery" onclick="navTo('delivery',this)">
+        <span class="nav-icon">🛵</span> Delivery <span class="nav-badge" id="deliveryBadge">0</span>
+      </div>
+      <div class="nav-item" data-section="productos" onclick="navTo('productos',this)">
+        <span class="nav-icon">🍕</span> Productos
+      </div>
+      <div class="nav-item" data-section="stock" onclick="navTo('stock',this)">
+        <span class="nav-icon">📦</span> Stock
+      </div>
+      <div class="nav-item" data-section="caja" onclick="navTo('caja',this)">
+        <span class="nav-icon">💰</span> Caja
+      </div>
+      <div class="nav-item" data-section="facturacion" onclick="navTo('facturacion',this)">
+        <span class="nav-icon">🧾</span> Facturación
+      </div>
+      <div class="nav-item" data-section="clientes" onclick="navTo('clientes',this)">
+        <span class="nav-icon">👥</span> Clientes
+      </div>
+      <div class="nav-item" data-section="reportes" onclick="navTo('reportes',this)">
+        <span class="nav-icon">📈</span> Reportes
+      </div>
+      <div class="nav-item" data-section="usuarios" onclick="navTo('usuarios',this)" id="navUsuarios">
+        <span class="nav-icon">👤</span> Usuarios
+      </div>
+      <div class="nav-item" data-section="config" onclick="navTo('config',this)">
+        <span class="nav-icon">⚙️</span> Configuración
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="userAvatar">A</div>
+        <div>
+          <div class="user-name" id="userName">Admin</div>
+          <div class="user-role" id="userRole">Administrador</div>
         </div>
       </div>
+      <button class="btn btn-outline btn-sm btn-block" onclick="doLogout()">🔴 Cerrar sesión</button>
     </div>
   </div>
 
-  <div class="content">
-
-    <!-- RESTAURANTE -->
-    <div class="section active" id="section-tables">
-      <div class="ph">
-        <h1>Restaurante</h1>
-        <div class="ph-actions">
-          <button class="btn btn-sec">+ Takeaway</button>
-          <button class="btn btn-pri">+ Delivery</button>
-        </div>
-      </div>
-      <div class="status-bar">
-        <span><span class="sdot free"></span>Libre</span>
-        <span><span class="sdot busy"></span>Ocupada</span>
-        <span><span class="sdot res"></span>Reservada</span>
-      </div>
-      <div class="room-tabs">
-        <div class="rt active" onclick="switchRoom('salon',this)">Salón</div>
-        <div class="rt" onclick="switchRoom('terraza',this)">Terraza</div>
-      </div>
-      <div id="room-salon" class="tg"></div>
-      <div id="room-terraza" class="tg" style="display:none"></div>
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbarTitle">Dashboard</div>
+      <span class="topbar-badge" id="topbarBadge" style="display:none"></span>
+      <span class="topbar-time" id="topbarTime"></span>
     </div>
+    <div class="content">
 
-    <!-- VENTAS -->
-    <div class="section" id="section-sales">
-      <div class="ph">
-        <h1>Ventas</h1>
-        <div class="ph-actions">
-          <button class="btn btn-sec">Exportar</button>
-          <button class="btn btn-pri">+ Nueva venta</button>
+      <!-- DASHBOARD -->
+      <div class="section active" id="sec-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card red"><div class="stat-label">Mesas Ocupadas</div><div class="stat-value" id="st-ocupadas">0</div><div class="stat-sub">de 12 mesas</div></div>
+          <div class="stat-card green"><div class="stat-label">Mesas Libres</div><div class="stat-value" id="st-libres">0</div><div class="stat-sub">disponibles</div></div>
+          <div class="stat-card orange"><div class="stat-label">En Cocina</div><div class="stat-value" id="st-cocina">0</div><div class="stat-sub">comandas activas</div></div>
+          <div class="stat-card blue"><div class="stat-label">En Delivery</div><div class="stat-value" id="st-delivery">0</div><div class="stat-sub">pedidos en curso</div></div>
+          <div class="stat-card teal"><div class="stat-label">Ventas del Día</div><div class="stat-value" id="st-ventas">$0</div><div class="stat-sub">hoy</div></div>
+          <div class="stat-card purple"><div class="stat-label">Tickets Emitidos</div><div class="stat-value" id="st-tickets">0</div><div class="stat-sub">hoy</div></div>
         </div>
-      </div>
-      <div class="sg">
-        <div class="sc"><div class="sc-ico" style="background:#fff5f2">💰</div><div class="sc-lbl">Ventas hoy</div><div class="sc-val">$0</div><div class="sc-sub">0 transacciones</div></div>
-        <div class="sc"><div class="sc-ico" style="background:#f0fff4">📈</div><div class="sc-lbl">Esta semana</div><div class="sc-val">$0</div><div class="sc-sub">0 transacciones</div></div>
-        <div class="sc"><div class="sc-ico" style="background:#ebf8ff">📅</div><div class="sc-lbl">Este mes</div><div class="sc-val">$0</div><div class="sc-sub">0 transacciones</div></div>
-        <div class="sc"><div class="sc-ico" style="background:#faf5ff">🎯</div><div class="sc-lbl">Ticket promedio</div><div class="sc-val">$0</div><div class="sc-sub">—</div></div>
-      </div>
-      <div class="card">
-        <div class="card-h">
-          <div class="card-title">Ventas recientes</div>
-          <div style="display:flex;gap:10px;align-items:center">
-            <input type="date" class="si" style="max-width:150px" value="2026-05-30"/>
-            <select style="padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:7px;font-family:Barlow,sans-serif;font-size:13px;color:#4a5568;background:#fff">
-              <option>Todos los métodos</option>
-              <option>Efectivo</option>
-              <option>Cta. Cte.</option>
-              <option>Tarj. Crédito</option>
-              <option>Tarj. Débito</option>
-            </select>
-          </div>
-        </div>
-        <div class="empty"><div class="empty-ico">🧾</div><p>No hay ventas registradas para este período</p></div>
-      </div>
-    </div>
-
-    <!-- GASTOS -->
-    <div class="section" id="section-expenses">
-      <div class="ph">
-        <h1>Gastos</h1>
-        <div class="ph-actions">
-          <button class="btn btn-sec">Exportar</button>
-          <button class="btn btn-pri">+ Nuevo gasto</button>
-        </div>
-      </div>
-      <div class="sg">
-        <div class="sc"><div class="sc-ico" style="background:#fff5f2">💸</div><div class="sc-lbl">Total gastos</div><div class="sc-val">$0</div><div class="sc-sub">0 registrados</div></div>
-        <div class="sc"><div class="sc-ico" style="background:#fff5f5">📉</div><div class="sc-lbl">Sin pagar</div><div class="sc-val" style="color:#fc8181">$0</div><div class="sc-sub">0 pendientes</div></div>
-        <div class="sc"><div class="sc-ico" style="background:#f0fff4">✅</div><div class="sc-lbl">Pagados</div><div class="sc-val" style="color:#48bb78">$0</div><div class="sc-sub">0 gastos</div></div>
-        <div class="sc"><div class="sc-ico" style="background:#ebf8ff">🔄</div><div class="sc-lbl">Recurrentes</div><div class="sc-val">$0</div><div class="sc-sub">0 activos</div></div>
-      </div>
-      <div class="card">
-        <div class="card-h">
-          <div class="card-title">Lista de gastos</div>
-          <input class="si" placeholder="Buscar gasto..."/>
-        </div>
-        <div class="empty"><div class="empty-ico">📋</div><p>No hay gastos registrados</p></div>
-      </div>
-    </div>
-
-    <!-- FINANZAS -->
-    <div class="section" id="section-finance">
-      <div class="ph">
-        <h1>Finanzas</h1>
-        <div class="ph-actions"><button class="btn btn-sec">Exportar</button></div>
-      </div>
-      <div class="fs">
-        <div class="fc"><div class="fc-lbl">Ingresos</div><div class="fc-val" style="color:#48bb78">$0</div></div>
-        <div class="fc"><div class="fc-lbl">Egresos</div><div class="fc-val" style="color:#fc8181">$0</div></div>
-        <div class="fc"><div class="fc-lbl">Resultado</div><div class="fc-val" style="color:#4299e1">$0</div></div>
-      </div>
-      <div class="card" style="margin-bottom:16px">
-        <div class="card-h"><div class="card-title">Flujo de caja — Mayo 2026</div></div>
-        <div class="card-b">
-          <div class="cbw">
-            <div class="cbr"><div class="cb-lbl">Ventas</div><div class="cb-trk"><div class="cb-fil" style="width:0%;background:#48bb78"></div></div><div class="cb-val">$0</div></div>
-            <div class="cbr"><div class="cb-lbl">Gastos</div><div class="cb-trk"><div class="cb-fil" style="width:0%;background:#fc8181"></div></div><div class="cb-val">$0</div></div>
-            <div class="cbr"><div class="cb-lbl">Margen</div><div class="cb-trk"><div class="cb-fil" style="width:0%;background:#4299e1"></div></div><div class="cb-val">$0</div></div>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-h"><div class="card-title">Caja registradora — Principal</div></div>
-        <table class="dt">
-          <thead><tr><th>Fecha</th><th>Concepto</th><th>Método de pago</th><th>Monto</th><th>Estado</th></tr></thead>
-          <tbody><tr><td colspan="5" style="text-align:center;padding:32px;color:#a0aec0;font-size:13px">No hay movimientos en este período</td></tr></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- FACTURACIÓN -->
-    <div class="section" id="section-invoices">
-      <div class="ph">
-        <h1>Facturación</h1>
-        <div class="ph-actions"><button class="btn btn-pri">+ Nuevo documento</button></div>
-      </div>
-      <div class="sg">
-        <div class="sc"><div class="sc-lbl">Documentos emitidos</div><div class="sc-val">0</div></div>
-        <div class="sc"><div class="sc-lbl">Total facturado</div><div class="sc-val">$0</div></div>
-        <div class="sc"><div class="sc-lbl">Factura A</div><div class="sc-val">0</div></div>
-        <div class="sc"><div class="sc-lbl">Factura B</div><div class="sc-val">0</div></div>
-      </div>
-      <div class="card">
-        <div class="card-h">
-          <div class="card-title">Documentos comerciales</div>
-          <div style="display:flex;gap:10px">
-            <select style="padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:7px;font-family:Barlow,sans-serif;font-size:13px;background:#fff">
-              <option>Todos los tipos</option>
-              <option>Factura A</option><option>Factura B</option><option>Nota de crédito</option>
-            </select>
-            <input type="date" class="si" style="max-width:150px" value="2026-05-30"/>
-          </div>
-        </div>
-        <div class="empty"><div class="empty-ico">🧾</div><p>No hay documentos emitidos</p></div>
-      </div>
-    </div>
-
-    <!-- PRODUCTOS -->
-    <div class="section" id="section-products">
-      <div class="ph">
-        <h1>Productos</h1>
-        <div class="ph-actions">
-          <button class="btn btn-sec">Cargar menú</button>
-          <button class="btn btn-pri">+ Nuevo producto</button>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-h">
-          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-            <input class="si" placeholder="🔍 Buscar producto o código..." id="prod-search" oninput="renderProducts()"/>
-            <div class="filter-bar">
-              <div class="fb active" onclick="filterCat('all',this)">Todos</div>
-              <div class="fb" onclick="filterCat('1',this)">Bebidas</div>
-              <div class="fb" onclick="filterCat('2',this)">Cafetería</div>
-              <div class="fb" onclick="filterCat('3',this)">Platos Principales</div>
-              <div class="fb" onclick="filterCat('4',this)">Postres</div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><h3>📊 Ventas por Hora</h3></div>
+            <div class="card-body">
+              <div class="chart-wrap">
+                <div class="bar-chart" id="hourChart"></div>
+              </div>
             </div>
           </div>
-          <div style="font-size:12px;color:#718096;white-space:nowrap" id="prod-count">9 productos</div>
-        </div>
-        <table class="dt">
-          <thead>
-            <tr>
-              <th>Cód.</th><th>Producto</th><th>Categoría</th>
-              <th>Costo</th><th>Margen $</th><th>Margen %</th><th>Markup %</th>
-              <th>Precio</th><th>Stock</th><th></th>
-            </tr>
-          </thead>
-          <tbody id="products-body"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- CLIENTES -->
-    <div class="section" id="section-customers">
-      <div class="ph">
-        <h1>Clientes</h1>
-        <div class="ph-actions">
-          <button class="btn btn-sec">Importar</button>
-          <button class="btn btn-pri">+ Nuevo cliente</button>
-        </div>
-      </div>
-      <div class="sg">
-        <div class="sc"><div class="sc-ico" style="background:#ebf8ff">👥</div><div class="sc-lbl">Total clientes</div><div class="sc-val">1</div></div>
-        <div class="sc"><div class="sc-ico" style="background:#f0fff4">🆕</div><div class="sc-lbl">Nuevos</div><div class="sc-val">0</div></div>
-        <div class="sc"><div class="sc-ico" style="background:#faf5ff">⭐</div><div class="sc-lbl">Frecuentes</div><div class="sc-val">0</div></div>
-        <div class="sc"><div class="sc-ico" style="background:#fff5f5">😴</div><div class="sc-lbl">Inactivos</div><div class="sc-val">0</div></div>
-      </div>
-      <div class="card">
-        <div class="card-h">
-          <div class="card-title">Lista de clientes</div>
-          <input class="si" placeholder="Buscar cliente..."/>
-        </div>
-        <table class="dt">
-          <thead><tr><th>Nombre</th><th>Teléfono</th><th>Email</th><th>Dirección</th><th>Saldo Cta.</th><th>Estado</th></tr></thead>
-          <tbody>
-            <tr>
-              <td><strong>Cliente Ejemplo</strong></td>
-              <td>541112341234</td>
-              <td>cliente@example.com</td>
-              <td>Av. San Martín 1234, 2B</td>
-              <td>$0</td>
-              <td><span class="tag tg-green">Activo</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- PROVEEDORES -->
-    <div class="section" id="section-providers">
-      <div class="ph">
-        <h1>Proveedores</h1>
-        <div class="ph-actions"><button class="btn btn-pri">+ Nuevo proveedor</button></div>
-      </div>
-      <div class="card">
-        <div class="card-h">
-          <div class="card-title">Lista de proveedores</div>
-          <input class="si" placeholder="Buscar proveedor..."/>
-        </div>
-        <div class="empty"><div class="empty-ico">🚚</div><p>No hay proveedores registrados</p></div>
-      </div>
-    </div>
-
-    <!-- REPORTES -->
-    <div class="section" id="section-reports">
-      <div class="ph">
-        <h1>Reportes</h1>
-        <div class="ph-actions">
-          <button class="btn btn-sec">Exportar PDF</button>
-          <button class="btn btn-sec">Exportar Excel</button>
-        </div>
-      </div>
-      <div class="sg">
-        <div class="sc"><div class="sc-ico" style="background:#fff5f2">💰</div><div class="sc-lbl">Ventas totales</div><div class="sc-val">$0</div></div>
-        <div class="sc"><div class="sc-ico" style="background:#f0fff4">📦</div><div class="sc-lbl">Productos vendidos</div><div class="sc-val">0</div></div>
-        <div class="sc"><div class="sc-ico" style="background:#ebf8ff">👥</div><div class="sc-lbl">Clientes atendidos</div><div class="sc-val">0</div></div>
-        <div class="sc"><div class="sc-ico" style="background:#faf5ff">⭐</div><div class="sc-lbl">Producto estrella</div><div class="sc-val" style="font-size:14px">—</div></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-        <div class="card">
-          <div class="card-h"><div class="card-title">Ventas por método de pago</div></div>
-          <div class="card-b">
-            <div class="cbw">
-              <div class="cbr"><div class="cb-lbl">Efectivo</div><div class="cb-trk"><div class="cb-fil" style="width:0%;background:#48bb78"></div></div><div class="cb-val">$0</div></div>
-              <div class="cbr"><div class="cb-lbl">Débito</div><div class="cb-trk"><div class="cb-fil" style="width:0%;background:#4299e1"></div></div><div class="cb-val">$0</div></div>
-              <div class="cbr"><div class="cb-lbl">Crédito</div><div class="cb-trk"><div class="cb-fil" style="width:0%;background:#9f7aea"></div></div><div class="cb-val">$0</div></div>
-              <div class="cbr"><div class="cb-lbl">Cta. Cte.</div><div class="cb-trk"><div class="cb-fil" style="width:0%;background:#f6ad55"></div></div><div class="cb-val">$0</div></div>
+          <div class="card">
+            <div class="card-header"><h3>🪑 Estado de Mesas</h3></div>
+            <div class="card-body">
+              <div class="mesas-grid" id="dashMesas" style="grid-template-columns:repeat(4,1fr);gap:8px"></div>
             </div>
           </div>
         </div>
         <div class="card">
-          <div class="card-h"><div class="card-title">Top productos</div></div>
-          <div class="empty" style="padding:32px"><div class="empty-ico">📊</div><p>Sin datos para mostrar</p></div>
+          <div class="card-header"><h3>🕐 Últimas Actividades</h3></div>
+          <div class="card-body" id="actividadesList"></div>
         </div>
       </div>
-    </div>
 
-    <!-- LA ISLA PAGOS -->
-    <div class="section" id="section-payments">
-      <div class="ph"><h1>La Isla Pagos</h1></div>
-      <div class="card">
-        <div style="padding:56px;text-align:center">
-          <div style="font-size:64px;margin-bottom:16px">💳</div>
-          <h3 style="font-size:22px;font-weight:700;color:#2d3748;margin-bottom:8px">Activá La Isla Pagos</h3>
-          <p style="color:#718096;font-size:14px;max-width:420px;margin:0 auto 24px;line-height:1.6">Cobrá con tarjeta directamente desde tu POS. Sin costos fijos mensuales.</p>
-          <div style="background:#fffbeb;border:1px solid #f6e05e;border-radius:8px;padding:11px 20px;display:inline-block;margin-bottom:28px">
-            <span style="font-size:13px;color:#744210">⚠ KYC no iniciado — Completá tu verificación para comenzar</span>
-          </div><br/>
-          <button class="btn btn-pri" style="padding:12px 36px;font-size:15px">Comenzar verificación</button>
+      <!-- MESAS -->
+      <div class="section" id="sec-mesas">
+        <div class="section-header">
+          <h2>🪑 Mesas</h2>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modalNuevaMesa')">+ Nueva Mesa</button>
+        </div>
+        <div class="tabs">
+          <div class="tab active" onclick="switchTab('salon')">🏠 Salón</div>
+          <div class="tab" onclick="switchTab('terraza')">🌿 Terraza</div>
+        </div>
+        <div class="mesas-grid" id="mesasGrid"></div>
+      </div>
+
+      <!-- DELIVERY -->
+      <div class="section" id="sec-delivery">
+        <div class="section-header">
+          <h2>🛵 Delivery</h2>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modalNuevoDelivery')">+ Nuevo Pedido</button>
+        </div>
+        <div class="delivery-pipeline" id="deliveryPipeline"></div>
+      </div>
+
+      <!-- PRODUCTOS -->
+      <div class="section" id="sec-productos">
+        <div class="section-header">
+          <h2>🍕 Productos</h2>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modalProducto')">+ Nuevo Producto</button>
+        </div>
+        <div class="filter-bar">
+          <input class="search-input" placeholder="Buscar producto..." oninput="filterProductos(this.value)"/>
+          <select class="form-control" onchange="filterProductosCat(this.value)">
+            <option value="">Todas las categorías</option>
+            <option value="pizzas">🍕 Pizzas</option>
+            <option value="empanadas">🥟 Empanadas</option>
+            <option value="bebidas">🥤 Bebidas</option>
+            <option value="postres">🍮 Postres</option>
+            <option value="entradas">🧀 Entradas</option>
+            <option value="tragos">🍹 Tragos</option>
+          </select>
+        </div>
+        <div class="card">
+          <div class="table-wrap"><table id="productosTable">
+            <thead><tr><th>Producto</th><th>Categoría</th><th>Precio Chica</th><th>Precio Med.</th><th>Precio Grande</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="productosTbody"></tbody>
+          </table></div>
         </div>
       </div>
-    </div>
 
-    <!-- KDS -->
-    <div class="section" id="section-kds">
-      <div class="ph">
-        <h1>Monitor de Cocina</h1>
-        <div class="ph-actions"><span class="tag tg-green" style="padding:6px 14px;font-size:12px">● En línea</span></div>
+      <!-- STOCK -->
+      <div class="section" id="sec-stock">
+        <div class="section-header"><h2>📦 Stock</h2></div>
+        <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+          <div class="stat-card green"><div class="stat-label">En Stock</div><div class="stat-value" id="st-ok">0</div><div class="stat-sub">productos OK</div></div>
+          <div class="stat-card orange"><div class="stat-label">Stock Bajo</div><div class="stat-value" id="st-bajo">0</div><div class="stat-sub">cerca del mínimo</div></div>
+          <div class="stat-card red"><div class="stat-label">Sin Stock</div><div class="stat-value" id="st-sin">0</div><div class="stat-sub">agotados</div></div>
+        </div>
+        <div class="card">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Producto</th><th>Stock Actual</th><th>Stock Mínimo</th><th>Unidad</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="stockTbody"></tbody>
+          </table></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>📋 Movimientos Recientes</h3></div>
+          <div class="card-body" id="stockMovimientos"></div>
+        </div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px">
-        <div class="fc" style="border:1px solid #fef3c7"><div class="fc-lbl">Pendientes</div><div class="fc-val" style="color:#92400e;font-size:32px">0</div></div>
-        <div class="fc" style="border:1px solid #dbeafe"><div class="fc-lbl">En preparación</div><div class="fc-val" style="color:#1e40af;font-size:32px">0</div></div>
-        <div class="fc" style="border:1px solid #d1fae5"><div class="fc-lbl">Listos</div><div class="fc-val" style="color:#065f46;font-size:32px">0</div></div>
-      </div>
-      <div class="empty"><div class="empty-ico">👨‍🍳</div><p>No hay órdenes en cocina en este momento</p></div>
-    </div>
 
-    <!-- DELIVERY -->
-    <div class="section" id="section-delivery">
-      <div class="ph">
-        <h1>Tu Delivery</h1>
-        <div class="ph-actions"><button class="btn btn-pri">Configurar</button></div>
-      </div>
-      <div class="card" style="margin-bottom:16px">
-        <div class="card-h"><div class="card-title">Estado del servicio</div></div>
-        <div class="card-b">
-          <div style="display:flex;align-items:center;gap:12px;padding:12px;background:#f7fafc;border-radius:8px;margin-bottom:16px">
-            <div class="tog" id="del-tog" onclick="toggleDel()"></div>
-            <span style="font-size:14px;color:#4a5568">Delivery <strong id="del-status">desactivado</strong></span>
+      <!-- CAJA -->
+      <div class="section" id="sec-caja">
+        <div class="section-header"><h2>💰 Caja</h2></div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><h3>Estado de Caja</h3></div>
+            <div class="card-body" id="cajaEstado"></div>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
-            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:16px">
-              <div style="font-size:12px;color:#718096;font-weight:500">Pedidos hoy</div>
-              <div style="font-size:26px;font-weight:700;color:#ff5023;margin-top:6px">0</div>
-            </div>
-            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:16px">
-              <div style="font-size:12px;color:#718096;font-weight:500">En camino</div>
-              <div style="font-size:26px;font-weight:700;color:#4299e1;margin-top:6px">0</div>
-            </div>
-            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:16px">
-              <div style="font-size:12px;color:#718096;font-weight:500">Entregados</div>
-              <div style="font-size:26px;font-weight:700;color:#48bb78;margin-top:6px">0</div>
+          <div class="card">
+            <div class="card-header"><h3>Resumen del Turno</h3></div>
+            <div class="card-body">
+              <div class="grid-2">
+                <div><div class="stat-label">Efectivo</div><div style="font-size:22px;font-weight:800;color:var(--success)" id="cajaCash">$0</div></div>
+                <div><div class="stat-label">Tarjeta</div><div style="font-size:22px;font-weight:800;color:var(--info)" id="cajaTarjeta">$0</div></div>
+              </div>
+              <hr style="margin:14px 0;border-color:var(--border)">
+              <div class="stat-label">Total Turno</div>
+              <div class="caja-total" id="cajaTotal">$0</div>
             </div>
           </div>
         </div>
-      </div>
-      <div class="card">
-        <div class="card-h"><div class="card-title">Integraciones de delivery</div></div>
-        <div class="card-b">
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
-            <div style="border:1px solid #e2e8f0;border-radius:8px;padding:16px;opacity:.55">
-              <div style="font-size:20px;margin-bottom:6px">🛵</div>
-              <div style="font-size:13px;font-weight:600">PedidosYa</div>
-              <div style="font-size:11px;color:#718096;margin-top:3px">No conectado</div>
-            </div>
-            <div style="border:1px solid #e2e8f0;border-radius:8px;padding:16px;opacity:.55">
-              <div style="font-size:20px;margin-bottom:6px">🟠</div>
-              <div style="font-size:13px;font-weight:600">Rappi</div>
-              <div style="font-size:11px;color:#718096;margin-top:3px">No conectado</div>
-            </div>
-            <div style="border:1px solid #e2e8f0;border-radius:8px;padding:16px;opacity:.55">
-              <div style="font-size:20px;margin-bottom:6px">🔴</div>
-              <div style="font-size:13px;font-weight:600">Uber Eats</div>
-              <div style="font-size:11px;color:#718096;margin-top:3px">No conectado</div>
-            </div>
+        <div class="card">
+          <div class="card-header"><h3>Movimientos de Caja</h3><button class="btn btn-primary btn-sm" onclick="openModal('modalMovCaja')">+ Movimiento</button></div>
+          <div class="card-body">
+            <div class="table-wrap"><table>
+              <thead><tr><th>Hora</th><th>Tipo</th><th>Descripción</th><th>Monto</th></tr></thead>
+              <tbody id="cajaMov"></tbody>
+            </table></div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- ADMINISTRACIÓN -->
-    <div class="section" id="section-admin">
-      <div class="ph"><h1>Administración</h1></div>
-      <div class="ag">
-        <div class="ac"><div class="ac-ico">⚙️</div><h4>Configuración general</h4><p>Nombre del negocio, moneda, idioma, zona horaria</p></div>
-        <div class="ac"><div class="ac-ico">👥</div><h4>Usuarios y roles</h4><p>Gestiona permisos y accesos del personal</p></div>
-        <div class="ac"><div class="ac-ico">🖨️</div><h4>Impresoras</h4><p>Configura impresoras de tickets y cocina</p></div>
-        <div class="ac"><div class="ac-ico">🏦</div><h4>Cajas registradoras</h4><p>Principal — Activa · 1 caja configurada</p></div>
-        <div class="ac"><div class="ac-ico">🪑</div><h4>Salones y mesas</h4><p>Salón (12 mesas) · Terraza (8 mesas)</p></div>
-        <div class="ac"><div class="ac-ico">💳</div><h4>Métodos de pago</h4><p>Efectivo · Cta. Cte. · Tarj. Crédito · Tarj. Débito</p></div>
-        <div class="ac"><div class="ac-ico">🗂️</div><h4>Categorías de productos</h4><p>Bebidas · Cafetería · Platos Principales · Postres</p></div>
-        <div class="ac"><div class="ac-ico">🧪</div><h4>Ingredientes y recetas</h4><p>Harina, Queso Muzarella, Salsa Tomate...</p></div>
-        <div class="ac"><div class="ac-ico">🔗</div><h4>Integraciones</h4><p>API · MercadoPago · Apps de delivery</p></div>
-      </div>
-    </div>
-
-    <!-- MI NEGOCIO -->
-    <div class="section" id="section-mi-negocio">
-      <div class="ph"><h1>Mi Negocio</h1></div>
-      <div class="card" style="max-width:620px">
-        <div class="card-h"><div class="card-title">Información del negocio</div></div>
-        <div class="card-b">
-          <table style="width:100%;border-collapse:collapse">
-            <tr><td style="padding:10px 0 10px;color:#718096;font-size:13px;width:190px;border-bottom:1px solid #f0f4f8">Nombre</td><td style="font-size:14px;font-weight:500;border-bottom:1px solid #f0f4f8">Raquitos</td></tr>
-            <tr><td style="padding:10px 0;color:#718096;font-size:13px;border-bottom:1px solid #f0f4f8">Código promocional</td><td style="font-size:14px;border-bottom:1px solid #f0f4f8">LAISLA.RAQUITOS</td></tr>
-            <tr><td style="padding:10px 0;color:#718096;font-size:13px;border-bottom:1px solid #f0f4f8">País</td><td style="font-size:14px;border-bottom:1px solid #f0f4f8">Argentina</td></tr>
-            <tr><td style="padding:10px 0;color:#718096;font-size:13px;border-bottom:1px solid #f0f4f8">Zona horaria</td><td style="font-size:14px;border-bottom:1px solid #f0f4f8">America/Argentina/Buenos_Aires</td></tr>
-            <tr><td style="padding:10px 0;color:#718096;font-size:13px;border-bottom:1px solid #f0f4f8">Email</td><td style="font-size:14px;border-bottom:1px solid #f0f4f8">bear_japy@hotmail.com</td></tr>
-            <tr><td style="padding:10px 0;color:#718096;font-size:13px;border-bottom:1px solid #f0f4f8">Usuario admin</td><td style="font-size:14px;border-bottom:1px solid #f0f4f8">admin@raquitos</td></tr>
-            <tr><td style="padding:10px 0;color:#718096;font-size:13px;border-bottom:1px solid #f0f4f8">Plan activo</td><td style="border-bottom:1px solid #f0f4f8;padding:8px 0"><span class="badge-pro">PRO</span></td></tr>
-            <tr><td style="padding:10px 0;color:#718096;font-size:13px;border-bottom:1px solid #f0f4f8">Estado</td><td style="border-bottom:1px solid #f0f4f8;padding:8px 0"><span class="tag tg-green">ACTIVO</span></td></tr>
-            <tr><td style="padding:10px 0;color:#718096;font-size:13px">Moneda</td><td style="font-size:14px">ARS ($)</td></tr>
-          </table>
+      <!-- FACTURACIÓN -->
+      <div class="section" id="sec-facturacion">
+        <div class="section-header"><h2>🧾 Facturación</h2></div>
+        <div class="filter-bar">
+          <input type="date" class="form-control" style="width:auto" id="factFechaDesde"/>
+          <input type="date" class="form-control" style="width:auto" id="factFechaHasta"/>
+          <button class="btn btn-outline btn-sm" onclick="loadFacturacion()">Filtrar</button>
+        </div>
+        <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+          <div class="stat-card green"><div class="stat-label">Total Facturado</div><div class="stat-value" id="factTotal">$0</div></div>
+          <div class="stat-card blue"><div class="stat-label">Cantidad Facturas</div><div class="stat-value" id="factCount">0</div></div>
+          <div class="stat-card teal"><div class="stat-label">Ticket Promedio</div><div class="stat-value" id="factAvg">$0</div></div>
+        </div>
+        <div class="card">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Nro.</th><th>Fecha</th><th>Mesa/Delivery</th><th>Items</th><th>Total</th><th>Pago</th><th>Estado</th><th></th></tr></thead>
+            <tbody id="factTbody"></tbody>
+          </table></div>
         </div>
       </div>
-    </div>
 
-    <!-- PRIMEROS PASOS -->
-    <div class="section" id="section-primeros-pasos">
-      <div class="ph"><h1>Primeros pasos</h1></div>
-      <div class="ob-banner">
-        <h2>¡Comienza a configurar tu cuenta!</h2>
-        <p>Completa las tareas iniciales para activar tu restaurante en La Isla y empezar a vender desde hoy.</p>
-        <button class="ob-btn">Comenzar →</button>
+      <!-- CLIENTES -->
+      <div class="section" id="sec-clientes">
+        <div class="section-header">
+          <h2>👥 Clientes</h2>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modalCliente')">+ Nuevo Cliente</button>
+        </div>
+        <div class="filter-bar">
+          <input class="search-input" placeholder="Buscar por nombre o teléfono..." oninput="filterClientes(this.value)"/>
+        </div>
+        <div class="card">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Cliente</th><th>Teléfono</th><th>Email</th><th>Pedidos</th><th>Total Gastado</th><th>Último Pedido</th><th></th></tr></thead>
+            <tbody id="clientesTbody"></tbody>
+          </table></div>
+        </div>
       </div>
-      <h3 style="font-size:15px;font-weight:600;color:#2d3748;margin-bottom:14px">Progreso de configuración</h3>
-      <div class="steps-g">
-        <div class="step"><div class="step-ck done">✓</div><div><h4>Crear tu cuenta</h4><p>Tu cuenta La Isla fue creada el 30 de mayo de 2026.</p></div></div>
-        <div class="step"><div class="step-ck done">✓</div><div><h4>Configurar productos</h4><p>Tienes 9 productos activos en 4 categorías.</p></div></div>
-        <div class="step"><div class="step-ck done">✓</div><div><h4>Configurar mesas</h4><p>20 mesas configuradas — Salón y Terraza.</p></div></div>
-        <div class="step"><div class="step-ck done">✓</div><div><h4>Configurar métodos de pago</h4><p>Efectivo, Cta. Cte., Tarj. Crédito y Débito.</p></div></div>
-        <div class="step"><div class="step-ck">○</div><div><h4>Realizar primera venta</h4><p>Registra tu primera transacción desde Restaurante.</p></div></div>
-        <div class="step"><div class="step-ck">○</div><div><h4>Activar facturación electrónica</h4><p>Emite facturas A y B desde el módulo Facturación.</p></div></div>
-        <div class="step"><div class="step-ck">○</div><div><h4>Activar La Isla Pagos</h4><p>Completa tu verificación KYC para cobrar con tarjeta.</p></div></div>
-        <div class="step"><div class="step-ck">○</div><div><h4>Configurar Monitor de Cocina</h4><p>Conecta una pantalla KDS para tu equipo de cocina.</p></div></div>
+
+      <!-- REPORTES -->
+      <div class="section" id="sec-reportes">
+        <div class="section-header"><h2>📈 Reportes</h2></div>
+        <div class="filter-bar">
+          <div class="tabs" style="margin-bottom:0">
+            <div class="tab active" onclick="setReporteRange('hoy',this)">Hoy</div>
+            <div class="tab" onclick="setReporteRange('semana',this)">Semana</div>
+            <div class="tab" onclick="setReporteRange('mes',this)">Mes</div>
+          </div>
+        </div>
+        <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+          <div class="stat-card red"><div class="stat-label">Ventas Totales</div><div class="stat-value" id="rpt-ventas">$0</div></div>
+          <div class="stat-card blue"><div class="stat-label">Nro. Pedidos</div><div class="stat-value" id="rpt-pedidos">0</div></div>
+          <div class="stat-card green"><div class="stat-label">Ticket Promedio</div><div class="stat-value" id="rpt-avg">$0</div></div>
+          <div class="stat-card orange"><div class="stat-label">Clientes Nuevos</div><div class="stat-value" id="rpt-nuevos">0</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><h3>📊 Ventas Diarias</h3></div>
+            <div class="card-body"><div class="bar-chart" id="reporteChart" style="height:160px"></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>🍕 Top Productos</h3></div>
+            <div class="card-body" id="topProductos"></div>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><h3>📦 Ventas por Categoría</h3></div>
+            <div class="card-body" id="catChart"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>🏠 Salón vs 🛵 Delivery</h3></div>
+            <div class="card-body" id="salonVsDelivery"></div>
+          </div>
+        </div>
       </div>
-    </div>
 
-  </div><!-- /content -->
-</div><!-- /main-area -->
-</div><!-- /app-layout -->
-</div><!-- /app -->
+      <!-- USUARIOS -->
+      <div class="section" id="sec-usuarios">
+        <div class="section-header">
+          <h2>👤 Usuarios</h2>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modalUsuario')">+ Nuevo Usuario</button>
+        </div>
+        <div class="card">
+          <div class="table-wrap"><table>
+            <thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Último Acceso</th><th>Acciones</th></tr></thead>
+            <tbody id="usuariosTbody"></tbody>
+          </table></div>
+        </div>
+      </div>
 
-<!-- TABLE MODAL -->
-<div class="m-overlay" id="table-modal">
+      <!-- CONFIG -->
+      <div class="section" id="sec-config">
+        <div class="section-header"><h2>⚙️ Configuración</h2></div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><h3>🏢 Datos del Negocio</h3></div>
+            <div class="card-body">
+              <div class="form-group"><label>Nombre del local</label><input class="form-control" id="cfgNombre" value="Pizzería PRO"/></div>
+              <div class="form-group"><label>Dirección</label><input class="form-control" id="cfgDir" value="Av. Corrientes 1234, CABA"/></div>
+              <div class="form-group"><label>Teléfono</label><input class="form-control" id="cfgTel" value="11-4567-8901"/></div>
+              <div class="form-group"><label>Emoji / Logo</label><input class="form-control" id="cfgEmoji" value="🍕"/></div>
+              <div class="form-group"><label>Pie de recibo</label><input class="form-control" id="cfgRecibo" value="¡Gracias por su visita! Vuelva pronto."/></div>
+              <button class="btn btn-primary" onclick="saveConfig()">💾 Guardar</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>🔧 Integraciones</h3></div>
+            <div class="card-body">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)">
+                <div><strong>🖨️ Impresora Térmica</strong><div class="text-muted" style="font-size:12px">Impresión automática de tickets</div></div>
+                <label class="switch"><input type="checkbox" id="cfgPrinter" checked><span class="slider"></span></label>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)">
+                <div><strong>💬 WhatsApp</strong><div class="text-muted" style="font-size:12px">Envío de comprobantes por WA</div></div>
+                <label class="switch"><input type="checkbox" id="cfgWA"><span class="slider"></span></label>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0">
+                <div><strong>🔔 Notificaciones Sonoras</strong><div class="text-muted" style="font-size:12px">Beep al recibir pedidos</div></div>
+                <label class="switch"><input type="checkbox" id="cfgSound" checked><span class="slider"></span></label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>🍕 Cocina & Delivery</h3></div>
+          <div class="card-body">
+            <div class="grid-3">
+              <div><label style="font-size:13px;font-weight:600">Tiempo estimado cocina (min)</label><input class="form-control mt-1" value="15" type="number"/></div>
+              <div><label style="font-size:13px;font-weight:600">Tiempo estimado delivery (min)</label><input class="form-control mt-1" value="40" type="number"/></div>
+              <div><label style="font-size:13px;font-weight:600">Radio de delivery (km)</label><input class="form-control mt-1" value="5" type="number"/></div>
+            </div>
+            <div class="mt-2"><a href="/cocina.html" target="_blank" class="btn btn-outline btn-sm">🍕 Abrir Pantalla de Cocina</a> <a href="/repartidor.html" target="_blank" class="btn btn-outline btn-sm ml-auto" style="margin-left:8px">🛵 Abrir App Repartidor</a> <a href="/cliente.html" target="_blank" class="btn btn-outline btn-sm" style="margin-left:8px">👤 Ver Portal Clientes</a></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end content -->
+  </div><!-- end main -->
+</div><!-- end app -->
+
+<!-- MODALS -->
+<div class="modal-overlay" id="modalMesa">
   <div class="modal">
-    <div class="m-head">
-      <h3 id="modal-t-title">Mesa 1</h3>
-      <span class="m-close" onclick="closeModal()">✕</span>
-    </div>
-    <div class="m-body">
-      <div style="text-align:center;padding:12px 0 20px">
-        <div style="font-size:52px;margin-bottom:12px">🍽️</div>
-        <p style="color:#718096;font-size:14px;margin-bottom:24px">La mesa está libre y disponible</p>
-        <button class="btn btn-pri btn-full" style="margin-bottom:10px">Nueva comanda</button>
-        <button class="btn btn-sec btn-full">Ver historial</button>
+    <div class="modal-header"><h3 id="modalMesaTitle">Mesa #1</h3><button class="modal-close" onclick="closeModal('modalMesa')">✕</button></div>
+    <div class="modal-body" id="modalMesaBody"></div>
+    <div class="modal-footer" id="modalMesaFooter"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalNuevaMesa">
+  <div class="modal">
+    <div class="modal-header"><h3>Nueva Mesa</h3><button class="modal-close" onclick="closeModal('modalNuevaMesa')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>Número de Mesa</label><input class="form-control" id="nuevaMesaNum" type="number" placeholder="Ej: 13"/></div>
+      <div class="form-group"><label>Capacidad (personas)</label><input class="form-control" id="nuevaMesaCap" type="number" placeholder="4" value="4"/></div>
+      <div class="form-group"><label>Ubicación</label>
+        <select class="form-control" id="nuevaMesaZona"><option value="salon">Salón</option><option value="terraza">Terraza</option></select>
       </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalNuevaMesa')">Cancelar</button>
+      <button class="btn btn-primary" onclick="crearMesa()">Crear Mesa</button>
     </div>
   </div>
 </div>
 
+<div class="modal-overlay" id="modalProducto">
+  <div class="modal modal-lg">
+    <div class="modal-header"><h3 id="modalProdTitle">Nuevo Producto</h3><button class="modal-close" onclick="closeModal('modalProducto')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Nombre</label><input class="form-control" id="prodNombre" placeholder="Pizza Muzarella"/></div>
+        <div class="form-group"><label>Categoría</label>
+          <select class="form-control" id="prodCat" onchange="toggleProdPrecios()">
+            <option value="pizzas">🍕 Pizzas</option>
+            <option value="empanadas">🥟 Empanadas</option>
+            <option value="bebidas">🥤 Bebidas</option>
+            <option value="postres">🍮 Postres</option>
+            <option value="entradas">🧀 Entradas</option>
+            <option value="tragos">🍹 Tragos</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label>Descripción</label><input class="form-control" id="prodDesc" placeholder="Descripción breve..."/></div>
+      <div class="form-group"><label>Emoji</label><input class="form-control" id="prodEmoji" placeholder="🍕" value="🍕" style="width:100px"/></div>
+      <div id="prodPrecioVariantes">
+        <div class="form-row cols-3">
+          <div class="form-group"><label>Precio Chica</label><input class="form-control" id="prodPChica" type="number" placeholder="800"/></div>
+          <div class="form-group"><label>Precio Mediana</label><input class="form-control" id="prodPMed" type="number" placeholder="1200"/></div>
+          <div class="form-group"><label>Precio Grande</label><input class="form-control" id="prodPGrande" type="number" placeholder="1600"/></div>
+        </div>
+      </div>
+      <div id="prodPrecioUnico" style="display:none">
+        <div class="form-group"><label>Precio</label><input class="form-control" id="prodPrecio" type="number" placeholder="350"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalProducto')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarProducto()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalNuevoDelivery">
+  <div class="modal modal-lg">
+    <div class="modal-header"><h3>Nuevo Pedido Delivery</h3><button class="modal-close" onclick="closeModal('modalNuevoDelivery')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>Nombre del cliente</label><input class="form-control" id="dlvCliente" placeholder="Juan García"/></div>
+        <div class="form-group"><label>Teléfono</label><input class="form-control" id="dlvTel" placeholder="11-4567-8901"/></div>
+      </div>
+      <div class="form-group"><label>Dirección</label><input class="form-control" id="dlvDir" placeholder="Av. Corrientes 1234, 3°B"/></div>
+      <div class="form-row">
+        <div class="form-group"><label>Repartidor</label>
+          <select class="form-control" id="dlvRepartidor">
+            <option value="">Sin asignar</option>
+            <option value="conductor1">Conductor 1</option>
+            <option value="conductor2">Conductor 2</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Método de pago</label>
+          <select class="form-control" id="dlvPago">
+            <option value="efectivo">Efectivo</option>
+            <option value="tarjeta">Tarjeta</option>
+            <option value="transferencia">Transferencia</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label>Items</label>
+        <div id="dlvItems"><div class="text-muted" style="font-size:13px">Use los botones para agregar productos</div></div>
+        <button class="btn btn-outline btn-sm mt-1" onclick="addDlvItem()">+ Agregar Item</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalNuevoDelivery')">Cancelar</button>
+      <button class="btn btn-primary" onclick="crearDelivery()">Crear Pedido</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalMovCaja">
+  <div class="modal">
+    <div class="modal-header"><h3>Registrar Movimiento</h3><button class="modal-close" onclick="closeModal('modalMovCaja')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>Tipo</label>
+        <select class="form-control" id="movTipo"><option value="ingreso">Ingreso</option><option value="egreso">Egreso</option></select>
+      </div>
+      <div class="form-group"><label>Descripción</label><input class="form-control" id="movDesc" placeholder="Ej: Compra de insumos"/></div>
+      <div class="form-group"><label>Monto ($)</label><input class="form-control" id="movMonto" type="number" placeholder="0"/></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalMovCaja')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarMovCaja()">Registrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalCliente">
+  <div class="modal">
+    <div class="modal-header"><h3 id="modalClienteTitle">Nuevo Cliente</h3><button class="modal-close" onclick="closeModal('modalCliente')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>Nombre</label><input class="form-control" id="cliNombre" placeholder="Juan García"/></div>
+      <div class="form-group"><label>Teléfono</label><input class="form-control" id="cliTel" placeholder="11-4567-8901"/></div>
+      <div class="form-group"><label>Email</label><input class="form-control" id="cliEmail" placeholder="juan@email.com"/></div>
+      <div class="form-group"><label>Dirección</label><input class="form-control" id="cliDir" placeholder="Av. Corrientes 1234"/></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalCliente')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarCliente()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalUsuario">
+  <div class="modal">
+    <div class="modal-header"><h3>Nuevo Usuario</h3><button class="modal-close" onclick="closeModal('modalUsuario')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>Nombre</label><input class="form-control" id="usrNombre" placeholder="Carlos López"/></div>
+      <div class="form-group"><label>Email</label><input class="form-control" id="usrEmail" placeholder="carlos@pizzeriapro.com"/></div>
+      <div class="form-group"><label>Contraseña</label><input class="form-control" id="usrPass" type="password" placeholder="••••••••"/></div>
+      <div class="form-group"><label>Rol</label>
+        <select class="form-control" id="usrRol">
+          <option value="admin">Administrador</option>
+          <option value="mozo">Mozo</option>
+          <option value="cajero">Cajero</option>
+          <option value="cocina">Cocina</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalUsuario')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarUsuario()">Crear</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<style>
+.switch{position:relative;display:inline-block;width:44px;height:24px}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;cursor:pointer;inset:0;background:#ccc;transition:.3s;border-radius:24px}
+.slider:before{content:"";position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;transition:.3s;border-radius:50%}
+input:checked+.slider{background:var(--red)}
+input:checked+.slider:before{transform:translateX(20px)}
+.form-group{margin-bottom:14px}
+</style>
+
 <script>
-// DATA
-const PRODUCTS = [
-  {id:1,code:'10',name:'Coca-Cola 375 cm3',catId:1,cat:'Bebidas',price:10,cost:null,stock:5},
-  {id:2,code:'20',name:'Pizza Muzarella',catId:3,cat:'Platos Principales',price:38,cost:null,stock:null},
-  {id:3,code:'30',name:'Cafe Chico',catId:2,cat:'Cafetería',price:10,cost:null,stock:null},
-  {id:4,code:'31',name:'Cafe Jarrito',catId:2,cat:'Cafetería',price:14,cost:null,stock:null},
-  {id:5,code:'32',name:'Medialunas',catId:2,cat:'Cafetería',price:5,cost:null,stock:30},
-  {id:6,code:'11',name:'Agua Mineral 500 cm3',catId:1,cat:'Bebidas',price:10,cost:null,stock:5},
-  {id:7,code:'40',name:'Ensalada de Frutas',catId:4,cat:'Postres',price:25,cost:null,stock:null},
-  {id:8,code:'21',name:'Milanesa Napolitana',catId:3,cat:'Platos Principales',price:45,cost:null,stock:null},
-  {id:9,code:'22',name:'Papas Fritas',catId:3,cat:'Platos Principales',price:45,cost:null,stock:null},
+const API = '';
+let token = localStorage.getItem('pizzeria_token');
+let currentUser = JSON.parse(localStorage.getItem('pizzeria_user') || 'null');
+let socket = null;
+let currentMesaTab = 'salon';
+let editingProdId = null;
+let editingClienteId = null;
+
+// ======= DEMO DATA =======
+const DEMO_MESAS = [
+  {id:1,numero:1,capacidad:4,estado:'libre',zona:'salon',mozo:null,tiempo:null,items:0},
+  {id:2,numero:2,capacidad:4,estado:'ocupada',zona:'salon',mozo:'Carlos',tiempo:'00:45',items:3},
+  {id:3,numero:3,capacidad:2,estado:'libre',zona:'salon',mozo:null,tiempo:null,items:0},
+  {id:4,numero:4,capacidad:6,estado:'ocupada',zona:'salon',mozo:'Ana',tiempo:'01:20',items:5},
+  {id:5,numero:5,capacidad:4,estado:'libre',zona:'salon',mozo:null,tiempo:null,items:0},
+  {id:6,numero:6,capacidad:4,estado:'cuenta',zona:'salon',mozo:'Carlos',tiempo:'01:55',items:7},
+  {id:7,numero:7,capacidad:4,estado:'libre',zona:'salon',mozo:null,tiempo:null,items:0},
+  {id:8,numero:8,capacidad:8,estado:'ocupada',zona:'salon',mozo:'María',tiempo:'00:30',items:2},
+  {id:9,numero:9,capacidad:2,estado:'libre',zona:'terraza',mozo:null,tiempo:null,items:0},
+  {id:10,numero:10,capacidad:4,estado:'ocupada',zona:'terraza',mozo:'Ana',tiempo:'00:15',items:1},
+  {id:11,numero:11,capacidad:4,estado:'libre',zona:'terraza',mozo:null,tiempo:null,items:0},
+  {id:12,numero:12,capacidad:6,estado:'libre',zona:'terraza',mozo:null,tiempo:null,items:0},
+];
+const DEMO_PRODUCTOS = [
+  {id:1,nombre:'Pizza Muzarella',categoria:'pizzas',emoji:'🍕',precio_chica:800,precio_mediana:1200,precio_grande:1600,activo:true},
+  {id:2,nombre:'Pizza Napolitana',categoria:'pizzas',emoji:'🍕',precio_chica:900,precio_mediana:1400,precio_grande:1800,activo:true},
+  {id:3,nombre:'Pizza 4 Quesos',categoria:'pizzas',emoji:'🍕',precio_chica:1000,precio_mediana:1500,precio_grande:2000,activo:true},
+  {id:4,nombre:'Pizza Fugazzeta',categoria:'pizzas',emoji:'🍕',precio_chica:850,precio_mediana:1300,precio_grande:1700,activo:true},
+  {id:5,nombre:'Empanada de Carne',categoria:'empanadas',emoji:'🥟',precio:350,activo:true},
+  {id:6,nombre:'Empanada J&Q',categoria:'empanadas',emoji:'🥟',precio:350,activo:true},
+  {id:7,nombre:'Coca-Cola 500ml',categoria:'bebidas',emoji:'🥤',precio:600,activo:true},
+  {id:8,nombre:'Agua Mineral',categoria:'bebidas',emoji:'💧',precio:400,activo:true},
+  {id:9,nombre:'Cerveza 1L',categoria:'bebidas',emoji:'🍺',precio:1200,activo:true},
+  {id:10,nombre:'Fernet con Coca',categoria:'tragos',emoji:'🍹',precio:1800,activo:true},
+  {id:11,nombre:'Tiramisu',categoria:'postres',emoji:'🍮',precio:900,activo:true},
+  {id:12,nombre:'Provoleta',categoria:'entradas',emoji:'🧀',precio:1100,activo:true},
+];
+const DEMO_DELIVERY = [
+  {id:1,numero:'D-001',estado:'nuevo',cliente:{nombre:'Juan García',telefono:'11-4567-8901'},direccion:'Av. Corrientes 1234, 3°B',items:[{nombre:'Pizza Muzarella Grande',qty:1,precio:1600},{nombre:'Coca-Cola 500ml',qty:2,precio:600}],total:2800,metodo_pago:'efectivo',repartidor:null,hora:'14:32'},
+  {id:2,numero:'D-002',estado:'en_cocina',cliente:{nombre:'María López',telefono:'11-9876-5432'},direccion:'Belgrano 567, PB',items:[{nombre:'Pizza Napolitana Grande',qty:1,precio:1800},{nombre:'Pizza 4 Quesos Grande',qty:1,precio:2000}],total:3800,metodo_pago:'tarjeta',repartidor:'conductor1',hora:'14:45'},
+  {id:3,numero:'D-003',estado:'en_camino',cliente:{nombre:'Carlos Rodríguez',telefono:'11-3333-4444'},direccion:'San Martín 890',items:[{nombre:'Pizza Fugazzeta Grande',qty:2,precio:1700}],total:3400,metodo_pago:'efectivo',repartidor:'conductor2',hora:'13:15'},
+  {id:4,numero:'D-004',estado:'entregado',cliente:{nombre:'Sofía Martínez',telefono:'11-5555-6666'},direccion:'Rivadavia 2345, 1°A',items:[{nombre:'Pizza Muzarella Mediana',qty:1,precio:1200},{nombre:'Empanada de Carne',qty:4,precio:350}],total:2600,metodo_pago:'efectivo',repartidor:'conductor1',hora:'12:00'},
+];
+const DEMO_STOCK = [
+  {id:1,nombre:'Harina de trigo',actual:50,minimo:20,unidad:'kg'},
+  {id:2,nombre:'Queso Mozzarella',actual:15,minimo:10,unidad:'kg'},
+  {id:3,nombre:'Salsa de tomate',actual:8,minimo:15,unidad:'latas'},
+  {id:4,nombre:'Levadura',actual:2,minimo:2,unidad:'kg'},
+  {id:5,nombre:'Aceite de oliva',actual:5,minimo:3,unidad:'lt'},
+  {id:6,nombre:'Jamón cocido',actual:0,minimo:5,unidad:'kg'},
+  {id:7,nombre:'Morrones',actual:12,minimo:5,unidad:'unid'},
+  {id:8,nombre:'Coca-Cola 500ml',actual:48,minimo:24,unidad:'botellas'},
+];
+const DEMO_FACTURAS = [
+  {id:1,numero:'F-0001',fecha:'2026-05-30 14:30',origen:'Mesa 2',items:3,total:4800,pago:'efectivo',estado:'pagada'},
+  {id:2,numero:'F-0002',fecha:'2026-05-30 13:15',origen:'Delivery',items:2,total:3400,pago:'tarjeta',estado:'pagada'},
+  {id:3,numero:'F-0003',fecha:'2026-05-30 12:00',origen:'Mesa 4',items:5,total:8200,pago:'efectivo',estado:'pagada'},
+  {id:4,numero:'F-0004',fecha:'2026-05-29 20:30',origen:'Mesa 6',items:7,total:12500,pago:'tarjeta',estado:'pagada'},
+  {id:5,numero:'F-0005',fecha:'2026-05-29 19:15',origen:'Delivery',items:3,total:5600,pago:'efectivo',estado:'anulada'},
+];
+const DEMO_CLIENTES = [
+  {id:1,nombre:'Juan García',telefono:'11-4567-8901',email:'juan@email.com',pedidos:12,total_gastado:42000,ultimo:'2026-05-30'},
+  {id:2,nombre:'María López',telefono:'11-9876-5432',email:'maria@email.com',pedidos:8,total_gastado:28500,ultimo:'2026-05-30'},
+  {id:3,nombre:'Carlos Rodríguez',telefono:'11-3333-4444',email:'carlos@email.com',pedidos:5,total_gastado:18000,ultimo:'2026-05-29'},
+  {id:4,nombre:'Sofía Martínez',telefono:'11-5555-6666',email:'sofia@email.com',pedidos:3,total_gastado:9800,ultimo:'2026-05-28'},
+  {id:5,nombre:'Roberto Silva',telefono:'11-7777-8888',email:'roberto@email.com',pedidos:15,total_gastado:55000,ultimo:'2026-05-27'},
+];
+const DEMO_USUARIOS = [
+  {id:1,nombre:'Admin Principal',email:'admin@pizzeriapro.com',rol:'admin',activo:true,ultimo:'2026-05-30 14:00'},
+  {id:2,nombre:'Carlos Mozo',email:'carlos@pizzeriapro.com',rol:'mozo',activo:true,ultimo:'2026-05-30 13:30'},
+  {id:3,nombre:'Ana Moza',email:'ana@pizzeriapro.com',rol:'mozo',activo:true,ultimo:'2026-05-30 12:00'},
+  {id:4,nombre:'Pedro Cajero',email:'pedro@pizzeriapro.com',rol:'cajero',activo:true,ultimo:'2026-05-30 09:00'},
+  {id:5,nombre:'Luis Cocina',email:'luis@pizzeriapro.com',rol:'cocina',activo:false,ultimo:'2026-05-25 18:00'},
+];
+const DEMO_CAJA_MOV = [
+  {hora:'09:00',tipo:'ingreso',desc:'Apertura de caja',monto:5000},
+  {hora:'11:30',tipo:'ingreso',desc:'Venta Mesa 3',monto:4800},
+  {hora:'12:00',tipo:'ingreso',desc:'Delivery D-004',monto:2600},
+  {hora:'13:00',tipo:'egreso',desc:'Compra insumos',monto:1500},
+  {hora:'14:30',tipo:'ingreso',desc:'Venta Mesa 2',monto:4800},
 ];
 
-// SECTIONS MAP
-const SECTION_TITLES = {
-  tables:'Restaurante',sales:'Ventas',expenses:'Gastos',finance:'Finanzas',
-  invoices:'Facturación',products:'Productos',customers:'Clientes',
-  providers:'Proveedores',reports:'Reportes',payments:'La Isla Pagos',
-  kds:'Monitor de Cocina',delivery:'Tu Delivery',admin:'Administración',
-  'mi-negocio':'Mi Negocio','primeros-pasos':'Primeros pasos'
-};
+let mesasData = [...DEMO_MESAS];
+let productosData = [...DEMO_PRODUCTOS];
+let deliveryData = [...DEMO_DELIVERY];
+let stockData = [...DEMO_STOCK];
+let facturasData = [...DEMO_FACTURAS];
+let clientesData = [...DEMO_CLIENTES];
+let usuariosData = [...DEMO_USUARIOS];
+let cajaMoves = [...DEMO_CAJA_MOV];
 
-// CLOCK
-function tick(){
-  const n=new Date();
-  const days=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
-  const months=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  const d=`${days[n.getDay()]} ${n.getDate()} ${months[n.getMonth()]} ${n.getFullYear()}`;
-  const t=n.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  const el=document.getElementById('clock');
-  if(el) el.textContent=`${d} · ${t}`;
-}
-setInterval(tick,1000);
-tick();
-
-// RENDER TABLES
-function renderTables(){
-  const salon=document.getElementById('room-salon');
-  const terraza=document.getElementById('room-terraza');
-  // Tables 1-12 salon (shapes: 9-12 are round/circle)
-  const roundTables=new Set([9,10,11,12]);
-  salon.innerHTML='';
-  for(let n=1;n<=12;n++){
-    const isR=roundTables.has(n);
-    salon.innerHTML+=`<div class="tc${isR?' round':''}" onclick="openTable(${n})" title="Mesa ${n}">
-      <div class="tc-num">${n}</div>
-      <div class="tc-lbl">Mesa ${n}</div>
-    </div>`;
+// ======= AUTH =======
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value.trim();
+  const errEl = document.getElementById('loginError');
+  errEl.style.display = 'none';
+  try {
+    const res = await fetch('/api/auth/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({email, password:pass})
+    });
+    if (res.ok) {
+      const data = await res.json();
+      token = data.token;
+      currentUser = data.user;
+      localStorage.setItem('pizzeria_token', token);
+      localStorage.setItem('pizzeria_user', JSON.stringify(currentUser));
+    } else {
+      // Demo fallback
+      const demoMap = {
+        'admin@pizzeriapro.com':{ id:1, nombre:'Admin Principal', email, rol:'admin' },
+        'carlos@pizzeriapro.com':{ id:2, nombre:'Carlos Mozo', email, rol:'mozo' },
+      };
+      const demoUser = demoMap[email];
+      if (demoUser && (pass === 'admin123' || pass === 'mozo123')) {
+        token = 'demo-token';
+        currentUser = demoUser;
+        localStorage.setItem('pizzeria_token', token);
+        localStorage.setItem('pizzeria_user', JSON.stringify(currentUser));
+      } else {
+        errEl.style.display = 'block';
+        return;
+      }
+    }
+  } catch(e) {
+    const demoMap = {
+      'admin@pizzeriapro.com':{ id:1, nombre:'Admin Principal', email, rol:'admin' },
+      'carlos@pizzeriapro.com':{ id:2, nombre:'Carlos Mozo', email, rol:'mozo' },
+    };
+    const demoUser = demoMap[email];
+    if (demoUser && (pass === 'admin123' || pass === 'mozo123')) {
+      token = 'demo-token';
+      currentUser = demoUser;
+      localStorage.setItem('pizzeria_token', token);
+      localStorage.setItem('pizzeria_user', JSON.stringify(currentUser));
+    } else { errEl.style.display = 'block'; return; }
   }
-  terraza.innerHTML='';
-  for(let n=13;n<=20;n++){
-    terraza.innerHTML+=`<div class="tc" onclick="openTable(${n})" title="Mesa ${n}">
-      <div class="tc-num">${n}</div>
-      <div class="tc-lbl">Mesa ${n}</div>
-    </div>`;
+  initApp();
+}
+
+document.getElementById('loginPass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+function doLogout() {
+  token = null; currentUser = null;
+  localStorage.removeItem('pizzeria_token');
+  localStorage.removeItem('pizzeria_user');
+  if (socket) socket.disconnect();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+function apiFetch(url, opts={}) {
+  return fetch(API+url, { ...opts, headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+token, ...(opts.headers||{}) } });
+}
+
+// ======= INIT =======
+function initApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  // User UI
+  const av = document.getElementById('userAvatar');
+  av.textContent = (currentUser?.nombre||'U')[0].toUpperCase();
+  document.getElementById('userName').textContent = currentUser?.nombre || 'Usuario';
+  const roles = {admin:'Administrador',mozo:'Mozo',cajero:'Cajero',cocina:'Cocina'};
+  document.getElementById('userRole').textContent = roles[currentUser?.rol] || currentUser?.rol || '';
+  // Hide usuarios for non-admin
+  if (currentUser?.rol !== 'admin') document.getElementById('navUsuarios').style.display = 'none';
+  // Clock
+  updateClock();
+  setInterval(updateClock, 1000);
+  // Socket
+  try {
+    socket = io();
+    socket.on('dashboard:stats', updateDashboardStats);
+    socket.on('mesa:update', () => { if(document.getElementById('sec-mesas').classList.contains('active')) renderMesas(); });
+    socket.on('delivery:update', () => { if(document.getElementById('sec-delivery').classList.contains('active')) renderDelivery(); });
+    socket.on('comanda:nueva', () => showToast('Nueva comanda en cocina','success'));
+  } catch(e){}
+  // Load first section
+  loadDashboard();
+}
+
+if (token && currentUser) { initApp(); }
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('topbarTime').textContent = now.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+}
+
+// ======= NAVIGATION =======
+function navTo(section, el) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if(el) el.classList.add('active');
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('sec-'+section).classList.add('active');
+  const titles = {dashboard:'Dashboard',mesas:'Mesas',delivery:'Delivery',productos:'Productos',stock:'Stock',caja:'Caja',facturacion:'Facturación',clientes:'Clientes',reportes:'Reportes',usuarios:'Usuarios',config:'Configuración'};
+  document.getElementById('topbarTitle').textContent = titles[section] || section;
+  const loaders = {dashboard:loadDashboard,mesas:renderMesas,delivery:renderDelivery,productos:renderProductos,stock:renderStock,caja:renderCaja,facturacion:loadFacturacion,clientes:renderClientes,reportes:renderReportes,usuarios:renderUsuarios};
+  if(loaders[section]) loaders[section]();
+}
+
+// ======= DASHBOARD =======
+function loadDashboard() {
+  const ocupadas = mesasData.filter(m=>m.estado!=='libre').length;
+  const libres = mesasData.filter(m=>m.estado==='libre').length;
+  const enDelivery = deliveryData.filter(d=>['nuevo','en_cocina','en_camino'].includes(d.estado)).length;
+  const ventasHoy = facturasData.filter(f=>f.estado==='pagada').reduce((s,f)=>s+f.total,0);
+  document.getElementById('st-ocupadas').textContent = ocupadas;
+  document.getElementById('st-libres').textContent = libres;
+  document.getElementById('st-cocina').textContent = 3;
+  document.getElementById('st-delivery').textContent = enDelivery;
+  document.getElementById('st-ventas').textContent = '$'+ventasHoy.toLocaleString('es-AR');
+  document.getElementById('st-tickets').textContent = facturasData.filter(f=>f.estado==='pagada').length;
+  document.getElementById('mesasBadge').textContent = ocupadas;
+  document.getElementById('deliveryBadge').textContent = enDelivery;
+  renderDashMesas();
+  renderHourChart();
+  renderActividades();
+}
+
+function updateDashboardStats(data) {
+  if(data) {
+    if(data.mesas_ocupadas!==undefined) document.getElementById('st-ocupadas').textContent = data.mesas_ocupadas;
+    if(data.ventas_dia!==undefined) document.getElementById('st-ventas').textContent = '$'+data.ventas_dia.toLocaleString();
   }
 }
 
-// ROOM SWITCH
-function switchRoom(room,el){
-  document.querySelectorAll('.rt').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('room-salon').style.display=room==='salon'?'grid':'none';
-  document.getElementById('room-terraza').style.display=room==='terraza'?'grid':'none';
+function renderDashMesas() {
+  const el = document.getElementById('dashMesas');
+  el.innerHTML = mesasData.slice(0,12).map(m => `
+    <div style="border-radius:6px;padding:8px;text-align:center;background:${m.estado==='libre'?'#d4edda':m.estado==='ocupada'?'#fff3cd':'#f8d7da'};cursor:pointer;font-size:11px" onclick="navTo('mesas',document.querySelector('[data-section=mesas]'))">
+      <div style="font-size:18px;font-weight:800;color:var(--blue)">${m.numero}</div>
+      <div style="font-weight:600;color:${m.estado==='libre'?'#155724':m.estado==='ocupada'?'#856404':'#721c24'}">${m.estado.toUpperCase()}</div>
+    </div>`).join('');
 }
 
-// RENDER PRODUCTS
-let catFilter='all';
-function renderProducts(){
-  const q=(document.getElementById('prod-search')||{value:''}).value.toLowerCase();
-  const rows=PRODUCTS.filter(p=>{
-    const mc=catFilter==='all'||String(p.catId)===catFilter;
-    const mq=!q||p.name.toLowerCase().includes(q)||p.code.toLowerCase().includes(q);
-    return mc&&mq;
+function renderHourChart() {
+  const hours = [12,13,14,15,16,17,18,19,20,21,22,23];
+  const vals = [2400,3800,5200,4100,6800,8900,12400,15200,18600,14300,9800,5400];
+  const max = Math.max(...vals);
+  document.getElementById('hourChart').innerHTML = hours.map((h,i)=>`
+    <div class="bar-group">
+      <div class="bar-val">$${(vals[i]/1000).toFixed(0)}k</div>
+      <div class="bar" style="height:${Math.round(vals[i]/max*110)+10}px"></div>
+      <div class="bar-label">${h}h</div>
+    </div>`).join('');
+}
+
+function renderActividades() {
+  const acts = [
+    {icon:'🛵',text:'Delivery D-003 marcado como en camino',time:'14:52'},
+    {icon:'🪑',text:'Mesa 6 solicitó la cuenta',time:'14:48'},
+    {icon:'🍕',text:'Comanda #005 lista en cocina',time:'14:35'},
+    {icon:'🛵',text:'Nuevo pedido delivery D-002',time:'14:31'},
+    {icon:'🪑',text:'Mesa 2 abierta por Carlos',time:'13:47'},
+    {icon:'💰',text:'Caja abierta — turno iniciado',time:'09:00'},
+  ];
+  document.getElementById('actividadesList').innerHTML = acts.map(a=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:20px">${a.icon}</span>
+      <span style="flex:1;font-size:13.5px">${a.text}</span>
+      <span style="font-size:12px;color:var(--gray)">${a.time}</span>
+    </div>`).join('');
+}
+
+// ======= MESAS =======
+function switchTab(tab) {
+  currentMesaTab = tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+  renderMesas();
+}
+
+function renderMesas() {
+  const filtered = mesasData.filter(m=>m.zona===currentMesaTab);
+  const el = document.getElementById('mesasGrid');
+  if(!filtered.length){ el.innerHTML='<div class="empty-state"><div class="empty-icon">🪑</div><p>No hay mesas en esta zona</p></div>'; return; }
+  el.innerHTML = filtered.map(m=>`
+    <div class="mesa-card ${m.estado}" onclick="clickMesa(${m.id})">
+      <div class="mesa-num">${m.numero}</div>
+      <div class="mesa-estado">${m.estado==='libre'?'LIBRE':m.estado==='ocupada'?'OCUPADA':'CUENTA'}</div>
+      <div class="mesa-info">${m.mozo?'👨 '+m.mozo:m.capacidad+' personas'}</div>
+      ${m.tiempo?`<div class="mesa-info">⏱ ${m.tiempo}</div>`:''}
+      ${m.items?`<div class="mesa-info">📋 ${m.items} ítems</div>`:''}
+    </div>`).join('');
+}
+
+function clickMesa(id) {
+  const m = mesasData.find(x=>x.id===id);
+  if(!m) return;
+  document.getElementById('modalMesaTitle').textContent = `Mesa #${m.numero}`;
+  const body = document.getElementById('modalMesaBody');
+  const footer = document.getElementById('modalMesaFooter');
+  if(m.estado==='libre') {
+    body.innerHTML = `<p style="margin-bottom:14px;color:var(--gray)">Mesa libre · ${m.capacidad} personas</p>
+      <div class="form-group"><label>Mozo</label>
+        <select class="form-control" id="abrirMozo">
+          <option value="Carlos">Carlos</option><option value="Ana">Ana</option><option value="María">María</option>
+        </select>
+      </div>`;
+    footer.innerHTML = `<button class="btn btn-outline" onclick="closeModal('modalMesa')">Cancelar</button>
+      <button class="btn btn-success" onclick="abrirMesa(${id})">✅ Abrir Mesa</button>`;
+  } else {
+    const items = [
+      {nombre:'Pizza Muzarella Grande',qty:1,precio:1600},
+      {nombre:'Coca-Cola 500ml',qty:2,precio:600},
+    ];
+    const subtotal = items.reduce((s,i)=>s+i.precio*i.qty,0);
+    body.innerHTML = `
+      <div style="display:flex;gap:10px;margin-bottom:16px">
+        <span>👨 ${m.mozo||'-'}</span><span>⏱ ${m.tiempo||'-'}</span><span class="badge badge-${m.estado==='cuenta'?'danger':'warning'}">${m.estado.toUpperCase()}</span>
+      </div>
+      <table style="width:100%;font-size:13px;margin-bottom:16px">
+        <thead><tr><th>Item</th><th style="text-align:right">Cant.</th><th style="text-align:right">Precio</th></tr></thead>
+        <tbody>${items.map(i=>`<tr><td>${i.nombre}</td><td style="text-align:right">${i.qty}</td><td style="text-align:right">$${(i.precio*i.qty).toLocaleString()}</td></tr>`).join('')}</tbody>
+      </table>
+      <div style="font-size:20px;font-weight:800;color:var(--blue);text-align:right">Total: $${subtotal.toLocaleString()}</div>`;
+    footer.innerHTML = `<button class="btn btn-outline" onclick="closeModal('modalMesa')">Cancelar</button>
+      <button class="btn btn-warning" onclick="pedirCuenta(${id})">🧾 Pedir Cuenta</button>
+      <button class="btn btn-danger" onclick="cerrarMesa(${id})">✔️ Cobrar y Cerrar</button>`;
+  }
+  openModal('modalMesa');
+}
+
+function abrirMesa(id) {
+  const m = mesasData.find(x=>x.id===id);
+  const mozo = document.getElementById('abrirMozo').value;
+  m.estado='ocupada'; m.mozo=mozo; m.tiempo='00:00'; m.items=0;
+  closeModal('modalMesa');
+  renderMesas();
+  showToast(`Mesa #${m.numero} abierta por ${mozo}`,'success');
+  loadDashboard();
+}
+
+function pedirCuenta(id) {
+  const m = mesasData.find(x=>x.id===id);
+  m.estado='cuenta';
+  closeModal('modalMesa');
+  renderMesas();
+  showToast(`Mesa #${m.numero} — cuenta solicitada`);
+}
+
+function cerrarMesa(id) {
+  const m = mesasData.find(x=>x.id===id);
+  m.estado='libre'; m.mozo=null; m.tiempo=null; m.items=0;
+  const f = {id:facturasData.length+1,numero:`F-${String(facturasData.length+1).padStart(4,'0')}`,fecha:new Date().toISOString().slice(0,16).replace('T',' '),origen:`Mesa ${m.numero}`,items:2,total:2800,pago:'efectivo',estado:'pagada'};
+  facturasData.unshift(f);
+  closeModal('modalMesa');
+  renderMesas();
+  showToast(`Mesa #${m.numero} cerrada. Factura ${f.numero} emitida.`,'success');
+  loadDashboard();
+}
+
+function crearMesa() {
+  const num = parseInt(document.getElementById('nuevaMesaNum').value);
+  const cap = parseInt(document.getElementById('nuevaMesaCap').value)||4;
+  const zona = document.getElementById('nuevaMesaZona').value;
+  if(!num){ showToast('Ingresá número de mesa','error'); return; }
+  mesasData.push({id:Date.now(),numero:num,capacidad:cap,estado:'libre',zona,mozo:null,tiempo:null,items:0});
+  closeModal('modalNuevaMesa');
+  renderMesas();
+  showToast(`Mesa #${num} creada`,'success');
+}
+
+// ======= DELIVERY =======
+function renderDelivery() {
+  const stages = [
+    {key:'nuevo',label:'NUEVO',cls:'pipeline-nuevo'},
+    {key:'en_cocina',label:'EN COCINA',cls:'pipeline-cocina'},
+    {key:'listo',label:'LISTO',cls:'pipeline-listo'},
+    {key:'en_camino',label:'EN CAMINO',cls:'pipeline-camino'},
+    {key:'entregado',label:'ENTREGADO',cls:'pipeline-entregado'},
+  ];
+  document.getElementById('deliveryPipeline').innerHTML = stages.map(s=>{
+    const orders = deliveryData.filter(d=>d.estado===s.key);
+    return `<div class="pipeline-col ${s.cls}">
+      <div class="pipeline-header">${s.label} (${orders.length})</div>
+      <div class="pipeline-body">${orders.map(o=>renderDeliveryCard(o,s.key)).join('')||'<div style="color:#aaa;font-size:12px;text-align:center;padding:16px">Vacío</div>'}
+      </div></div>`;
+  }).join('');
+}
+
+function renderDeliveryCard(o,stage) {
+  const nextBtn = {
+    nuevo:`<button class="btn btn-warning btn-sm" onclick="advanceDelivery(${o.id})">▶ A Cocina</button>`,
+    en_cocina:`<button class="btn btn-primary btn-sm" onclick="advanceDelivery(${o.id})">✔ Marcar Listo</button>`,
+    listo:`<button class="btn btn-success btn-sm" onclick="advanceDelivery(${o.id})">🛵 Enviar</button>`,
+    en_camino:`<button class="btn btn-secondary btn-sm" onclick="advanceDelivery(${o.id})">✅ Entregado</button>`,
+    entregado:'',
+  }[stage]||'';
+  return `<div class="delivery-card">
+    <div class="delivery-card-num">${o.numero}</div>
+    <div class="delivery-card-client">👤 ${o.cliente.nombre}</div>
+    <div class="delivery-card-items">${o.items.map(i=>`${i.qty}x ${i.nombre}`).join(', ')}</div>
+    <div style="font-size:11px;color:var(--gray)">📍 ${o.direccion}</div>
+    <div class="delivery-card-total">💰 $${o.total.toLocaleString()} · ${o.metodo_pago}</div>
+    <div class="delivery-card-actions">${nextBtn}</div>
+  </div>`;
+}
+
+function advanceDelivery(id) {
+  const o = deliveryData.find(x=>x.id===id);
+  const flow = ['nuevo','en_cocina','listo','en_camino','entregado'];
+  const idx = flow.indexOf(o.estado);
+  if(idx<flow.length-1) o.estado=flow[idx+1];
+  renderDelivery();
+  loadDashboard();
+  showToast(`Pedido ${o.numero} → ${o.estado}`);
+}
+
+function crearDelivery() {
+  const cliente = document.getElementById('dlvCliente').value;
+  const tel = document.getElementById('dlvTel').value;
+  const dir = document.getElementById('dlvDir').value;
+  if(!cliente||!dir){ showToast('Completá los datos del cliente','error'); return; }
+  const newId = deliveryData.length+1;
+  deliveryData.unshift({
+    id:newId, numero:`D-${String(newId).padStart(3,'0')}`, estado:'nuevo',
+    cliente:{nombre:cliente,telefono:tel}, direccion:dir,
+    items:[{nombre:'A confirmar',qty:1,precio:0}], total:0,
+    metodo_pago: document.getElementById('dlvPago').value,
+    repartidor: document.getElementById('dlvRepartidor').value||null,
+    hora: new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})
   });
-  const body=document.getElementById('products-body');
-  if(!body) return;
-  body.innerHTML=rows.map(p=>{
-    const cost=p.cost!=null?`$${p.cost}`:'<span style="color:#a0aec0">—</span>';
-    const margin=p.cost!=null?`$${(p.price-p.cost).toFixed(2)}`:'<span style="color:#a0aec0">—</span>';
-    const mpct=p.cost!=null?`${((p.price-p.cost)/p.price*100).toFixed(1)}%`:'<span style="color:#a0aec0">—</span>';
-    const mup=p.cost!=null?`${((p.price-p.cost)/p.cost*100).toFixed(1)}%`:'<span style="color:#a0aec0">—</span>';
-    const stk=p.stock!=null?(p.stock>0?`<span class="tag tg-green">${p.stock}</span>`:`<span class="tag tg-red">0</span>`):'<span style="color:#a0aec0">—</span>';
-    const catColors={1:'tg-blue',2:'tg-orange',3:'tg-purple',4:'tg-green'};
+  closeModal('modalNuevoDelivery');
+  renderDelivery();
+  loadDashboard();
+  showToast(`Delivery ${deliveryData[0].numero} creado`,'success');
+}
+
+function addDlvItem() {
+  const container = document.getElementById('dlvItems');
+  const d = document.createElement('div');
+  d.style.cssText = 'display:flex;gap:8px;margin-top:8px;align-items:center';
+  d.innerHTML = `<select class="form-control" style="flex:2">${productosData.map(p=>`<option value="${p.id}">${p.emoji} ${p.nombre}</option>`).join('')}</select>
+    <input class="form-control" type="number" value="1" min="1" style="width:70px"/>
+    <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✕</button>`;
+  container.appendChild(d);
+}
+
+// ======= PRODUCTOS =======
+let productosFiltro = '';
+let productosCatFiltro = '';
+
+function renderProductos() {
+  let data = productosData.filter(p=>{
+    const matchNombre = p.nombre.toLowerCase().includes(productosFiltro.toLowerCase());
+    const matchCat = !productosCatFiltro || p.categoria===productosCatFiltro;
+    return matchNombre && matchCat;
+  });
+  document.getElementById('productosTbody').innerHTML = data.map(p=>`
+    <tr>
+      <td>${p.emoji} <strong>${p.nombre}</strong>${p.descripcion?`<div style="font-size:11px;color:var(--gray)">${p.descripcion}</div>`:''}</td>
+      <td><span class="tag">${p.categoria}</span></td>
+      <td>${p.precio_chica?'$'+p.precio_chica.toLocaleString():'-'}</td>
+      <td>${p.precio_mediana?'$'+p.precio_mediana.toLocaleString():p.precio?'$'+p.precio.toLocaleString():'-'}</td>
+      <td>${p.precio_grande?'$'+p.precio_grande.toLocaleString():'-'}</td>
+      <td><span class="badge ${p.activo?'badge-success':'badge-secondary'}">${p.activo?'Activo':'Inactivo'}</span></td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick="editProducto(${p.id})">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteProducto(${p.id})" style="margin-left:4px">🗑️</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="7" class="text-muted" style="text-align:center;padding:24px">No se encontraron productos</td></tr>';
+}
+
+function filterProductos(v){ productosFiltro=v; renderProductos(); }
+function filterProductosCat(v){ productosCatFiltro=v; renderProductos(); }
+
+function toggleProdPrecios() {
+  const cat = document.getElementById('prodCat').value;
+  document.getElementById('prodPrecioVariantes').style.display = cat==='pizzas'?'block':'none';
+  document.getElementById('prodPrecioUnico').style.display = cat!=='pizzas'?'block':'none';
+}
+
+function editProducto(id) {
+  const p = productosData.find(x=>x.id===id);
+  editingProdId = id;
+  document.getElementById('modalProdTitle').textContent = 'Editar Producto';
+  document.getElementById('prodNombre').value = p.nombre;
+  document.getElementById('prodCat').value = p.categoria;
+  document.getElementById('prodDesc').value = p.descripcion||'';
+  document.getElementById('prodEmoji').value = p.emoji||'🍕';
+  toggleProdPrecios();
+  if(p.precio_chica){ document.getElementById('prodPChica').value=p.precio_chica; document.getElementById('prodPMed').value=p.precio_mediana; document.getElementById('prodPGrande').value=p.precio_grande; }
+  else if(p.precio){ document.getElementById('prodPrecio').value=p.precio; }
+  openModal('modalProducto');
+}
+
+function guardarProducto() {
+  const nombre = document.getElementById('prodNombre').value;
+  const cat = document.getElementById('prodCat').value;
+  if(!nombre){ showToast('Ingresá el nombre del producto','error'); return; }
+  const base = { nombre, categoria:cat, emoji:document.getElementById('prodEmoji').value||'🍕', descripcion:document.getElementById('prodDesc').value, activo:true };
+  if(cat==='pizzas'){
+    base.precio_chica=parseInt(document.getElementById('prodPChica').value)||0;
+    base.precio_mediana=parseInt(document.getElementById('prodPMed').value)||0;
+    base.precio_grande=parseInt(document.getElementById('prodPGrande').value)||0;
+  } else { base.precio=parseInt(document.getElementById('prodPrecio').value)||0; }
+  if(editingProdId) {
+    const idx = productosData.findIndex(x=>x.id===editingProdId);
+    productosData[idx] = {...productosData[idx],...base};
+  } else {
+    productosData.push({id:Date.now(),...base});
+  }
+  editingProdId=null;
+  closeModal('modalProducto');
+  renderProductos();
+  showToast('Producto guardado','success');
+}
+
+function deleteProducto(id) {
+  if(!confirm('¿Eliminar este producto?')) return;
+  productosData = productosData.filter(x=>x.id!==id);
+  renderProductos();
+  showToast('Producto eliminado');
+}
+
+// ======= STOCK =======
+function renderStock() {
+  const ok = stockData.filter(s=>s.actual>=s.minimo).length;
+  const bajo = stockData.filter(s=>s.actual>0&&s.actual<s.minimo).length;
+  const sin = stockData.filter(s=>s.actual===0).length;
+  document.getElementById('st-ok').textContent=ok;
+  document.getElementById('st-bajo').textContent=bajo;
+  document.getElementById('st-sin').textContent=sin;
+  document.getElementById('stockTbody').innerHTML = stockData.map(s=>{
+    const est = s.actual===0?'danger':s.actual<s.minimo?'warning':'success';
+    const label = s.actual===0?'Sin Stock':s.actual<s.minimo?'Stock Bajo':'OK';
     return `<tr>
-      <td style="font-family:monospace;font-size:12px;color:#718096">${p.code}</td>
-      <td style="font-weight:500">${p.name}</td>
-      <td><span class="tag ${catColors[p.catId]||'tg-gray'}">${p.cat}</span></td>
-      <td>${cost}</td><td>${margin}</td><td>${mpct}</td><td>${mup}</td>
-      <td><strong style="color:#ff5023">$${p.price}</strong></td>
-      <td>${stk}</td>
-      <td><button class="btn btn-sec btn-sm" title="Editar">✏️</button></td>
+      <td><strong>${s.nombre}</strong></td>
+      <td><input type="number" value="${s.actual}" min="0" class="form-control" style="width:90px;padding:5px 8px" onchange="updateStock(${s.id},this.value)"/></td>
+      <td>${s.minimo} ${s.unidad}</td>
+      <td>${s.unidad}</td>
+      <td><span class="badge badge-${est}">${label}</span></td>
+      <td><button class="btn btn-outline btn-sm" onclick="ajustarStock(${s.id})">Ajustar</button></td>
     </tr>`;
   }).join('');
-  const cnt=document.getElementById('prod-count');
-  if(cnt) cnt.textContent=`${rows.length} producto${rows.length!==1?'s':''}`;
+  document.getElementById('stockMovimientos').innerHTML = `
+    <div style="font-size:13px;color:var(--gray)">
+      ${[
+        {icon:'📉',text:'Queso Mozzarella: -2 kg por uso en producción',time:'14:30'},
+        {icon:'📦',text:'Coca-Cola 500ml: +24 unidades (compra)',time:'11:00'},
+        {icon:'⚠️',text:'Salsa de tomate: stock bajo (8/15)',time:'09:30'},
+        {icon:'📦',text:'Harina de trigo: +30 kg (compra proveedor)',time:'09:00'},
+      ].map(m=>`<div style="display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+        <span>${m.icon}</span><span style="flex:1">${m.text}</span><span style="font-size:11px">${m.time}</span>
+      </div>`).join('')}
+    </div>`;
 }
 
-function filterCat(cat,el){
-  catFilter=cat;
-  document.querySelectorAll('.fb').forEach(b=>b.classList.remove('active'));
-  el.classList.add('active');
-  renderProducts();
+function updateStock(id, val) {
+  const s = stockData.find(x=>x.id===id);
+  if(s) s.actual = parseInt(val)||0;
+  renderStock();
 }
 
-// NAV
-function nav(section){
-  if(!SECTION_TITLES[section]) return;
-  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
-  const sec=document.getElementById('section-'+section);
-  if(sec) sec.classList.add('active');
-  const nel=document.getElementById('nav-'+section);
-  if(nel) nel.classList.add('active');
-  const tit=document.getElementById('page-title');
-  if(tit) tit.textContent=SECTION_TITLES[section];
-  window.location.hash='#/'+section;
-  closeUD();
+function ajustarStock(id) {
+  const s = stockData.find(x=>x.id===id);
+  const qty = prompt(`Ajustar stock de "${s.nombre}" (actual: ${s.actual} ${s.unidad}).\nIngresá la nueva cantidad:`);
+  if(qty!==null && !isNaN(qty)) { s.actual=parseInt(qty); renderStock(); showToast('Stock actualizado','success'); }
 }
 
-// USER DROPDOWN
-function toggleUD(e){
-  e.stopPropagation();
-  const dd=document.getElementById('udrop');
-  const ar=document.getElementById('darrow');
-  const open=dd.classList.toggle('open');
-  ar.style.transform=open?'rotate(180deg)':'';
-}
-function closeUD(){
-  document.getElementById('udrop').classList.remove('open');
-  document.getElementById('darrow').style.transform='';
-}
-document.addEventListener('click',closeUD);
+// ======= CAJA =======
+let cajaAbierta = true;
+let cajaInicial = 5000;
 
-// TABLE MODAL
-function openTable(n){
-  document.getElementById('modal-t-title').textContent='Mesa '+n;
-  document.getElementById('table-modal').classList.add('open');
-}
-function closeModal(){document.getElementById('table-modal').classList.remove('open');}
-document.getElementById('table-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
-
-// DELIVERY TOGGLE
-function toggleDel(){
-  const t=document.getElementById('del-tog');
-  const s=document.getElementById('del-status');
-  t.classList.toggle('on');
-  s.textContent=t.classList.contains('on')?'activado':'desactivado';
-}
-
-// LOGIN / LOGOUT
-function doLogin(){
-  const u=document.getElementById('login-user').value.trim();
-  const p=document.getElementById('login-pass').value.trim();
-  const err=document.getElementById('login-error');
-  if(p.length>0&&(u==='admin@raquitos'||u==='admin'||u==='admin@raquitos')){
-    err.style.display='none';
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('app').style.display='block';
-    renderTables();
-    renderProducts();
-  } else {
-    err.style.display='block';
-  }
-}
-function doLogout(){
-  document.getElementById('app').style.display='none';
-  document.getElementById('login-screen').style.display='flex';
-  document.getElementById('login-pass').value='';
+function renderCaja() {
+  const total = cajaMoves.reduce((s,m)=>s+(m.tipo==='ingreso'?m.monto:-m.monto),0);
+  const efectivo = cajaMoves.filter(m=>m.tipo==='ingreso').reduce((s,m)=>s+m.monto,0);
+  const egreso = cajaMoves.filter(m=>m.tipo==='egreso').reduce((s,m)=>s+m.monto,0);
+  document.getElementById('cajaCash').textContent = '$'+efectivo.toLocaleString();
+  document.getElementById('cajaTarjeta').textContent = '$3.800';
+  document.getElementById('cajaTotal').textContent = '$'+(total+3800).toLocaleString();
+  document.getElementById('cajaEstado').innerHTML = cajaAbierta ? `
+    <div class="badge badge-success" style="font-size:14px;padding:6px 16px;margin-bottom:12px">🟢 CAJA ABIERTA</div>
+    <div style="margin:12px 0;font-size:13px"><strong>Turno iniciado:</strong> 09:00 hs</div>
+    <div style="font-size:13px"><strong>Monto inicial:</strong> $${cajaInicial.toLocaleString()}</div>
+    <button class="btn btn-danger mt-2" onclick="cerrarCaja()">🔴 Cerrar Caja</button>` :
+    `<div class="badge badge-danger" style="font-size:14px;padding:6px 16px;margin-bottom:12px">🔴 CAJA CERRADA</div>
+    <div class="form-group mt-2"><label>Monto inicial ($)</label><input class="form-control" id="cajaInicialInput" type="number" placeholder="5000" value="5000"/></div>
+    <button class="btn btn-success mt-1" onclick="abrirCaja()">🟢 Abrir Caja</button>`;
+  document.getElementById('cajaMov').innerHTML = cajaMoves.map(m=>`
+    <tr>
+      <td>${m.hora}</td>
+      <td><span class="badge ${m.tipo==='ingreso'?'badge-success':'badge-danger'}">${m.tipo.toUpperCase()}</span></td>
+      <td>${m.desc}</td>
+      <td style="font-weight:600;color:${m.tipo==='ingreso'?'var(--success)':'var(--danger)'}">
+        ${m.tipo==='ingreso'?'+':'-'}$${m.monto.toLocaleString()}</td>
+    </tr>`).join('');
 }
 
-// ENTER KEY
-document.addEventListener('keydown',e=>{
-  if(e.key==='Enter'){
-    const ls=document.getElementById('login-screen');
-    if(ls&&ls.style.display!=='none') doLogin();
-  }
-});
+function abrirCaja() {
+  const monto = parseInt(document.getElementById('cajaInicialInput').value)||5000;
+  cajaInicial=monto; cajaAbierta=true;
+  cajaMoves.push({hora:new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}),tipo:'ingreso',desc:'Apertura de caja',monto});
+  renderCaja(); showToast('Caja abierta','success');
+}
+
+function cerrarCaja() {
+  if(!confirm('¿Cerrar la caja del turno actual?')) return;
+  cajaAbierta=false;
+  renderCaja(); showToast('Caja cerrada correctamente');
+}
+
+function guardarMovCaja() {
+  const tipo = document.getElementById('movTipo').value;
+  const desc = document.getElementById('movDesc').value;
+  const monto = parseInt(document.getElementById('movMonto').value)||0;
+  if(!desc||!monto){ showToast('Completá todos los campos','error'); return; }
+  cajaMoves.push({hora:new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}),tipo,desc,monto});
+  closeModal('modalMovCaja');
+  renderCaja(); showToast('Movimiento registrado','success');
+}
+
+// ======= FACTURACIÓN =======
+function loadFacturacion() {
+  const total = facturasData.filter(f=>f.estado==='pagada').reduce((s,f)=>s+f.total,0);
+  const count = facturasData.filter(f=>f.estado==='pagada').length;
+  document.getElementById('factTotal').textContent='$'+total.toLocaleString();
+  document.getElementById('factCount').textContent=count;
+  document.getElementById('factAvg').textContent='$'+(count?Math.round(total/count):0).toLocaleString();
+  document.getElementById('factTbody').innerHTML = facturasData.map(f=>`
+    <tr>
+      <td><strong>${f.numero}</strong></td>
+      <td style="font-size:12px">${f.fecha}</td>
+      <td>${f.origen}</td>
+      <td>${f.items}</td>
+      <td><strong>$${f.total.toLocaleString()}</strong></td>
+      <td><span class="tag">${f.pago}</span></td>
+      <td><span class="badge ${f.estado==='pagada'?'badge-success':'badge-danger'}">${f.estado}</span></td>
+      <td><button class="btn btn-outline btn-sm" onclick="window.print()">🖨️</button></td>
+    </tr>`).join('');
+}
+
+// ======= CLIENTES =======
+function renderClientes() {
+  let data = clientesData.filter(c=>!c._filter||c.nombre.toLowerCase().includes(c._filter)||c.telefono.includes(c._filter));
+  document.getElementById('clientesTbody').innerHTML = clientesData.map(c=>`
+    <tr>
+      <td><strong>${c.nombre}</strong></td>
+      <td>${c.telefono}</td>
+      <td>${c.email||'-'}</td>
+      <td>${c.pedidos}</td>
+      <td><strong>$${c.total_gastado.toLocaleString()}</strong></td>
+      <td>${c.ultimo}</td>
+      <td><button class="btn btn-outline btn-sm" onclick="verCliente(${c.id})">Ver</button></td>
+    </tr>`).join('');
+}
+
+function filterClientes(v) {
+  const vl = v.toLowerCase();
+  document.getElementById('clientesTbody').innerHTML = clientesData.filter(c=>
+    c.nombre.toLowerCase().includes(vl)||c.telefono.includes(vl)||(c.email||'').toLowerCase().includes(vl)
+  ).map(c=>`
+    <tr>
+      <td><strong>${c.nombre}</strong></td>
+      <td>${c.telefono}</td>
+      <td>${c.email||'-'}</td>
+      <td>${c.pedidos}</td>
+      <td><strong>$${c.total_gastado.toLocaleString()}</strong></td>
+      <td>${c.ultimo}</td>
+      <td><button class="btn btn-outline btn-sm" onclick="verCliente(${c.id})">Ver</button></td>
+    </tr>`).join('');
+}
+
+function verCliente(id) {
+  const c = clientesData.find(x=>x.id===id);
+  alert(`Cliente: ${c.nombre}\nTel: ${c.telefono}\nEmail: ${c.email}\nPedidos: ${c.pedidos}\nTotal gastado: $${c.total_gastado.toLocaleString()}`);
+}
+
+function guardarCliente() {
+  const nombre = document.getElementById('cliNombre').value;
+  if(!nombre){ showToast('Ingresá el nombre','error'); return; }
+  clientesData.unshift({id:Date.now(),nombre,telefono:document.getElementById('cliTel').value,email:document.getElementById('cliEmail').value,direccion:document.getElementById('cliDir').value,pedidos:0,total_gastado:0,ultimo:new Date().toISOString().slice(0,10)});
+  closeModal('modalCliente');
+  renderClientes(); showToast('Cliente guardado','success');
+}
+
+// ======= REPORTES =======
+let reporteRange = 'hoy';
+
+function setReporteRange(range, el) {
+  reporteRange = range;
+  document.querySelectorAll('.filter-bar .tab').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  renderReportes();
+}
+
+function renderReportes() {
+  const multiplier = reporteRange==='hoy'?1:reporteRange==='semana'?7:30;
+  const baseVentas = 48600;
+  const ventas = baseVentas * multiplier;
+  const pedidos = Math.round(28 * multiplier);
+  const avg = Math.round(ventas/pedidos);
+  const nuevos = Math.round(3 * multiplier);
+  document.getElementById('rpt-ventas').textContent='$'+ventas.toLocaleString();
+  document.getElementById('rpt-pedidos').textContent=pedidos;
+  document.getElementById('rpt-avg').textContent='$'+avg.toLocaleString();
+  document.getElementById('rpt-nuevos').textContent=nuevos;
+  // Chart
+  const days = reporteRange==='hoy'?['12h','13h','14h','15h','16h','17h','18h','19h','20h','21h','22h','23h']:reporteRange==='semana'?['Lun','Mar','Mié','Jue','Vie','Sáb','Dom']:['S1','S2','S3','S4'];
+  const vals = days.map(()=>Math.round(5000+Math.random()*25000));
+  const max = Math.max(...vals);
+  document.getElementById('reporteChart').innerHTML = days.map((d,i)=>`
+    <div class="bar-group">
+      <div class="bar-val">$${(vals[i]/1000).toFixed(0)}k</div>
+      <div class="bar" style="height:${Math.round(vals[i]/max*130)+10}px"></div>
+      <div class="bar-label">${d}</div>
+    </div>`).join('');
+  // Top productos
+  const tops = [
+    {nombre:'Pizza Muzarella Grande',vendidos:Math.round(42*multiplier),total:Math.round(67200*multiplier)},
+    {nombre:'Pizza 4 Quesos Grande',vendidos:Math.round(31*multiplier),total:Math.round(62000*multiplier)},
+    {nombre:'Pizza Napolitana Grande',vendidos:Math.round(28*multiplier),total:Math.round(50400*multiplier)},
+    {nombre:'Fernet con Coca',vendidos:Math.round(19*multiplier),total:Math.round(34200*multiplier)},
+    {nombre:'Cerveza 1L',vendidos:Math.round(17*multiplier),total:Math.round(20400*multiplier)},
+  ];
+  document.getElementById('topProductos').innerHTML = `<table style="width:100%;font-size:13px">
+    <thead><tr><th>#</th><th>Producto</th><th>Vendidos</th><th>Total</th></tr></thead>
+    <tbody>${tops.map((t,i)=>`<tr><td><strong>${i+1}</strong></td><td>${t.nombre}</td><td>${t.vendidos}</td><td>$${t.total.toLocaleString()}</td></tr>`).join('')}</tbody>
+  </table>`;
+  // Categorías
+  const cats = [{nombre:'Pizzas',pct:62,color:'#e63946'},{nombre:'Bebidas',pct:18,color:'#17a2b8'},{nombre:'Tragos',pct:10,color:'#6f42c1'},{nombre:'Empanadas',pct:7,color:'#fd7e14'},{nombre:'Otros',pct:3,color:'#28a745'}];
+  document.getElementById('catChart').innerHTML = `<div class="pie-legend">${cats.map(c=>`
+    <div class="pie-item">
+      <div class="pie-dot" style="background:${c.color}"></div>
+      <div style="flex:1">${c.nombre}</div>
+      <div style="font-weight:700">${c.pct}%</div>
+      <div style="width:120px;height:8px;background:#f1f3f4;border-radius:4px;overflow:hidden">
+        <div style="height:100%;width:${c.pct}%;background:${c.color};border-radius:4px"></div>
+      </div>
+    </div>`).join('')}</div>`;
+  // Salón vs Delivery
+  const salon = 68; const delivery = 32;
+  document.getElementById('salonVsDelivery').innerHTML = `
+    <div style="display:flex;gap:24px;align-items:center">
+      <div style="text-align:center"><div style="font-size:36px;font-weight:800;color:var(--blue)">${salon}%</div><div style="color:var(--gray);font-size:13px">🏠 Salón</div></div>
+      <div style="flex:1"><div style="height:24px;background:#f1f3f4;border-radius:12px;overflow:hidden;display:flex">
+        <div style="width:${salon}%;background:var(--blue);border-radius:12px 0 0 12px"></div>
+        <div style="width:${delivery}%;background:var(--red)"></div>
+      </div><div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px">
+        <span style="color:var(--blue);font-weight:600">Salón ${salon}%</span>
+        <span style="color:var(--red);font-weight:600">Delivery ${delivery}%</span>
+      </div></div>
+      <div style="text-align:center"><div style="font-size:36px;font-weight:800;color:var(--red)">${delivery}%</div><div style="color:var(--gray);font-size:13px">🛵 Delivery</div></div>
+    </div>`;
+}
+
+// ======= USUARIOS =======
+function renderUsuarios() {
+  const roles = {admin:'Administrador',mozo:'Mozo',cajero:'Cajero',cocina:'Cocina'};
+  document.getElementById('usuariosTbody').innerHTML = usuariosData.map(u=>`
+    <tr>
+      <td><strong>${u.nombre}</strong></td>
+      <td>${u.email}</td>
+      <td><span class="tag">${roles[u.rol]||u.rol}</span></td>
+      <td><span class="badge ${u.activo?'badge-success':'badge-secondary'}">${u.activo?'Activo':'Inactivo'}</span></td>
+      <td style="font-size:12px">${u.ultimo}</td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick="toggleUsuario(${u.id})">${u.activo?'Desactivar':'Activar'}</button>
+        ${u.id!==currentUser?.id?`<button class="btn btn-danger btn-sm" style="margin-left:4px" onclick="deleteUsuario(${u.id})">🗑️</button>`:''}
+      </td>
+    </tr>`).join('');
+}
+
+function toggleUsuario(id) {
+  const u = usuariosData.find(x=>x.id===id);
+  u.activo=!u.activo; renderUsuarios();
+  showToast(`Usuario ${u.nombre} ${u.activo?'activado':'desactivado'}`);
+}
+
+function deleteUsuario(id) {
+  if(!confirm('¿Eliminar este usuario?')) return;
+  usuariosData=usuariosData.filter(x=>x.id!==id); renderUsuarios();
+  showToast('Usuario eliminado');
+}
+
+function guardarUsuario() {
+  const nombre=document.getElementById('usrNombre').value;
+  const email=document.getElementById('usrEmail').value;
+  if(!nombre||!email){ showToast('Completá nombre y email','error'); return; }
+  usuariosData.push({id:Date.now(),nombre,email,rol:document.getElementById('usrRol').value,activo:true,ultimo:'-'});
+  closeModal('modalUsuario'); renderUsuarios(); showToast('Usuario creado','success');
+}
+
+// ======= CONFIG =======
+function saveConfig() {
+  showToast('Configuración guardada','success');
+}
+
+// ======= HELPERS =======
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); }));
+
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type?' '+type:'');
+  setTimeout(()=>{ t.className='toast'; }, 3000);
+}
+
+// ======= PRODUCTO modal open reset =======
+document.getElementById('modalProducto').addEventListener('click',()=>{});
+function openModalProducto() {
+  editingProdId=null;
+  document.getElementById('modalProdTitle').textContent='Nuevo Producto';
+  ['prodNombre','prodDesc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('prodEmoji').value='🍕';
+  document.getElementById('prodCat').value='pizzas';
+  toggleProdPrecios();
+  openModal('modalProducto');
+}
+// Override button to reset form
+document.querySelector('[onclick="openModal(\'modalProducto\')"]').setAttribute('onclick','openModalProducto()');
 </script>
 </body>
 </html>
