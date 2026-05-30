@@ -1,900 +1,1180 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Consulta de Artículos</title>
-  <style>
-    :root {
-      --primary: #0f2d52;
-      --primary-light: #1a4a80;
-      --accent: #2563eb;
-      --accent-hover: #1d4ed8;
-      --bg: #f1f5f9;
-      --card: #ffffff;
-      --border: #e2e8f0;
-      --text: #1e293b;
-      --muted: #64748b;
-      --success-bg: #dcfce7;
-      --success-text: #15803d;
-      --danger-bg: #fee2e2;
-      --danger-text: #b91c1c;
-      --radius: 10px;
-      --shadow: 0 4px 16px rgba(0,0,0,0.08);
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
-
-    /* ── HEADER ── */
-    header {
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-      color: white;
-      padding: 0 32px;
-      height: 64px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.2);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    .header-brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .header-icon {
-      width: 36px;
-      height: 36px;
-      background: rgba(255,255,255,0.15);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-    }
-
-    .header-title { font-size: 1.1rem; font-weight: 700; letter-spacing: 0.3px; }
-    .header-sub   { font-size: 0.75rem; opacity: 0.7; margin-top: 1px; }
-
-    .header-badge {
-      background: rgba(255,255,255,0.12);
-      border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 20px;
-      padding: 4px 14px;
-      font-size: 0.78rem;
-      opacity: 0.9;
-    }
-
-    /* ── LAYOUT ── */
-    .container {
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 28px 24px;
-    }
-
-    /* ── SEARCH ── */
-    .search-card {
-      background: var(--card);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 20px 24px;
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-
-    .search-icon {
-      color: var(--muted);
-      font-size: 18px;
-      flex-shrink: 0;
-    }
-
-    .search-card input {
-      flex: 1;
-      border: 1.5px solid var(--border);
-      border-radius: 8px;
-      padding: 11px 16px;
-      font-size: 0.95rem;
-      color: var(--text);
-      outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      background: #f8fafc;
-    }
-
-    .search-card input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
-      background: white;
-    }
-
-    .search-card input::placeholder { color: #a0aec0; }
-
-    .btn-search {
-      padding: 11px 28px;
-      background: var(--accent);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
-      white-space: nowrap;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .btn-search:hover  { background: var(--accent-hover); }
-    .btn-search:active { transform: scale(0.98); }
-
-    /* ── INFO BAR ── */
-    .info-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-      min-height: 24px;
-    }
-
-    .info-text { font-size: 0.83rem; color: var(--muted); }
-
-    .hint {
-      font-size: 0.78rem;
-      color: var(--muted);
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    /* ── FILTERS ── */
-    .filter-bar {
-      background: var(--card);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 14px 20px;
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
-    }
-
-    .filter-label {
-      font-size: 0.78rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      color: var(--muted);
-      white-space: nowrap;
-    }
-
-    .filter-select {
-      padding: 8px 12px;
-      border: 1.5px solid var(--border);
-      border-radius: 7px;
-      font-size: 0.875rem;
-      color: var(--text);
-      background: #f8fafc;
-      cursor: pointer;
-      outline: none;
-      transition: border-color 0.2s;
-      min-width: 160px;
-    }
-
-    .filter-select:focus { border-color: var(--accent); }
-
-    .filter-select.active {
-      border-color: var(--accent);
-      background: #eff6ff;
-      color: var(--accent);
-      font-weight: 600;
-    }
-
-    .btn-clear-filters {
-      padding: 7px 14px;
-      border: 1.5px solid #fca5a5;
-      background: #fff5f5;
-      color: #dc2626;
-      border-radius: 7px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s;
-      white-space: nowrap;
-    }
-
-    .btn-clear-filters:hover { background: #fee2e2; }
-
-    /* ── TABLE ── */
-    .table-card {
-      background: var(--card);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-
-    .table-wrapper { overflow-x: auto; }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.875rem;
-    }
-
-    thead { background: var(--primary); }
-
-    thead th {
-      padding: 13px 16px;
-      text-align: left;
-      color: white;
-      font-weight: 600;
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      white-space: nowrap;
-    }
-
-    tbody tr {
-      border-bottom: 1px solid var(--border);
-      cursor: pointer;
-      transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
-    }
-
-    tbody tr:last-child { border-bottom: none; }
-
-    tbody tr:hover {
-      background: #eff6ff;
-      transform: scale(1.003);
-      box-shadow: 0 2px 12px rgba(37,99,235,0.1);
-      position: relative;
-      z-index: 1;
-    }
-
-    tbody tr:nth-child(even) { background: #f8fafc; }
-    tbody tr:nth-child(even):hover { background: #eff6ff; }
-
-    tbody td {
-      padding: 11px 16px;
-      white-space: nowrap;
-      color: var(--text);
-    }
-
-    .col-codigo { font-weight: 600; color: var(--accent); font-family: monospace; font-size: 0.85rem; }
-    .col-desc   { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
-    .col-precio { font-weight: 700; color: #059669; }
-    .col-stock  { font-weight: 600; }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 3px 10px;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      letter-spacing: 0.3px;
-    }
-
-    .badge-active  { background: var(--success-bg); color: var(--success-text); }
-    .badge-inactive{ background: var(--danger-bg);  color: var(--danger-text); }
-
-    /* ── EMPTY / LOADING ── */
-    .state-row td {
-      text-align: center;
-      padding: 60px 20px;
-      color: var(--muted);
-      font-size: 0.9rem;
-      cursor: default !important;
-    }
-
-    .state-row:hover {
-      background: transparent !important;
-      transform: none !important;
-      box-shadow: none !important;
-    }
-
-    .state-icon { font-size: 2.5rem; display: block; margin-bottom: 10px; opacity: 0.4; }
-
-    /* ── PAGINATION ── */
-    .paginacion {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 6px;
-      padding: 16px;
-      border-top: 1px solid var(--border);
-    }
-
-    .btn-pag {
-      padding: 7px 16px;
-      border: 1.5px solid var(--border);
-      background: white;
-      border-radius: 7px;
-      cursor: pointer;
-      font-size: 0.84rem;
-      font-weight: 500;
-      color: var(--text);
-      transition: all 0.15s;
-    }
-
-    .btn-pag:hover:not(:disabled) {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: white;
-    }
-
-    .btn-pag:disabled { opacity: 0.35; cursor: default; }
-    .pag-info { font-size: 0.84rem; color: var(--muted); padding: 0 8px; }
-
-    /* ── MODAL OVERLAY ── */
-    .overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(10, 20, 40, 0.55);
-      backdrop-filter: blur(4px);
-      z-index: 500;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s;
-    }
-
-    .overlay.visible {
-      opacity: 1;
-      pointer-events: all;
-    }
-
-    /* ── MODAL ── */
-    .modal {
-      background: var(--card);
-      border-radius: 14px;
-      box-shadow: 0 24px 60px rgba(0,0,0,0.25);
-      width: 100%;
-      max-width: 720px;
-      max-height: 90vh;
-      overflow-y: auto;
-      transform: scale(0.92) translateY(20px);
-      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-
-    .overlay.visible .modal {
-      transform: scale(1) translateY(0);
-    }
-
-    .modal-header {
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-      color: white;
-      padding: 20px 24px;
-      border-radius: 14px 14px 0 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-    }
-
-    .modal-codigo { font-size: 0.78rem; opacity: 0.7; font-family: monospace; margin-bottom: 4px; }
-    .modal-titulo { font-size: 1.15rem; font-weight: 700; line-height: 1.3; }
-    .modal-subtitulo { font-size: 0.82rem; opacity: 0.75; margin-top: 4px; }
-
-    .modal-price-bar {
-      background: #f0fdf4;
-      border-bottom: 1px solid #bbf7d0;
-      padding: 16px 24px;
-      display: flex;
-      align-items: center;
-      gap: 32px;
-      flex-wrap: wrap;
-    }
-
-    .price-featured {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .price-featured-label {
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: #15803d;
-      margin-bottom: 2px;
-    }
-
-    .price-featured-value {
-      font-size: 1.6rem;
-      font-weight: 800;
-      color: #15803d;
-      line-height: 1;
-    }
-
-    .price-secondary {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .price-secondary-label {
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      color: var(--muted);
-      margin-bottom: 2px;
-    }
-
-    .price-secondary-value {
-      font-size: 1rem;
-      font-weight: 700;
-      color: var(--text);
-    }
-
-    .price-divider {
-      width: 1px;
-      height: 36px;
-      background: #bbf7d0;
-    }
-
-    .btn-close {
-      background: rgba(255,255,255,0.15);
-      border: none;
-      color: white;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      cursor: pointer;
-      font-size: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      transition: background 0.15s;
-    }
-
-    .btn-close:hover { background: rgba(255,255,255,0.25); }
-
-    .modal-body { padding: 24px; }
-
-    .modal-section { margin-bottom: 22px; }
-
-    .modal-section-title {
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--muted);
-      margin-bottom: 12px;
-      padding-bottom: 6px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .modal-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 12px;
-    }
-
-    .modal-field { }
-
-    .field-label {
-      font-size: 0.72rem;
-      color: var(--muted);
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 3px;
-    }
-
-    .field-value {
-      font-size: 0.92rem;
-      color: var(--text);
-      font-weight: 500;
-    }
-
-    .field-value.price {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: #059669;
-    }
-
-    .field-value.mono { font-family: monospace; }
-
-    .modal-loading {
-      text-align: center;
-      padding: 40px;
-      color: var(--muted);
-    }
-
-    .spinner {
-      display: inline-block;
-      width: 28px;
-      height: 28px;
-      border: 3px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      margin-bottom: 12px;
-    }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* scrollbar */
-    .modal::-webkit-scrollbar { width: 6px; }
-    .modal::-webkit-scrollbar-track { background: transparent; }
-    .modal::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, minimum-scale=1, maximum-scale=1" />
+<title>Fudo - Raquitos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --primary: #ff5023;
+  --primary-dark: #e03d12;
+  --primary-light: #ff6a42;
+  --sidebar-bg: #1c1f2e;
+  --sidebar-hover: #2d3148;
+  --sidebar-active: #ff5023;
+  --sidebar-width: 220px;
+  --topbar-height: 58px;
+  --text: #2d3748;
+  --text-light: #718096;
+  --border: #e2e8f0;
+  --bg: #f7fafc;
+  --card: #ffffff;
+  --green: #38a169;
+  --red: #e53e3e;
+  --yellow: #d69e2e;
+  --blue: #3182ce;
+  --radius: 8px;
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Barlow', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; }
+a { text-decoration: none; color: inherit; }
+button { font-family: inherit; cursor: pointer; }
+
+/* ─── LOGIN ─── */
+#loginPage {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1c1f2e 0%, #2d3148 50%, #1c1f2e 100%);
+  display: flex; align-items: center; justify-content: center;
+}
+.login-card {
+  background: #fff; border-radius: 16px; padding: 48px 40px;
+  width: 100%; max-width: 400px; box-shadow: 0 24px 60px rgba(0,0,0,0.3);
+}
+.login-logo { text-align: center; margin-bottom: 32px; }
+.login-logo svg { width: 120px; }
+.login-title { font-size: 1.5rem; font-weight: 700; color: var(--text); margin-bottom: 6px; text-align: center; }
+.login-sub { font-size: 0.875rem; color: var(--text-light); text-align: center; margin-bottom: 28px; }
+.form-group { margin-bottom: 18px; }
+.form-label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-light); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.form-input {
+  width: 100%; padding: 12px 16px;
+  border: 1.5px solid var(--border); border-radius: var(--radius);
+  font-size: 0.95rem; font-family: inherit; color: var(--text);
+  background: #f8fafc; outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(255,80,35,0.12); background: #fff; }
+.btn-login {
+  width: 100%; padding: 14px; background: var(--primary); color: #fff;
+  border: none; border-radius: var(--radius); font-size: 1rem; font-weight: 600;
+  margin-top: 8px; transition: background 0.2s, transform 0.1s;
+}
+.btn-login:hover { background: var(--primary-dark); }
+.btn-login:active { transform: scale(0.99); }
+.login-error { background: #fff5f5; border: 1px solid #fed7d7; border-radius: 6px; padding: 10px 14px; color: #c53030; font-size: 0.85rem; margin-bottom: 16px; display: none; }
+
+/* ─── APP LAYOUT ─── */
+#appPage { display: none; min-height: 100vh; }
+
+/* ─── TOP BAR ─── */
+.topbar {
+  position: fixed; top: 0; left: 0; right: 0; height: var(--topbar-height);
+  background: #fff; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; z-index: 200;
+  padding: 0 20px 0 0;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+}
+.topbar-brand {
+  width: var(--sidebar-width); flex-shrink: 0;
+  padding: 0 20px;
+  display: flex; align-items: center; gap: 10px;
+  background: var(--sidebar-bg); height: 100%;
+  border-right: 1px solid rgba(255,255,255,0.05);
+}
+.topbar-brand svg { width: 80px; height: auto; }
+.topbar-right { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 16px; }
+.topbar-datetime { text-align: right; }
+.topbar-time { font-size: 1.2rem; font-weight: 700; color: var(--text); line-height: 1; }
+.topbar-date { font-size: 0.72rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
+.plan-badge {
+  background: linear-gradient(135deg, var(--primary) 0%, #ff7a5c 100%);
+  color: #fff; padding: 5px 14px; border-radius: 20px;
+  font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+}
+.topbar-divider { width: 1px; height: 28px; background: var(--border); }
+.user-dropdown { position: relative; cursor: pointer; }
+.user-btn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border-radius: var(--radius);
+  transition: background 0.15s; user-select: none;
+}
+.user-btn:hover { background: var(--bg); }
+.user-avatar {
+  width: 36px; height: 36px; background: var(--primary);
+  border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; color: #fff; font-weight: 700; font-size: 0.9rem;
+}
+.user-info { text-align: left; }
+.user-name { font-size: 0.88rem; font-weight: 600; color: var(--text); line-height: 1.2; }
+.user-role { font-size: 0.72rem; color: var(--text-light); }
+.user-caret { color: var(--text-light); font-size: 0.65rem; margin-left: 4px; }
+.dropdown-menu {
+  position: absolute; top: calc(100% + 8px); right: 0;
+  background: #fff; border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow-md); min-width: 220px; overflow: hidden;
+  opacity: 0; pointer-events: none; transform: translateY(-8px);
+  transition: opacity 0.15s, transform 0.15s; z-index: 300;
+}
+.dropdown-menu.open { opacity: 1; pointer-events: all; transform: translateY(0); }
+.dropdown-section { padding: 6px 0; border-bottom: 1px solid var(--border); }
+.dropdown-section:last-child { border-bottom: none; }
+.dropdown-label { padding: 6px 16px; font-size: 0.7rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.6px; }
+.dropdown-item {
+  padding: 10px 16px; font-size: 0.875rem; color: var(--text);
+  cursor: pointer; transition: background 0.12s;
+  display: flex; align-items: center; gap: 10px;
+}
+.dropdown-item:hover { background: #f7fafc; color: var(--primary); }
+.dropdown-item.logout { color: var(--red); }
+.dropdown-item.logout:hover { background: #fff5f5; }
+.notifications-btn {
+  width: 40px; height: 40px; border-radius: 50%; background: var(--bg);
+  border: 1px solid var(--border); display: flex; align-items: center;
+  justify-content: center; cursor: pointer; position: relative;
+  transition: background 0.15s;
+}
+.notifications-btn:hover { background: #edf2f7; }
+.notif-badge {
+  position: absolute; top: -2px; right: -2px;
+  background: var(--primary); color: #fff;
+  font-size: 0.6rem; font-weight: 700;
+  min-width: 16px; height: 16px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; padding: 0 3px;
+}
+
+/* ─── SIDEBAR ─── */
+.sidebar {
+  position: fixed; left: 0; top: var(--topbar-height);
+  width: var(--sidebar-width); height: calc(100vh - var(--topbar-height));
+  background: var(--sidebar-bg); overflow-y: auto; overflow-x: hidden;
+  z-index: 100; display: flex; flex-direction: column;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+.nav-main { list-style: none; padding: 8px 0; flex: 1; }
+.nav-item { }
+.nav-link {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 20px; color: rgba(255,255,255,0.65);
+  transition: background 0.15s, color 0.15s; cursor: pointer;
+  font-size: 0.875rem; font-weight: 500;
+  border-left: 3px solid transparent;
+}
+.nav-link:hover { background: var(--sidebar-hover); color: rgba(255,255,255,0.9); }
+.nav-link.active { background: rgba(255,80,35,0.15); color: #fff; border-left-color: var(--primary); }
+.nav-icon-wrap { width: 22px; flex-shrink: 0; display: flex; justify-content: center; font-size: 1rem; }
+.nav-label { flex: 1; }
+.sidebar-footer {
+  padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.08);
+  font-size: 0.72rem; color: rgba(255,255,255,0.3); text-align: center;
+}
+
+/* ─── MAIN CONTENT ─── */
+.main-content {
+  margin-left: var(--sidebar-width); margin-top: var(--topbar-height);
+  padding: 24px; min-height: calc(100vh - var(--topbar-height));
+}
+.page { display: none; }
+.page.active { display: block; }
+.page-header { margin-bottom: 20px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.page-title { font-size: 1.4rem; font-weight: 700; color: var(--text); }
+.page-sub { font-size: 0.85rem; color: var(--text-light); margin-top: 3px; }
+.btn { padding: 9px 20px; border-radius: var(--radius); font-size: 0.875rem; font-weight: 600; border: none; display: inline-flex; align-items: center; gap: 7px; transition: all 0.15s; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-secondary { background: #fff; color: var(--text); border: 1.5px solid var(--border); }
+.btn-secondary:hover { background: var(--bg); border-color: #cbd5e0; }
+.btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ─── CARDS ─── */
+.card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.card-title { font-size: 0.9rem; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: 0.5px; }
+.card-body { padding: 20px; }
+
+/* ─── STATS CARDS ─── */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.stat-card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; }
+.stat-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-light); margin-bottom: 8px; }
+.stat-value { font-size: 1.6rem; font-weight: 800; color: var(--text); line-height: 1; }
+.stat-value.green { color: var(--green); }
+.stat-value.red { color: var(--red); }
+.stat-sub { font-size: 0.78rem; color: var(--text-light); margin-top: 5px; }
+.stat-change { display: inline-flex; align-items: center; gap: 3px; font-size: 0.75rem; font-weight: 600; padding: 2px 7px; border-radius: 12px; margin-top: 5px; }
+.stat-change.up { background: #f0fff4; color: var(--green); }
+.stat-change.down { background: #fff5f5; color: var(--red); }
+
+/* ─── TABLE ─── */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+thead th { background: #f8fafc; padding: 11px 14px; text-align: left; font-size: 0.72rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.6px; border-bottom: 2px solid var(--border); white-space: nowrap; }
+tbody tr { border-bottom: 1px solid var(--border); transition: background 0.12s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: #f8fafc; }
+tbody td { padding: 12px 14px; color: var(--text); white-space: nowrap; }
+.td-code { font-family: monospace; font-weight: 600; color: var(--primary); font-size: 0.85rem; }
+.td-price { font-weight: 700; color: var(--green); }
+.td-name { font-weight: 500; }
+
+/* ─── BADGE ─── */
+.badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.3px; }
+.badge-green { background: #f0fff4; color: #276749; }
+.badge-red { background: #fff5f5; color: #c53030; }
+.badge-yellow { background: #fffff0; color: #744210; }
+.badge-gray { background: #f7fafc; color: #4a5568; }
+.badge-blue { background: #ebf8ff; color: #2c5282; }
+
+/* ─── TABLES / MESAS ─── */
+.rooms-tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 0; }
+.room-tab { padding: 10px 20px; font-size: 0.875rem; font-weight: 600; color: var(--text-light); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
+.room-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+.room-tab:hover:not(.active) { color: var(--text); }
+.tables-grid { display: grid; grid-template-columns: repeat(5, 80px); gap: 12px; padding: 10px 0; }
+.table-cell {
+  width: 80px; height: 80px; border-radius: 10px;
+  background: #fff; border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; cursor: pointer;
+  transition: all 0.15s; box-shadow: var(--shadow);
+}
+.table-cell:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+.table-cell.occupied { background: #fff5f0; border-color: var(--primary); }
+.table-cell.reserved { background: #fffff0; border-color: var(--yellow); }
+.table-cell .table-num { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+.table-cell .table-status { font-size: 0.65rem; font-weight: 600; color: var(--text-light); margin-top: 3px; text-transform: uppercase; }
+.table-cell.occupied .table-num { color: var(--primary); }
+.table-cell.occupied .table-status { color: var(--primary); }
+.table-legend { display: flex; gap: 16px; margin-top: 20px; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-light); }
+.legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+
+/* ─── PRODUCTS ─── */
+.filter-tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+.filter-tab { padding: 7px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.15s; border: 1.5px solid var(--border); background: #fff; color: var(--text-light); }
+.filter-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.filter-tab:hover:not(.active) { border-color: var(--primary); color: var(--primary); }
+.search-bar { display: flex; gap: 10px; margin-bottom: 16px; }
+.search-input { flex: 1; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 0.875rem; font-family: inherit; color: var(--text); outline: none; transition: border-color 0.2s; }
+.search-input:focus { border-color: var(--primary); }
+.search-input::placeholder { color: #a0aec0; }
+
+/* ─── FIRST STEPS ─── */
+.first-steps-banner {
+  background: linear-gradient(135deg, var(--primary) 0%, #ff7a5c 100%);
+  border-radius: 12px; padding: 28px 32px; color: #fff; margin-bottom: 24px;
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
+}
+.first-steps-text h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 6px; }
+.first-steps-text p { font-size: 0.9rem; opacity: 0.9; max-width: 500px; }
+.btn-white { background: #fff; color: var(--primary); padding: 11px 24px; border-radius: var(--radius); font-weight: 700; border: none; cursor: pointer; transition: transform 0.1s; white-space: nowrap; }
+.btn-white:hover { transform: translateY(-1px); }
+.steps-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.step-card { background: #fff; border-radius: 10px; padding: 20px; border: 1.5px solid var(--border); display: flex; gap: 16px; align-items: flex-start; transition: border-color 0.15s; cursor: pointer; }
+.step-card:hover { border-color: var(--primary); }
+.step-icon { width: 44px; height: 44px; border-radius: 50%; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+.step-icon.done { background: #f0fff4; }
+.step-content h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 4px; }
+.step-content p { font-size: 0.8rem; color: var(--text-light); line-height: 1.4; }
+.step-check { margin-left: auto; font-size: 1.2rem; }
+
+/* ─── REPORTS ─── */
+.chart-placeholder {
+  background: linear-gradient(180deg, #f8fafc 0%, #edf2f7 100%);
+  border-radius: var(--radius); height: 200px;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px dashed var(--border); flex-direction: column; gap: 8px;
+}
+.chart-placeholder-icon { font-size: 2.5rem; opacity: 0.3; }
+.chart-placeholder-text { font-size: 0.85rem; color: var(--text-light); }
+
+/* ─── ADMIN ─── */
+.admin-sections { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.admin-section-card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; border-left: 4px solid var(--primary); }
+.admin-section-title { font-size: 0.9rem; font-weight: 700; margin-bottom: 4px; }
+.admin-section-desc { font-size: 0.8rem; color: var(--text-light); }
+
+/* ─── FINANCE ─── */
+.finance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+@media (max-width: 700px) { .finance-grid { grid-template-columns: 1fr; } }
+
+/* ─── EMPTY STATES ─── */
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text-light); }
+.empty-icon { font-size: 3rem; opacity: 0.3; display: block; margin-bottom: 12px; }
+.empty-text { font-size: 1rem; font-weight: 500; margin-bottom: 6px; }
+.empty-sub { font-size: 0.85rem; }
+
+/* ─── SETTINGS ─── */
+.settings-group { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 20px; overflow: hidden; }
+.settings-row { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.settings-row:last-child { border-bottom: none; }
+.settings-label { font-size: 0.875rem; font-weight: 600; color: var(--text); }
+.settings-desc { font-size: 0.8rem; color: var(--text-light); margin-top: 2px; }
+.toggle { position: relative; width: 42px; height: 24px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; inset: 0; background: #cbd5e0; border-radius: 12px; cursor: pointer; transition: 0.2s; }
+.toggle input:checked + .toggle-slider { background: var(--primary); }
+.toggle-slider::before { content: ''; position: absolute; left: 3px; bottom: 3px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: 0.2s; }
+.toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+/* ─── KDS ─── */
+.kds-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.kds-card { background: #fff; border-radius: 10px; box-shadow: var(--shadow); overflow: hidden; }
+.kds-card-header { padding: 12px 16px; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: space-between; }
+.kds-card-body { padding: 14px 16px; }
+.kds-item { padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
+.kds-item:last-child { border-bottom: none; }
+
+/* ─── PROVIDERS ─── */
+/* uses existing table styles */
+
+/* ─── ANIMATIONS ─── */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.page.active { animation: fadeIn 0.2s ease; }
+
+/* ─── MODAL ─── */
+.overlay-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(4px); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+.overlay-modal.open { opacity: 1; pointer-events: all; }
+.modal { background: #fff; border-radius: 14px; box-shadow: 0 24px 60px rgba(0,0,0,0.25); width: 100%; max-width: 500px; overflow: hidden; transform: scale(0.94); transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.overlay-modal.open .modal { transform: scale(1); }
+.modal-header { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: #fff; padding: 18px 22px; display: flex; align-items: center; justify-content: space-between; }
+.modal-title { font-size: 1rem; font-weight: 700; }
+.modal-close { background: rgba(255,255,255,0.15); border: none; color: #fff; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+.modal-body { padding: 22px; }
+.modal-row { display: flex; gap: 16px; margin-bottom: 14px; }
+.modal-field { flex: 1; }
+.modal-field label { display: block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-light); margin-bottom: 5px; }
+.modal-field input, .modal-field select { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 0.875rem; font-family: inherit; color: var(--text); outline: none; transition: border-color 0.2s; }
+.modal-field input:focus, .modal-field select:focus { border-color: var(--primary); }
+.modal-footer { padding: 16px 22px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+</style>
 </head>
 <body>
 
-<header>
-  <div class="header-brand">
-    <div class="header-icon">📦</div>
-    <div>
-      <div class="header-title">Consulta de Artículos</div>
-      <div class="header-sub">Base de datos: javier &nbsp;·&nbsp; Tabla: fact0007</div>
+<!-- ═══════════════════════════ LOGIN ═══════════════════════════ -->
+<div id="loginPage">
+  <div class="login-card">
+    <div class="login-logo">
+      <!-- Fudo SVG Logo -->
+      <svg viewBox="0 0 180 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <text x="10" y="38" font-family="Barlow,sans-serif" font-weight="800" font-size="42" fill="#ff5023">fudo</text>
+      </svg>
     </div>
-  </div>
-  <div class="header-badge">SQL Server 2016</div>
-</header>
-
-<div class="container">
-
-  <div class="search-card">
-    <span class="search-icon">🔍</span>
-    <input
-      id="inputBusqueda"
-      type="text"
-      placeholder="Buscar por código de artículo o descripción..."
-      autofocus
-    />
-    <button class="btn-search" onclick="buscar(1)">
-      <span>Buscar</span>
-    </button>
-  </div>
-
-  <div class="filter-bar" id="filterBar" style="display:none">
-    <span class="filter-label">🔽 Filtrar por:</span>
-    <select class="filter-select" id="filtroTipo" onchange="buscar(1)">
-      <option value="">Todos los tipos</option>
-    </select>
-    <select class="filter-select" id="filtroMarca" onchange="buscar(1)">
-      <option value="">Todas las marcas</option>
-    </select>
-    <select class="filter-select" id="filtroEstado" onchange="buscar(1)">
-      <option value="">Todos los estados</option>
-    </select>
-    <button class="btn-clear-filters" onclick="limpiarFiltros()" id="btnLimpiar" style="display:none">✕ Limpiar filtros</button>
-  </div>
-
-  <div class="info-bar">
-    <span class="info-text" id="infoText"></span>
-    <span class="hint" id="hintClick" style="display:none">👆 Clic en una fila para ver el detalle</span>
-  </div>
-
-  <div class="table-card">
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>Código</th>
-            <th>Descripción</th>
-            <th>Precio</th>
-            <th>Tipo</th>
-            <th>Unidad</th>
-            <th>Stock</th>
-            <th>Marca</th>
-            <th>Estado</th>
-          </tr>
-        </thead>
-        <tbody id="tbody">
-          <tr class="state-row">
-            <td colspan="8">
-              <span class="state-icon">🔍</span>
-              Ingresá un término para comenzar la búsqueda
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <h1 class="login-title">Bienvenido</h1>
+    <p class="login-sub">Ingresá a tu cuenta para continuar</p>
+    <div class="login-error" id="loginError">Usuario o contraseña incorrectos</div>
+    <div class="form-group">
+      <label class="form-label" for="loginUser">Usuario</label>
+      <input class="form-input" type="text" id="loginUser" placeholder="Usuario" value="admin@raquitos" autofocus />
     </div>
-    <div class="paginacion" id="paginacion"></div>
+    <div class="form-group">
+      <label class="form-label" for="loginPass">Contraseña</label>
+      <input class="form-input" type="password" id="loginPass" placeholder="Contraseña" value="Marzo2020*" />
+    </div>
+    <button class="btn-login" onclick="doLogin()">Iniciar sesión</button>
   </div>
-
 </div>
 
-<!-- MODAL -->
-<div class="overlay" id="overlay" onclick="cerrarModal(event)">
-  <div class="modal" id="modal">
-    <div class="modal-loading">
-      <div class="spinner"></div>
-      <div>Cargando detalle...</div>
+<!-- ═══════════════════════════ APP ═══════════════════════════ -->
+<div id="appPage">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="topbar-brand">
+      <svg viewBox="0 0 100 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <text x="0" y="24" font-family="Barlow,sans-serif" font-weight="800" font-size="26" fill="#ff5023">fudo</text>
+      </svg>
     </div>
+    <div class="topbar-right">
+      <div class="topbar-datetime">
+        <div class="topbar-time" id="clockTime">--:--</div>
+        <div class="topbar-date" id="clockDate">--</div>
+      </div>
+      <div class="topbar-divider"></div>
+      <div class="plan-badge">PRO</div>
+      <div class="topbar-divider"></div>
+      <div class="notifications-btn" title="Notificaciones">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#718096" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+        <span class="notif-badge">3</span>
+      </div>
+      <div class="user-dropdown" onclick="toggleUserMenu(event)">
+        <div class="user-btn">
+          <div class="user-avatar">RG</div>
+          <div class="user-info">
+            <div class="user-name">Raquitos</div>
+            <div class="user-role">admin</div>
+          </div>
+          <span class="user-caret">▼</span>
+        </div>
+        <div class="dropdown-menu" id="userMenu">
+          <div class="dropdown-section">
+            <div class="dropdown-label">Mi cuenta</div>
+            <div class="dropdown-item" onclick="navTo('miNegocio')">🏪 Mi Negocio</div>
+            <div class="dropdown-item" onclick="navTo('firstSteps')">📋 Primeros pasos</div>
+            <div class="dropdown-item" onclick="navTo('pagos')">💳 Pagos</div>
+            <div class="dropdown-item" onclick="navTo('planes')">⚡ Planes y módulos</div>
+            <div class="dropdown-item" onclick="navTo('borrado')">🗑️ Borrado de datos</div>
+          </div>
+          <div class="dropdown-section">
+            <div class="dropdown-item" onclick="navTo('promo')" style="color:#ff5023;font-weight:600;">🎁 Gana 2 meses gratis</div>
+          </div>
+          <div class="dropdown-section">
+            <div class="dropdown-item logout" onclick="doLogout()">🚪 Cerrar sesión</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <ul class="nav-main">
+      <li class="nav-item">
+        <div class="nav-link" data-page="restaurante" onclick="navTo('restaurante')">
+          <span class="nav-icon-wrap">🍽️</span><span class="nav-label">Restaurante</span>
+        </div>
+      </li>
+      <li class="nav-item">
+        <div class="nav-link" data-page="ventas" onclick="navTo('ventas')">
+          <span class="nav-icon-wrap">💰</span><span class="nav-label">Ventas</span>
+        </div>
+      </li>
+      <li class="nav-item">
+        <div class="nav-link" data-page="gastos" onclick="navTo('gastos')">
+          <span class="nav-icon-wrap">💸</span><span class="nav-label">Gastos</span>
+        </div>
+      </li>
+      <li class="nav-item">
+        <div class="nav-link" data-page="finanzas" onclick="navTo('finanzas')">
+          <span class="nav-icon-wrap">📊</span><span class="nav-label">Finanzas</span>
+        </div>
+      </li>
+      <li class="nav-item">
+        <div class="nav-link" data-page="facturacion" onclick="navTo('facturacion')">
+          <span class="nav-icon-wrap">🧾</span><span class="nav-label">Facturación</span>
+        </div>
+      </li>
+      <li class="nav-item">
+        <div class="nav-link" data-page="productos" onclick="navTo('productos')">
+          <span class="nav-icon-wrap">📦</span><span class="nav-label">Productos</span>
+        </div>
+      </li>
+      <li class="nav-item">
+        <div class="nav-link" data-page="clientes" onclick="navTo('clientes')">
+          <span class="nav-icon-wrap">👥</span><span class="nav-label">Clientes</span>
+        </div>
+      </li>
+      <li class="nav-item">
+        <div class="nav-link" data-page="proveedores" onclick="navTo('proveedores')">
+          <span class="nav-icon-wrap">🚚</span><span class="nav-label">Proveedores</span>
+        </div>
+      </li>
+      <li class="nav-item">
+        <div class="nav-link" data-page="reportes" onclick="navTo('reportes')">
+          <span class="nav-icon-wrap">📈</span><span class="nav-label">Reportes</span>
+        </div>
+      </li>
+      <li class="nav-item">
+        <div class="nav-link" data-page="pagosMenu" onclick="navTo('pagosMenu')">
+          <span class="nav-icon-wrap">💳</span><span class="nav-label">Fudo Pagos</span>
+        </div>
+      </li>
+      <li class="nav-item">
+        <div class="nav-link" data-page="kds" onclick="navTo('kds')">
+          <span class="nav-icon-wrap">👨‍🍳</span><span class="nav-label">Monitor de Cocina</span>
+        </div>
+      </li>
+      <li class="nav-item">
+        <div class="nav-link" data-page="delivery" onclick="navTo('delivery')">
+          <span class="nav-icon-wrap">🛵</span><span class="nav-label">Tu Delivery</span>
+        </div>
+      </li>
+      <li class="nav-item">
+        <div class="nav-link" data-page="admin" onclick="navTo('admin')">
+          <span class="nav-icon-wrap">⚙️</span><span class="nav-label">Administración</span>
+        </div>
+      </li>
+    </ul>
+    <div class="sidebar-footer">Raquitos · Plan PRO</div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+
+    <!-- ══ RESTAURANTE (Mesas) ══ -->
+    <div class="page" id="page-restaurante">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Restaurante</div>
+          <div class="page-sub">Vista de mesas · Salón y Terraza</div>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="showModal('newSale')">➕ Nueva venta</button>
+          <button class="btn btn-primary">📋 Ver órdenes</button>
+        </div>
+      </div>
+      <div class="rooms-tabs">
+        <div class="room-tab active" onclick="switchRoom('salon', this)">Salón</div>
+        <div class="room-tab" onclick="switchRoom('terraza', this)">Terraza</div>
+      </div>
+      <div id="room-salon" class="room-view">
+        <div class="tables-grid" id="tables-salon"></div>
+      </div>
+      <div id="room-terraza" class="room-view" style="display:none">
+        <div class="tables-grid" id="tables-terraza"></div>
+      </div>
+      <div class="table-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#e2e8f0;border:2px solid #e2e8f0"></div>Libre</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#fff5f0;border:2px solid #ff5023"></div>Ocupada</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#fffff0;border:2px solid #d69e2e"></div>Reservada</div>
+      </div>
+    </div>
+
+    <!-- ══ VENTAS ══ -->
+    <div class="page" id="page-ventas">
+      <div class="page-header">
+        <div><div class="page-title">Ventas</div><div class="page-sub">Historial de ventas del día</div></div>
+        <div class="btn-group">
+          <button class="btn btn-secondary">📅 Filtrar por fecha</button>
+          <button class="btn btn-primary">➕ Nueva venta</button>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Ventas hoy</div><div class="stat-value green">$0,00</div><div class="stat-sub">0 transacciones</div></div>
+        <div class="stat-card"><div class="stat-label">Promedio por mesa</div><div class="stat-value">$0,00</div><div class="stat-sub">Sin datos</div></div>
+        <div class="stat-card"><div class="stat-label">Producto más vendido</div><div class="stat-value" style="font-size:1rem">—</div><div class="stat-sub">Sin ventas</div></div>
+        <div class="stat-card"><div class="stat-label">Método de pago + usado</div><div class="stat-value" style="font-size:1rem">—</div><div class="stat-sub">Sin datos</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Ventas recientes</div></div>
+        <div class="empty-state"><span class="empty-icon">🧾</span><div class="empty-text">No hay ventas registradas hoy</div><div class="empty-sub">Las ventas aparecerán aquí cuando se registren</div></div>
+      </div>
+    </div>
+
+    <!-- ══ GASTOS ══ -->
+    <div class="page" id="page-gastos">
+      <div class="page-header">
+        <div><div class="page-title">Gastos</div><div class="page-sub">Control de gastos del negocio</div></div>
+        <button class="btn btn-primary">➕ Nuevo gasto</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Gastos del mes</div><div class="stat-value red">$0,00</div></div>
+        <div class="stat-card"><div class="stat-label">Gastos de hoy</div><div class="stat-value red">$0,00</div></div>
+        <div class="stat-card"><div class="stat-label">Gasto más frecuente</div><div class="stat-value" style="font-size:1rem">—</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Gastos recientes</div></div>
+        <div class="empty-state"><span class="empty-icon">💸</span><div class="empty-text">No hay gastos registrados</div><div class="empty-sub">Registrá tus gastos para llevar el control del negocio</div></div>
+      </div>
+    </div>
+
+    <!-- ══ FINANZAS ══ -->
+    <div class="page" id="page-finanzas">
+      <div class="page-header">
+        <div><div class="page-title">Finanzas</div><div class="page-sub">Resultados y balance del período</div></div>
+        <button class="btn btn-secondary">📅 Cambiar período</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Ingresos</div><div class="stat-value green">$0,00</div><div class="stat-sub">Este mes</div></div>
+        <div class="stat-card"><div class="stat-label">Costos</div><div class="stat-value red">$0,00</div><div class="stat-sub">Este mes</div></div>
+        <div class="stat-card"><div class="stat-label">Resultado neto</div><div class="stat-value">$0,00</div><div class="stat-sub">Ganancias - Costos</div></div>
+        <div class="stat-card"><div class="stat-label">Margen</div><div class="stat-value">0%</div><div class="stat-sub">Margen neto</div></div>
+      </div>
+      <div class="finance-grid">
+        <div class="card"><div class="card-header"><div class="card-title">Ingresos vs Costos</div></div><div class="card-body"><div class="chart-placeholder"><div class="chart-placeholder-icon">📊</div><div class="chart-placeholder-text">Sin datos para mostrar</div></div></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Evolución mensual</div></div><div class="card-body"><div class="chart-placeholder"><div class="chart-placeholder-icon">📈</div><div class="chart-placeholder-text">Sin datos para mostrar</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- ══ FACTURACION ══ -->
+    <div class="page" id="page-facturacion">
+      <div class="page-header">
+        <div><div class="page-title">Facturación</div><div class="page-sub">Documentos comerciales emitidos y recibidos</div></div>
+        <button class="btn btn-primary">➕ Nueva factura</button>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Documentos recibidos</div>
+          <div class="btn-group">
+            <button class="btn btn-secondary" style="padding:6px 12px;font-size:0.8rem">Recibidos</button>
+            <button class="btn btn-secondary" style="padding:6px 12px;font-size:0.8rem">Emitidos</button>
+          </div>
+        </div>
+        <div class="empty-state"><span class="empty-icon">🧾</span><div class="empty-text">No hay documentos registrados</div><div class="empty-sub">Los documentos comerciales aparecerán aquí</div></div>
+      </div>
+    </div>
+
+    <!-- ══ PRODUCTOS ══ -->
+    <div class="page" id="page-productos">
+      <div class="page-header">
+        <div><div class="page-title">Productos</div><div class="page-sub">Menú y catálogo de productos</div></div>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="alert('Función de importación de menú')">📤 Cargar menú</button>
+          <button class="btn btn-primary" onclick="showModal('newProduct')">➕ Nuevo producto</button>
+        </div>
+      </div>
+      <!-- Sub-tabs -->
+      <div style="display:flex;gap:4px;margin-bottom:20px;border-bottom:2px solid var(--border);padding-bottom:0">
+        <div class="room-tab active" onclick="switchProductTab('listado',this)">Productos</div>
+        <div class="room-tab" onclick="switchProductTab('ingredientes',this)">Ingredientes</div>
+        <div class="room-tab" onclick="switchProductTab('categorias',this)">Cat. de Productos</div>
+        <div class="room-tab" onclick="switchProductTab('fichas',this)">Fichas técnicas</div>
+        <div class="room-tab" onclick="switchProductTab('stock',this)">Control de Stock</div>
+        <div class="room-tab" onclick="switchProductTab('movimientos',this)">Movimientos de Stock</div>
+        <div class="room-tab" onclick="switchProductTab('inventario',this)">Conteo de inventario</div>
+        <div class="room-tab" onclick="switchProductTab('listas',this)">Lista de precios</div>
+        <div class="room-tab" onclick="switchProductTab('menus',this)">Menús</div>
+      </div>
+      <div id="prodtab-listado">
+        <div class="filter-tabs" id="catFilters">
+          <div class="filter-tab active" data-cat="all" onclick="filterProducts('all',this)">Todas las categorías</div>
+          <div class="filter-tab" data-cat="1" onclick="filterProducts('1',this)">Bebidas</div>
+          <div class="filter-tab" data-cat="2" onclick="filterProducts('2',this)">Cafetería</div>
+          <div class="filter-tab" data-cat="3" onclick="filterProducts('3',this)">Platos Principales</div>
+          <div class="filter-tab" data-cat="4" onclick="filterProducts('4',this)">Postres</div>
+        </div>
+        <div class="search-bar">
+          <input class="search-input" type="text" id="productSearch" placeholder="Buscar en todas las categorías:" oninput="filterProductsText()" />
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table id="productsTable">
+              <thead><tr>
+                <th>Cód.</th><th>Producto</th><th>Costo</th><th>Margen $</th><th>Margen %</th><th>Markup %</th><th>Precio</th><th>Stock</th><th>Estado</th>
+              </tr></thead>
+              <tbody id="productsTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div id="prodtab-ingredientes" style="display:none"><div class="empty-state"><span class="empty-icon">🌿</span><div class="empty-text">Sin ingredientes cargados</div></div></div>
+      <div id="prodtab-categorias" style="display:none">
+        <div class="card"><div class="card-header"><div class="card-title">Categorías de productos</div><button class="btn btn-primary" style="padding:6px 14px;font-size:0.8rem">+ Nueva categoría</button></div>
+        <div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Cocina</th><th>Posición</th><th>Estado</th></tr></thead><tbody>
+          <tr><td class="td-name">Bebidas</td><td>Cocina 1</td><td>1</td><td><span class="badge badge-green">Activa</span></td></tr>
+          <tr><td class="td-name">Cafetería</td><td>Cocina 1</td><td>2</td><td><span class="badge badge-green">Activa</span></td></tr>
+          <tr><td class="td-name">Platos Principales</td><td>Cocina 2</td><td>3</td><td><span class="badge badge-green">Activa</span></td></tr>
+          <tr><td class="td-name">Postres</td><td>Cocina 2</td><td>4</td><td><span class="badge badge-green">Activa</span></td></tr>
+        </tbody></table></div></div>
+      </div>
+      <div id="prodtab-fichas" style="display:none"><div class="empty-state"><span class="empty-icon">📋</span><div class="empty-text">Sin fichas técnicas</div></div></div>
+      <div id="prodtab-stock" style="display:none">
+        <div class="card"><div class="card-header"><div class="card-title">Control de Stock</div></div>
+        <div class="table-wrap"><table><thead><tr><th>Producto</th><th>Stock actual</th><th>Stock mínimo</th><th>Estado</th></tr></thead><tbody>
+          <tr><td class="td-name">Coca-Cola 375 cm3</td><td>5</td><td>—</td><td><span class="badge badge-green">OK</span></td></tr>
+          <tr><td class="td-name">Medialunas</td><td>30</td><td>—</td><td><span class="badge badge-green">OK</span></td></tr>
+          <tr><td class="td-name">Agua Mineral 500 cm3</td><td>5</td><td>—</td><td><span class="badge badge-green">OK</span></td></tr>
+        </tbody></table></div></div>
+      </div>
+      <div id="prodtab-movimientos" style="display:none"><div class="empty-state"><span class="empty-icon">📦</span><div class="empty-text">Sin movimientos registrados</div></div></div>
+      <div id="prodtab-inventario" style="display:none"><div class="empty-state"><span class="empty-icon">🔢</span><div class="empty-text">Sin conteos de inventario</div></div></div>
+      <div id="prodtab-listas" style="display:none">
+        <div class="card"><div class="card-header"><div class="card-title">Listas de precios</div><button class="btn btn-primary" style="padding:6px 14px;font-size:0.8rem">+ Nueva lista</button></div>
+        <div class="table-wrap"><table><thead><tr><th>Nombre</th><th>Productos</th><th>Estado</th></tr></thead><tbody>
+          <tr><td class="td-name">Lista Principal</td><td>9</td><td><span class="badge badge-green">Activa</span></td></tr>
+        </tbody></table></div></div>
+      </div>
+      <div id="prodtab-menus" style="display:none"><div class="empty-state"><span class="empty-icon">📋</span><div class="empty-text">Sin menús configurados</div></div></div>
+    </div>
+
+    <!-- ══ CLIENTES ══ -->
+    <div class="page" id="page-clientes">
+      <div class="page-header">
+        <div><div class="page-title">Clientes</div><div class="page-sub">Base de clientes del negocio</div></div>
+        <button class="btn btn-primary" onclick="showModal('newClient')">➕ Nuevo cliente</button>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Clientes registrados</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Nombre</th><th>Teléfono</th><th>Email</th><th>Dirección</th><th>Balance Cta. Cte.</th><th>Estado</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="td-name">Cliente Ejemplo</td>
+                <td>541112341234</td>
+                <td>cliente@example.com</td>
+                <td>Av. San Martín 1234, 2B</td>
+                <td class="td-price">$0,00</td>
+                <td><span class="badge badge-green">Activo</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PROVEEDORES ══ -->
+    <div class="page" id="page-proveedores">
+      <div class="page-header">
+        <div><div class="page-title">Proveedores</div><div class="page-sub">Gestión de proveedores</div></div>
+        <button class="btn btn-primary">➕ Nuevo proveedor</button>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Proveedores registrados</div></div>
+        <div class="empty-state"><span class="empty-icon">🚚</span><div class="empty-text">No hay proveedores registrados</div><div class="empty-sub">Agregá proveedores para gestionar tus compras</div></div>
+      </div>
+    </div>
+
+    <!-- ══ REPORTES ══ -->
+    <div class="page" id="page-reportes">
+      <div class="page-header">
+        <div><div class="page-title">Reportes</div><div class="page-sub">Análisis de ventas y rendimiento</div></div>
+        <button class="btn btn-secondary">📥 Exportar</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Ventas (Hoy)</div><div class="stat-value green">$0,00</div><div class="stat-sub">0 tickets</div></div>
+        <div class="stat-card"><div class="stat-label">Ventas (Semana)</div><div class="stat-value green">$0,00</div></div>
+        <div class="stat-card"><div class="stat-label">Ventas (Mes)</div><div class="stat-value green">$0,00</div></div>
+        <div class="stat-card"><div class="stat-label">Ticket promedio</div><div class="stat-value">$0,00</div></div>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><div class="card-title">Ventas por día (últimos 30 días)</div></div>
+        <div class="card-body"><div class="chart-placeholder" style="height:220px"><div class="chart-placeholder-icon">📊</div><div class="chart-placeholder-text">Sin datos para mostrar</div></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="card"><div class="card-header"><div class="card-title">Productos más vendidos</div></div><div class="card-body"><div class="chart-placeholder"><div class="chart-placeholder-icon">🥇</div><div class="chart-placeholder-text">Sin datos</div></div></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Métodos de pago</div></div><div class="card-body"><div class="chart-placeholder"><div class="chart-placeholder-icon">💳</div><div class="chart-placeholder-text">Sin datos</div></div></div></div>
+      </div>
+    </div>
+
+    <!-- ══ FUDO PAGOS ══ -->
+    <div class="page" id="page-pagosMenu">
+      <div class="page-header">
+        <div><div class="page-title">Fudo Pagos</div><div class="page-sub">Gestión de pagos y transacciones</div></div>
+      </div>
+      <div class="card" style="background:linear-gradient(135deg,#ff5023,#ff7a5c);color:#fff;border:none;margin-bottom:20px">
+        <div class="card-body" style="padding:24px">
+          <h3 style="font-size:1.2rem;margin-bottom:8px">💳 Fudo Pagos</h3>
+          <p style="opacity:0.9;font-size:0.9rem">Procesá pagos con tarjeta directamente desde Fudo. Integrá tu cuenta de Mercado Pago para empezar.</p>
+          <button class="btn btn-white" style="margin-top:16px;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3)">Conectar con Mercado Pago</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Transacciones recientes</div></div>
+        <div class="empty-state"><span class="empty-icon">💳</span><div class="empty-text">Sin transacciones registradas</div></div>
+      </div>
+    </div>
+
+    <!-- ══ KDS ══ -->
+    <div class="page" id="page-kds">
+      <div class="page-header">
+        <div><div class="page-title">Monitor de Cocina</div><div class="page-sub">KDS - Kitchen Display System</div></div>
+        <button class="btn btn-secondary">⚙️ Configurar cocinas</button>
+      </div>
+      <div class="card" style="margin-bottom:20px;background:linear-gradient(135deg,#1c1f2e,#2d3148);color:#fff;border:none">
+        <div class="card-body" style="padding:24px">
+          <h3 style="font-size:1.1rem;margin-bottom:8px">👨‍🍳 Monitor de Cocina activo</h3>
+          <p style="opacity:0.8;font-size:0.875rem">Las órdenes de cocina aparecerán aquí en tiempo real. Tenés 2 cocinas configuradas: <strong>Cocina 1</strong> y <strong>Cocina 2</strong>.</p>
+        </div>
+      </div>
+      <div class="kds-grid" id="kdsOrders">
+        <div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">🍳</span><div class="empty-text">No hay órdenes pendientes</div><div class="empty-sub">Las órdenes aparecerán aquí cuando se envíen desde las mesas</div></div>
+      </div>
+    </div>
+
+    <!-- ══ DELIVERY ══ -->
+    <div class="page" id="page-delivery">
+      <div class="page-header">
+        <div><div class="page-title">Tu Delivery</div><div class="page-sub">Menú online y configuración de delivery</div></div>
+      </div>
+      <div class="card" style="background:linear-gradient(135deg,#ff5023,#ff7a5c);color:#fff;border:none;margin-bottom:20px">
+        <div class="card-body" style="padding:24px;display:flex;align-items:center;justify-content:space-between;gap:20px">
+          <div><h3 style="font-size:1.2rem;margin-bottom:8px">🛵 Menú online de Raquitos</h3><p style="opacity:0.9;font-size:0.9rem">Activá tu menú online y empezá a recibir pedidos por delivery. Integrá con PedidosYa, Rappi, UberEats y más.</p></div>
+          <button class="btn-white" style="background:#fff;color:#ff5023;font-weight:700;padding:12px 24px;border-radius:8px;border:none;cursor:pointer;white-space:nowrap">Activar menú</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px">
+        <div class="card"><div class="card-body" style="text-align:center;padding:24px"><div style="font-size:2rem;margin-bottom:8px">🟡</div><div style="font-weight:700;margin-bottom:4px">PedidosYa</div><div style="font-size:0.8rem;color:var(--text-light)">No conectado</div><button class="btn btn-secondary" style="margin-top:12px;width:100%">Conectar</button></div></div>
+        <div class="card"><div class="card-body" style="text-align:center;padding:24px"><div style="font-size:2rem;margin-bottom:8px">🔴</div><div style="font-weight:700;margin-bottom:4px">Rappi</div><div style="font-size:0.8rem;color:var(--text-light)">No conectado</div><button class="btn btn-secondary" style="margin-top:12px;width:100%">Conectar</button></div></div>
+        <div class="card"><div class="card-body" style="text-align:center;padding:24px"><div style="font-size:2rem;margin-bottom:8px">⬛</div><div style="font-weight:700;margin-bottom:4px">Uber Eats</div><div style="font-size:0.8rem;color:var(--text-light)">No conectado</div><button class="btn btn-secondary" style="margin-top:12px;width:100%">Conectar</button></div></div>
+        <div class="card"><div class="card-body" style="text-align:center;padding:24px"><div style="font-size:2rem;margin-bottom:8px">🟠</div><div style="font-weight:700;margin-bottom:4px">iFood</div><div style="font-size:0.8rem;color:var(--text-light)">No conectado</div><button class="btn btn-secondary" style="margin-top:12px;width:100%">Conectar</button></div></div>
+      </div>
+    </div>
+
+    <!-- ══ ADMINISTRACIÓN ══ -->
+    <div class="page" id="page-admin">
+      <div class="page-header">
+        <div><div class="page-title">Administración</div><div class="page-sub">Configuración del sistema</div></div>
+      </div>
+      <div class="admin-sections">
+        <div class="admin-section-card" onclick="navTo('settings-cajeros')"><div class="admin-section-title">💰 Cajas y Cajeros</div><div class="admin-section-desc">Gestión de cajas registradoras y cajeros</div></div>
+        <div class="admin-section-card" onclick="navTo('settings-mesas')"><div class="admin-section-title">🍽️ Mesas y Salones</div><div class="admin-section-desc">Configurá tu salón: mesas, ubicaciones y salas</div></div>
+        <div class="admin-section-card"><div class="admin-section-title">👤 Usuarios y Roles</div><div class="admin-section-desc">Gestioná los usuarios del sistema y sus permisos</div></div>
+        <div class="admin-section-card"><div class="admin-section-title">🖨️ Impresoras</div><div class="admin-section-desc">Configurá las impresoras de tickets y cocina</div></div>
+        <div class="admin-section-card"><div class="admin-section-title">💳 Métodos de pago</div><div class="admin-section-desc">Efectivo, tarjetas, cuenta corriente</div></div>
+        <div class="admin-section-card"><div class="admin-section-title">🔗 Integraciones</div><div class="admin-section-desc">APIs externas, POS, delivery y más</div></div>
+        <div class="admin-section-card"><div class="admin-section-title">📊 Turnos</div><div class="admin-section-desc">Control de turnos y cierres de caja</div></div>
+        <div class="admin-section-card"><div class="admin-section-title">⚙️ Configuración general</div><div class="admin-section-desc">Ajustes generales del sistema Fudo</div></div>
+      </div>
+    </div>
+
+    <!-- ══ FIRST STEPS ══ -->
+    <div class="page" id="page-firstSteps">
+      <div class="first-steps-banner">
+        <div class="first-steps-text">
+          <h2>¡Comienza a configurar tu cuenta!</h2>
+          <p>Completa las tareas iniciales para activar tu restaurante en Fudo.</p>
+        </div>
+        <button class="btn-white" onclick="navTo('productos')">Comenzar</button>
+      </div>
+      <div class="steps-list">
+        <div class="step-card"><div class="step-icon">📦</div><div class="step-content"><h4>Cargá tus productos</h4><p>Agregá los productos de tu menú con precios y categorías</p></div><div class="step-check">✅</div></div>
+        <div class="step-card"><div class="step-icon">🍽️</div><div class="step-content"><h4>Configurá tus mesas</h4><p>Definí el diseño del salón y las mesas disponibles</p></div><div class="step-check">✅</div></div>
+        <div class="step-card"><div class="step-icon">💳</div><div class="step-content"><h4>Métodos de pago</h4><p>Habilitá los métodos de cobro: efectivo, tarjetas y más</p></div><div class="step-check">✅</div></div>
+        <div class="step-card"><div class="step-icon" style="background:#fff5f0">👤</div><div class="step-content"><h4>Creá usuarios</h4><p>Agregá mozos y cajeros para tu equipo de trabajo</p></div><div class="step-check" style="color:#e2e8f0">○</div></div>
+        <div class="step-card"><div class="step-icon" style="background:#fff5f0">🖨️</div><div class="step-content"><h4>Configurá impresoras</h4><p>Conectá tus impresoras de tickets y cocina</p></div><div class="step-check" style="color:#e2e8f0">○</div></div>
+        <div class="step-card"><div class="step-icon" style="background:#fff5f0">🛵</div><div class="step-content"><h4>Activá tu delivery</h4><p>Conectá con PedidosYa, Rappi, Uber Eats o tu web</p></div><div class="step-check" style="color:#e2e8f0">○</div></div>
+      </div>
+    </div>
+
+    <!-- ══ MI NEGOCIO ══ -->
+    <div class="page" id="page-miNegocio">
+      <div class="page-header"><div><div class="page-title">Mi Negocio</div><div class="page-sub">Información y configuración de tu negocio</div></div><button class="btn btn-primary">💾 Guardar cambios</button></div>
+      <div class="settings-group">
+        <div class="settings-row"><div><div class="settings-label">Nombre del negocio</div><div class="settings-desc">Nombre que aparece en tus tickets y reportes</div></div><input type="text" value="Raquitos" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.875rem;outline:none;" /></div>
+        <div class="settings-row"><div><div class="settings-label">Usuario administrador</div><div class="settings-desc">Ricardo Gonzalez · admin@raquitos</div></div><span class="badge badge-blue">Admin</span></div>
+        <div class="settings-row"><div><div class="settings-label">Plan activo</div><div class="settings-desc">Plan Pro con todos los módulos</div></div><span class="badge" style="background:linear-gradient(135deg,#ff5023,#ff7a5c);color:#fff;padding:4px 14px">PRO</span></div>
+        <div class="settings-row"><div><div class="settings-label">País</div><div class="settings-desc">Código de país de la cuenta</div></div><span style="font-size:0.875rem;font-weight:500">Argentina 🇦🇷</span></div>
+        <div class="settings-row"><div><div class="settings-label">Locale</div><div class="settings-desc">Formato de fechas y moneda</div></div><span style="font-size:0.875rem;font-weight:500">es-AR</span></div>
+      </div>
+    </div>
+
+    <!-- ══ PAGOS ══ -->
+    <div class="page" id="page-pagos">
+      <div class="page-header"><div><div class="page-title">Pagos</div><div class="page-sub">Gestión de tu suscripción y facturación</div></div></div>
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-header"><div class="card-title">Plan activo</div></div>
+        <div class="card-body">
+          <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+            <div style="width:56px;height:56px;background:linear-gradient(135deg,#ff5023,#ff7a5c);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.3rem;font-weight:800">P</div>
+            <div><div style="font-size:1.1rem;font-weight:700">Plan Pro</div><div style="font-size:0.85rem;color:var(--text-light)">Todos los módulos incluidos · $65.000/mes</div></div>
+            <span class="badge badge-green" style="margin-left:auto">Activo</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px">
+            <div style="padding:14px;background:var(--bg);border-radius:8px"><div style="font-size:0.72rem;color:var(--text-light);font-weight:700;margin-bottom:4px">VENTAS POR COMENSAL</div><div style="font-size:0.9rem;font-weight:600">$7.425/mes</div></div>
+            <div style="padding:14px;background:var(--bg);border-radius:8px"><div style="font-size:0.72rem;color:var(--text-light);font-weight:700;margin-bottom:4px">MONITOR DE COCINA</div><div style="font-size:0.9rem;font-weight:600">$10.725/mes</div></div>
+            <div style="padding:14px;background:var(--bg);border-radius:8px"><div style="font-size:0.72rem;color:var(--text-light);font-weight:700;margin-bottom:4px">DELIVERY</div><div style="font-size:0.9rem;font-weight:600">$10.725/mes</div></div>
+            <div style="padding:14px;background:var(--bg);border-radius:8px"><div style="font-size:0.72rem;color:var(--text-light);font-weight:700;margin-bottom:4px">FACTURACIÓN ELECTRÓNICA</div><div style="font-size:0.9rem;font-weight:600">$7.425/mes</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PLANES ══ -->
+    <div class="page" id="page-planes">
+      <div class="page-header"><div><div class="page-title">Planes y módulos</div><div class="page-sub">Gestión de módulos adicionales</div></div></div>
+      <div class="empty-state"><span class="empty-icon">⚡</span><div class="empty-text">Plan Pro activo</div><div class="empty-sub">Todos los módulos están disponibles en tu plan</div></div>
+    </div>
+
+    <!-- ══ BORRADO ══ -->
+    <div class="page" id="page-borrado">
+      <div class="page-header"><div><div class="page-title">Borrado de datos</div><div class="page-sub">Eliminar información del sistema</div></div></div>
+      <div class="card" style="border:1.5px solid #fed7d7">
+        <div class="card-header" style="background:#fff5f5"><div class="card-title" style="color:#c53030">⚠️ Zona de peligro</div></div>
+        <div class="card-body">
+          <div class="settings-row"><div><div class="settings-label">Borrar historial de ventas</div><div class="settings-desc">Elimina todas las ventas y transacciones registradas</div></div><button class="btn" style="background:#fff5f5;color:#c53030;border:1.5px solid #fed7d7">Borrar</button></div>
+          <div class="settings-row"><div><div class="settings-label">Resetear configuración</div><div class="settings-desc">Restablece la configuración a valores por defecto</div></div><button class="btn" style="background:#fff5f5;color:#c53030;border:1.5px solid #fed7d7">Resetear</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PROMO ══ -->
+    <div class="page" id="page-promo">
+      <div class="page-header"><div><div class="page-title">Gana 2 meses gratis</div><div class="page-sub">Programa de referidos Fudo</div></div></div>
+      <div class="first-steps-banner">
+        <div class="first-steps-text"><h2>🎁 Referí un amigo y ganá 2 meses gratis</h2><p>Compartí tu código promocional. Cuando un nuevo negocio se suscriba usando tu código, ambos obtienen 2 meses gratis.</p></div>
+      </div>
+      <div class="card"><div class="card-body" style="text-align:center;padding:32px">
+        <div style="font-size:0.85rem;color:var(--text-light);margin-bottom:12px">TU CÓDIGO PROMOCIONAL</div>
+        <div style="font-size:2rem;font-weight:800;color:var(--primary);letter-spacing:4px;font-family:monospace">F.RAQUITOS.ADMIN</div>
+        <button class="btn btn-primary" style="margin-top:20px" onclick="navigator.clipboard?.writeText('F.RAQUITOS.ADMIN');alert('Código copiado!')">📋 Copiar código</button>
+      </div></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL NEW PRODUCT -->
+<div class="overlay-modal" id="modal-newProduct" onclick="closeModal('newProduct',event)">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Nuevo producto</div><button class="modal-close" onclick="closeModal('newProduct')">✕</button></div>
+    <div class="modal-body">
+      <div class="modal-row"><div class="modal-field"><label>Código</label><input type="text" placeholder="Ej: 100" /></div><div class="modal-field"><label>Nombre</label><input type="text" placeholder="Nombre del producto" /></div></div>
+      <div class="modal-row"><div class="modal-field"><label>Precio</label><input type="number" placeholder="0.00" /></div><div class="modal-field"><label>Categoría</label><select><option>Bebidas</option><option>Cafetería</option><option>Platos Principales</option><option>Postres</option></select></div></div>
+      <div class="modal-row"><div class="modal-field"><label>Stock inicial</label><input type="number" placeholder="0" /></div><div class="modal-field"><label>Costo</label><input type="number" placeholder="0.00" /></div></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('newProduct')">Cancelar</button><button class="btn btn-primary">Guardar</button></div>
+  </div>
+</div>
+
+<!-- MODAL NEW SALE -->
+<div class="overlay-modal" id="modal-newSale" onclick="closeModal('newSale',event)">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Nueva venta</div><button class="modal-close" onclick="closeModal('newSale')">✕</button></div>
+    <div class="modal-body">
+      <div class="modal-row"><div class="modal-field"><label>Mesa</label><select id="saleTable"><option>Mesa 1 - Salón</option><option>Mesa 2 - Salón</option><option>Mesa 3 - Salón</option><option>Mesa 4 - Salón</option><option>Mesa 5 - Salón</option></select></div><div class="modal-field"><label>Mozo</label><select><option>Ricardo Gonzalez</option></select></div></div>
+      <div style="margin-top:16px"><div style="font-size:0.8rem;font-weight:700;color:var(--text-light);margin-bottom:10px">PRODUCTOS</div>
+      <div id="saleItems"></div>
+      <button class="btn btn-secondary" style="width:100%;margin-top:10px" onclick="addSaleItem()">+ Agregar producto</button></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('newSale')">Cancelar</button><button class="btn btn-primary">Crear venta</button></div>
   </div>
 </div>
 
 <script>
-  document.getElementById('inputBusqueda').addEventListener('keydown', e => {
-    if (e.key === 'Enter') buscar(1);
-  });
+// ─────────── DATA ───────────
+const DATA = {
+  products: [
+    {id:1,code:'10',name:'Coca-Cola 375 cm3',price:10,cost:null,stock:5,catId:1,active:true,favourite:true},
+    {id:2,code:'20',name:'Pizza Muzarella',price:38,cost:null,stock:null,catId:3,active:true,favourite:false},
+    {id:3,code:'30',name:'Cafe Chico',price:10,cost:null,stock:null,catId:2,active:true,favourite:true},
+    {id:4,code:'31',name:'Cafe Jarrito',price:14,cost:null,stock:null,catId:2,active:true,favourite:true},
+    {id:5,code:'32',name:'Medialunas',price:5,cost:null,stock:30,catId:2,active:true,favourite:true},
+    {id:6,code:'11',name:'Agua Mineral 500 cm3',price:10,cost:null,stock:5,catId:1,active:true,favourite:true},
+    {id:7,code:'40',name:'Ensalada de Frutas',price:25,cost:null,stock:null,catId:4,active:true,favourite:true},
+    {id:8,code:'21',name:'Milanesa Napolitana',price:45,cost:null,stock:null,catId:3,active:true,favourite:false},
+    {id:9,code:'22',name:'Papas Fritas',price:45,cost:null,stock:null,catId:3,active:true,favourite:false},
+  ],
+  categories: [
+    {id:1,name:'Bebidas'}, {id:2,name:'Cafetería'},
+    {id:3,name:'Platos Principales'}, {id:4,name:'Postres'}
+  ],
+  tables: [
+    // Salón (room 1)
+    {id:1,num:1,room:1,row:0,col:0},{id:2,num:2,room:1,row:0,col:1},
+    {id:3,num:3,room:1,row:1,col:0},{id:4,num:4,room:1,row:1,col:1},
+    {id:5,num:5,room:1,row:3,col:0},{id:6,num:6,room:1,row:3,col:1},
+    {id:7,num:7,room:1,row:4,col:0},{id:8,num:8,room:1,row:4,col:1},
+    {id:9,num:9,room:1,row:0,col:3},{id:10,num:10,room:1,row:1,col:3},
+    {id:11,num:11,room:1,row:3,col:3},{id:12,num:12,room:1,row:4,col:3},
+    // Terraza (room 2)
+    {id:13,num:13,room:2,row:0,col:0},{id:14,num:14,room:2,row:0,col:1},
+    {id:15,num:15,room:2,row:0,col:2},{id:16,num:16,room:2,row:0,col:3},
+    {id:17,num:17,room:2,row:1,col:0},{id:18,num:18,room:2,row:1,col:1},
+    {id:19,num:19,room:2,row:1,col:2},{id:20,num:20,room:2,row:1,col:3},
+  ],
+  rooms: [
+    {id:1,name:'Salón',rows:5,cols:5},
+    {id:2,name:'Terraza',rows:3,cols:5}
+  ],
+  paymentTypes: ['Efectivo','Cta. Cte.','Tarj. Crédito','Tarj. Débito']
+};
 
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') cerrarOverlay();
-  });
+// ─────────── STATE ───────────
+let currentPage = 'restaurante';
+let tableOccupied = new Set([3, 7]); // pre-occupied tables
+let currentProductCat = 'all';
+let currentProductSearch = '';
 
-  async function cargarFiltros() {
-    try {
-      const res = await fetch('/api/filtros');
-      const data = await res.json();
-
-      const llenar = (selectId, valores) => {
-        const sel = document.getElementById(selectId);
-        valores.forEach(v => {
-          const opt = document.createElement('option');
-          opt.value = v;
-          opt.textContent = v;
-          sel.appendChild(opt);
-        });
-      };
-
-      llenar('filtroTipo',   data.tipos);
-      llenar('filtroMarca',  data.marcas);
-      llenar('filtroEstado', data.estados);
-
-      document.getElementById('filterBar').style.display = 'flex';
-    } catch {}
+// ─────────── LOGIN ───────────
+function doLogin() {
+  const user = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginError');
+  if ((user === 'admin@raquitos' || user === 'admin') && pass === 'Marzo2020*') {
+    err.style.display = 'none';
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('appPage').style.display = 'block';
+    startClock();
+    buildTables();
+    buildProducts();
+    navTo('restaurante');
+  } else {
+    err.style.display = 'block';
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginPass').focus();
   }
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('loginPage').style.display !== 'none') doLogin();
+});
 
-  function limpiarFiltros() {
-    document.getElementById('filtroTipo').value   = '';
-    document.getElementById('filtroMarca').value  = '';
-    document.getElementById('filtroEstado').value = '';
-    actualizarBtnLimpiar();
-    buscar(1);
+function doLogout() {
+  document.getElementById('appPage').style.display = 'none';
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('userMenu').classList.remove('open');
+}
+
+// ─────────── CLOCK ───────────
+function startClock() {
+  const days = ['DOMINGO','LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO'];
+  const months = ['ENE.','FEB.','MAR.','ABR.','MAY.','JUN.','JUL.','AGO.','SEP.','OCT.','NOV.','DIC.'];
+  function update() {
+    const now = new Date();
+    document.getElementById('clockTime').textContent = now.toLocaleTimeString('es-AR', {hour:'2-digit',minute:'2-digit'});
+    document.getElementById('clockDate').textContent = `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]}`;
   }
+  update(); setInterval(update, 1000);
+}
 
-  function actualizarBtnLimpiar() {
-    const tipo   = document.getElementById('filtroTipo').value;
-    const marca  = document.getElementById('filtroMarca').value;
-    const estado = document.getElementById('filtroEstado').value;
-    const activo = tipo || marca || estado;
-    document.getElementById('btnLimpiar').style.display = activo ? 'block' : 'none';
-    document.getElementById('filtroTipo').classList.toggle('active',   !!tipo);
-    document.getElementById('filtroMarca').classList.toggle('active',  !!marca);
-    document.getElementById('filtroEstado').classList.toggle('active', !!estado);
-  }
+// ─────────── NAVIGATION ───────────
+function navTo(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  const el = document.getElementById('page-' + page);
+  if (el) el.classList.add('active');
+  document.querySelectorAll(`[data-page="${page}"]`).forEach(l => l.classList.add('active'));
+  currentPage = page;
+  // close user menu
+  document.getElementById('userMenu').classList.remove('open');
+  // hash update
+  window.location.hash = page;
+}
 
-  cargarFiltros();
+// ─────────── USER MENU ───────────
+function toggleUserMenu(e) {
+  e.stopPropagation();
+  document.getElementById('userMenu').classList.toggle('open');
+}
+document.addEventListener('click', () => {
+  document.getElementById('userMenu').classList.remove('open');
+});
 
-  async function buscar(pagina) {
-    const q      = document.getElementById('inputBusqueda').value.trim();
-    const tipo   = document.getElementById('filtroTipo')?.value   || '';
-    const marca  = document.getElementById('filtroMarca')?.value  || '';
-    const estado = document.getElementById('filtroEstado')?.value || '';
-    const tbody    = document.getElementById('tbody');
-    const infoText = document.getElementById('infoText');
-    const hintClick = document.getElementById('hintClick');
-    const paginacion = document.getElementById('paginacion');
-
-    actualizarBtnLimpiar();
-    infoText.textContent = '';
-    hintClick.style.display = 'none';
-    paginacion.innerHTML = '';
-    tbody.innerHTML = `<tr class="state-row"><td colspan="8"><div class="spinner" style="margin:0 auto"></div></td></tr>`;
-
-    try {
-      const params = new URLSearchParams({ q, pagina, tipo, marca, estado });
-      const res = await fetch(`/api/buscar?${params}`);
-      const data = await res.json();
-
-      if (data.error) {
-        tbody.innerHTML = `<tr class="state-row"><td colspan="8"><span class="state-icon">⚠️</span>Error: ${esc(data.error)}</td></tr>`;
-        return;
+// ─────────── TABLES ───────────
+function buildTables() {
+  buildRoom('salon', 1);
+  buildRoom('terraza', 2);
+}
+function buildRoom(roomKey, roomId) {
+  const tables = DATA.tables.filter(t => t.room === roomId);
+  const maxRow = Math.max(...tables.map(t => t.row));
+  const maxCol = Math.max(...tables.map(t => t.col));
+  const grid = document.getElementById('tables-' + roomKey);
+  if (!grid) return;
+  // Build a grid
+  const rows = maxRow + 1;
+  const cols = maxCol + 1;
+  grid.style.gridTemplateColumns = `repeat(${cols}, 80px)`;
+  // fill grid cells
+  const cells = {};
+  tables.forEach(t => { cells[`${t.row}-${t.col}`] = t; });
+  let html = '';
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const t = cells[`${r}-${c}`];
+      if (t) {
+        const occ = tableOccupied.has(t.id);
+        html += `<div class="table-cell${occ?' occupied':''}" onclick="clickTable(${t.id})">
+          <div class="table-num">${t.num}</div>
+          <div class="table-status">${occ?'Ocupada':'Libre'}</div>
+        </div>`;
+      } else {
+        html += `<div style="width:80px;height:80px"></div>`;
       }
-
-      if (data.datos.length === 0) {
-        tbody.innerHTML = `<tr class="state-row"><td colspan="8"><span class="state-icon">📭</span>Sin resultados para "<strong>${esc(q)}</strong>"</td></tr>`;
-        infoText.textContent = '0 resultados encontrados.';
-        return;
-      }
-
-      const totalPaginas = Math.ceil(data.total / data.porPagina);
-      const desde = (pagina - 1) * data.porPagina + 1;
-      const hasta = Math.min(pagina * data.porPagina, data.total);
-      infoText.textContent = `${desde}–${hasta} de ${data.total} resultados`;
-      hintClick.style.display = 'flex';
-
-      tbody.innerHTML = data.datos.map(row => {
-        const estado = (row.ESTADO || '').toUpperCase();
-        const badgeClass = estado === 'A' ? 'badge-active' : 'badge-inactive';
-        const badgeLabel = estado === 'A' ? 'Activo' : (row.ESTADO || '-');
-        const precio = row.PRECIO != null ? `$ ${num(row.PRECIO)}` : '-';
-        const stock = row.STOCK_ACTUAL != null ? num(row.STOCK_ACTUAL) : '-';
-
-        return `<tr onclick="abrirDetalle('${esc(row.ARTICULO)}')">
-          <td class="col-codigo">${esc(row.ARTICULO)}</td>
-          <td class="col-desc">${esc(row.DESCRIPCION)}</td>
-          <td class="col-precio">${precio}</td>
-          <td>${esc(row.TIPOARTICULO)}</td>
-          <td>${esc(row.UNIDAD)}</td>
-          <td class="col-stock">${stock}</td>
-          <td>${esc(row.MARCA)}</td>
-          <td><span class="badge ${badgeClass}">${badgeLabel}</span></td>
-        </tr>`;
-      }).join('');
-
-      if (totalPaginas > 1) {
-        paginacion.innerHTML = `
-          <button class="btn-pag" onclick="buscar(${pagina - 1})" ${pagina === 1 ? 'disabled' : ''}>← Anterior</button>
-          <span class="pag-info">Página ${pagina} de ${totalPaginas}</span>
-          <button class="btn-pag" onclick="buscar(${pagina + 1})" ${pagina === totalPaginas ? 'disabled' : ''}>Siguiente →</button>
-        `;
-      }
-
-    } catch {
-      tbody.innerHTML = `<tr class="state-row"><td colspan="8"><span class="state-icon">🔌</span>No se pudo conectar con el servidor</td></tr>`;
     }
   }
-
-  async function abrirDetalle(codigo) {
-    const overlay = document.getElementById('overlay');
-    const modal = document.getElementById('modal');
-
-    modal.innerHTML = `<div class="modal-loading"><div class="spinner"></div><div>Cargando detalle...</div></div>`;
-    overlay.classList.add('visible');
-
-    try {
-      const res = await fetch(`/api/articulo?codigo=${encodeURIComponent(codigo)}`);
-      const d = await res.json();
-
-      if (d.error) {
-        modal.innerHTML = `<div class="modal-loading">⚠️ ${esc(d.error)}</div>`;
-        return;
-      }
-
-      const estado = (d.ESTADO || '').toUpperCase();
-      const badgeClass = estado === 'A' ? 'badge-active' : 'badge-inactive';
-      const badgeLabel = estado === 'A' ? 'Activo' : (d.ESTADO || '-');
-
-      modal.innerHTML = `
-        <div class="modal-header">
-          <div>
-            <div class="modal-codigo">CÓDIGO: ${esc(d.ARTICULO)}</div>
-            <div class="modal-titulo">${esc(d.DESCRIPCION)}</div>
-            ${d.DESCRIPCIONEXTRA1 ? `<div class="modal-subtitulo">${esc(d.DESCRIPCIONEXTRA1)}</div>` : ''}
-          </div>
-          <button class="btn-close" onclick="cerrarOverlay()">✕</button>
-        </div>
-        <div class="modal-price-bar">
-          <div class="price-featured">
-            <div class="price-featured-label">💰 Precio Lista 1</div>
-            <div class="price-featured-value">$ ${num(d.PRECIO_LISTA1)}</div>
-          </div>
-          <div class="price-divider"></div>
-          <div class="price-secondary">
-            <div class="price-secondary-label">Precio Venta</div>
-            <div class="price-secondary-value">$ ${num(d.PRECIO)}</div>
-          </div>
-          <div class="price-divider"></div>
-          <div class="price-secondary">
-            <div class="price-secondary-label">Precio Oferta</div>
-            <div class="price-secondary-value">${d.PRECIOOFERTA ? `$ ${num(d.PRECIOOFERTA)}` : '-'}</div>
-          </div>
-        </div>
-
-        <div class="modal-body">
-
-          <div class="modal-section">
-            <div class="modal-section-title">💰 Precios</div>
-            <div class="modal-grid">
-              ${campo('Precio Venta', `$ ${num(d.PRECIO)}`, 'price')}
-              ${campo('Precio Costo', `$ ${num(d.PRECIO_DE_COSTO)}`)}
-              ${campo('Costo Proveedor', `$ ${num(d.COSTOPROVEEDOR)}`)}
-              ${campo('Lista 1', `$ ${num(d.PRECIO_LISTA1)}`)}
-              ${campo('Lista 2', `$ ${num(d.PRECIO_LISTA2)}`)}
-              ${campo('Lista 3', `$ ${num(d.PRECIO_LISTA3)}`)}
-              ${campo('Precio Oferta', `$ ${num(d.PRECIOOFERTA)}`)}
-              ${campo('% Descuento', d.PORCENTAJEOFERTA != null ? `${num(d.PORCENTAJEOFERTA)} %` : '-')}
-              ${campo('Usa Oferta', esc(d.UTILIZAPRECIOOFERTA))}
-              ${campo('Bonificación', d.BONIFICACION != null ? `${num(d.BONIFICACION)} %` : '-')}
-              ${campo('Tasa IVA', d.TASA_IVA != null ? `${num(d.TASA_IVA)} %` : '-')}
-            </div>
-          </div>
-
-          <div class="modal-section">
-            <div class="modal-section-title">📦 Stock y Unidades</div>
-            <div class="modal-grid">
-              ${campo('Stock Actual', num(d.STOCK_ACTUAL))}
-              ${campo('Punto Pedido', num(d.PUNTO_PEDIDO))}
-              ${campo('Tope Reposición', num(d.TOPE_REPOSIC))}
-              ${campo('Unidad', esc(d.UNIDAD))}
-              ${campo('Unidad Proveedor', esc(d.UNIDADPROVEEDOR))}
-              ${campo('Cant. Presentación', num(d.CANTPRESENTACION))}
-            </div>
-          </div>
-
-          <div class="modal-section">
-            <div class="modal-section-title">🏷️ Clasificación</div>
-            <div class="modal-grid">
-              ${campo('Tipo Artículo', esc(d.TIPOARTICULO))}
-              ${campo('Marca', esc(d.MARCA))}
-              ${campo('Rubro', esc(d.RUBRO))}
-              ${campo('Sub-Rubro', esc(d.SUB_RUBRO))}
-              ${campo('PLU', esc(d.PLU), 'mono')}
-              ${campo('Fabricación', esc(d.FABRICACION))}
-              ${campo('Estantería', esc(d.ESTANTERIA))}
-              ${campo('Gaveta', esc(d.GAVETA))}
-              ${campo('Último Proveedor', esc(d.ULTIMO_PROVEEDOR))}
-              ${campo('Estado', `<span class="badge ${badgeClass}">${badgeLabel}</span>`)}
-            </div>
-          </div>
-
-          <div class="modal-section">
-            <div class="modal-section-title">📅 Fechas</div>
-            <div class="modal-grid">
-              ${campo('Fecha Alta', fecha(d.FECHAALTA))}
-              ${campo('Act. Precios', fecha(d.FECHAACTPRECIOS))}
-              ${campo('Vigencia', fecha(d.FECHAVIGENCIA))}
-            </div>
-          </div>
-
-          ${d.DESCRIPCIONEXTRA2 ? `
-          <div class="modal-section">
-            <div class="modal-section-title">📝 Información adicional</div>
-            <div style="font-size:0.9rem; color:var(--text); line-height:1.5">${esc(d.DESCRIPCIONEXTRA2)}</div>
-          </div>` : ''}
-
-        </div>
-      `;
-    } catch {
-      modal.innerHTML = `<div class="modal-loading">🔌 Error al cargar el detalle.</div>`;
+  grid.innerHTML = html;
+}
+function switchRoom(room, el) {
+  document.querySelectorAll('.room-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('room-salon').style.display = room==='salon'?'block':'none';
+  document.getElementById('room-terraza').style.display = room==='terraza'?'block':'none';
+}
+function clickTable(id) {
+  if (tableOccupied.has(id)) {
+    if (confirm(`Mesa ${id} está ocupada. ¿Ver detalles de la mesa?`)) {
+      alert(`Mesa ${id}: Sin orden activa en este demo.\n\nEn producción, aquí verías los productos pedidos, el total y opciones de pago.`);
     }
+  } else {
+    showModal('newSale');
+    const sel = document.getElementById('saleTable');
+    if (sel) sel.value = id;
   }
+}
 
-  function cerrarModal(e) {
-    if (e.target === document.getElementById('overlay')) cerrarOverlay();
+// ─────────── PRODUCTS ───────────
+function buildProducts() { renderProducts(); }
+function filterProducts(cat, el) {
+  currentProductCat = cat;
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderProducts();
+}
+function filterProductsText() {
+  currentProductSearch = document.getElementById('productSearch').value.toLowerCase();
+  renderProducts();
+}
+function renderProducts() {
+  const catMap = {1:'Bebidas',2:'Cafetería',3:'Platos Principales',4:'Postres'};
+  let prods = DATA.products;
+  if (currentProductCat !== 'all') prods = prods.filter(p => p.catId === parseInt(currentProductCat));
+  if (currentProductSearch) prods = prods.filter(p => p.name.toLowerCase().includes(currentProductSearch) || p.code.includes(currentProductSearch));
+  const tbody = document.getElementById('productsTbody');
+  if (!tbody) return;
+  if (prods.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-light)">Sin productos encontrados</td></tr>`;
+    return;
   }
+  tbody.innerHTML = prods.map(p => {
+    const margin = p.cost ? (p.price - p.cost) : null;
+    const marginPct = margin && p.price ? ((margin/p.price)*100).toFixed(1) : '—';
+    const markup = margin && p.cost ? ((margin/p.cost)*100).toFixed(1) : '—';
+    return `<tr>
+      <td class="td-code">${p.code}</td>
+      <td class="td-name">${p.name}<br><small style="color:var(--text-light);font-size:0.75rem">${catMap[p.catId]||''}</small></td>
+      <td>${p.cost ? '$'+p.cost.toFixed(2) : '—'}</td>
+      <td>${margin !== null ? '$'+margin.toFixed(2) : '—'}</td>
+      <td>${marginPct !== '—' ? marginPct+'%' : '—'}</td>
+      <td>${markup !== '—' ? markup+'%' : '—'}</td>
+      <td class="td-price">$${p.price.toFixed(2)}</td>
+      <td>${p.stock !== null ? p.stock : '—'}</td>
+      <td><span class="badge ${p.active?'badge-green':'badge-red'}">${p.active?'Activo':'Inactivo'}</span></td>
+    </tr>`;
+  }).join('');
+}
 
-  function cerrarOverlay() {
-    document.getElementById('overlay').classList.remove('visible');
-  }
+function switchProductTab(tab, el) {
+  document.querySelectorAll('[id^="prodtab-"]').forEach(t => t.style.display = 'none');
+  document.getElementById('prodtab-' + tab).style.display = 'block';
+  document.querySelectorAll('#page-productos .room-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
 
-  function campo(label, valor, extraClass = '') {
-    return `<div class="modal-field">
-      <div class="field-label">${label}</div>
-      <div class="field-value ${extraClass}">${valor ?? '-'}</div>
-    </div>`;
+// ─────────── MODALS ───────────
+function showModal(name) {
+  document.getElementById('modal-' + name).classList.add('open');
+}
+function closeModal(name, e) {
+  if (!e || e.target === document.getElementById('modal-' + name)) {
+    document.getElementById('modal-' + name).classList.remove('open');
   }
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.overlay-modal.open').forEach(m => m.classList.remove('open'));
+  }
+});
 
-  function num(val) {
-    if (val == null) return '-';
-    return Number(val).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
+let saleItemCount = 0;
+function addSaleItem() {
+  saleItemCount++;
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:center';
+  div.innerHTML = `<select style="flex:1;padding:9px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.85rem">
+    ${DATA.products.map(p=>`<option value="${p.id}">${p.name} - $${p.price}</option>`).join('')}
+  </select>
+  <input type="number" value="1" min="1" style="width:60px;padding:9px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.85rem" />
+  <button onclick="this.parentElement.remove()" style="background:#fff5f5;border:1px solid #fed7d7;color:#c53030;border-radius:6px;padding:8px 10px;cursor:pointer">✕</button>`;
+  document.getElementById('saleItems').appendChild(div);
+}
 
-  function fecha(val) {
-    if (!val) return '-';
-    return new Date(val).toLocaleDateString('es-AR');
-  }
+// ─────────── HASH ROUTING ───────────
+window.addEventListener('hashchange', () => {
+  const hash = window.location.hash.replace('#','');
+  if (hash && document.getElementById('page-'+hash)) navTo(hash);
+});
 
-  function esc(val) {
-    if (val == null) return '-';
-    return String(val)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
+// ─────────── AUTO-INIT ───────────
+// Check if already "logged in" from hash
+if (window.location.hash) {
+  const hash = window.location.hash.replace('#','');
+  // Don't auto-login, stay on login page
+}
 </script>
-
 </body>
 </html>

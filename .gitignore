@@ -1,1 +1,7 @@
 node_modules/
+portal_capture/
+explore_portal.js
+explore_deep.js
+*.log
+.env
+package-lock.json
