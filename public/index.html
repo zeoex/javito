@@ -452,7 +452,6 @@ input.form-control:focus{outline:none;border-color:var(--red)}
         </div>
         <div class="tabs">
           <div class="tab active" onclick="switchTab('salon')">🏠 Salón</div>
-          <div class="tab" onclick="switchTab('terraza')">🌿 Terraza</div>
         </div>
         <div class="mesas-grid" id="mesasGrid"></div>
       </div>
@@ -871,10 +870,6 @@ const DEMO_MESAS = [
   {id:6,numero:6,capacidad:4,estado:'cuenta',zona:'salon',mozo:'Carlos',tiempo:'01:55',items:7},
   {id:7,numero:7,capacidad:4,estado:'libre',zona:'salon',mozo:null,tiempo:null,items:0},
   {id:8,numero:8,capacidad:8,estado:'ocupada',zona:'salon',mozo:'María',tiempo:'00:30',items:2},
-  {id:9,numero:9,capacidad:2,estado:'libre',zona:'terraza',mozo:null,tiempo:null,items:0},
-  {id:10,numero:10,capacidad:4,estado:'ocupada',zona:'terraza',mozo:'Ana',tiempo:'00:15',items:1},
-  {id:11,numero:11,capacidad:4,estado:'libre',zona:'terraza',mozo:null,tiempo:null,items:0},
-  {id:12,numero:12,capacidad:6,estado:'libre',zona:'terraza',mozo:null,tiempo:null,items:0},
 ];
 const DEMO_PRODUCTOS = [
   {id:1,nombre:'Pizza Muzarella',categoria:'pizzas',emoji:'🍕',precio_chica:800,precio_mediana:1200,precio_grande:1600,activo:true},
@@ -1114,6 +1109,7 @@ function renderActividades() {
     {icon:'🛵',text:'Nuevo pedido delivery D-002',time:'14:31'},
     {icon:'🪑',text:'Mesa 2 abierta por Carlos',time:'13:47'},
     {icon:'💰',text:'Caja abierta — turno iniciado',time:'09:00'},
+    {icon:'🖨️',text:'Comanda #004 impresa',time:'14:20'},
   ];
   document.getElementById('actividadesList').innerHTML = acts.map(a=>`
     <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
@@ -1177,6 +1173,7 @@ function clickMesa(id) {
       <div style="font-size:20px;font-weight:800;color:var(--blue);text-align:right">Total: $${subtotal.toLocaleString()}</div>`;
     footer.innerHTML = `<button class="btn btn-outline" onclick="closeModal('modalMesa')">Cancelar</button>
       <button class="btn btn-warning" onclick="pedirCuenta(${id})">🧾 Pedir Cuenta</button>
+      <button class="btn btn-outline btn-sm" onclick="imprimirComanda(${id})">🖨️ Imprimir</button>
       <button class="btn btn-danger" onclick="cerrarMesa(${id})">✔️ Cobrar y Cerrar</button>`;
   }
   openModal('modalMesa');
@@ -1222,6 +1219,30 @@ function crearMesa() {
   showToast(`Mesa #${num} creada`,'success');
 }
 
+function imprimirComanda(id) {
+  const m = mesasData.find(x=>x.id===id);
+  const win = window.open('', '_blank', 'width=400,height=600');
+  win.document.write(`
+    <html><head><title>Comanda Mesa ${m.numero}</title>
+    <style>body{font-family:monospace;padding:20px;font-size:14px}
+    h2{text-align:center}hr{border:1px dashed #000}.total{font-size:18px;font-weight:bold}</style></head>
+    <body>
+      <h2>🍕 PIZZERÍA PRO</h2>
+      <p style="text-align:center">Mesa #${m.numero} — ${m.mozo || ''}</p>
+      <p style="text-align:center">${new Date().toLocaleString('es-AR')}</p>
+      <hr>
+      <p>Pizza Muzarella Grande x1 ......... $1.600</p>
+      <p>Coca-Cola 500ml x2 ............... $1.200</p>
+      <hr>
+      <p class="total">TOTAL: $2.800</p>
+      <hr>
+      <p style="text-align:center">¡Gracias por su visita!</p>
+    </body></html>
+  `);
+  win.document.close();
+  win.print();
+}
+
 // ======= DELIVERY =======
 function renderDelivery() {
   const stages = [
@@ -1254,7 +1275,7 @@ function renderDeliveryCard(o,stage) {
     <div class="delivery-card-items">${o.items.map(i=>`${i.qty}x ${i.nombre}`).join(', ')}</div>
     <div style="font-size:11px;color:var(--gray)">📍 ${o.direccion}</div>
     <div class="delivery-card-total">💰 $${o.total.toLocaleString()} · ${o.metodo_pago}</div>
-    <div class="delivery-card-actions">${nextBtn}</div>
+    <div class="delivery-card-actions">${nextBtn}<button class="btn btn-outline btn-sm" onclick="imprimirDelivery(${o.id})" title="Imprimir">🖨️</button></div>
   </div>`;
 }
 
@@ -1286,6 +1307,33 @@ function crearDelivery() {
   renderDelivery();
   loadDashboard();
   showToast(`Delivery ${deliveryData[0].numero} creado`,'success');
+}
+
+function imprimirDelivery(id) {
+  const o = deliveryData.find(x=>x.id===id);
+  const win = window.open('', '_blank', 'width=400,height=600');
+  win.document.write(`
+    <html><head><title>Pedido ${o.numero}</title>
+    <style>body{font-family:monospace;padding:20px;font-size:14px}h2{text-align:center}hr{border:1px dashed #000}.total{font-size:18px;font-weight:bold}</style></head>
+    <body>
+      <h2>🍕 PIZZERÍA PRO</h2>
+      <p style="text-align:center">DELIVERY ${o.numero}</p>
+      <p style="text-align:center">${new Date().toLocaleString('es-AR')}</p>
+      <hr>
+      <p><b>Cliente:</b> ${o.cliente.nombre}</p>
+      <p><b>Tel:</b> ${o.cliente.telefono}</p>
+      <p><b>Dir:</b> ${o.direccion}</p>
+      <hr>
+      ${o.items.map(i=>`<p>${i.nombre} x${i.qty} ......... $${(i.precio*i.qty).toLocaleString()}</p>`).join('')}
+      <hr>
+      <p class="total">TOTAL: $${o.total.toLocaleString()}</p>
+      <p><b>Pago:</b> ${o.metodo_pago}</p>
+      <hr>
+      <p style="text-align:center">¡Gracias por su pedido!</p>
+    </body></html>
+  `);
+  win.document.close();
+  win.print();
 }
 
 function addDlvItem() {
