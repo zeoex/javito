@@ -6,924 +6,1183 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <title>Repartidor - PIZZERÍA PRO</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-:root{
-  --bg:#1d3557;
-  --bg2:#142844;
-  --bg3:#0e1f33;
-  --accent:#e63946;
-  --accent2:#457b9d;
-  --success:#2a9d8f;
-  --warn:#f4a261;
-  --white:#ffffff;
-  --card:#ffffff;
-  --card-shadow:0 2px 12px rgba(0,0,0,0.18);
-  --text:#1d3557;
-  --text2:#6b7a99;
-  --text3:#a0b0c8;
-  --border:#e8edf5;
-  --radius:12px;
-}
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html, body{
-  height:100%;
-  background:var(--bg);
-  font-family:'Barlow',sans-serif;
-  color:var(--text);
-  -webkit-font-smoothing:antialiased;
-}
+  :root {
+    --primary: #e63946;
+    --primary-dark: #c1121f;
+    --accent: #28a745;
+    --header-bg: #1d3557;
+    --bg: #f0f2f5;
+    --card-bg: #ffffff;
+    --text: #212529;
+    --text-muted: #6c757d;
+    --border: #dee2e6;
+    --status-asignado: #fd7e14;
+    --status-en-camino: #0dcaf0;
+    --status-entregado: #28a745;
+    --nav-height: 64px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.10);
+  }
 
-/* Centra en desktop, full-width en móvil */
-.app-wrapper{
-  max-width:480px;
-  margin:0 auto;
-  min-height:100vh;
-  display:flex;
-  flex-direction:column;
-  background:var(--bg);
-  position:relative;
-  box-shadow:0 0 60px rgba(0,0,0,0.5);
-}
+  html, body {
+    height: 100%;
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+  }
 
-/* ── HEADER ── */
-.app-header{
-  background:var(--bg3);
-  padding:16px 20px 14px;
-  flex-shrink:0;
-  position:sticky;top:0;z-index:100;
-  border-bottom:1px solid rgba(255,255,255,0.08);
-}
-.header-top{
-  display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:10px;
-}
-.header-brand{display:flex;align-items:center;gap:10px}
-.header-brand .icon{font-size:24px}
-.header-brand h1{
-  font-size:18px;font-weight:800;color:#fff;
-  letter-spacing:.5px;
-}
-.header-brand span{
-  font-size:10px;font-weight:600;color:var(--text3);
-  display:block;letter-spacing:1.5px;text-transform:uppercase;
-}
+  /* ── LOGIN ─────────────────────────────────────── */
+  #login-screen {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(145deg, #0d1b2a 0%, #1d3557 60%, #1a2a45 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 24px;
+  }
 
-/* Estado toggle */
-.estado-toggle{
-  display:flex;align-items:center;gap:8px;
-  background:rgba(255,255,255,0.08);
-  border:1px solid rgba(255,255,255,0.12);
-  border-radius:20px;padding:6px 12px;
-  cursor:pointer;transition:all .2s;
-  user-select:none;
-}
-.estado-toggle:hover{background:rgba(255,255,255,0.13)}
-.estado-dot{
-  width:8px;height:8px;border-radius:50%;
-  background:#6b7a99;transition:background .3s;
-}
-.estado-toggle.disponible .estado-dot{
-  background:#4ade80;
-  animation:pulse-green 2s infinite;
-}
-@keyframes pulse-green{
-  0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,0.5)}
-  50%{box-shadow:0 0 0 5px rgba(74,222,128,0)}
-}
-.estado-label{
-  font-size:12px;font-weight:700;color:var(--text3);
-  letter-spacing:.5px;text-transform:uppercase;
-  transition:color .3s;
-}
-.estado-toggle.disponible .estado-label{color:#4ade80}
+  #login-screen.hidden { display: none; }
 
-/* Repartidor info */
-.header-repartidor{
-  display:flex;align-items:center;gap:10px;
-}
-.rep-avatar{
-  width:34px;height:34px;border-radius:50%;
-  background:linear-gradient(135deg,var(--accent2),#2d6a8f);
-  display:flex;align-items:center;justify-content:center;
-  font-size:14px;font-weight:800;color:#fff;flex-shrink:0;
-}
-.rep-info .rep-name{font-size:14px;font-weight:700;color:#fff}
-.rep-info .rep-stats{font-size:11px;color:var(--text3);margin-top:1px}
+  .login-logo {
+    font-size: 52px;
+    margin-bottom: 8px;
+    animation: bounce 1.6s infinite;
+  }
 
-/* ── TAB BAR ── */
-.tab-bar{
-  background:var(--bg2);
-  display:flex;
-  border-bottom:1px solid rgba(255,255,255,0.06);
-  flex-shrink:0;
-}
-.tab-btn{
-  flex:1;padding:13px 4px 11px;
-  background:transparent;border:none;
-  font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;
-  color:var(--text3);cursor:pointer;transition:all .2s;
-  display:flex;flex-direction:column;align-items:center;gap:3px;
-  position:relative;
-}
-.tab-btn .tab-icon{font-size:16px;line-height:1}
-.tab-btn .tab-label{font-size:11px;letter-spacing:.3px;text-transform:uppercase}
-.tab-btn.active{color:#fff}
-.tab-btn.active::after{
-  content:'';position:absolute;bottom:0;left:20%;right:20%;
-  height:2px;background:var(--accent);border-radius:2px 2px 0 0;
-}
-.tab-badge{
-  position:absolute;top:8px;right:calc(50% - 18px);
-  background:var(--accent);color:#fff;
-  font-size:9px;font-weight:700;
-  min-width:16px;height:16px;border-radius:8px;
-  display:flex;align-items:center;justify-content:center;
-  padding:0 4px;
-}
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
 
-/* ── CONTENT ── */
-.tab-content{
-  display:none;flex:1;overflow-y:auto;
-  padding:14px 14px 80px;
-  -webkit-overflow-scrolling:touch;
-}
-.tab-content.active{display:flex;flex-direction:column;gap:14px}
-.tab-content::-webkit-scrollbar{display:none}
+  .login-title {
+    color: #fff;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+  }
 
-/* ── PEDIDO CARD ── */
-.pedido-card{
-  background:var(--card);
-  border-radius:var(--radius);
-  box-shadow:var(--card-shadow);
-  overflow:hidden;
-  transition:transform .15s,box-shadow .15s;
-}
-.pedido-card.new-arrival{animation:slide-up .4s ease-out}
-@keyframes slide-up{
-  from{opacity:0;transform:translateY(16px) scale(.97)}
-  to{opacity:1;transform:translateY(0) scale(1)}
-}
+  .login-subtitle {
+    color: rgba(255,255,255,0.55);
+    font-size: 13px;
+    margin-bottom: 36px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
 
-/* Card header */
-.pedido-head{
-  padding:14px 16px 12px;
-  display:flex;align-items:flex-start;justify-content:space-between;
-  border-bottom:1px solid var(--border);
-  background:linear-gradient(135deg,#f8fafc,#f0f5ff);
-}
-.pedido-num{
-  font-size:26px;font-weight:900;color:var(--text);letter-spacing:-1px;
-}
-.pedido-num span{font-size:14px;font-weight:500;color:var(--text2)}
-.pedido-estado{
-  display:flex;flex-direction:column;align-items:flex-end;gap:5px;
-}
-.badge-estado{
-  font-size:10px;font-weight:800;
-  padding:4px 10px;border-radius:10px;
-  letter-spacing:1px;text-transform:uppercase;
-}
-.badge-asignado{background:rgba(230,57,70,0.12);color:var(--accent);border:1px solid rgba(230,57,70,0.25)}
-.badge-en-camino{background:rgba(69,123,157,0.12);color:var(--accent2);border:1px solid rgba(69,123,157,0.25)}
-.badge-pendiente-e{background:rgba(244,162,97,0.15);color:#c27a34;border:1px solid rgba(244,162,97,0.3)}
-.badge-entregado{background:rgba(42,157,143,0.12);color:var(--success);border:1px solid rgba(42,157,143,0.25)}
-.pedido-tiempo{font-size:11px;font-weight:600;color:var(--text2)}
+  .login-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 18px;
+    padding: 28px 24px;
+    width: 100%;
+    max-width: 360px;
+    backdrop-filter: blur(12px);
+  }
 
-/* Items */
-.pedido-items-line{
-  padding:10px 16px;
-  font-size:13px;font-weight:600;color:var(--text);
-  border-bottom:1px solid var(--border);
-  background:#fafbfc;
-}
+  .login-card label {
+    display: block;
+    color: rgba(255,255,255,0.7);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
 
-/* Info rows */
-.pedido-info{padding:10px 16px;display:flex;flex-direction:column;gap:8px}
-.info-row{display:flex;align-items:flex-start;gap:10px}
-.info-icon{font-size:16px;flex-shrink:0;width:20px;text-align:center;line-height:1.4}
-.info-text{font-size:13px;color:var(--text);line-height:1.4;flex:1}
-.info-text strong{font-weight:700;display:block}
-.info-text .info-sub{font-size:12px;color:var(--text2);font-weight:400}
-.info-ref{font-size:12px;color:var(--accent2);font-style:italic;margin-top:1px}
+  .login-card input {
+    width: 100%;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 10px;
+    color: #fff;
+    font-family: inherit;
+    font-size: 16px;
+    padding: 13px 16px;
+    margin-bottom: 16px;
+    outline: none;
+    transition: border-color .2s, background .2s;
+  }
 
-/* Pago */
-.pago-row{
-  margin:0 16px 10px;
-  background:linear-gradient(135deg,#fff8e1,#fff3cd);
-  border:1px solid #fce082;
-  border-radius:8px;
-  padding:10px 14px;
-  display:flex;align-items:center;justify-content:space-between;
-}
-.pago-monto{font-size:22px;font-weight:900;color:#9c5e00}
-.pago-method{
-  font-size:12px;font-weight:700;
-  padding:4px 10px;border-radius:8px;
-  text-transform:uppercase;letter-spacing:.5px;
-}
-.pago-efectivo{background:rgba(42,157,143,0.15);color:#1a7a6e;border:1px solid rgba(42,157,143,0.3)}
-.pago-tarjeta{background:rgba(69,123,157,0.15);color:#2c5f7a;border:1px solid rgba(69,123,157,0.3)}
+  .login-card input:focus {
+    border-color: var(--primary);
+    background: rgba(255,255,255,0.15);
+  }
 
-/* Horarios */
-.horarios-row{
-  margin:0 16px 12px;
-  display:grid;grid-template-columns:1fr 1fr;gap:8px;
-}
-.horario-box{
-  background:#f8fafc;border:1px solid var(--border);border-radius:8px;
-  padding:8px 12px;text-align:center;
-}
-.horario-label{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
-.horario-val{font-size:16px;font-weight:800;color:var(--text);margin-top:2px;font-variant-numeric:tabular-nums}
-.horario-val.pendiente-val{color:var(--text3);font-style:italic;font-size:13px}
+  .login-card input::placeholder { color: rgba(255,255,255,0.35); }
 
-/* Action buttons */
-.pedido-actions{
-  padding:0 14px 14px;
-  display:grid;grid-template-columns:1fr 1fr;gap:8px;
-}
-.btn-action{
-  padding:14px 8px;
-  border:none;border-radius:10px;
-  font-family:'Barlow',sans-serif;
-  font-size:12px;font-weight:700;
-  letter-spacing:.3px;text-transform:uppercase;
-  cursor:pointer;transition:all .2s;
-  display:flex;flex-direction:column;align-items:center;gap:4px;
-  touch-action:manipulation;
-  min-height:56px;
-  text-decoration:none;
-}
-.btn-action .btn-icon{font-size:18px;line-height:1}
-.btn-llamar{background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9}
-.btn-llamar:hover{background:#c8e6c9}
-.btn-mapa{background:#e3f2fd;color:#1565c0;border:1px solid #bbdefb}
-.btn-mapa:hover{background:#bbdefb}
-.btn-confirmar{
-  background:linear-gradient(135deg,var(--success),#52b788);
-  color:#fff;
-  grid-column:span 2;
-  flex-direction:row;justify-content:center;gap:8px;
-  font-size:15px;padding:16px;
-}
-.btn-confirmar:hover{filter:brightness(1.08);transform:translateY(-1px)}
-.btn-problema{
-  background:#fff0f0;color:var(--accent);
-  border:1px solid #ffd5d5;
-  grid-column:span 2;
-  flex-direction:row;justify-content:center;gap:8px;
-  font-size:13px;padding:13px;
-}
-.btn-problema:hover{background:#ffe0e0}
+  .btn-login {
+    width: 100%;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 15px;
+    cursor: pointer;
+    transition: background .2s, transform .1s;
+    min-height: 50px;
+  }
 
-/* Wide single button for asignado state */
-.btn-iniciar-viaje{
-  grid-column:span 2;
-  background:linear-gradient(135deg,var(--accent),#c1121f);
-  color:#fff;
-  font-size:15px;padding:16px;
-  flex-direction:row;justify-content:center;gap:8px;
-}
-.btn-iniciar-viaje:hover{filter:brightness(1.08);transform:translateY(-1px)}
+  .btn-login:hover { background: var(--primary-dark); }
+  .btn-login:active { transform: scale(0.97); }
 
-/* Disabled card */
-.pedido-card.estado-entregado{opacity:.6;pointer-events:none}
+  .login-error {
+    color: #ff6b6b;
+    font-size: 13px;
+    text-align: center;
+    margin-top: 12px;
+    min-height: 18px;
+  }
 
-/* ── HISTORIAL ── */
-.historial-summary{
-  background:var(--card);border-radius:var(--radius);
-  box-shadow:var(--card-shadow);padding:16px;
-}
-.historial-summary h3{font-size:14px;font-weight:700;color:var(--text);margin-bottom:12px}
-.resumen-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-.resumen-box{
-  background:#f8fafc;border:1px solid var(--border);border-radius:8px;
-  padding:10px 8px;text-align:center;
-}
-.resumen-num{font-size:24px;font-weight:900;color:var(--text)}
-.resumen-label{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.3px;margin-top:2px}
-.resumen-total{
-  background:linear-gradient(135deg,var(--bg),var(--bg2));
-  border-radius:8px;padding:12px 16px;
-  display:flex;align-items:center;justify-content:space-between;
-}
-.resumen-total span{font-size:13px;font-weight:600;color:#a0b8d0}
-.resumen-total strong{font-size:20px;font-weight:900;color:#fff}
+  .login-hint {
+    color: rgba(255,255,255,0.35);
+    font-size: 11px;
+    text-align: center;
+    margin-top: 16px;
+  }
 
-.historial-list{display:flex;flex-direction:column;gap:8px}
-.historial-item{
-  background:var(--card);border-radius:10px;
-  box-shadow:0 1px 6px rgba(0,0,0,0.1);
-  padding:12px 14px;
-  display:flex;align-items:center;justify-content:space-between;
-}
-.hist-num{font-size:16px;font-weight:900;color:var(--text);min-width:50px}
-.hist-info{flex:1;padding:0 10px}
-.hist-cliente{font-size:13px;font-weight:600;color:var(--text)}
-.hist-items{font-size:11px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
-.hist-right{text-align:right}
-.hist-monto{font-size:15px;font-weight:800;color:var(--text)}
-.hist-hora{font-size:11px;color:var(--text2);margin-top:2px}
-.hist-badge{
-  font-size:9px;font-weight:700;
-  padding:2px 7px;border-radius:6px;
-  text-transform:uppercase;letter-spacing:.5px;margin-top:3px;display:inline-block;
-  background:rgba(42,157,143,0.12);color:var(--success);border:1px solid rgba(42,157,143,0.25);
-}
+  /* ── APP SHELL ──────────────────────────────────── */
+  #app {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    position: relative;
+  }
 
-/* ── EMPTY STATE ── */
-.empty-state{
-  display:flex;flex-direction:column;align-items:center;
-  justify-content:center;padding:48px 24px;gap:12px;
-  text-align:center;
-}
-.empty-state .es-icon{font-size:48px;opacity:.4}
-.empty-state p{font-size:14px;font-weight:600;color:rgba(255,255,255,.4)}
+  #app.visible { display: flex; }
 
-/* ── NOTIF BANNER ── */
-.notif-banner{
-  position:fixed;top:0;left:50%;transform:translateX(-50%);
-  max-width:480px;width:100%;z-index:999;
-  background:var(--accent);color:#fff;
-  padding:14px 20px;
-  display:flex;align-items:center;gap:12px;
-  font-size:14px;font-weight:700;
-  box-shadow:0 4px 20px rgba(0,0,0,0.4);
-  animation:notif-drop .35s ease-out;
-  cursor:pointer;
-}
-@keyframes notif-drop{
-  from{transform:translateX(-50%) translateY(-100%)}
-  to{transform:translateX(-50%) translateY(0)}
-}
-.notif-banner .nb-icon{font-size:24px;flex-shrink:0}
-.notif-banner .nb-close{
-  margin-left:auto;font-size:18px;opacity:.7;cursor:pointer;
-}
+  /* ── TOP BAR ───────────────────────────────────── */
+  .top-bar {
+    background: var(--header-bg);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    flex-shrink: 0;
+  }
 
-/* ── CONN PILL ── */
-.conn-pill{
-  display:flex;align-items:center;gap:5px;
-  font-size:10px;font-weight:700;letter-spacing:.5px;
-  padding:3px 8px;border-radius:10px;
-}
-.conn-online{background:rgba(74,222,128,0.15);color:#4ade80;border:1px solid rgba(74,222,128,0.3)}
-.conn-offline{background:rgba(244,162,97,0.12);color:#fbbf24;border:1px solid rgba(244,162,97,0.25)}
-.conn-dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
-.conn-online .conn-dot{animation:blink-dot 1.5s infinite}
-@keyframes blink-dot{0%,100%{opacity:1}50%{opacity:.3}}
+  .driver-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    font-size: 17px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
 
-/* ── MODAL PROBLEMA ── */
-.modal-backdrop{
-  display:none;position:fixed;inset:0;
-  background:rgba(0,0,0,0.7);z-index:500;
-  align-items:flex-end;justify-content:center;
-}
-.modal-backdrop.open{display:flex;animation:fade-in .2s}
-@keyframes fade-in{from{opacity:0}to{opacity:1}}
-.modal-sheet{
-  background:#fff;border-radius:16px 16px 0 0;
-  width:100%;max-width:480px;padding:20px;
-  animation:sheet-up .3s ease-out;
-}
-@keyframes sheet-up{
-  from{transform:translateY(40px);opacity:0}
-  to{transform:translateY(0);opacity:1}
-}
-.modal-sheet h3{font-size:16px;font-weight:800;color:var(--text);margin-bottom:14px}
-.problema-options{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
-.prob-opt{
-  padding:14px;border-radius:10px;border:1.5px solid var(--border);
-  background:#fff;font-family:'Barlow',sans-serif;
-  font-size:14px;font-weight:600;color:var(--text);
-  cursor:pointer;text-align:left;transition:all .15s;
-}
-.prob-opt:hover{border-color:var(--accent);background:#fff5f5;color:var(--accent)}
-.btn-cancel-modal{
-  width:100%;padding:14px;border:none;border-radius:10px;
-  background:#f0f4f8;color:var(--text2);
-  font-family:'Barlow',sans-serif;font-size:14px;font-weight:700;
-  cursor:pointer;
-}
-.btn-cancel-modal:hover{background:#e2e8f0}
+  .driver-info { flex: 1; min-width: 0; }
 
-/* ── RESPONSIVE desktop preview ── */
-@media(min-width:481px){
-  .app-wrapper{border-left:1px solid rgba(255,255,255,0.05);border-right:1px solid rgba(255,255,255,0.05)}
-}
+  .driver-name {
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .driver-role {
+    color: rgba(255,255,255,0.55);
+    font-size: 11px;
+  }
+
+  .status-toggle {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 20px;
+    padding: 6px 12px;
+    cursor: pointer;
+    min-height: 44px;
+    transition: background .2s;
+    user-select: none;
+  }
+
+  .status-toggle:active { background: rgba(255,255,255,0.18); }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: background .3s;
+  }
+
+  .status-dot.disponible { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .status-dot.no-disponible { background: var(--primary); box-shadow: 0 0 6px var(--primary); }
+
+  .status-text {
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  .pedidos-badge {
+    background: var(--primary);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* ── CONTENT AREA ──────────────────────────────── */
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(var(--nav-height) + 8px);
+  }
+
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  /* ── STATS ROW ─────────────────────────────────── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding: 14px 14px 0;
+  }
+
+  .stat-card {
+    background: var(--card-bg);
+    border-radius: 14px;
+    padding: 14px 10px;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+
+  .stat-icon { font-size: 22px; margin-bottom: 4px; }
+
+  .stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.1;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    font-weight: 500;
+  }
+
+  /* ── SECTION HEADER ────────────────────────────── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 14px 8px;
+  }
+
+  .section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .section-count {
+    background: var(--header-bg);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 10px;
+  }
+
+  /* ── ORDER CARDS ───────────────────────────────── */
+  .orders-list {
+    padding: 0 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .order-card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    transition: opacity .3s, transform .3s;
+    border-left: 4px solid transparent;
+  }
+
+  .order-card.estado-asignado { border-left-color: var(--status-asignado); }
+  .order-card.estado-en_camino { border-left-color: var(--status-en-camino); }
+  .order-card.estado-entregado { border-left-color: var(--status-entregado); opacity: 0.65; }
+
+  .order-card.animate-in {
+    animation: slideIn .35s ease forwards;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px 8px;
+  }
+
+  .order-number {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .order-time {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .status-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .badge-asignado { background: rgba(253,126,20,0.15); color: var(--status-asignado); }
+  .badge-en_camino { background: rgba(13,202,240,0.15); color: #0aa2c0; }
+  .badge-entregado { background: rgba(40,167,69,0.15); color: var(--status-entregado); }
+
+  .card-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0 14px;
+  }
+
+  .card-body { padding: 10px 14px; }
+
+  .info-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 13px;
+  }
+
+  .info-row .icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+  .info-row .label { color: var(--text-muted); font-weight: 500; margin-right: 4px; }
+  .info-row .value { color: var(--text); font-weight: 500; line-height: 1.3; }
+
+  .info-row a { color: var(--header-bg); text-decoration: none; font-weight: 600; }
+
+  .items-list {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin: 8px 0;
+  }
+
+  .item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 0;
+    font-size: 13px;
+  }
+
+  .item-name { color: var(--text); font-weight: 500; }
+  .item-qty { color: var(--text-muted); font-size: 12px; }
+
+  .total-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0 0;
+    border-top: 1px solid var(--border);
+    margin-top: 6px;
+  }
+
+  .total-amount {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .payment-method {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 10px;
+  }
+
+  .payment-efectivo { background: rgba(40,167,69,0.12); color: #1a7a35; }
+  .payment-tarjeta { background: rgba(29,53,87,0.12); color: var(--header-bg); }
+
+  .card-actions {
+    display: flex;
+    gap: 8px;
+    padding: 0 14px 14px;
+    flex-wrap: wrap;
+  }
+
+  .btn-action {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 11px 10px;
+    cursor: pointer;
+    min-height: 44px;
+    transition: background .2s, transform .1s, opacity .2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .btn-action:active { transform: scale(0.96); }
+  .btn-action:disabled { opacity: 0.5; cursor: default; }
+
+  .btn-start { background: var(--accent); color: #fff; }
+  .btn-start:hover:not(:disabled) { background: #1e7e34; }
+
+  .btn-maps { background: #e8f0fe; color: #1a73e8; }
+  .btn-maps:hover:not(:disabled) { background: #d2e3fc; }
+
+  .btn-deliver { background: var(--primary); color: #fff; }
+  .btn-deliver:hover:not(:disabled) { background: var(--primary-dark); }
+
+  .btn-done { background: #e9ecef; color: var(--text-muted); }
+
+  /* ── HISTORY TAB ───────────────────────────────── */
+  .history-list {
+    padding: 0 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .history-item {
+    background: var(--card-bg);
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .history-check {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(40,167,69,0.12);
+    color: var(--accent);
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .history-info { flex: 1; min-width: 0; }
+  .history-order { font-size: 14px; font-weight: 700; }
+  .history-client { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .history-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .history-total { font-size: 15px; font-weight: 700; color: var(--accent); white-space: nowrap; }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-muted);
+  }
+
+  .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; font-weight: 500; }
+
+  /* ── PROFILE TAB ───────────────────────────────── */
+  .profile-section {
+    padding: 14px 14px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .profile-hero {
+    background: var(--header-bg);
+    border-radius: 18px;
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: #fff;
+  }
+
+  .profile-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    font-size: 26px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .profile-name { font-size: 20px; font-weight: 700; }
+  .profile-meta { font-size: 13px; opacity: 0.65; margin-top: 3px; }
+
+  .profile-card {
+    background: var(--card-bg);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: var(--shadow);
+  }
+
+  .profile-card-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+
+  .profile-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+
+  .profile-row:last-child { border-bottom: none; }
+  .profile-row-label { color: var(--text-muted); font-weight: 500; }
+  .profile-row-value { font-weight: 700; color: var(--text); }
+
+  .btn-logout {
+    width: 100%;
+    background: #fff;
+    border: 2px solid var(--primary);
+    color: var(--primary);
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 14px;
+    cursor: pointer;
+    transition: background .2s, color .2s;
+    min-height: 50px;
+  }
+
+  .btn-logout:hover { background: var(--primary); color: #fff; }
+
+  /* ── BOTTOM NAV ────────────────────────────────── */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+    height: var(--nav-height);
+    background: var(--card-bg);
+    border-top: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    z-index: 100;
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+  }
+
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    cursor: pointer;
+    min-height: 44px;
+    transition: color .2s;
+    color: var(--text-muted);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    border: none;
+    background: none;
+    font-family: inherit;
+    padding: 8px 4px;
+  }
+
+  .nav-item.active { color: var(--primary); }
+
+  .nav-icon { font-size: 22px; line-height: 1; }
+  .nav-label { font-size: 10px; font-weight: 600; letter-spacing: 0.3px; }
+
+  /* ── TOAST ─────────────────────────────────────── */
+  .toast {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: #212529;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 20px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    z-index: 9000;
+    opacity: 0;
+    transition: opacity .25s, transform .25s;
+    white-space: nowrap;
+    max-width: calc(100% - 32px);
+    text-align: center;
+  }
+
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
 
-<!-- NOTIFICATION BANNER (hidden by default) -->
-<div class="notif-banner" id="notif-banner" style="display:none" onclick="closeNotif()">
-  <div class="nb-icon">&#x1F6F5;</div>
-  <span id="notif-text">Nuevo pedido asignado!</span>
-  <div class="nb-close">&#x2715;</div>
-</div>
-
-<!-- MODAL PROBLEMA -->
-<div class="modal-backdrop" id="modal-problema" onclick="closeProblema(event)">
-  <div class="modal-sheet" onclick="event.stopPropagation()">
-    <h3>Reportar problema</h3>
-    <div class="problema-options">
-      <button class="prob-opt" onclick="reportarProblema('No encuentra la dirección')">&#x1F4CD; No encuentra la dirección</button>
-      <button class="prob-opt" onclick="reportarProblema('Cliente no atiende')">&#x1F4F5; Cliente no atiende el teléfono</button>
-      <button class="prob-opt" onclick="reportarProblema('Problema con el pago')">&#x1F4B3; Problema con el método de pago</button>
-      <button class="prob-opt" onclick="reportarProblema('Pedido incorrecto')">&#x26A0;&#xFE0F; Pedido incorrecto</button>
-      <button class="prob-opt" onclick="reportarProblema('Otro problema')">&#x2026; Otro problema</button>
-    </div>
-    <button class="btn-cancel-modal" onclick="closeProblema()">Cancelar</button>
+<!-- ── LOGIN SCREEN ──────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-logo">🛵</div>
+  <div class="login-title">REPARTIDOR</div>
+  <div class="login-subtitle">PIZZERÍA PRO</div>
+  <div class="login-card">
+    <label for="input-conductor">Nombre de conductor</label>
+    <input type="text" id="input-conductor" placeholder="ej. conductor1" autocomplete="username"/>
+    <label for="input-pin">PIN / Contraseña</label>
+    <input type="password" id="input-pin" placeholder="••••" autocomplete="current-password"/>
+    <button class="btn-login" onclick="handleLogin()">Entrar</button>
+    <div class="login-error" id="login-error"></div>
+    <div class="login-hint">Demo: conductor1 / 1234 &nbsp;•&nbsp; conductor2 / 1234</div>
   </div>
 </div>
 
-<div class="app-wrapper">
+<!-- ── APP ───────────────────────────────────────── -->
+<div id="app">
 
-  <!-- HEADER -->
-  <header class="app-header">
-    <div class="header-top">
-      <div class="header-brand">
-        <div class="icon">&#x1F6F5;</div>
-        <div>
-          <h1>Pizzería Pro</h1>
-          <span>App Repartidor</span>
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <div class="driver-avatar" id="top-avatar">C</div>
+    <div class="driver-info">
+      <div class="driver-name" id="top-driver-name">Conductor</div>
+      <div class="driver-role">🛵 Repartidor</div>
+    </div>
+    <div class="status-toggle" id="status-toggle" onclick="toggleStatus()">
+      <div class="status-dot disponible" id="status-dot"></div>
+      <span class="status-text" id="status-text">DISPONIBLE</span>
+    </div>
+    <div class="pedidos-badge" id="pedidos-badge">0</div>
+  </div>
+
+  <!-- Content -->
+  <div class="content" id="content">
+
+    <!-- TAB: Mis Pedidos -->
+    <div class="tab-pane active" id="tab-pedidos">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-icon">📦</div>
+          <div class="stat-value" id="stat-entregas">5</div>
+          <div class="stat-label">Entregas hoy</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🛣️</div>
+          <div class="stat-value" id="stat-km">32</div>
+          <div class="stat-label">Km recorridos</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">💰</div>
+          <div class="stat-value" id="stat-propinas">$450</div>
+          <div class="stat-label">Propinas</div>
         </div>
       </div>
-      <div class="conn-pill conn-offline" id="conn-pill">
-        <div class="conn-dot"></div>
-        <span id="conn-pill-text">DEMO</span>
-      </div>
-    </div>
-    <div class="header-repartidor">
-      <div class="rep-avatar" id="rep-avatar">M</div>
-      <div class="rep-info">
-        <div class="rep-name" id="rep-name">Miguel Torres</div>
-        <div class="rep-stats" id="rep-stats">0 entregas hoy &middot; $0 recaudado</div>
-      </div>
-      <div class="estado-toggle disponible" id="estado-toggle" onclick="toggleEstado()">
-        <div class="estado-dot"></div>
-        <span class="estado-label" id="estado-label">Disponible</span>
-      </div>
-    </div>
-  </header>
 
-  <!-- TAB BAR -->
-  <nav class="tab-bar">
-    <button class="tab-btn active" id="tab-pendientes" onclick="setTab('pendientes')">
-      <span class="tab-icon">&#x23F3;</span>
-      <span class="tab-label">Pendientes</span>
-      <div class="tab-badge" id="badge-pendientes" style="display:none">0</div>
+      <div class="section-header">
+        <span class="section-title">Mis Pedidos</span>
+        <span class="section-count" id="orders-count">0 activos</span>
+      </div>
+
+      <div class="orders-list" id="orders-list">
+        <!-- cards rendered by JS -->
+      </div>
+    </div>
+
+    <!-- TAB: Historial -->
+    <div class="tab-pane" id="tab-historial">
+      <div class="section-header">
+        <span class="section-title">📊 Mi Historial Hoy</span>
+      </div>
+      <div class="history-list" id="history-list">
+        <!-- rendered by JS -->
+      </div>
+    </div>
+
+    <!-- TAB: Perfil -->
+    <div class="tab-pane" id="tab-perfil">
+      <div class="profile-section">
+        <div class="profile-hero">
+          <div class="profile-avatar" id="profile-avatar">C</div>
+          <div>
+            <div class="profile-name" id="profile-name">Conductor</div>
+            <div class="profile-meta">🛵 Repartidor activo</div>
+            <div class="profile-meta" id="profile-phone">📞 11-0000-0000</div>
+          </div>
+        </div>
+
+        <div class="profile-card">
+          <div class="profile-card-title">Estadísticas de hoy</div>
+          <div class="profile-row">
+            <span class="profile-row-label">Entregas realizadas</span>
+            <span class="profile-row-value" id="p-entregas">5</span>
+          </div>
+          <div class="profile-row">
+            <span class="profile-row-label">Km recorridos</span>
+            <span class="profile-row-value">32 km</span>
+          </div>
+          <div class="profile-row">
+            <span class="profile-row-label">Propinas</span>
+            <span class="profile-row-value">$450</span>
+          </div>
+          <div class="profile-row">
+            <span class="profile-row-label">Ganancias estimadas</span>
+            <span class="profile-row-value" id="p-ganancias">$2,500</span>
+          </div>
+        </div>
+
+        <div class="profile-card">
+          <div class="profile-card-title">Cuenta</div>
+          <div class="profile-row">
+            <span class="profile-row-label">Usuario</span>
+            <span class="profile-row-value" id="p-usuario">—</span>
+          </div>
+          <div class="profile-row">
+            <span class="profile-row-label">Estado</span>
+            <span class="profile-row-value" id="p-estado" style="color:var(--accent)">Disponible</span>
+          </div>
+          <div class="profile-row">
+            <span class="profile-row-label">Turno iniciado</span>
+            <span class="profile-row-value">13:00</span>
+          </div>
+        </div>
+
+        <button class="btn-logout" onclick="handleLogout()">🚪 Cerrar sesión</button>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" id="nav-pedidos" onclick="switchTab('pedidos')">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">Mis Pedidos</span>
     </button>
-    <button class="tab-btn" id="tab-en-curso" onclick="setTab('en-curso')">
-      <span class="tab-icon">&#x1F6F5;</span>
-      <span class="tab-label">En Curso</span>
-      <div class="tab-badge" id="badge-encurso" style="display:none">0</div>
+    <button class="nav-item" id="nav-historial" onclick="switchTab('historial')">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">Mi Historial</span>
     </button>
-    <button class="tab-btn" id="tab-historial" onclick="setTab('historial')">
-      <span class="tab-icon">&#x1F4CB;</span>
-      <span class="tab-label">Historial</span>
+    <button class="nav-item" id="nav-perfil" onclick="switchTab('perfil')">
+      <span class="nav-icon">👤</span>
+      <span class="nav-label">Mi Perfil</span>
     </button>
   </nav>
 
-  <!-- CONTENT -->
-  <div class="tab-content active" id="content-pendientes"></div>
-  <div class="tab-content" id="content-en-curso"></div>
-  <div class="tab-content" id="content-historial"></div>
+</div><!-- /app -->
 
-</div><!-- /app-wrapper -->
+<div class="toast" id="toast"></div>
 
 <script>
-/* ── DEMO DATA ──────────────────────────────────────────────────────────────── */
-const ENTREGAS_DEMO = [
+'use strict';
+
+/* ── CREDENTIALS ─────────────────────────────────── */
+const DRIVERS = {
+  conductor1: { pin: '1234', nombre: 'Carlos Mendez', telefono: '11-5555-1234' },
+  conductor2: { pin: '1234', nombre: 'Ana Torres',   telefono: '11-5555-5678' }
+};
+
+/* ── DEMO DATA ───────────────────────────────────── */
+const PEDIDOS_DEMO = [
   {
-    id: 1, numero: '002', estado: 'asignado',
-    cliente: 'Juan García', telefono: '1145678901',
-    direccion: 'Av. Corrientes 1234, piso 2, depto B',
-    barrio: 'Centro', referencia: 'Edificio rojo con portero',
-    items: 'Pizza Napolitana x2, Empanada de Carne x4',
-    total: 3200, metodoPago: 'tarjeta',
-    hora_salida: '20:15', hora_estimada: '20:35'
+    id: 1, numero: '005', estado: 'asignado',
+    cliente: { nombre: 'Juan García', telefono: '11-4567-8901' },
+    direccion: 'Av. Corrientes 1234, 3°B',
+    items: [
+      { nombre: 'Pizza Muzarella Grande', qty: 1, precio: 1600 },
+      { nombre: 'Coca-Cola 500ml',        qty: 2, precio: 600  }
+    ],
+    total: 2800, metodo_pago: 'efectivo', hora: '14:32'
   },
   {
-    id: 2, numero: '005', estado: 'pendiente',
-    cliente: 'María López', telefono: '1198765432',
-    direccion: 'Lavalle 567, 3°A',
-    barrio: 'Once', referencia: 'Timbre 3A',
-    items: 'Pizza Fugazzeta Grande x1, Agua Mineral x3',
-    total: 2600, metodoPago: 'efectivo',
-    hora_salida: null, hora_estimada: '20:50'
+    id: 2, numero: '007', estado: 'en_camino',
+    cliente: { nombre: 'María López', telefono: '11-9876-5432' },
+    direccion: 'Belgrano 567, PB',
+    items: [
+      { nombre: 'Pizza Napolitana Grande', qty: 1, precio: 1800 },
+      { nombre: 'Pizza 4 Quesos Grande',   qty: 1, precio: 2000 },
+      { nombre: 'Fernet con Coca',         qty: 1, precio: 1800 }
+    ],
+    total: 5600, metodo_pago: 'tarjeta', hora: '14:45'
+  },
+  {
+    id: 3, numero: '003', estado: 'entregado',
+    cliente: { nombre: 'Carlos Rodríguez', telefono: '11-3333-4444' },
+    direccion: 'San Martín 890',
+    items: [
+      { nombre: 'Pizza Fugazzeta Grande', qty: 2, precio: 1700 }
+    ],
+    total: 3400, metodo_pago: 'efectivo', hora: '13:15'
   }
 ];
 
-const HISTORIAL_DEMO = [
-  { id:10, numero:'001', cliente:'Roberto Silva', items:'Pizza Muzarella Grande x1', total:1800, metodoPago:'efectivo', hora_entrega:'19:42' },
-  { id:11, numero:'003', cliente:'Laura Fernández', items:'Pizza Napolitana x2, Bebida x2', total:3400, metodoPago:'tarjeta', hora_entrega:'19:58' },
-];
-
-/* ── STATE ──────────────────────────────────────────────────────────────────── */
-let entregas = ENTREGAS_DEMO.map(e => ({...e}));
-let historial = HISTORIAL_DEMO.map(e => ({...e}));
+/* ── STATE ───────────────────────────────────────── */
+let currentDriver = null;
+let pedidos = [];
 let disponible = true;
-let currentTab = 'pendientes';
-let problemaPedidoId = null;
 let socket = null;
 
-/* ── UTILS ──────────────────────────────────────────────────────────────────── */
-function fmt$(n){ return '$' + Number(n).toLocaleString('es-AR'); }
+/* ── AUTH ────────────────────────────────────────── */
+function handleLogin() {
+  const user = document.getElementById('input-conductor').value.trim().toLowerCase();
+  const pin  = document.getElementById('input-pin').value.trim();
+  const errEl = document.getElementById('login-error');
 
-function mapsLink(direccion, barrio) {
-  const q = encodeURIComponent(`${direccion}, ${barrio}, Buenos Aires, Argentina`);
-  return `https://maps.google.com/?q=${q}`;
-}
+  if (!user || !pin) { errEl.textContent = 'Completá todos los campos.'; return; }
 
-/* ── RENDER PEDIDO CARD ─────────────────────────────────────────────────────── */
-function renderPedidoCard(e) {
-  // Estado badge
-  const badgeMap = {
-    pendiente:  ['badge-pendiente-e', '&#x23F3; PENDIENTE'],
-    asignado:   ['badge-asignado',    '&#x26A1; ASIGNADO'],
-    'en-camino':['badge-en-camino',   '&#x1F6F5; EN CAMINO'],
-    entregado:  ['badge-entregado',   '&#x2713; ENTREGADO']
-  };
-  const [badgeClass, badgeLabel] = badgeMap[e.estado] || ['badge-pendiente-e', e.estado.toUpperCase()];
-
-  const horaSalida = e.hora_salida
-    ? `<div class="horario-val">${e.hora_salida}</div>`
-    : `<div class="horario-val pendiente-val">por salir</div>`;
-
-  const pagoClass = e.metodoPago === 'efectivo' ? 'pago-efectivo' : 'pago-tarjeta';
-  const pagoLabel = e.metodoPago === 'efectivo' ? '&#x1F4B5; EFECTIVO' : '&#x1F4B3; TARJETA';
-
-  // Action buttons según estado
-  let actionsHtml = '';
-  if (e.estado === 'asignado') {
-    actionsHtml = `
-      <div class="pedido-actions">
-        <a class="btn-action btn-llamar" href="tel:${e.telefono}">
-          <span class="btn-icon">&#x1F4DE;</span>LLAMAR
-        </a>
-        <a class="btn-action btn-mapa" href="${mapsLink(e.direccion, e.barrio)}" target="_blank" rel="noopener">
-          <span class="btn-icon">&#x1F5FA;&#xFE0F;</span>MAPA
-        </a>
-        <button class="btn-action btn-iniciar-viaje" onclick="iniciarViaje(${e.id})">
-          <span class="btn-icon">&#x1F6F5;</span>INICIAR VIAJE
-        </button>
-        <button class="btn-action btn-problema" onclick="openProblema(${e.id})">
-          <span class="btn-icon">&#x26A0;&#xFE0F;</span>REPORTAR PROBLEMA
-        </button>
-      </div>`;
-  } else if (e.estado === 'en-camino') {
-    actionsHtml = `
-      <div class="pedido-actions">
-        <a class="btn-action btn-llamar" href="tel:${e.telefono}">
-          <span class="btn-icon">&#x1F4DE;</span>LLAMAR
-        </a>
-        <a class="btn-action btn-mapa" href="${mapsLink(e.direccion, e.barrio)}" target="_blank" rel="noopener">
-          <span class="btn-icon">&#x1F5FA;&#xFE0F;</span>MAPA
-        </a>
-        <button class="btn-action btn-confirmar" onclick="confirmarEntrega(${e.id})">
-          <span class="btn-icon">&#x2705;</span>CONFIRMAR ENTREGA
-        </button>
-        <button class="btn-action btn-problema" onclick="openProblema(${e.id})">
-          <span class="btn-icon">&#x26A0;&#xFE0F;</span>REPORTAR PROBLEMA
-        </button>
-      </div>`;
-  } else {
-    actionsHtml = `
-      <div class="pedido-actions">
-        <a class="btn-action btn-llamar" href="tel:${e.telefono}">
-          <span class="btn-icon">&#x1F4DE;</span>LLAMAR
-        </a>
-        <a class="btn-action btn-mapa" href="${mapsLink(e.direccion, e.barrio)}" target="_blank" rel="noopener">
-          <span class="btn-icon">&#x1F5FA;&#xFE0F;</span>MAPA
-        </a>
-      </div>`;
-  }
-
-  return `
-    <div class="pedido-card" id="pedido-${e.id}">
-      <div class="pedido-head">
-        <div class="pedido-num"><span>#</span>${e.numero}</div>
-        <div class="pedido-estado">
-          <span class="badge-estado ${badgeClass}">${badgeLabel}</span>
-          ${e.hora_estimada ? `<div class="pedido-tiempo">Est. entrega: <strong>${e.hora_estimada}</strong></div>` : ''}
-        </div>
-      </div>
-
-      <div class="pedido-items-line">&#x1F355; ${e.items}</div>
-
-      <div class="pedido-info">
-        <div class="info-row">
-          <span class="info-icon">&#x1F464;</span>
-          <div class="info-text">
-            <strong>${e.cliente}</strong>
-          </div>
-        </div>
-        <div class="info-row">
-          <span class="info-icon">&#x1F4DE;</span>
-          <div class="info-text">
-            <a href="tel:${e.telefono}" style="color:var(--accent2);font-weight:700;text-decoration:none">
-              ${e.telefono.replace(/(\d{2})(\d{4})(\d{4})/, '$1-$2-$3')}
-            </a>
-          </div>
-        </div>
-        <div class="info-row">
-          <span class="info-icon">&#x1F4CD;</span>
-          <div class="info-text">
-            <strong>${e.direccion}</strong>
-            <span class="info-sub">Barrio: ${e.barrio}</span>
-            ${e.referencia ? `<div class="info-ref">Ref: ${e.referencia}</div>` : ''}
-          </div>
-        </div>
-      </div>
-
-      <div class="pago-row">
-        <div>
-          <div style="font-size:10px;font-weight:700;color:#9c7a00;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Total a cobrar</div>
-          <div class="pago-monto">${fmt$(e.total)}</div>
-        </div>
-        <span class="pago-method ${pagoClass}">${pagoLabel}</span>
-      </div>
-
-      <div class="horarios-row">
-        <div class="horario-box">
-          <div class="horario-label">&#x1F551; Sale</div>
-          ${horaSalida}
-        </div>
-        <div class="horario-box">
-          <div class="horario-label">&#x1F3AF; Est. llegada</div>
-          <div class="horario-val">${e.hora_estimada || '--'}</div>
-        </div>
-      </div>
-
-      ${actionsHtml}
-    </div>
-  `;
-}
-
-/* ── RENDER HISTORIAL ───────────────────────────────────────────────────────── */
-function renderHistorial() {
-  const container = document.getElementById('content-historial');
-  if (historial.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <div class="es-icon">&#x1F4CB;</div>
-        <p>No hay entregas registradas hoy</p>
-      </div>`;
+  const driver = DRIVERS[user];
+  if (!driver || driver.pin !== pin) {
+    errEl.textContent = 'Usuario o PIN incorrecto.';
+    document.getElementById('input-pin').value = '';
     return;
   }
 
-  const totalRecaudado = historial.reduce((s, e) => s + e.total, 0);
-  const totalEfectivo = historial.filter(e => e.metodoPago === 'efectivo').reduce((s, e) => s + e.total, 0);
-  const totalTarjeta = historial.filter(e => e.metodoPago === 'tarjeta').reduce((s, e) => s + e.total, 0);
-
-  const summaryHtml = `
-    <div class="historial-summary">
-      <h3>Resumen del día</h3>
-      <div class="resumen-grid">
-        <div class="resumen-box">
-          <div class="resumen-num">${historial.length}</div>
-          <div class="resumen-label">Entregas</div>
-        </div>
-        <div class="resumen-box">
-          <div class="resumen-num">${fmt$(totalEfectivo)}</div>
-          <div class="resumen-label">Efectivo</div>
-        </div>
-        <div class="resumen-box">
-          <div class="resumen-num">${fmt$(totalTarjeta)}</div>
-          <div class="resumen-label">Tarjeta</div>
-        </div>
-      </div>
-      <div class="resumen-total">
-        <span>Total recaudado</span>
-        <strong>${fmt$(totalRecaudado)}</strong>
-      </div>
-    </div>`;
-
-  const listHtml = `
-    <div class="historial-list">
-      ${historial.map(e => `
-        <div class="historial-item">
-          <div class="hist-num">#${e.numero}</div>
-          <div class="hist-info">
-            <div class="hist-cliente">${e.cliente}</div>
-            <div class="hist-items">${e.items}</div>
-          </div>
-          <div class="hist-right">
-            <div class="hist-monto">${fmt$(e.total)}</div>
-            <div class="hist-hora">${e.hora_entrega}</div>
-            <div class="hist-badge">Entregado</div>
-          </div>
-        </div>
-      `).join('')}
-    </div>`;
-
-  container.innerHTML = summaryHtml + listHtml;
+  errEl.textContent = '';
+  currentDriver = { user, ...driver };
+  bootApp();
 }
 
-/* ── RENDER ALL ─────────────────────────────────────────────────────────────── */
-function renderAll(newId) {
-  const pendientes = entregas.filter(e => e.estado === 'pendiente' || e.estado === 'asignado');
-  const enCurso    = entregas.filter(e => e.estado === 'en-camino');
+document.getElementById('input-pin').addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleLogin();
+});
 
-  // Pendientes tab
-  const pContainer = document.getElementById('content-pendientes');
-  if (pendientes.length === 0) {
-    pContainer.innerHTML = `
-      <div class="empty-state">
-        <div class="es-icon">&#x1F7E2;</div>
-        <p>Sin pedidos pendientes</p>
-      </div>`;
-  } else {
-    pContainer.innerHTML = pendientes.map(e => renderPedidoCard(e)).join('');
-  }
+document.getElementById('input-conductor').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('input-pin').focus();
+});
 
-  // En curso tab
-  const cContainer = document.getElementById('content-en-curso');
-  if (enCurso.length === 0) {
-    cContainer.innerHTML = `
-      <div class="empty-state">
-        <div class="es-icon">&#x1F6F5;</div>
-        <p>Ningún pedido en camino</p>
-      </div>`;
-  } else {
-    cContainer.innerHTML = enCurso.map(e => renderPedidoCard(e)).join('');
-  }
-
-  // Historial tab
-  renderHistorial();
-
-  // Badges
-  const bPend = document.getElementById('badge-pendientes');
-  bPend.textContent = pendientes.length;
-  bPend.style.display = pendientes.length > 0 ? 'flex' : 'none';
-
-  const bCurso = document.getElementById('badge-encurso');
-  bCurso.textContent = enCurso.length;
-  bCurso.style.display = enCurso.length > 0 ? 'flex' : 'none';
-
-  // Resumen repartidor
-  document.getElementById('rep-stats').textContent =
-    `${historial.length} entregas hoy · ${fmt$(historial.reduce((s,e)=>s+e.total,0))} recaudado`;
-
-  // New arrival animation
-  if (newId != null) {
-    const el = document.getElementById(`pedido-${newId}`);
-    if (el) el.classList.add('new-arrival');
-  }
+function handleLogout() {
+  if (socket) { try { socket.disconnect(); } catch(e){} socket = null; }
+  currentDriver = null;
+  pedidos = [];
+  disponible = true;
+  document.getElementById('input-conductor').value = '';
+  document.getElementById('input-pin').value = '';
+  document.getElementById('login-error').textContent = '';
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('login-screen').classList.remove('hidden');
+  switchTab('pedidos');
 }
 
-/* ── TABS ───────────────────────────────────────────────────────────────────── */
-function setTab(tab) {
-  currentTab = tab;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  document.getElementById(`tab-${tab}`).classList.add('active');
-  document.getElementById(`content-${tab}`).classList.add('active');
+/* ── BOOT ────────────────────────────────────────── */
+function bootApp() {
+  pedidos = JSON.parse(JSON.stringify(PEDIDOS_DEMO));
+
+  // Populate UI
+  const initial = currentDriver.nombre.charAt(0).toUpperCase();
+  document.getElementById('top-avatar').textContent      = initial;
+  document.getElementById('top-driver-name').textContent = currentDriver.nombre;
+  document.getElementById('profile-avatar').textContent  = initial;
+  document.getElementById('profile-name').textContent    = currentDriver.nombre;
+  document.getElementById('profile-phone').textContent   = '📞 ' + currentDriver.telefono;
+  document.getElementById('p-usuario').textContent       = currentDriver.user;
+
+  renderOrders();
+  renderHistory();
+
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+
+  initSocket();
 }
 
-/* ── ACCIONES PEDIDO ────────────────────────────────────────────────────────── */
-function iniciarViaje(id) {
-  const e = entregas.find(x => x.id === id);
-  if (!e) return;
-  e.estado = 'en-camino';
-  const now = new Date();
-  if (!e.hora_salida) {
-    e.hora_salida = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  }
-  renderAll(null);
-  setTab('en-curso');
-  showNotif(`Viaje iniciado — #${e.numero} en camino`);
-  if (socket && socket.connected) socket.emit('entrega:update', { id, estado: 'en-camino' });
-}
-
-function confirmarEntrega(id) {
-  const e = entregas.find(x => x.id === id);
-  if (!e) return;
-  entregas = entregas.filter(x => x.id !== id);
-  const now = new Date();
-  historial.unshift({
-    id: e.id,
-    numero: e.numero,
-    cliente: e.cliente,
-    items: e.items,
-    total: e.total,
-    metodoPago: e.metodoPago,
-    hora_entrega: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`
-  });
-  vibrateDevice([100, 50, 100]);
-  renderAll(null);
-  setTab('historial');
-  showNotif(`Entrega confirmada — #${e.numero} ✓`);
-  if (socket && socket.connected) socket.emit('entrega:update', { id, estado: 'entregado' });
-}
-
-/* ── PROBLEMA ───────────────────────────────────────────────────────────────── */
-function openProblema(id) {
-  problemaPedidoId = id;
-  document.getElementById('modal-problema').classList.add('open');
-}
-function closeProblema(e) {
-  if (e && e.target !== document.getElementById('modal-problema')) return;
-  document.getElementById('modal-problema').classList.remove('open');
-  problemaPedidoId = null;
-}
-function reportarProblema(motivo) {
-  document.getElementById('modal-problema').classList.remove('open');
-  if (problemaPedidoId) {
-    const e = entregas.find(x => x.id === problemaPedidoId);
-    const num = e ? `#${e.numero}` : '';
-    showNotif(`Problema reportado ${num}: ${motivo}`);
-    if (socket && socket.connected) {
-      socket.emit('entrega:problema', { id: problemaPedidoId, motivo });
-    }
-  }
-  problemaPedidoId = null;
-}
-
-/* ── ESTADO TOGGLE ──────────────────────────────────────────────────────────── */
-function toggleEstado() {
-  disponible = !disponible;
-  const toggle = document.getElementById('estado-toggle');
-  const label  = document.getElementById('estado-label');
-  if (disponible) {
-    toggle.classList.add('disponible');
-    label.textContent = 'Disponible';
-  } else {
-    toggle.classList.remove('disponible');
-    label.textContent = 'No disponible';
-  }
-  if (socket && socket.connected) {
-    socket.emit('repartidor:estado', { disponible });
-  }
-}
-
-/* ── NOTIF BANNER ───────────────────────────────────────────────────────────── */
-function showNotif(msg) {
-  const banner = document.getElementById('notif-banner');
-  document.getElementById('notif-text').textContent = msg;
-  banner.style.display = 'flex';
-  clearTimeout(banner._timeout);
-  banner._timeout = setTimeout(closeNotif, 4000);
-}
-function closeNotif() {
-  document.getElementById('notif-banner').style.display = 'none';
-}
-
-/* ── VIBRATION ──────────────────────────────────────────────────────────────── */
-function vibrateDevice(pattern) {
-  try {
-    if (navigator.vibrate) navigator.vibrate(pattern);
-  } catch(e) {}
-}
-
-/* ── SOCKET.IO ──────────────────────────────────────────────────────────────── */
+/* ── SOCKET ──────────────────────────────────────── */
 function initSocket() {
   try {
-    if (typeof io === 'undefined') return;
-    socket = io({ transports: ['websocket', 'polling'] });
+    socket = io();
 
     socket.on('connect', () => {
-      const pill = document.getElementById('conn-pill');
-      pill.className = 'conn-pill conn-online';
-      document.getElementById('conn-pill-text').textContent = 'EN VIVO';
+      console.log('[socket] conectado', socket.id);
     });
 
-    socket.on('disconnect', () => {
-      const pill = document.getElementById('conn-pill');
-      pill.className = 'conn-pill conn-offline';
-      document.getElementById('conn-pill-text').textContent = 'DEMO';
+    socket.on('delivery:nuevo', (pedido) => {
+      addOrderToList(pedido);
+      showToast('🛵 Nuevo pedido #' + pedido.numero + ' asignado');
     });
 
-    socket.on('entrega:nueva', (entrega) => {
-      if (entregas.find(e => e.id === entrega.id)) return;
-      entregas.push(entrega);
-      vibrateDevice([200, 100, 200, 100, 400]);
-      renderAll(entrega.id);
-      setTab('pendientes');
-      showNotif(`Nuevo pedido asignado — #${entrega.numero}!`);
+    socket.on('delivery:update', (data) => {
+      updateOrder(data);
     });
 
-    socket.on('entrega:update', ({ id, estado }) => {
-      const e = entregas.find(x => x.id === id);
-      if (e) { e.estado = estado; renderAll(null); }
+    socket.on('connect_error', () => {
+      // silently ignore if no server
     });
-
   } catch(e) {
-    console.warn('Socket.io no disponible — modo demo');
+    // no socket server available in demo mode
   }
 }
 
-/* ── INIT ───────────────────────────────────────────────────────────────────── */
-renderAll(null);
+function addOrderToList(pedido) {
+  const exists = pedidos.find(p => p.id === pedido.id);
+  if (!exists) {
+    pedidos.unshift(pedido);
+    renderOrders();
+  }
+}
 
-const script = document.createElement('script');
-script.src = '/socket.io/socket.io.js';
-script.onload = () => initSocket();
-script.onerror = () => console.info('Socket.io no disponible — modo demo');
-document.head.appendChild(script);
+function updateOrder(data) {
+  const idx = pedidos.findIndex(p => p.id === data.id);
+  if (idx !== -1) {
+    pedidos[idx] = { ...pedidos[idx], ...data };
+    renderOrders();
+  }
+}
+
+/* ── RENDER ORDERS ───────────────────────────────── */
+function renderOrders() {
+  const list = document.getElementById('orders-list');
+  const active = pedidos.filter(p => p.estado !== 'entregado').length;
+  document.getElementById('orders-count').textContent = active + ' activo' + (active !== 1 ? 's' : '');
+  document.getElementById('pedidos-badge').textContent = active;
+
+  list.innerHTML = '';
+
+  // Sort: asignado first, en_camino second, entregado last
+  const sorted = [...pedidos].sort((a, b) => {
+    const order = { asignado: 0, en_camino: 1, entregado: 2 };
+    return (order[a.estado] ?? 3) - (order[b.estado] ?? 3);
+  });
+
+  sorted.forEach((p, i) => {
+    const card = buildOrderCard(p);
+    card.style.animationDelay = (i * 0.06) + 's';
+    card.classList.add('animate-in');
+    list.appendChild(card);
+  });
+}
+
+function buildOrderCard(p) {
+  const card = document.createElement('div');
+  card.className = 'order-card estado-' + p.estado;
+  card.id = 'card-' + p.id;
+
+  const badgeLabel = { asignado: '● NUEVO', en_camino: '▶ EN CAMINO', entregado: '✓ ENTREGADO' };
+  const payLabel   = { efectivo: '💵 Efectivo', tarjeta: '💳 Tarjeta', transferencia: '📱 Transferencia' };
+
+  const itemsHtml = p.items.map(item =>
+    `<div class="item-row">
+      <span class="item-name">🍕 ${escHtml(item.nombre)}</span>
+      <span class="item-qty">x${item.qty}</span>
+    </div>`
+  ).join('');
+
+  let actionsHtml = '';
+  if (p.estado === 'asignado') {
+    actionsHtml = `<button class="btn-action btn-start" onclick="iniciarViaje(${p.id})">▶ Iniciar viaje</button>`;
+  } else if (p.estado === 'en_camino') {
+    actionsHtml = `
+      <button class="btn-action btn-maps" onclick="verEnMaps(${p.id})">📍 Ver en Maps</button>
+      <button class="btn-action btn-deliver" onclick="marcarEntregado(${p.id})">✅ Marcar Entregado</button>`;
+  } else {
+    actionsHtml = `<button class="btn-action btn-done" disabled>✓ Entregado</button>`;
+  }
+
+  card.innerHTML = `
+    <div class="card-header">
+      <div>
+        <div class="order-number">Pedido #${escHtml(p.numero)}</div>
+        <div class="order-time">🕐 ${escHtml(p.hora)}</div>
+      </div>
+      <span class="status-badge badge-${p.estado}">${badgeLabel[p.estado] || p.estado}</span>
+    </div>
+    <div class="card-divider"></div>
+    <div class="card-body">
+      <div class="info-row">
+        <span class="icon">👤</span>
+        <span class="value">${escHtml(p.cliente.nombre)}</span>
+      </div>
+      <div class="info-row">
+        <span class="icon">📍</span>
+        <span class="value">${escHtml(p.direccion)}</span>
+      </div>
+      <div class="info-row">
+        <span class="icon">📞</span>
+        <span class="value"><a href="tel:${escHtml(p.cliente.telefono)}">${escHtml(p.cliente.telefono)}</a></span>
+      </div>
+      <div class="items-list">${itemsHtml}</div>
+      <div class="total-row">
+        <span class="total-amount">💰 $${Number(p.total).toLocaleString('es-AR')}</span>
+        <span class="payment-method payment-${p.metodo_pago}">${payLabel[p.metodo_pago] || p.metodo_pago}</span>
+      </div>
+    </div>
+    <div class="card-actions">${actionsHtml}</div>`;
+
+  return card;
+}
+
+/* ── ORDER ACTIONS ───────────────────────────────── */
+function iniciarViaje(id) {
+  const p = pedidos.find(p => p.id === id);
+  if (!p || p.estado !== 'asignado') return;
+  p.estado = 'en_camino';
+  if (socket) socket.emit('delivery:status', { id, estado: 'en_camino' });
+  renderOrders();
+  showToast('🛵 Viaje iniciado hacia ' + p.cliente.nombre);
+}
+
+function verEnMaps(id) {
+  const p = pedidos.find(p => p.id === id);
+  if (!p) return;
+  const url = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.direccion);
+  window.open(url, '_blank');
+}
+
+function marcarEntregado(id) {
+  const p = pedidos.find(p => p.id === id);
+  if (!p || p.estado !== 'en_camino') return;
+  p.estado = 'entregado';
+  p.hora_entrega = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  if (socket) socket.emit('delivery:status', { id, estado: 'entregado' });
+
+  // Update stats
+  const current = parseInt(document.getElementById('stat-entregas').textContent) || 0;
+  document.getElementById('stat-entregas').textContent = current + 1;
+  document.getElementById('p-entregas').textContent    = current + 1;
+
+  renderOrders();
+  renderHistory();
+  showToast('✅ Pedido #' + p.numero + ' entregado!');
+}
+
+/* ── HISTORY ─────────────────────────────────────── */
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  const delivered = pedidos.filter(p => p.estado === 'entregado');
+
+  if (delivered.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>Aún no hay entregas completadas hoy.</p></div>`;
+    return;
+  }
+
+  list.innerHTML = '';
+  delivered.slice(0, 10).forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    const hora = p.hora_entrega || p.hora;
+    item.innerHTML = `
+      <div class="history-check">✓</div>
+      <div class="history-info">
+        <div class="history-order">Pedido #${escHtml(p.numero)}</div>
+        <div class="history-client">👤 ${escHtml(p.cliente.nombre)}</div>
+        <div class="history-time">📍 ${escHtml(p.direccion)}</div>
+        <div class="history-time">🕐 Entregado: ${escHtml(hora)}</div>
+      </div>
+      <div class="history-total">$${Number(p.total).toLocaleString('es-AR')}</div>`;
+    list.appendChild(item);
+  });
+}
+
+/* ── STATUS TOGGLE ───────────────────────────────── */
+function toggleStatus() {
+  disponible = !disponible;
+  const dot  = document.getElementById('status-dot');
+  const text = document.getElementById('status-text');
+  const pEstado = document.getElementById('p-estado');
+
+  if (disponible) {
+    dot.className  = 'status-dot disponible';
+    text.textContent = 'DISPONIBLE';
+    pEstado.textContent = 'Disponible';
+    pEstado.style.color = 'var(--accent)';
+    showToast('✅ Ahora estás disponible');
+  } else {
+    dot.className  = 'status-dot no-disponible';
+    text.textContent = 'NO DISPONIBLE';
+    pEstado.textContent = 'No disponible';
+    pEstado.style.color = 'var(--primary)';
+    showToast('⛔ Ahora no estás disponible');
+  }
+
+  if (socket) socket.emit('driver:status', { disponible });
+}
+
+/* ── TABS ────────────────────────────────────────── */
+function switchTab(name) {
+  ['pedidos', 'historial', 'perfil'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('active', t === name);
+    document.getElementById('nav-' + t).classList.toggle('active', t === name);
+  });
+  document.getElementById('content').scrollTop = 0;
+
+  if (name === 'historial') renderHistory();
+}
+
+/* ── TOAST ───────────────────────────────────────── */
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+/* ── UTILS ───────────────────────────────────────── */
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 </script>
 </body>
 </html>
