@@ -184,6 +184,67 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 .toast.error{background:var(--danger)}
 .caja-total{font-size:32px;font-weight:800;color:var(--blue)}
 .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#e9ecef;color:#495057}
+
+/* ===== RESPONSIVE ===== */
+
+/* Hamburger button (hidden on desktop) */
+.hamburger{display:none;background:none;border:none;cursor:pointer;padding:8px;color:var(--blue);font-size:22px;line-height:1;flex-shrink:0}
+
+/* Sidebar overlay for mobile */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99}
+.sidebar-overlay.open{display:block}
+
+/* ---- Tablet + small desktop (< 1024px) ---- */
+@media (max-width:1023px){
+  .sidebar{position:fixed;left:-240px;transition:left .25s ease;z-index:100}
+  .sidebar.open{left:0}
+  .main{margin-left:0 !important}
+  .hamburger{display:flex;align-items:center;justify-content:center}
+}
+
+/* ---- Mobile (< 768px) ---- */
+@media (max-width:767px){
+  /* topbar */
+  .topbar{padding:0 14px}
+  .topbar-title{font-size:16px}
+  .topbar-time{display:none}
+
+  /* content */
+  .content{padding:16px}
+
+  /* stats grids */
+  .stats-grid{grid-template-columns:1fr 1fr !important}
+
+  /* 2 and 3 col grids */
+  .grid-2,.grid-3{grid-template-columns:1fr !important}
+
+  /* form rows */
+  .form-row,.form-row.cols-3{grid-template-columns:1fr !important}
+
+  /* modals: bottom sheet */
+  .modal-overlay{align-items:flex-end;padding:0}
+  .modal{max-width:100% !important;border-radius:14px 14px 0 0;margin:0}
+
+  /* mesas grid: 3 cols */
+  .mesas-grid{grid-template-columns:repeat(3,1fr) !important}
+
+  /* tables: horizontal scroll */
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+  /* filter bar */
+  .filter-bar{flex-direction:column;align-items:stretch}
+  .search-input{width:100% !important}
+
+  /* section header wrap */
+  .section-header{flex-wrap:wrap;gap:8px}
+
+  /* stat values */
+  .stat-value{font-size:22px}
+  .caja-total{font-size:24px}
+
+  /* delivery pipeline: horizontal scroll (already has overflow-x:auto) */
+  .delivery-pipeline{padding-bottom:12px}
+}
 </style>
 </head>
 <body>
@@ -215,6 +276,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 
 <!-- APP -->
 <div id="app">
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
   <div class="sidebar">
     <div class="sidebar-logo">
       <span class="s-emoji">🍕</span>
@@ -222,13 +284,13 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <p id="sidebarBiz">Sistema POS</p>
     </div>
     <nav class="sidebar-nav">
-      <div class="nav-item active" data-section="dashboard" onclick="navTo('dashboard',this)">
+      <div class="nav-item active" data-section="dashboard" onclick="navTo('dashboard',this);closeSidebar()">
         <span class="nav-icon">📊</span> Dashboard
       </div>
-      <div class="nav-item" data-section="mesas" onclick="navTo('mesas',this)">
+      <div class="nav-item" data-section="mesas" onclick="navTo('mesas',this);closeSidebar()">
         <span class="nav-icon">🪑</span> Mesas <span class="nav-badge" id="mesasBadge">0</span>
       </div>
-      <div class="nav-item" data-section="delivery" onclick="navTo('delivery',this)">
+      <div class="nav-item" data-section="delivery" onclick="navTo('delivery',this);closeSidebar()">
         <span class="nav-icon">🛵</span> Delivery <span class="nav-badge" id="deliveryBadge">0</span>
       </div>
       <div class="nav-item" data-section="productos" onclick="navTo('productos',this)">
@@ -270,6 +332,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 
   <div class="main">
     <div class="topbar">
+      <button class="hamburger" onclick="toggleSidebar()" aria-label="Abrir menú">☰</button>
       <div class="topbar-title" id="topbarTitle">Dashboard</div>
       <span class="topbar-badge" id="topbarBadge" style="display:none"></span>
       <span class="topbar-time" id="topbarTime"></span>

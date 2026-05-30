@@ -268,10 +268,45 @@ body{
   .topbar-brand h1{font-size:16px}
   .clock{font-size:26px}
 }
-@media(max-width:800px){
-  .board{grid-template-columns:1fr;overflow-y:auto;height:auto}
-  .col-body{max-height:320px}
-  body{overflow-y:auto;height:auto}
+
+/* ── TABLET (hasta 1023px) ── */
+@media(max-width:1023px){
+  .board{
+    display:flex;
+    flex-direction:row;
+    overflow-x:auto;
+    overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;
+    gap:12px;
+    padding:12px;
+    padding-bottom:16px;
+    scroll-snap-type:x mandatory;
+  }
+  .column{
+    min-width:300px;
+    flex:0 0 300px;
+    scroll-snap-align:start;
+  }
+  .clock{font-size:24px}
+}
+
+/* ── MOBILE (hasta 767px) ── */
+@media(max-width:767px){
+  .topbar{padding:8px 12px;height:auto;flex-wrap:wrap;gap:8px}
+  .topbar-brand h1{font-size:15px}
+  .topbar-brand span{font-size:10px}
+  .topbar-brand .icon{font-size:22px}
+  .topbar-center{gap:12px}
+  .clock{font-size:20px}
+  .badge-pendientes{font-size:12px;padding:5px 10px}
+  .topbar-actions{gap:8px}
+  .btn-nueva{padding:8px 12px;font-size:12px}
+  .btn-volver{padding:8px 12px;font-size:12px}
+  .board{gap:8px;padding:8px;padding-bottom:12px}
+  .column{min-width:260px;flex:0 0 260px}
+  .btn-accion{min-height:48px;font-size:14px;padding:14px}
+  .statusbar{padding:8px 12px;gap:16px;flex-wrap:wrap}
+  .stat-sep{display:none}
 }
 </style>
 </head>
