@@ -155,7 +155,7 @@ tr:hover td{background:#fafafa}
 .modal-close{background:none;border:none;font-size:22px;color:var(--gray);cursor:pointer;line-height:1;padding:2px}
 .modal-close:hover{color:var(--danger)}
 .modal-body{padding:20px;overflow-y:auto;flex:1}
-.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 /* === CHART === */
 .chart-wrap{overflow-x:auto}
 .bar-chart{display:flex;align-items:flex-end;gap:8px;height:140px;padding-top:10px}
@@ -1474,6 +1474,7 @@ function mesaPedidoHTML(id) {
 }
 
 let _mesaModalId = null;
+let _mesaCobroMode = false;
 
 function filtrarCatMesa(cat) {
   document.querySelectorAll('.mpo-cat-pill').forEach(b=>b.classList.remove('active'));
@@ -1534,6 +1535,19 @@ function renderMesaFooter(id) {
   const m = mesasData.find(x=>x.id===id);
   if(!m) return;
   const sid = `'${id}'`;
+  const footer = document.getElementById('modalMesaFooter');
+
+  // Cobro mode: show payment method selector
+  if (_mesaCobroMode) {
+    footer.innerHTML =
+      `<div style="width:100%;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray);margin-bottom:2px">¿Cómo paga?</div>
+       <button class="btn btn-success" style="flex:1" onclick="cerrarMesa(${sid},'efectivo')">💵 Efectivo</button>
+       <button class="btn btn-primary" style="flex:1;background:var(--blue);border-color:var(--blue)" onclick="cerrarMesa(${sid},'tarjeta')">💳 Tarjeta</button>
+       <button class="btn btn-secondary" style="flex:1;background:#6c757d;border-color:#6c757d;color:#fff" onclick="cerrarMesa(${sid},'transferencia')">📲 Transfer.</button>
+       <button class="btn btn-outline" style="width:100%" onclick="_mesaCobroMode=false;renderMesaFooter(${sid})">← Volver</button>`;
+    return;
+  }
+
   const esMozo = currentUser?.rol === 'mozo';
   const tieneItems = (m.pedido||[]).length > 0;
   const tieneComida = (m.pedido||[]).some(i=>CATS_COMANDA.includes(i.categoria));
@@ -1542,10 +1556,10 @@ function renderMesaFooter(id) {
   const btnCuenta = tieneItems && m.estado!=='cuenta'
     ? `<button class="btn btn-warning" onclick="pedirCuenta(${sid})">🧾 Cuenta</button>` : '';
   const btnCobrar = tieneItems
-    ? `<button class="btn btn-danger" onclick="cerrarMesa(${sid})">💳 Cobrar</button>` : '';
+    ? `<button class="btn btn-danger" onclick="_mesaCobroMode=true;renderMesaFooter(${sid})">💳 Cobrar</button>` : '';
   const btnComanda = tieneComida
     ? `<button class="btn btn-outline" onclick="imprimirComanda(${sid})">🖨️ Comanda</button>` : '';
-  document.getElementById('modalMesaFooter').innerHTML =
+  footer.innerHTML =
     `<button class="btn btn-outline" onclick="closeModal('modalMesa')">Cancelar</button>
      ${btnLiberar}${btnCuenta}${btnComanda}${btnCobrar}`;
 }
@@ -1629,10 +1643,11 @@ function abrirMesa(id) {
 
 function pedirCuenta(id) {
   const m = mesasData.find(x=>x.id===id);
-  m.estado='cuenta';
-  closeModal('modalMesa');
+  m.estado = 'cuenta';
+  imprimirCuenta(id);
+  renderMesaFooter(id);
   syncMesa(m); saveState(); renderMesas();
-  showToast(`Mesa #${m.numero} — cuenta solicitada`);
+  showToast(`Mesa #${m.numero} — cuenta impresa`);
 }
 
 function liberarMesaVacia(id) {
@@ -1645,19 +1660,21 @@ function liberarMesaVacia(id) {
   loadDashboard();
 }
 
-function cerrarMesa(id) {
+function cerrarMesa(id, metodoPago = 'efectivo') {
   const m = mesasData.find(x=>x.id===id);
   const total = (m.pedido||[]).reduce((s,i)=>s+i.precio*i.qty,0);
   const itemsCount = (m.pedido||[]).reduce((s,i)=>s+i.qty,0);
   const mozo = (currentUser?.rol==='mozo' ? currentUser?.nombre : null) || m.mozo || currentUser?.nombre || '-';
-  const registro = {mozo, mesa: m.numero, fecha: new Date().toISOString(), items: itemsCount, total: total||0};
+  const metodoLabel = {efectivo:'💵 Efectivo',tarjeta:'💳 Tarjeta',transferencia:'📲 Transferencia'}[metodoPago] || metodoPago;
+  const registro = {mozo, mesa: m.numero, fecha: new Date().toISOString(), items: itemsCount, total: total||0, pago: metodoPago};
   mozoHistorial.unshift(registro);
   m.estado='libre'; m.mozo=null; m.tiempo=null; m.pedido=[];
-  const f = {id:facturasData.length+1,numero:`F-${String(facturasData.length+1).padStart(4,'0')}`,fecha:new Date().toISOString().slice(0,16).replace('T',' '),origen:`Mesa ${m.numero}`,items:itemsCount,total:total||0,pago:'efectivo',estado:'pagada'};
+  const f = {id:facturasData.length+1,numero:`F-${String(facturasData.length+1).padStart(4,'0')}`,fecha:new Date().toISOString().slice(0,16).replace('T',' '),origen:`Mesa ${m.numero}`,items:itemsCount,total:total||0,pago:metodoPago,estado:'pagada'};
   facturasData.unshift(f);
+  _mesaCobroMode = false;
   closeModal('modalMesa');
   syncMesa(m); saveState(); renderMesas();
-  showToast(`Mesa #${m.numero} cerrada. Factura ${f.numero} emitida.`,'success');
+  showToast(`Mesa #${m.numero} cerrada — ${metodoLabel}. Factura ${f.numero} emitida.`,'success');
   loadDashboard();
 }
 
@@ -2234,7 +2251,7 @@ function confirmarResetDemo() {
 
 // ======= HELPERS =======
 function openModal(id){ document.getElementById(id).classList.add('open'); }
-function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); if(id==='modalMesa') _mesaCobroMode=false; }
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); }));
 
 function showToast(msg, type='') {
