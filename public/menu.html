@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Menú – PIZZERÍA PRO</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:#0f0f0f;color:#fff;min-height:100vh}
+.hero{background:linear-gradient(135deg,#c0392b,#e74c3c);padding:40px 20px;text-align:center}
+.hero-emoji{font-size:64px;display:block;margin-bottom:16px}
+.hero h1{font-size:32px;font-weight:900;margin-bottom:8px}
+.hero p{color:rgba(255,255,255,0.8);font-size:15px}
+.container{max-width:800px;margin:0 auto;padding:24px 16px}
+.cat-filter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid #222}
+.cat-btn{padding:8px 16px;border-radius:20px;border:1.5px solid #333;background:transparent;color:#aaa;font-size:13px;cursor:pointer;transition:all .15s;font-family:inherit}
+.cat-btn.active,.cat-btn:hover{background:#e74c3c;border-color:#e74c3c;color:#fff}
+.cat-section{margin-bottom:32px}
+.cat-title{font-size:18px;font-weight:800;color:#e74c3c;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.items-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.item-card{background:#1a1a1a;border:1.5px solid #222;border-radius:14px;padding:16px;transition:all .15s}
+.item-card:hover{border-color:#e74c3c;transform:translateY(-2px)}
+.item-emoji{font-size:36px;margin-bottom:10px;display:block}
+.item-name{font-size:15px;font-weight:700;margin-bottom:4px}
+.item-desc{font-size:12px;color:#666;margin-bottom:10px;line-height:1.4}
+.item-price{font-size:13px;font-weight:600;color:#e74c3c}
+.item-price span{display:block}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#e74c3c22;color:#e74c3c;border:1px solid #e74c3c44;margin-bottom:6px}
+.back-link{display:inline-flex;align-items:center;gap:6px;color:#666;font-size:13px;text-decoration:none;margin-bottom:20px}
+.back-link:hover{color:#e74c3c}
+.empty{text-align:center;padding:40px;color:#555}
+</style>
+</head>
+<body>
+<div class="hero">
+  <span class="hero-emoji">🍕</span>
+  <h1>PIZZERÍA PRO</h1>
+  <p>Av. Corrientes 1234, CABA &bull; Tel: 11-4567-8901</p>
+</div>
+
+<div class="container">
+  <a href="/portal.html" class="back-link">← Volver al portal</a>
+  <div class="cat-filter" id="catFilter"></div>
+  <div id="menuContent"></div>
+</div>
+
+<script>
+const MENU = [
+  {cat:'🍕 Pizzas',items:[
+    {emoji:'🍕',nombre:'Pizza Muzarella',desc:'Clásica con salsa de tomate y queso',precios:{Chica:800,Mediana:1200,Grande:1600}},
+    {emoji:'🍕',nombre:'Pizza Napolitana',desc:'Tomate, mozzarella, tomates frescos y albahaca',precios:{Chica:900,Mediana:1400,Grande:1800}},
+    {emoji:'🍕',nombre:'Pizza 4 Quesos',desc:'Muzarella, provolone, gorgonzola y parmesano',precios:{Chica:1000,Mediana:1500,Grande:2000}},
+    {emoji:'🍕',nombre:'Pizza Fugazzeta',desc:'Rellena de queso con cebolla y aceitunas',precios:{Chica:850,Mediana:1300,Grande:1700}},
+    {emoji:'🍕',nombre:'Especial de la Casa',desc:'Jamón, morrón, aceitunas, huevo y salsa golf',precios:{Chica:1000,Mediana:1600,Grande:2100}},
+  ]},
+  {cat:'🥟 Empanadas',items:[
+    {emoji:'🥟',nombre:'Empanada de Carne',desc:'Carne cortada a cuchillo, jugosa y condimentada',precio:350},
+    {emoji:'🥟',nombre:'Empanada J&Q',desc:'Jamón cocido y queso muzarella derretido',precio:350},
+  ]},
+  {cat:'🧀 Entradas',items:[
+    {emoji:'🧀',nombre:'Provoleta',desc:'Provolone grillado con orégano y aceite de oliva',precio:1100},
+  ]},
+  {cat:'🥤 Bebidas',items:[
+    {emoji:'🥤',nombre:'Coca-Cola',desc:'500ml o 1.5L',precios:{'500ml':600,'1.5L':900}},
+    {emoji:'💧',nombre:'Agua Mineral',desc:'Sin gas 500ml',precio:400},
+    {emoji:'🍺',nombre:'Cerveza Quilmes',desc:'Botella 340ml',precio:800},
+  ]},
+  {cat:'🍹 Tragos',items:[
+    {emoji:'🍹',nombre:'Fernet con Coca',desc:'Fernet Branca + Coca-Cola',precio:1800},
+  ]},
+  {cat:'🍮 Postres',items:[
+    {emoji:'🍮',nombre:'Tiramisu',desc:'Clásico postre italiano con bizcochuelo y mascarpone',precio:900},
+  ]},
+];
+
+let activeCat = 'Todos';
+const allCats = ['Todos', ...MENU.map(s=>s.cat)];
+
+function renderFilter() {
+  document.getElementById('catFilter').innerHTML = allCats.map(c=>
+    `<button class="cat-btn${c===activeCat?' active':''}" onclick="setcat('${c}')">${c}</button>`
+  ).join('');
+}
+
+function setcat(cat) {
+  activeCat = cat;
+  renderFilter();
+  renderMenu();
+}
+
+function priceHTML(item) {
+  if(item.precio) return `<span>$${item.precio.toLocaleString('es-AR')}</span>`;
+  return Object.entries(item.precios).map(([k,v])=>`<span>${k}: $${v.toLocaleString('es-AR')}</span>`).join('');
+}
+
+function renderMenu() {
+  const sections = activeCat==='Todos' ? MENU : MENU.filter(s=>s.cat===activeCat);
+  document.getElementById('menuContent').innerHTML = sections.map(s=>`
+    <div class="cat-section">
+      <div class="cat-title">${s.cat}</div>
+      <div class="items-grid">${s.items.map(i=>`
+        <div class="item-card">
+          <span class="item-emoji">${i.emoji}</span>
+          <div class="item-name">${i.nombre}</div>
+          <div class="item-desc">${i.desc}</div>
+          <div class="item-price">${priceHTML(i)}</div>
+        </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+renderFilter();
+renderMenu();
+</script>
+</body>
+</html>

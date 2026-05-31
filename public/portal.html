@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PIZZERÍA PRO – Portal</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.header{text-align:center;margin-bottom:48px}
+.header-emoji{font-size:72px;display:block;margin-bottom:16px;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.4))}
+.header h1{font-size:36px;font-weight:900;color:#fff;letter-spacing:-1px;margin-bottom:8px}
+.header p{color:rgba(255,255,255,0.6);font-size:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;max-width:800px;width:100%}
+.tile{background:rgba(255,255,255,0.08);backdrop-filter:blur(10px);border:1.5px solid rgba(255,255,255,0.12);border-radius:20px;padding:32px 20px;text-align:center;cursor:pointer;text-decoration:none;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:12px}
+.tile:hover{background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.3);transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,0.3)}
+.tile-emoji{font-size:48px;line-height:1}
+.tile-label{color:#fff;font-size:15px;font-weight:700;letter-spacing:0.3px}
+.tile-sub{color:rgba(255,255,255,0.5);font-size:12px}
+.tile.admin{border-color:rgba(239,68,68,0.4)}
+.tile.admin:hover{border-color:rgba(239,68,68,0.7);box-shadow:0 12px 32px rgba(239,68,68,0.2)}
+.tile.mozo{border-color:rgba(251,191,36,0.4)}
+.tile.mozo:hover{border-color:rgba(251,191,36,0.7);box-shadow:0 12px 32px rgba(251,191,36,0.2)}
+.tile.cocina{border-color:rgba(249,115,22,0.4)}
+.tile.cocina:hover{border-color:rgba(249,115,22,0.7);box-shadow:0 12px 32px rgba(249,115,22,0.2)}
+.tile.repartidor{border-color:rgba(34,197,94,0.4)}
+.tile.repartidor:hover{border-color:rgba(34,197,94,0.7);box-shadow:0 12px 32px rgba(34,197,94,0.2)}
+.tile.carta{border-color:rgba(99,102,241,0.4)}
+.tile.carta:hover{border-color:rgba(99,102,241,0.7);box-shadow:0 12px 32px rgba(99,102,241,0.2)}
+.tile.menu{border-color:rgba(20,184,166,0.4)}
+.tile.menu:hover{border-color:rgba(20,184,166,0.7);box-shadow:0 12px 32px rgba(20,184,166,0.2)}
+.footer{margin-top:48px;color:rgba(255,255,255,0.3);font-size:12px;text-align:center}
+@media(max-width:500px){
+  .header h1{font-size:28px}
+  .header-emoji{font-size:56px}
+  .grid{grid-template-columns:repeat(2,1fr);gap:12px}
+  .tile{padding:24px 12px}
+  .tile-emoji{font-size:36px}
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <span class="header-emoji">🍕</span>
+  <h1>PIZZERÍA PRO</h1>
+  <p>Seleccioná tu acceso</p>
+</div>
+
+<div class="grid">
+  <a href="/admin" class="tile admin">
+    <span class="tile-emoji">🛡️</span>
+    <span class="tile-label">Administración</span>
+    <span class="tile-sub">Panel completo</span>
+  </a>
+  <a href="/mozo" class="tile mozo">
+    <span class="tile-emoji">🧑‍🍳</span>
+    <span class="tile-label">Mozo</span>
+    <span class="tile-sub">Mesas y pedidos</span>
+  </a>
+  <a href="/cocina.html" class="tile cocina">
+    <span class="tile-emoji">👨‍🍳</span>
+    <span class="tile-label">Cocina</span>
+    <span class="tile-sub">Pantalla de comandas</span>
+  </a>
+  <a href="/repartidor.html" class="tile repartidor">
+    <span class="tile-emoji">🛵</span>
+    <span class="tile-label">Repartidor</span>
+    <span class="tile-sub">App de delivery</span>
+  </a>
+  <a href="/cliente.html" class="tile carta">
+    <span class="tile-emoji">📲</span>
+    <span class="tile-label">Carta Online</span>
+    <span class="tile-sub">Pedidos del cliente</span>
+  </a>
+  <a href="/menu.html" class="tile menu">
+    <span class="tile-emoji">📋</span>
+    <span class="tile-label">Menú Online</span>
+    <span class="tile-sub">Ver carta del local</span>
+  </a>
+</div>
+
+<div class="footer">PIZZERÍA PRO &copy; 2026</div>
+</body>
+</html>

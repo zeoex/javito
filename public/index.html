@@ -324,23 +324,23 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 <div id="loginScreen" style="display:none">
   <div class="login-card">
     <div class="login-logo">
-      <span class="emoji">🍕</span>
-      <h1>PIZZERÍA PRO</h1>
-      <p>Sistema de gestión integral</p>
+      <span class="emoji" id="loginEmoji">🍕</span>
+      <h1 id="loginTitle">PIZZERÍA PRO</h1>
+      <p id="loginSubtitle">Sistema de gestión integral</p>
     </div>
     <div class="form-group">
       <label>Email</label>
-      <input type="email" id="loginEmail" class="form-control" placeholder="admin@pizzeriapro.com" value="admin@pizzeriapro.com"/>
+      <input type="email" id="loginEmail" class="form-control" placeholder="Email"/>
     </div>
     <div class="form-group">
       <label>Contraseña</label>
-      <input type="password" id="loginPass" class="form-control" placeholder="••••••••" value="admin123"/>
+      <input type="password" id="loginPass" class="form-control" placeholder="••••••••"/>
     </div>
     <button class="btn btn-primary btn-block btn-lg" onclick="doLogin()">Ingresar</button>
     <div class="login-error" id="loginError">Email o contraseña incorrectos</div>
-    <div class="login-demo">
-      <strong>Demo:</strong> admin@pizzeriapro.com / admin123<br>
-      <strong>Mozo:</strong> carlos@pizzeriapro.com / mozo123
+    <div class="login-demo" id="loginDemo"></div>
+    <div style="margin-top:16px;text-align:center">
+      <a href="/" style="font-size:12px;color:var(--gray)">← Portal principal</a>
     </div>
   </div>
 </div>
@@ -1119,6 +1119,25 @@ function initApp() {
     loadDashboard();
   }
 }
+
+// Role-specific login customization based on URL path
+(function setupLoginBranding() {
+  const path = window.location.pathname;
+  const roles = {
+    '/mozo':       { emoji:'🧑‍🍳', title:'Panel de Mozo', subtitle:'Acceso exclusivo para mozos', email:'carlos@pizzeriapro.com', pass:'mozo123', hint:'Mozo: carlos@pizzeriapro.com / mozo123' },
+    '/admin':      { emoji:'🍕', title:'PIZZERÍA PRO', subtitle:'Panel de Administración', email:'admin@pizzeriapro.com', pass:'admin123', hint:'Admin: admin@pizzeriapro.com / admin123' },
+    '/cocina':     { emoji:'👨‍🍳', title:'Pantalla de Cocina', subtitle:'Acceso para cocina', email:'', pass:'', hint:'' },
+    '/repartidor': { emoji:'🛵', title:'App de Repartidor', subtitle:'Acceso para repartidores', email:'', pass:'', hint:'' },
+  };
+  const cfg = roles[path] || { emoji:'🍕', title:'PIZZERÍA PRO', subtitle:'Sistema de gestión integral', email:'admin@pizzeriapro.com', pass:'admin123', hint:'Admin: admin@pizzeriapro.com / admin123 · Mozo: carlos@pizzeriapro.com / mozo123' };
+  document.getElementById('loginEmoji').textContent = cfg.emoji;
+  document.getElementById('loginTitle').textContent = cfg.title;
+  document.getElementById('loginSubtitle').textContent = cfg.subtitle;
+  document.getElementById('loginEmail').value = cfg.email;
+  document.getElementById('loginPass').value = cfg.pass;
+  document.getElementById('loginEmail').placeholder = cfg.email || 'Email';
+  document.getElementById('loginDemo').textContent = cfg.hint;
+})();
 
 if (token && currentUser) {
   initApp();
