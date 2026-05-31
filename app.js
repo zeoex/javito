@@ -283,6 +283,13 @@ function emitDashboardStats() {
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Role-specific routes must be registered BEFORE express.static to override index.html default
+app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'portal.html')));
+app.get('/portal', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'portal.html')));
+app.get('/admin', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/mozo',  (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Logger
@@ -1018,13 +1025,7 @@ setInterval(() => {
 // ─────────────────────────────────────────────
 //  CATCH-ALL – SPA fallback
 // ─────────────────────────────────────────────
-// Role-specific routes — all serve index.html but client detects path for branding
-app.get('/admin', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-app.get('/mozo',  (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-// Portal landing
-app.get('/portal', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'portal.html')));
-// Catch-all: send portal page for root, index.html for everything else
-app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'portal.html')));
+// Catch-all: index.html for unmatched routes (SPA fallback)
 app.get('*', (_req, res) => {
   const indexPath = path.join(__dirname, 'public', 'index.html');
   res.sendFile(indexPath, (err) => {
