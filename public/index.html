@@ -1530,18 +1530,38 @@ function seleccionarProductoMesa(prodId) {
   openModal('modalSizePicker');
 }
 
+function renderMesaFooter(id) {
+  const m = mesasData.find(x=>x.id===id);
+  if(!m) return;
+  const sid = `'${id}'`;
+  const esMozo = currentUser?.rol === 'mozo';
+  const tieneItems = (m.pedido||[]).length > 0;
+  const tieneComida = (m.pedido||[]).some(i=>CATS_COMANDA.includes(i.categoria));
+  const btnLiberar = esMozo && !tieneItems && m.estado==='ocupada'
+    ? `<button class="btn btn-outline" onclick="liberarMesaVacia(${sid})">🔓 Liberar</button>` : '';
+  const btnCuenta = tieneItems && m.estado!=='cuenta'
+    ? `<button class="btn btn-warning" onclick="pedirCuenta(${sid})">🧾 Cuenta</button>` : '';
+  const btnCobrar = tieneItems
+    ? `<button class="btn btn-danger" onclick="cerrarMesa(${sid})">💳 Cobrar</button>` : '';
+  const btnComanda = tieneComida
+    ? `<button class="btn btn-outline" onclick="imprimirComanda(${sid})">🖨️ Comanda</button>` : '';
+  document.getElementById('modalMesaFooter').innerHTML =
+    `<button class="btn btn-outline" onclick="closeModal('modalMesa')">Cancelar</button>
+     ${btnLiberar}${btnCuenta}${btnComanda}${btnCobrar}`;
+}
+
 function agregarItemMesa(mesaId, prodId, size, precio, categoria) {
   const m = mesasData.find(x=>x.id===mesaId);
   const p = productosData.find(x=>x.id===prodId);
   if(!m||!p) return;
   const nota = (document.getElementById('addItemNota')?.value||'').trim();
-  // For food items with same nota: don't merge (different notes = different items)
   const esComida = CATS_COMANDA.includes(categoria||p.categoria);
   const existing = !nota && !esComida && m.pedido.find(i=>i.productoId===prodId&&i.size===size&&!i.nota);
   if(existing) { existing.qty++; }
   else { m.pedido.push({productoId:prodId,nombre:p.nombre,size,precio,qty:1,categoria:categoria||p.categoria,nota:nota||''}); }
   closeModal('modalSizePicker');
   document.getElementById('modalMesaBody').innerHTML = mesaPedidoHTML(mesaId);
+  renderMesaFooter(mesaId);
   syncMesa(m); saveState(); renderMesas();
 }
 
@@ -1551,6 +1571,7 @@ function cambiarQtyMesa(mesaId, idx, delta) {
   m.pedido[idx].qty += delta;
   if(m.pedido[idx].qty<=0) m.pedido.splice(idx,1);
   document.getElementById('modalMesaBody').innerHTML = mesaPedidoHTML(mesaId);
+  renderMesaFooter(mesaId);
   syncMesa(m); saveState(); renderMesas();
 }
 
@@ -1559,6 +1580,7 @@ function quitarItemMesa(mesaId, idx) {
   if(!m) return;
   m.pedido.splice(idx,1);
   document.getElementById('modalMesaBody').innerHTML = mesaPedidoHTML(mesaId);
+  renderMesaFooter(mesaId);
   syncMesa(m); saveState(); renderMesas();
 }
 
@@ -1590,17 +1612,7 @@ function clickMesa(id) {
       <button class="btn btn-success" onclick="abrirMesa(${sid})">✅ Abrir Mesa</button>`;
   } else {
     body.innerHTML = zonaHtml + mesaPedidoHTML(id);
-    const tieneComida = (m.pedido||[]).some(i=>CATS_COMANDA.includes(i.categoria));
-    const tieneItems = (m.pedido||[]).length > 0;
-    const btnLiberar = esMozo && !tieneItems && m.estado==='ocupada'
-      ? `<button class="btn btn-outline" onclick="liberarMesaVacia(${sid})">🔓 Liberar Mesa</button>` : '';
-    const btnCuenta = !btnLiberar && m.estado!=='cuenta'
-      ? `<button class="btn btn-warning" onclick="pedirCuenta(${sid})">🧾 Pedir Cuenta</button>` : '';
-    const btnCobrar = (!esMozo||m.estado==='cuenta') ? `<button class="btn btn-danger" onclick="cerrarMesa(${sid})">✔️ Cobrar y Cerrar</button>` : '';
-    const btnComanda = tieneComida ? `<button class="btn btn-outline btn-sm" onclick="imprimirComanda(${sid})" title="Imprimir comanda cocina">🖨️ Comanda</button>` : '';
-    const btnCuenta2 = tieneItems && m.estado==='cuenta' ? `<button class="btn btn-outline btn-sm" onclick="imprimirCuenta(${sid})" title="Imprimir cuenta">🧾 Cuenta</button>` : '';
-    footer.innerHTML = `<button class="btn btn-outline" onclick="closeModal('modalMesa')">Cancelar</button>
-      ${btnLiberar}${btnCuenta}${btnComanda}${btnCuenta2}${btnCobrar}`;
+    renderMesaFooter(id);
   }
   openModal('modalMesa');
 }
