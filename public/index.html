@@ -649,6 +649,13 @@ input.form-control:focus{outline:none;border-color:var(--red)}
             </div>
           </div>
           <div class="card">
+            <div class="card-header"><h3>🔄 Datos del sistema</h3></div>
+            <div class="card-body">
+              <p style="font-size:13px;color:var(--gray);margin-bottom:14px">Los cambios en mesas, delivery, clientes y demás se guardan automáticamente en este navegador.</p>
+              <button class="btn btn-danger" onclick="confirmarResetDemo()">🗑️ Restablecer datos demo</button>
+            </div>
+          </div>
+          <div class="card">
             <div class="card-header"><h3>🔧 Integraciones</h3></div>
             <div class="card-body">
               <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)">
@@ -939,6 +946,46 @@ let clientesData = [...DEMO_CLIENTES];
 let usuariosData = [...DEMO_USUARIOS];
 let cajaMoves = [...DEMO_CAJA_MOV];
 
+function saveState() {
+  try {
+    localStorage.setItem('pz_mesas', JSON.stringify(mesasData));
+    localStorage.setItem('pz_delivery', JSON.stringify(deliveryData));
+    localStorage.setItem('pz_facturas', JSON.stringify(facturasData));
+    localStorage.setItem('pz_stock', JSON.stringify(stockData));
+    localStorage.setItem('pz_clientes', JSON.stringify(clientesData));
+    localStorage.setItem('pz_usuarios', JSON.stringify(usuariosData));
+  } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const m = localStorage.getItem('pz_mesas');
+    const d = localStorage.getItem('pz_delivery');
+    const f = localStorage.getItem('pz_facturas');
+    const s = localStorage.getItem('pz_stock');
+    const c = localStorage.getItem('pz_clientes');
+    const u = localStorage.getItem('pz_usuarios');
+    if (m) mesasData = JSON.parse(m);
+    if (d) deliveryData = JSON.parse(d);
+    if (f) facturasData = JSON.parse(f);
+    if (s) stockData = JSON.parse(s);
+    if (c) clientesData = JSON.parse(c);
+    if (u) usuariosData = JSON.parse(u);
+  } catch(e) {}
+}
+
+function resetState() {
+  mesasData = [...DEMO_MESAS];
+  deliveryData = [...DEMO_DELIVERY];
+  facturasData = [...DEMO_FACTURAS];
+  stockData = [...DEMO_STOCK];
+  clientesData = [...DEMO_CLIENTES];
+  usuariosData = [...DEMO_USUARIOS];
+  cajaMoves = [...DEMO_CAJA_MOV];
+  saveState();
+  showToast('Datos restablecidos a demo','success');
+}
+
 // ======= AUTH =======
 async function doLogin() {
   const email = document.getElementById('loginEmail').value.trim();
@@ -1016,6 +1063,8 @@ function initApp() {
   document.getElementById('userRole').textContent = roles[currentUser?.rol] || currentUser?.rol || '';
   // Hide usuarios for non-admin
   if (currentUser?.rol !== 'admin') document.getElementById('navUsuarios').style.display = 'none';
+  // Restore persisted state
+  loadState();
   // Mozo: only show mesas and delivery
   if (currentUser?.rol === 'mozo') {
     ['productos','stock','caja','facturacion','clientes','reportes','config'].forEach(s => {
@@ -1236,6 +1285,7 @@ function agregarItemMesa(mesaId, prodId, size, precio) {
   else { m.pedido.push({productoId:prodId,nombre:p.nombre,size,precio,qty:1}); }
   document.getElementById('modalMesaBody').innerHTML = mesaPedidoHTML(mesaId);
   document.getElementById('addItemSizeRow').style.display='none';
+  saveState();
   renderMesas();
 }
 
@@ -1245,6 +1295,7 @@ function cambiarQtyMesa(mesaId, idx, delta) {
   m.pedido[idx].qty += delta;
   if(m.pedido[idx].qty<=0) m.pedido.splice(idx,1);
   document.getElementById('modalMesaBody').innerHTML = mesaPedidoHTML(mesaId);
+  saveState();
   renderMesas();
 }
 
@@ -1253,6 +1304,7 @@ function quitarItemMesa(mesaId, idx) {
   if(!m) return;
   m.pedido.splice(idx,1);
   document.getElementById('modalMesaBody').innerHTML = mesaPedidoHTML(mesaId);
+  saveState();
   renderMesas();
 }
 
@@ -1291,6 +1343,7 @@ function abrirMesa(id) {
   const mozo = document.getElementById('abrirMozo').value;
   m.estado='ocupada'; m.mozo=mozo; m.tiempo='00:00'; m.pedido=[];
   closeModal('modalMesa');
+  saveState();
   renderMesas();
   showToast(`Mesa #${m.numero} abierta por ${mozo}`,'success');
   loadDashboard();
@@ -1300,6 +1353,7 @@ function pedirCuenta(id) {
   const m = mesasData.find(x=>x.id===id);
   m.estado='cuenta';
   closeModal('modalMesa');
+  saveState();
   renderMesas();
   showToast(`Mesa #${m.numero} — cuenta solicitada`);
 }
@@ -1312,6 +1366,7 @@ function cerrarMesa(id) {
   const f = {id:facturasData.length+1,numero:`F-${String(facturasData.length+1).padStart(4,'0')}`,fecha:new Date().toISOString().slice(0,16).replace('T',' '),origen:`Mesa ${m.numero}`,items:itemsCount,total:total||0,pago:'efectivo',estado:'pagada'};
   facturasData.unshift(f);
   closeModal('modalMesa');
+  saveState();
   renderMesas();
   showToast(`Mesa #${m.numero} cerrada. Factura ${f.numero} emitida.`,'success');
   loadDashboard();
@@ -1324,6 +1379,7 @@ function crearMesa() {
   if(!num){ showToast('Ingresá número de mesa','error'); return; }
   mesasData.push({id:Date.now(),numero:num,capacidad:cap,estado:'libre',zona,mozo:null,tiempo:null,pedido:[]});
   closeModal('modalNuevaMesa');
+  saveState();
   renderMesas();
   showToast(`Mesa #${num} creada`,'success');
 }
@@ -1400,6 +1456,7 @@ function advanceDelivery(id) {
   const flow = ['nuevo','en_cocina','listo','en_camino','entregado'];
   const idx = flow.indexOf(o.estado);
   if(idx<flow.length-1) o.estado=flow[idx+1];
+  saveState();
   renderDelivery();
   loadDashboard();
   showToast(`Pedido ${o.numero} → ${o.estado}`);
@@ -1420,6 +1477,7 @@ function crearDelivery() {
     hora: new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})
   });
   closeModal('modalNuevoDelivery');
+  saveState();
   renderDelivery();
   loadDashboard();
   showToast(`Delivery ${deliveryData[0].numero} creado`,'success');
@@ -1528,6 +1586,7 @@ function guardarProducto() {
   }
   editingProdId=null;
   closeModal('modalProducto');
+  saveState();
   renderProductos();
   showToast('Producto guardado','success');
 }
@@ -1535,6 +1594,7 @@ function guardarProducto() {
 function deleteProducto(id) {
   if(!confirm('¿Eliminar este producto?')) return;
   productosData = productosData.filter(x=>x.id!==id);
+  saveState();
   renderProductos();
   showToast('Producto eliminado');
 }
@@ -1697,6 +1757,7 @@ function guardarCliente() {
   if(!nombre){ showToast('Ingresá el nombre','error'); return; }
   clientesData.unshift({id:Date.now(),nombre,telefono:document.getElementById('cliTel').value,email:document.getElementById('cliEmail').value,direccion:document.getElementById('cliDir').value,pedidos:0,total_gastado:0,ultimo:new Date().toISOString().slice(0,10)});
   closeModal('modalCliente');
+  saveState();
   renderClientes(); showToast('Cliente guardado','success');
 }
 
@@ -1795,7 +1856,9 @@ function toggleUsuario(id) {
 
 function deleteUsuario(id) {
   if(!confirm('¿Eliminar este usuario?')) return;
-  usuariosData=usuariosData.filter(x=>x.id!==id); renderUsuarios();
+  usuariosData=usuariosData.filter(x=>x.id!==id);
+  saveState();
+  renderUsuarios();
   showToast('Usuario eliminado');
 }
 
@@ -1804,12 +1867,21 @@ function guardarUsuario() {
   const email=document.getElementById('usrEmail').value;
   if(!nombre||!email){ showToast('Completá nombre y email','error'); return; }
   usuariosData.push({id:Date.now(),nombre,email,rol:document.getElementById('usrRol').value,activo:true,ultimo:'-'});
-  closeModal('modalUsuario'); renderUsuarios(); showToast('Usuario creado','success');
+  closeModal('modalUsuario');
+  saveState();
+  renderUsuarios();
+  showToast('Usuario creado','success');
 }
 
 // ======= CONFIG =======
 function saveConfig() {
   showToast('Configuración guardada','success');
+}
+
+function confirmarResetDemo() {
+  if(!confirm('¿Restablecer todos los datos a los valores de demo? Se perderán todos los cambios.')) return;
+  resetState();
+  navTo('dashboard', document.querySelector('[data-section="dashboard"]'));
 }
 
 // ======= HELPERS =======
