@@ -186,6 +186,19 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 .caja-total{font-size:32px;font-weight:800;color:var(--blue)}
 .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#e9ecef;color:#495057}
 
+/* ===== MOZO TOP NAV ===== */
+.mozo-topnav{display:none;height:64px;background:var(--blue);align-items:center;padding:0 20px;gap:12px;flex-shrink:0;z-index:50}
+.mozo-topnav .mtn-logo{font-size:22px;font-weight:900;color:#fff;letter-spacing:-0.5px;flex:1;display:flex;align-items:center;gap:8px}
+.mozo-topnav .mtn-logo span{font-size:24px}
+.mozo-topnav-btns{display:flex;gap:8px;align-items:center}
+.mtn-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.1);color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap}
+.mtn-btn:hover{background:rgba(255,255,255,0.22);border-color:rgba(255,255,255,0.5)}
+.mtn-btn.active{background:rgba(230,57,70,0.8);border-color:var(--red)}
+.mtn-btn-logout{border-color:rgba(239,68,68,0.5);background:rgba(239,68,68,0.15)}
+.mtn-btn-logout:hover{background:rgba(239,68,68,0.35)}
+.mtn-avatar{width:38px;height:38px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0;border:2px solid rgba(255,255,255,0.3);cursor:default;letter-spacing:0.5px}
+.mozo-topnav.visible{display:flex}
+
 /* ===== RESPONSIVE ===== */
 
 /* Hamburger button — visible on all breakpoints */
@@ -315,6 +328,11 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 
   /* delivery pipeline: horizontal scroll (already has overflow-x:auto) */
   .delivery-pipeline{padding-bottom:12px}
+
+  /* mozo topnav: compact on mobile */
+  .mozo-topnav .mtn-logo{font-size:16px}
+  .mozo-topnav .mtn-logo span{font-size:20px}
+  .mtn-btn{padding:7px 10px;font-size:12px}
 }
 </style>
 </head>
@@ -406,8 +424,18 @@ input.form-control:focus{outline:none;border-color:var(--red)}
     </div>
   </div>
 
-  <div class="main">
-    <div class="topbar">
+  <div class="main" id="mainContent">
+    <!-- Mozo-only top navigation bar -->
+    <div class="mozo-topnav" id="mozoTopnav">
+      <div class="mtn-logo"><span>🍕</span>PIZZERÍA PRO</div>
+      <div class="mozo-topnav-btns">
+        <button class="mtn-btn active" id="mtnBtnMesas" onclick="mozoNavTo('mesas')">🪑 Mesas</button>
+        <button class="mtn-btn" id="mtnBtnStats" onclick="mozoNavTo('mozostats')">📊 Estadísticas</button>
+        <button class="mtn-btn mtn-btn-logout" onclick="doLogout()">🔴 Sesión</button>
+        <div class="mtn-avatar" id="mozoAvatar" title="">CM</div>
+      </div>
+    </div>
+    <div class="topbar" id="mainTopbar">
       <button class="hamburger" onclick="toggleSidebar()" aria-label="Abrir menú">☰</button>
       <div class="topbar-title" id="topbarTitle">Dashboard</div>
       <span class="topbar-badge" id="topbarBadge" style="display:none"></span>
@@ -1093,13 +1121,21 @@ function initApp() {
   if (currentUser?.rol !== 'admin') document.getElementById('navUsuarios').style.display = 'none';
   // Restore persisted state
   loadState();
-  // Mozo: only show mesas + estadísticas
+  // Mozo: hide sidebar, show custom top nav
   if (currentUser?.rol === 'mozo') {
-    ['dashboard','delivery','productos','stock','caja','facturacion','clientes','reportes','config'].forEach(s => {
-      const el = document.querySelector(`[data-section="${s}"]`);
-      if(el) el.style.display='none';
-    });
-    document.getElementById('navMozoStats').style.display='flex';
+    // Hide sidebar entirely and adjust layout
+    document.querySelector('.sidebar').style.display = 'none';
+    document.getElementById('sidebarOverlay').style.display = 'none';
+    document.getElementById('mainContent').style.marginLeft = '0';
+    // Show mozo topnav, hide regular topbar
+    document.getElementById('mozoTopnav').classList.add('visible');
+    document.getElementById('mainTopbar').style.display = 'none';
+    // Set avatar initials (up to 2 words)
+    const nombre = currentUser?.nombre || '';
+    const initials = nombre.split(' ').filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');
+    const av = document.getElementById('mozoAvatar');
+    av.textContent = initials || 'M';
+    av.title = nombre;
   }
   // Clock
   updateClock();
@@ -1114,7 +1150,7 @@ function initApp() {
   } catch(e){}
   // Load first section: mozo goes straight to mesas
   if (currentUser?.rol === 'mozo') {
-    navTo('mesas', document.querySelector('[data-section="mesas"]'));
+    mozoNavTo('mesas');
   } else {
     loadDashboard();
   }
@@ -1160,6 +1196,12 @@ function navTo(section, el) {
   document.getElementById('topbarTitle').textContent = titles[section] || section;
   const loaders = {dashboard:loadDashboard,mesas:renderMesas,delivery:renderDelivery,productos:renderProductos,stock:renderStock,caja:renderCaja,facturacion:loadFacturacion,clientes:renderClientes,reportes:renderReportes,usuarios:renderUsuarios,mozostats:renderMozoStats};
   if(loaders[section]) loaders[section]();
+}
+
+function mozoNavTo(section) {
+  document.getElementById('mtnBtnMesas').classList.toggle('active', section==='mesas');
+  document.getElementById('mtnBtnStats').classList.toggle('active', section==='mozostats');
+  navTo(section, null);
 }
 
 // ======= DASHBOARD =======
