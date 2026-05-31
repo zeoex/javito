@@ -673,7 +673,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
             <div class="card-body">
               <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
                 <div><div class="stat-label">💵 Efectivo</div><div style="font-size:18px;font-weight:800;color:var(--success)" id="cajaCash">$0</div></div>
-                <div><div class="stat-label">💳 Tarjeta</div><div style="font-size:18px;font-weight:800;color:var(--info)" id="cajaTarjeta">$0</div></div>
+                <div><div class="stat-label">💳 Posnet</div><div style="font-size:18px;font-weight:800;color:var(--info)" id="cajaTarjeta">$0</div></div>
                 <div><div class="stat-label">📲 Transfer.</div><div style="font-size:18px;font-weight:800;color:var(--warning)" id="cajaTransfer">$0</div></div>
               </div>
               <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
@@ -1047,7 +1047,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modalCierreCaja')">Cancelar</button>
       <button class="btn btn-primary" id="btnImprimirCierre" disabled onclick="imprimirCierreCaja()" style="opacity:0.45;cursor:not-allowed">🖨️ Imprimir</button>
-      <button class="btn btn-danger" onclick="confirmarCierreCaja()">✅ Confirmar Cierre</button>
+      <button class="btn btn-danger" id="btnConfirmarCierre" onclick="prepararCierreFinal()">✅ Confirmar Cierre</button>
     </div>
   </div>
 </div>
@@ -1827,7 +1827,7 @@ function renderMesaFooter(id) {
     footer.innerHTML =
       `<div style="width:100%;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray);margin-bottom:2px">¿Cómo paga?</div>
        <button class="btn btn-success" style="flex:1" onclick="_mesaCobroConfirm='efectivo';renderMesaFooter(${sid})">💵 Efectivo</button>
-       <button class="btn btn-primary" style="flex:1;background:var(--blue);border-color:var(--blue)" onclick="_mesaCobroConfirm='tarjeta';renderMesaFooter(${sid})">💳 Tarjeta</button>
+       <button class="btn btn-primary" style="flex:1;background:var(--blue);border-color:var(--blue)" onclick="_mesaCobroConfirm='tarjeta';renderMesaFooter(${sid})">💳 Posnet</button>
        <button class="btn btn-secondary" style="flex:1;background:#6c757d;border-color:#6c757d;color:#fff" onclick="_mesaCobroConfirm='transferencia';renderMesaFooter(${sid})">📲 Transfer.</button>
        <button class="btn btn-outline" style="width:100%" onclick="_mesaCobroMode=false;renderMesaFooter(${sid})">← Volver</button>`;
     return;
@@ -2357,7 +2357,7 @@ function _cajaNow() {
 function abrirCajaDesdeGuard() {
   const monto = parseInt(document.getElementById('cajaAbrirMonto').value)||5000;
   cajaInicial = monto; cajaAbierta = true;
-  cajaMoves.push({..._cajaNow(),tipo:'ingreso',desc:'Apertura de caja',monto});
+  cajaMoves = [{..._cajaNow(),tipo:'ingreso',desc:'Apertura de caja',monto}];
   saveState(); renderCaja(); showToast('Caja abierta','success');
   closeModal('modalAbrirCaja');
   if (_pendingCajaAction) { const fn = _pendingCajaAction; _pendingCajaAction = null; fn(); }
@@ -2420,46 +2420,149 @@ function renderCajaMov() {
 function abrirCaja() {
   const monto = parseInt(document.getElementById('cajaInicialInput').value)||5000;
   cajaInicial=monto; cajaAbierta=true;
-  cajaMoves.push({..._cajaNow(),tipo:'ingreso',desc:'Apertura de caja',monto});
+  cajaMoves = [{..._cajaNow(),tipo:'ingreso',desc:'Apertura de caja',monto}];
   saveState(); renderCaja(); showToast('Caja abierta','success');
 }
 
+let _cierreDeclared = null;
+
 function cerrarCaja() {
   const r = _cajaResumen();
+  // restore footer button in case we're coming back from step 2
+  const bc = document.getElementById('btnConfirmarCierre');
+  if (bc) { bc.style.display=''; bc.textContent='✅ Confirmar Cierre'; bc.onclick=()=>prepararCierreFinal(); }
+  const bi = document.getElementById('btnImprimirCierre');
+  if (bi) { bi.disabled=true; bi.style.opacity='0.45'; bi.style.cursor='not-allowed'; }
   document.getElementById('cierreCajaBody').innerHTML = `
     <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px">
-      <div style="font-size:12px;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Ventas del Turno</div>
+      <div style="font-size:12px;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Ventas del Sistema</div>
       <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span>💵 Efectivo</span><strong style="color:var(--success)">$${r.ventasEfectivo.toLocaleString()}</strong></div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span>💳 Tarjeta</span><strong style="color:var(--info)">$${r.ventasTarjeta.toLocaleString()}</strong></div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span>📲 Transferencia</span><strong style="color:var(--warning)">$${r.ventasTransfer.toLocaleString()}</strong></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span>💳 Posnet</span><strong style="color:var(--info)">$${r.ventasTarjeta.toLocaleString()}</strong></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span>📲 Transferencias</span><strong style="color:var(--warning)">$${r.ventasTransfer.toLocaleString()}</strong></div>
       <hr style="border-color:var(--border);margin:8px 0">
       <div style="display:flex;justify-content:space-between;font-weight:800"><span>Total Ventas</span><span>$${r.totalVentas.toLocaleString()}</span></div>
     </div>
     <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px">
-      <div style="font-size:12px;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Balance de Caja</div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span>Monto inicial</span><strong>$${cajaInicial.toLocaleString()}</strong></div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span>+ Ventas efectivo</span><strong style="color:var(--success)">+$${r.ventasEfectivo.toLocaleString()}</strong></div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span>- Retiros</span><strong style="color:var(--danger)">-$${r.retiros.toLocaleString()}</strong></div>
-      <hr style="border-color:var(--border);margin:8px 0">
-      <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:900"><span>Saldo en Caja</span><span style="color:var(--blue)">$${r.saldoFinal.toLocaleString()}</span></div>
+      <div style="font-size:12px;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Declaración de Cierre</div>
+      <div class="form-group" style="margin-bottom:8px">
+        <label style="font-size:12px;font-weight:600">💵 Dinero en caja (efectivo)</label>
+        <input class="form-control" id="cierreDinero" type="number" min="0" placeholder="0" oninput="_checkCierreFields()"/>
+      </div>
+      <div class="form-group" style="margin-bottom:8px">
+        <label style="font-size:12px;font-weight:600">💳 Cierre posnet</label>
+        <input class="form-control" id="cierrePostnet" type="number" min="0" placeholder="0" oninput="_checkCierreFields()"/>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label style="font-size:12px;font-weight:600">📲 Cierre transferencias</label>
+        <input class="form-control" id="cierreTransfer" type="number" min="0" placeholder="0" oninput="_checkCierreFields()"/>
+      </div>
     </div>
     <div style="padding:12px 14px;background:#f8f9fa;border-radius:10px;display:flex;align-items:center;gap:10px">
-      <input type="checkbox" id="chkControlado" style="width:18px;height:18px;cursor:pointer" onchange="const b=document.getElementById('btnImprimirCierre');b.disabled=!this.checked;b.style.opacity=this.checked?'1':'0.45';b.style.cursor=this.checked?'pointer':'not-allowed'"/>
-      <label for="chkControlado" style="cursor:pointer;font-size:14px;font-weight:600">Controlado por encargado</label>
+      <input type="checkbox" id="chkControlado" disabled style="width:18px;height:18px;cursor:not-allowed;opacity:0.4"
+        onchange="const b=document.getElementById('btnImprimirCierre');b.disabled=!this.checked;b.style.opacity=this.checked?'1':'0.45';b.style.cursor=this.checked?'pointer':'not-allowed'"/>
+      <label for="chkControlado" style="font-size:14px;font-weight:600;color:var(--gray)" id="lblControlado">Controlado por encargado</label>
     </div>`;
   openModal('modalCierreCaja');
 }
 
-function confirmarCierreCaja() {
+function _checkCierreFields() {
+  const d = document.getElementById('cierreDinero');
+  const p = document.getElementById('cierrePostnet');
+  const t = document.getElementById('cierreTransfer');
+  const ok = d&&p&&t && d.value!=='' && p.value!=='' && t.value!=='';
+  const chk = document.getElementById('chkControlado');
+  const lbl = document.getElementById('lblControlado');
+  if (!chk) return;
+  chk.disabled = !ok;
+  chk.style.cursor = ok ? 'pointer' : 'not-allowed';
+  chk.style.opacity = ok ? '1' : '0.4';
+  if (lbl) lbl.style.color = ok ? '' : 'var(--gray)';
+  if (!ok) {
+    chk.checked = false;
+    const bi = document.getElementById('btnImprimirCierre');
+    if (bi) { bi.disabled=true; bi.style.opacity='0.45'; bi.style.cursor='not-allowed'; }
+  }
+}
+
+function prepararCierreFinal() {
+  const d = document.getElementById('cierreDinero');
+  const p = document.getElementById('cierrePostnet');
+  const t = document.getElementById('cierreTransfer');
+  if (!d||!p||!t||d.value===''||p.value===''||t.value==='') {
+    showToast('Completá los tres campos de cierre','error'); return;
+  }
+  const dinero  = parseFloat(d.value)||0;
+  const posnet  = parseFloat(p.value)||0;
+  const transf  = parseFloat(t.value)||0;
+  _cierreDeclared = {dinero, posnet, transf};
+  const r = _cajaResumen();
+  const difE = dinero - r.ventasEfectivo;
+  const difP = posnet - r.ventasTarjeta;
+  const difT = transf - r.ventasTransfer;
+  const saldoDeclarado = dinero + posnet + transf - r.retiros;
+  const difColor = v => v >= 0 ? 'var(--success)' : 'var(--danger)';
+  const difFmt   = v => (v>=0?'+':'')+v.toLocaleString();
+  // hide footer confirm, show inline buttons
+  const bc = document.getElementById('btnConfirmarCierre');
+  if (bc) bc.style.display = 'none';
+  document.getElementById('cierreCajaBody').innerHTML = `
+    <div style="text-align:center;padding:6px 0 12px;font-size:15px;font-weight:700;color:var(--blue)">¿Está seguro de cerrar la caja?</div>
+    <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px;font-size:13px">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:#f8f9fa">
+          <th style="padding:7px 10px;text-align:left;color:var(--gray);font-weight:700">Tipo</th>
+          <th style="padding:7px 10px;text-align:right;color:var(--gray);font-weight:700">Sistema</th>
+          <th style="padding:7px 10px;text-align:right;color:var(--gray);font-weight:700">Declarado</th>
+          <th style="padding:7px 10px;text-align:right;color:var(--gray);font-weight:700">Diferencia</th>
+        </tr></thead>
+        <tbody>
+          <tr style="border-top:1px solid var(--border)">
+            <td style="padding:7px 10px">💵 Efectivo</td>
+            <td style="padding:7px 10px;text-align:right">$${r.ventasEfectivo.toLocaleString()}</td>
+            <td style="padding:7px 10px;text-align:right">$${dinero.toLocaleString()}</td>
+            <td style="padding:7px 10px;text-align:right;font-weight:700;color:${difColor(difE)}">${difFmt(difE)}</td>
+          </tr>
+          <tr style="border-top:1px solid var(--border)">
+            <td style="padding:7px 10px">💳 Posnet</td>
+            <td style="padding:7px 10px;text-align:right">$${r.ventasTarjeta.toLocaleString()}</td>
+            <td style="padding:7px 10px;text-align:right">$${posnet.toLocaleString()}</td>
+            <td style="padding:7px 10px;text-align:right;font-weight:700;color:${difColor(difP)}">${difFmt(difP)}</td>
+          </tr>
+          <tr style="border-top:1px solid var(--border)">
+            <td style="padding:7px 10px">📲 Transferencias</td>
+            <td style="padding:7px 10px;text-align:right">$${r.ventasTransfer.toLocaleString()}</td>
+            <td style="padding:7px 10px;text-align:right">$${transf.toLocaleString()}</td>
+            <td style="padding:7px 10px;text-align:right;font-weight:700;color:${difColor(difT)}">${difFmt(difT)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="border:1px solid var(--blue);border-radius:10px;padding:12px 14px;background:#f0f4ff;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <span style="font-weight:700">Saldo declarado en caja</span>
+      <span style="font-size:18px;font-weight:900;color:var(--blue)">$${saldoDeclarado.toLocaleString()}</span>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-outline" style="flex:1" onclick="cerrarCaja()">← Volver</button>
+      <button class="btn btn-danger" style="flex:1" onclick="ejecutarCierreCaja()">✅ Sí, cerrar caja</button>
+    </div>`;
+}
+
+function ejecutarCierreCaja() {
   const r = _cajaResumen();
   const {fecha, hora} = _cajaNow();
   const horaAp = cajaMoves.filter(m=>m.tipo==='ingreso'&&m.desc?.includes('Apertura')).slice(-1)[0]?.hora || '--:--';
+  const d = _cierreDeclared || {dinero:0, posnet:0, transf:0};
   cajaCierres.unshift({fecha, hora, horaApertura: horaAp, saldoInicial: cajaInicial,
     ventasEfectivo: r.ventasEfectivo, ventasTarjeta: r.ventasTarjeta,
     ventasTransfer: r.ventasTransfer, totalVentas: r.totalVentas,
-    retiros: r.retiros, saldoFinal: r.saldoFinal});
+    retiros: r.retiros, saldoFinal: d.dinero+d.posnet+d.transf-r.retiros,
+    declaradoEfectivo: d.dinero, declaradoPostnet: d.posnet, declaradoTransfer: d.transf,
+    diferenciaEfectivo: d.dinero-r.ventasEfectivo,
+    diferenciaPostnet: d.posnet-r.ventasTarjeta,
+    diferenciaTransfer: d.transf-r.ventasTransfer});
   cajaAbierta = false;
   cajaMoves.push({..._cajaNow(),tipo:'egreso',desc:'Cierre de caja',monto:0});
+  _cierreDeclared = null;
   saveState(); closeModal('modalCierreCaja'); renderCaja();
   showToast('Caja cerrada correctamente','success');
 }
@@ -2476,68 +2579,116 @@ function renderCierresHistorial() {
     el.innerHTML = `<div style="text-align:center;padding:32px;color:var(--gray)">Aún no hay cierres registrados.<br>Los cierres quedarán guardados aquí.</div>`;
     return;
   }
-  el.innerHTML = cajaCierres.map((c,i) => `
-    <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px${i===0?';border-color:#1d3557':''};background:${i===0?'#f0f4ff':'#fff'}">
+  const difFmt = v => v==null?'—':((v>=0?'+':'')+Math.abs(v).toLocaleString());
+  const difColor = v => v==null?'var(--gray)':v>=0?'var(--success)':'var(--danger)';
+  el.innerHTML = cajaCierres.map((c,i) => {
+    const hasDec = c.declaradoEfectivo != null;
+    return `
+    <div style="border:1px solid ${i===0?'#1d3557':'var(--border)'};border-radius:10px;padding:14px;margin-bottom:10px;background:${i===0?'#f0f4ff':'#fff'}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <div>
           <span style="font-weight:800;font-size:15px;color:var(--blue)">${c.fecha}</span>
-          <span style="font-size:12px;color:var(--gray);margin-left:8px">🕐 ${c.horaApertura} → ${c.hora}</span>
+          <span style="font-size:12px;color:var(--gray);margin-left:8px">🕐 ${c.horaApertura||'--'} → ${c.hora||'--'}</span>
           ${i===0?'<span class="badge badge-primary" style="margin-left:8px;font-size:11px">Último</span>':''}
         </div>
-        <strong style="font-size:16px;color:var(--blue)">$${(c.saldoFinal||0).toLocaleString()}</strong>
+        <div style="display:flex;align-items:center;gap:8px">
+          <strong style="font-size:16px;color:var(--blue)">$${(c.saldoFinal||0).toLocaleString()}</strong>
+          <button class="btn btn-outline btn-sm" onclick="imprimirCierreHistorial(${i})" title="Reimprimir cierre">🖨️</button>
+        </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:12px;margin-bottom:8px">
-        <div style="background:#f8f9fa;border-radius:6px;padding:6px 8px">
-          <div style="color:var(--gray)">💵 Efectivo</div>
-          <div style="font-weight:700;color:var(--success)">$${(c.ventasEfectivo||0).toLocaleString()}</div>
-        </div>
-        <div style="background:#f8f9fa;border-radius:6px;padding:6px 8px">
-          <div style="color:var(--gray)">💳 Tarjeta</div>
-          <div style="font-weight:700;color:var(--info)">$${(c.ventasTarjeta||0).toLocaleString()}</div>
-        </div>
-        <div style="background:#f8f9fa;border-radius:6px;padding:6px 8px">
-          <div style="color:var(--gray)">📲 Transfer.</div>
-          <div style="font-weight:700;color:var(--warning)">$${(c.ventasTransfer||0).toLocaleString()}</div>
-        </div>
+      <div style="overflow:hidden;border-radius:8px;border:1px solid var(--border);font-size:12px;margin-bottom:8px">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#f8f9fa">
+            <th style="padding:5px 8px;text-align:left;color:var(--gray)">Tipo</th>
+            <th style="padding:5px 8px;text-align:right;color:var(--gray)">Sistema</th>
+            ${hasDec?'<th style="padding:5px 8px;text-align:right;color:var(--gray)">Declarado</th><th style="padding:5px 8px;text-align:right;color:var(--gray)">Dif.</th>':''}
+          </tr></thead>
+          <tbody>
+            <tr style="border-top:1px solid var(--border)">
+              <td style="padding:5px 8px">💵 Efectivo</td>
+              <td style="padding:5px 8px;text-align:right">$${(c.ventasEfectivo||0).toLocaleString()}</td>
+              ${hasDec?`<td style="padding:5px 8px;text-align:right">$${(c.declaradoEfectivo||0).toLocaleString()}</td><td style="padding:5px 8px;text-align:right;font-weight:700;color:${difColor(c.diferenciaEfectivo)}">${difFmt(c.diferenciaEfectivo)}</td>`:''}
+            </tr>
+            <tr style="border-top:1px solid var(--border)">
+              <td style="padding:5px 8px">💳 Posnet</td>
+              <td style="padding:5px 8px;text-align:right">$${(c.ventasTarjeta||0).toLocaleString()}</td>
+              ${hasDec?`<td style="padding:5px 8px;text-align:right">$${(c.declaradoPostnet||0).toLocaleString()}</td><td style="padding:5px 8px;text-align:right;font-weight:700;color:${difColor(c.diferenciaPostnet)}">${difFmt(c.diferenciaPostnet)}</td>`:''}
+            </tr>
+            <tr style="border-top:1px solid var(--border)">
+              <td style="padding:5px 8px">📲 Transfer.</td>
+              <td style="padding:5px 8px;text-align:right">$${(c.ventasTransfer||0).toLocaleString()}</td>
+              ${hasDec?`<td style="padding:5px 8px;text-align:right">$${(c.declaradoTransfer||0).toLocaleString()}</td><td style="padding:5px 8px;text-align:right;font-weight:700;color:${difColor(c.diferenciaTransfer)}">${difFmt(c.diferenciaTransfer)}</td>`:''}
+            </tr>
+          </tbody>
+        </table>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--gray)">
-        <span>Total ventas: <strong style="color:inherit">$${(c.totalVentas||0).toLocaleString()}</strong></span>
+        <span>Total ventas: <strong>$${(c.totalVentas||0).toLocaleString()}</strong></span>
         <span>Retiros: <strong style="color:var(--danger)">-$${(c.retiros||0).toLocaleString()}</strong></span>
         <span>Inicial: <strong>$${(c.saldoInicial||0).toLocaleString()}</strong></span>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
-function imprimirCierreCaja() {
-  const r = _cajaResumen();
-  const hoy = new Date().toISOString().slice(0,10);
-  const ahora = new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
-  const controlado = document.getElementById('chkControlado')?.checked;
-  const win = window.open('','_blank','width=420,height=720');
+function _printCierreTpl(data) {
+  const {fecha, hora, horaApertura, saldoInicial, ventasEfectivo, ventasTarjeta, ventasTransfer,
+    totalVentas, retiros, saldoFinal, declaradoEfectivo, declaradoPostnet, declaradoTransfer,
+    diferenciaEfectivo, diferenciaPostnet, diferenciaTransfer, controlado} = data;
+  const hasDec = declaradoEfectivo != null;
+  const difFmt = v => v==null?'—':((v>=0?'+':'-')+'$'+Math.abs(v).toLocaleString());
+  const win = window.open('','_blank','width=420,height=800');
   win.document.write(`<html><head><title>Cierre de Caja</title>
-    <style>body{font-family:monospace;padding:20px;font-size:14px;max-width:300px;margin:0 auto}
-    h2,p.c{text-align:center;margin:3px 0}.row{display:flex;justify-content:space-between;margin:3px 0}
-    hr{border:1px dashed #000;margin:8px 0}.bold{font-weight:bold}.big{font-size:16px;font-weight:900}
-    .sign{margin-top:36px;border-top:1px solid #000;padding-top:8px;text-align:center;font-size:12px}</style>
+    <style>body{font-family:monospace;padding:20px;font-size:13px;max-width:300px;margin:0 auto}
+    h2,p.c{text-align:center;margin:3px 0}.row{display:flex;justify-content:space-between;margin:2px 0}
+    hr{border:1px dashed #000;margin:6px 0}.bold{font-weight:bold}.big{font-size:15px;font-weight:900}
+    .sign{margin-top:32px;border-top:1px solid #000;padding-top:8px;text-align:center;font-size:12px}
+    table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:2px 4px}
+    th{text-align:right;color:#666}td:first-child,th:first-child{text-align:left}</style>
     </head><body>
     <h2>🍕 PIZZERÍA PRO</h2><p class="c">CIERRE DE CAJA</p>
-    <p class="c" style="font-size:12px">${hoy} — ${ahora} hs</p>
+    <p class="c" style="font-size:11px">${fecha} — ${hora} hs | Apertura: ${horaApertura||'--'}</p>
     <hr>
-    <p class="bold">VENTAS DEL TURNO</p>
-    <div class="row"><span>Efectivo</span><span>$${r.ventasEfectivo.toLocaleString()}</span></div>
-    <div class="row"><span>Tarjeta</span><span>$${r.ventasTarjeta.toLocaleString()}</span></div>
-    <div class="row"><span>Transferencia</span><span>$${r.ventasTransfer.toLocaleString()}</span></div>
-    <hr><div class="row bold"><span>TOTAL VENTAS</span><span>$${r.totalVentas.toLocaleString()}</span></div>
+    <p class="bold">VENTAS DEL SISTEMA</p>
+    <div class="row"><span>Efectivo</span><span>$${(ventasEfectivo||0).toLocaleString()}</span></div>
+    <div class="row"><span>Posnet</span><span>$${(ventasTarjeta||0).toLocaleString()}</span></div>
+    <div class="row"><span>Transferencias</span><span>$${(ventasTransfer||0).toLocaleString()}</span></div>
+    <hr><div class="row bold"><span>TOTAL VENTAS</span><span>$${(totalVentas||0).toLocaleString()}</span></div>
+    ${hasDec?`<hr>
+    <p class="bold">DECLARACIÓN / DIFERENCIA</p>
+    <table><thead><tr><th>Tipo</th><th>Sistema</th><th>Declarado</th><th>Dif.</th></tr></thead><tbody>
+    <tr><td>Efectivo</td><td>$${(ventasEfectivo||0).toLocaleString()}</td><td>$${(declaradoEfectivo||0).toLocaleString()}</td><td>${difFmt(diferenciaEfectivo)}</td></tr>
+    <tr><td>Posnet</td><td>$${(ventasTarjeta||0).toLocaleString()}</td><td>$${(declaradoPostnet||0).toLocaleString()}</td><td>${difFmt(diferenciaPostnet)}</td></tr>
+    <tr><td>Transfer.</td><td>$${(ventasTransfer||0).toLocaleString()}</td><td>$${(declaradoTransfer||0).toLocaleString()}</td><td>${difFmt(diferenciaTransfer)}</td></tr>
+    </tbody></table>`:''}
     <hr>
-    <p class="bold">BALANCE DE CAJA</p>
-    <div class="row"><span>Monto inicial</span><span>$${cajaInicial.toLocaleString()}</span></div>
-    <div class="row"><span>+ Ventas efectivo</span><span>$${r.ventasEfectivo.toLocaleString()}</span></div>
-    <div class="row"><span>- Retiros</span><span>$${r.retiros.toLocaleString()}</span></div>
-    <hr><div class="row big"><span>SALDO EN CAJA</span><span>$${r.saldoFinal.toLocaleString()}</span></div>
+    <div class="row bold"><span>Retiros del turno</span><span>-$${(retiros||0).toLocaleString()}</span></div>
+    <div class="row big"><span>SALDO EN CAJA</span><span>$${(saldoFinal||0).toLocaleString()}</span></div>
     <hr>
     <div class="sign">${controlado?'☑':'☐'} CONTROLADO POR ENCARGADO<br><br>Firma: _________________________</div>
     </body></html>`);
   win.document.close(); win.print();
+}
+
+function imprimirCierreCaja() {
+  const r = _cajaResumen();
+  const {fecha, hora} = _cajaNow();
+  const horaAp = cajaMoves.filter(m=>m.tipo==='ingreso'&&m.desc?.includes('Apertura')).slice(-1)[0]?.hora||'--';
+  const d = _cierreDeclared || {};
+  _printCierreTpl({fecha, hora, horaApertura:horaAp, saldoInicial:cajaInicial,
+    ventasEfectivo:r.ventasEfectivo, ventasTarjeta:r.ventasTarjeta, ventasTransfer:r.ventasTransfer,
+    totalVentas:r.totalVentas, retiros:r.retiros, saldoFinal:r.saldoFinal,
+    declaradoEfectivo:d.dinero??null, declaradoPostnet:d.posnet??null, declaradoTransfer:d.transf??null,
+    diferenciaEfectivo:d.dinero!=null?d.dinero-r.ventasEfectivo:null,
+    diferenciaPostnet:d.posnet!=null?d.posnet-r.ventasTarjeta:null,
+    diferenciaTransfer:d.transf!=null?d.transf-r.ventasTransfer:null,
+    controlado:document.getElementById('chkControlado')?.checked});
+}
+
+function imprimirCierreHistorial(idx) {
+  const c = cajaCierres[idx];
+  if (!c) return;
+  _printCierreTpl({...c, controlado:true});
 }
 
 function guardarRetiroCaja() {
