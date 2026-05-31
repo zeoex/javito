@@ -291,18 +291,19 @@ app.use(cors({ origin: '*' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const noCache = (res) => { res.setHeader('Cache-Control','no-cache, no-store, must-revalidate'); res.setHeader('Pragma','no-cache'); res.setHeader('Expires','0'); };
 // Role-specific routes must be registered BEFORE express.static to override index.html default
-app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'portal.html')));
-app.get('/portal', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'portal.html')));
-app.get('/admin', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-app.get('/mozo',  (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-app.get('/carta', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'carta.html')));
-app.get('/menu',  (_req, res) => res.sendFile(path.join(__dirname, 'public', 'menu.html')));
-app.get('/cocina', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'cocina.html')));
-app.get('/repartidor', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'repartidor.html')));
-app.get('/cliente', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'cliente.html')));
+app.get('/', (_req, res) => { noCache(res); res.sendFile(path.join(__dirname, 'public', 'portal.html')); });
+app.get('/portal', (_req, res) => { noCache(res); res.sendFile(path.join(__dirname, 'public', 'portal.html')); });
+app.get('/admin', (_req, res) => { noCache(res); res.sendFile(path.join(__dirname, 'public', 'index.html')); });
+app.get('/mozo',  (_req, res) => { noCache(res); res.sendFile(path.join(__dirname, 'public', 'index.html')); });
+app.get('/carta', (_req, res) => { noCache(res); res.sendFile(path.join(__dirname, 'public', 'carta.html')); });
+app.get('/menu',  (_req, res) => { noCache(res); res.sendFile(path.join(__dirname, 'public', 'menu.html')); });
+app.get('/cocina', (_req, res) => { noCache(res); res.sendFile(path.join(__dirname, 'public', 'cocina.html')); });
+app.get('/repartidor', (_req, res) => { noCache(res); res.sendFile(path.join(__dirname, 'public', 'repartidor.html')); });
+app.get('/cliente', (_req, res) => { noCache(res); res.sendFile(path.join(__dirname, 'public', 'cliente.html')); });
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), { etag: false, lastModified: false, setHeaders: (res) => { res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); } }));
 
 // Logger
 app.use((req, _res, next) => {
