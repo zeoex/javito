@@ -1526,6 +1526,7 @@ function mesaPedidoHTML(id) {
 
 let _mesaModalId = null;
 let _mesaCobroMode = false;
+let _mesaCobroConfirm = null; // metodoPago pending confirmation
 
 function filtrarCatMesa(cat) {
   document.querySelectorAll('.mpo-cat-pill').forEach(b=>b.classList.remove('active'));
@@ -1588,13 +1589,29 @@ function renderMesaFooter(id) {
   const sid = `'${id}'`;
   const footer = document.getElementById('modalMesaFooter');
 
+  // Confirmation screen: "¿Liberar mesa?"
+  if (_mesaCobroConfirm) {
+    const metodo = _mesaCobroConfirm;
+    const metodoLabel = {efectivo:'💵 Efectivo',tarjeta:'💳 Tarjeta',transferencia:'📲 Transferencia'}[metodo] || metodo;
+    footer.innerHTML =
+      `<div style="width:100%;text-align:center;font-size:14px;font-weight:700;padding:4px 0">
+         ¿Liberar mesa #${m.numero}?
+       </div>
+       <div style="width:100%;text-align:center;font-size:12px;color:var(--gray);margin-bottom:4px">
+         Pago: ${metodoLabel}
+       </div>
+       <button class="btn btn-danger" style="flex:1" onclick="cerrarMesa(${sid},'${metodo}')">✅ Sí, liberar</button>
+       <button class="btn btn-outline" style="flex:1" onclick="_mesaCobroConfirm=null;renderMesaFooter(${sid})">✗ No, volver</button>`;
+    return;
+  }
+
   // Cobro mode: show payment method selector
   if (_mesaCobroMode) {
     footer.innerHTML =
       `<div style="width:100%;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray);margin-bottom:2px">¿Cómo paga?</div>
-       <button class="btn btn-success" style="flex:1" onclick="cerrarMesa(${sid},'efectivo')">💵 Efectivo</button>
-       <button class="btn btn-primary" style="flex:1;background:var(--blue);border-color:var(--blue)" onclick="cerrarMesa(${sid},'tarjeta')">💳 Tarjeta</button>
-       <button class="btn btn-secondary" style="flex:1;background:#6c757d;border-color:#6c757d;color:#fff" onclick="cerrarMesa(${sid},'transferencia')">📲 Transfer.</button>
+       <button class="btn btn-success" style="flex:1" onclick="_mesaCobroConfirm='efectivo';renderMesaFooter(${sid})">💵 Efectivo</button>
+       <button class="btn btn-primary" style="flex:1;background:var(--blue);border-color:var(--blue)" onclick="_mesaCobroConfirm='tarjeta';renderMesaFooter(${sid})">💳 Tarjeta</button>
+       <button class="btn btn-secondary" style="flex:1;background:#6c757d;border-color:#6c757d;color:#fff" onclick="_mesaCobroConfirm='transferencia';renderMesaFooter(${sid})">📲 Transfer.</button>
        <button class="btn btn-outline" style="width:100%" onclick="_mesaCobroMode=false;renderMesaFooter(${sid})">← Volver</button>`;
     return;
   }
@@ -1723,6 +1740,7 @@ function cerrarMesa(id, metodoPago = 'efectivo') {
   const f = {id:facturasData.length+1,numero:`F-${String(facturasData.length+1).padStart(4,'0')}`,fecha:new Date().toISOString().slice(0,16).replace('T',' '),origen:`Mesa ${m.numero}`,items:itemsCount,total:total||0,pago:metodoPago,estado:'pagada'};
   facturasData.unshift(f);
   _mesaCobroMode = false;
+  _mesaCobroConfirm = null;
   closeModal('modalMesa');
   syncMesa(m); saveState(); renderMesas();
   showToast(`Mesa #${m.numero} cerrada — ${metodoLabel}. Factura ${f.numero} emitida.`,'success');
@@ -2402,7 +2420,7 @@ function confirmarResetDemo() {
 
 // ======= HELPERS =======
 function openModal(id){ document.getElementById(id).classList.add('open'); }
-function closeModal(id){ document.getElementById(id).classList.remove('open'); if(id==='modalMesa') _mesaCobroMode=false; }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); if(id==='modalMesa'){ _mesaCobroMode=false; _mesaCobroConfirm=null; } }
 document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); }));
 
 function showToast(msg, type='') {
