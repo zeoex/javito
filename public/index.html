@@ -387,6 +387,9 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <div class="nav-item" data-section="usuarios" data-tooltip="Usuarios" onclick="navTo('usuarios',this);closeSidebar()" id="navUsuarios">
         <span class="nav-icon">👤</span><span class="nav-text">Usuarios</span>
       </div>
+      <div class="nav-item" data-section="mozostats" data-tooltip="Mis Estadísticas" onclick="navTo('mozostats',this);closeSidebar()" id="navMozoStats" style="display:none">
+        <span class="nav-icon">📊</span><span class="nav-text">Mis Estadísticas</span>
+      </div>
       <div class="nav-item" data-section="config" data-tooltip="Configuración" onclick="navTo('config',this);closeSidebar()">
         <span class="nav-icon">⚙️</span><span class="nav-text">Configuración</span>
       </div>
@@ -686,6 +689,26 @@ input.form-control:focus{outline:none;border-color:var(--red)}
         </div>
       </div>
 
+      <!-- MOZO STATS -->
+      <div class="section" id="sec-mozostats">
+        <div class="section-header"><h2>📊 Mis Estadísticas</h2></div>
+        <div class="stats-grid" style="margin-bottom:20px">
+          <div class="stat-card green"><div class="stat-label">Mesas Atendidas Hoy</div><div class="stat-value" id="mz-hoy">0</div><div class="stat-sub">del día</div></div>
+          <div class="stat-card blue"><div class="stat-label">Total Recaudado Hoy</div><div class="stat-value" id="mz-total-hoy">$0</div><div class="stat-sub">en ventas</div></div>
+          <div class="stat-card teal"><div class="stat-label">Mesas Este Mes</div><div class="stat-value" id="mz-mes">0</div><div class="stat-sub">del mes</div></div>
+          <div class="stat-card orange"><div class="stat-label">Total Recaudado Mes</div><div class="stat-value" id="mz-total-mes">$0</div><div class="stat-sub">en ventas</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>🗓️ Historial de Mesas Atendidas</h3></div>
+          <div class="card-body">
+            <div class="table-wrap"><table style="width:100%;font-size:13px;border-collapse:collapse">
+              <thead><tr style="background:#f8f9fa"><th style="padding:8px;text-align:left">Fecha y Hora</th><th style="padding:8px;text-align:center">Mesa</th><th style="padding:8px;text-align:right">Ítems</th><th style="padding:8px;text-align:right">Total</th></tr></thead>
+              <tbody id="mzHistorialTbody"></tbody>
+            </table></div>
+          </div>
+        </div>
+      </div>
+
     </div><!-- end content -->
   </div><!-- end main -->
 </div><!-- end app -->
@@ -946,6 +969,8 @@ let clientesData = [...DEMO_CLIENTES];
 let usuariosData = [...DEMO_USUARIOS];
 let cajaMoves = [...DEMO_CAJA_MOV];
 
+let mozoHistorial = [];
+
 function saveState() {
   try {
     localStorage.setItem('pz_mesas', JSON.stringify(mesasData));
@@ -954,6 +979,7 @@ function saveState() {
     localStorage.setItem('pz_stock', JSON.stringify(stockData));
     localStorage.setItem('pz_clientes', JSON.stringify(clientesData));
     localStorage.setItem('pz_usuarios', JSON.stringify(usuariosData));
+    localStorage.setItem('pz_mozo_historial', JSON.stringify(mozoHistorial));
   } catch(e) {}
 }
 
@@ -965,12 +991,14 @@ function loadState() {
     const s = localStorage.getItem('pz_stock');
     const c = localStorage.getItem('pz_clientes');
     const u = localStorage.getItem('pz_usuarios');
+    const h = localStorage.getItem('pz_mozo_historial');
     if (m) mesasData = JSON.parse(m);
     if (d) deliveryData = JSON.parse(d);
     if (f) facturasData = JSON.parse(f);
     if (s) stockData = JSON.parse(s);
     if (c) clientesData = JSON.parse(c);
     if (u) usuariosData = JSON.parse(u);
+    if (h) mozoHistorial = JSON.parse(h);
   } catch(e) {}
 }
 
@@ -1065,12 +1093,13 @@ function initApp() {
   if (currentUser?.rol !== 'admin') document.getElementById('navUsuarios').style.display = 'none';
   // Restore persisted state
   loadState();
-  // Mozo: only show mesas and delivery
+  // Mozo: only show mesas + estadísticas
   if (currentUser?.rol === 'mozo') {
-    ['productos','stock','caja','facturacion','clientes','reportes','config'].forEach(s => {
+    ['dashboard','delivery','productos','stock','caja','facturacion','clientes','reportes','config'].forEach(s => {
       const el = document.querySelector(`[data-section="${s}"]`);
       if(el) el.style.display='none';
     });
+    document.getElementById('navMozoStats').style.display='flex';
   }
   // Clock
   updateClock();
@@ -1108,9 +1137,9 @@ function navTo(section, el) {
   if(el) el.classList.add('active');
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('sec-'+section).classList.add('active');
-  const titles = {dashboard:'Dashboard',mesas:'Mesas',delivery:'Delivery',productos:'Productos',stock:'Stock',caja:'Caja',facturacion:'Facturación',clientes:'Clientes',reportes:'Reportes',usuarios:'Usuarios',config:'Configuración'};
+  const titles = {dashboard:'Dashboard',mesas:'Mesas',delivery:'Delivery',productos:'Productos',stock:'Stock',caja:'Caja',facturacion:'Facturación',clientes:'Clientes',reportes:'Reportes',usuarios:'Usuarios',config:'Configuración',mozostats:'Mis Estadísticas'};
   document.getElementById('topbarTitle').textContent = titles[section] || section;
-  const loaders = {dashboard:loadDashboard,mesas:renderMesas,delivery:renderDelivery,productos:renderProductos,stock:renderStock,caja:renderCaja,facturacion:loadFacturacion,clientes:renderClientes,reportes:renderReportes,usuarios:renderUsuarios};
+  const loaders = {dashboard:loadDashboard,mesas:renderMesas,delivery:renderDelivery,productos:renderProductos,stock:renderStock,caja:renderCaja,facturacion:loadFacturacion,clientes:renderClientes,reportes:renderReportes,usuarios:renderUsuarios,mozostats:renderMozoStats};
   if(loaders[section]) loaders[section]();
 }
 
@@ -1362,6 +1391,9 @@ function cerrarMesa(id) {
   const m = mesasData.find(x=>x.id===id);
   const total = (m.pedido||[]).reduce((s,i)=>s+i.precio*i.qty,0);
   const itemsCount = (m.pedido||[]).reduce((s,i)=>s+i.qty,0);
+  const mozo = m.mozo || currentUser?.nombre || '-';
+  const registro = {mozo, mesa: m.numero, fecha: new Date().toISOString(), items: itemsCount, total: total||0};
+  mozoHistorial.unshift(registro);
   m.estado='libre'; m.mozo=null; m.tiempo=null; m.pedido=[];
   const f = {id:facturasData.length+1,numero:`F-${String(facturasData.length+1).padStart(4,'0')}`,fecha:new Date().toISOString().slice(0,16).replace('T',' '),origen:`Mesa ${m.numero}`,items:itemsCount,total:total||0,pago:'efectivo',estado:'pagada'};
   facturasData.unshift(f);
@@ -1871,6 +1903,37 @@ function guardarUsuario() {
   saveState();
   renderUsuarios();
   showToast('Usuario creado','success');
+}
+
+// ======= MOZO STATS =======
+function renderMozoStats() {
+  const miNombre = currentUser?.nombre;
+  const hoy = new Date().toISOString().slice(0,10);
+  const mesActual = new Date().toISOString().slice(0,7);
+  const miHistorial = mozoHistorial.filter(h => !miNombre || h.mozo === miNombre);
+  const hoyRecs = miHistorial.filter(h => h.fecha.startsWith(hoy));
+  const mesRecs = miHistorial.filter(h => h.fecha.startsWith(mesActual));
+  const totalHoy = hoyRecs.reduce((s,h)=>s+h.total,0);
+  const totalMes = mesRecs.reduce((s,h)=>s+h.total,0);
+  document.getElementById('mz-hoy').textContent = hoyRecs.length;
+  document.getElementById('mz-total-hoy').textContent = '$'+totalHoy.toLocaleString('es-AR');
+  document.getElementById('mz-mes').textContent = mesRecs.length;
+  document.getElementById('mz-total-mes').textContent = '$'+totalMes.toLocaleString('es-AR');
+  const tbody = document.getElementById('mzHistorialTbody');
+  if(!miHistorial.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:#aaa">Sin historial aún. Cerrá una mesa para ver el registro.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = miHistorial.slice(0,50).map(h=>{
+    const d = new Date(h.fecha);
+    const fecha = d.toLocaleDateString('es-AR')+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:8px">${fecha}</td>
+      <td style="padding:8px;text-align:center">Mesa #${h.mesa}</td>
+      <td style="padding:8px;text-align:right">${h.items} ítems</td>
+      <td style="padding:8px;text-align:right;font-weight:600;color:var(--green)">$${h.total.toLocaleString('es-AR')}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ======= CONFIG =======
