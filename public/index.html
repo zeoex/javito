@@ -222,7 +222,13 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 .mtn-btn.active{background:rgba(230,57,70,0.8);border-color:var(--red)}
 .mtn-btn-logout{border-color:rgba(239,68,68,0.5);background:rgba(239,68,68,0.15)}
 .mtn-btn-logout:hover{background:rgba(239,68,68,0.35)}
-.mtn-avatar{width:38px;height:38px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0;border:2px solid rgba(255,255,255,0.3);cursor:default;letter-spacing:0.5px}
+.mtn-avatar{width:38px;height:38px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0;border:2px solid rgba(255,255,255,0.3);cursor:pointer;letter-spacing:0.5px;transition:opacity .15s}
+.mtn-avatar:hover{opacity:.85}
+.mtn-avatar-wrap{position:relative;flex-shrink:0}
+.mtn-avatar-menu{position:absolute;right:0;top:46px;background:#fff;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,0.22);padding:6px;min-width:160px;display:none;z-index:200}
+.mtn-avatar-menu.open{display:block}
+.mtn-avatar-menu button{width:100%;padding:11px 14px;border:none;background:none;text-align:left;font-family:inherit;font-size:14px;font-weight:600;color:#dc3545;cursor:pointer;border-radius:8px}
+.mtn-avatar-menu button:hover{background:#fef2f2}
 .mozo-topnav.visible{display:flex}
 
 /* ===== RESPONSIVE ===== */
@@ -357,14 +363,11 @@ input.form-control:focus{outline:none;border-color:var(--red)}
   .delivery-pipeline{padding-bottom:12px}
 
   /* mozo topnav: compact on mobile */
-  .mozo-topnav .mtn-logo{font-size:16px}
-  .mozo-topnav .mtn-logo span{font-size:20px}
   .mtn-btn{padding:7px 10px;font-size:12px}
 }
 
 @media (max-width:520px){
-  /* On small phones: hide logo text + button labels, show only emojis */
-  .mtn-logo-text{display:none}
+  /* On small phones: hide button labels, show only emojis */
   .mtn-label{display:none}
   .mtn-btn{padding:9px 11px;border-radius:10px;font-size:16px}
   .mozo-topnav{padding:0 12px;gap:8px}
@@ -464,12 +467,16 @@ input.form-control:focus{outline:none;border-color:var(--red)}
   <div class="main" id="mainContent">
     <!-- Mozo-only top navigation bar -->
     <div class="mozo-topnav" id="mozoTopnav">
-      <div class="mtn-logo"><span>🍕</span><span class="mtn-logo-text">PIZZERÍA PRO</span></div>
       <div class="mozo-topnav-btns">
         <button class="mtn-btn active" id="mtnBtnMesas" onclick="mozoNavTo('mesas')">🪑 <span class="mtn-label">Mesas</span></button>
         <button class="mtn-btn" id="mtnBtnStats" onclick="mozoNavTo('mozostats')">📊 <span class="mtn-label">Estadísticas</span></button>
-        <button class="mtn-btn mtn-btn-logout" onclick="doLogout()">🔴 <span class="mtn-label">Sesión</span></button>
-        <div class="mtn-avatar" id="mozoAvatar" title="">CM</div>
+      </div>
+      <div style="flex:1"></div>
+      <div class="mtn-avatar-wrap" id="mozoAvatarWrap">
+        <div class="mtn-avatar" id="mozoAvatar" title="" onclick="toggleMozoMenu()">CM</div>
+        <div class="mtn-avatar-menu" id="mozoAvatarMenu">
+          <button onclick="doLogout()">🔴 Cerrar sesión</button>
+        </div>
       </div>
     </div>
     <div class="topbar" id="mainTopbar">
@@ -1240,6 +1247,15 @@ function mozoNavTo(section) {
   document.getElementById('mtnBtnStats').classList.toggle('active', section==='mozostats');
   navTo(section, null);
 }
+function toggleMozoMenu() {
+  document.getElementById('mozoAvatarMenu').classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#mozoAvatarWrap')) {
+    const m = document.getElementById('mozoAvatarMenu');
+    if (m) m.classList.remove('open');
+  }
+});
 
 // ======= DASHBOARD =======
 function loadDashboard() {
