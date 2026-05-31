@@ -1061,6 +1061,11 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Client broadcasts a mesa change → relay to all other clients
+  socket.on('client:mesa:update', (mesa) => {
+    socket.broadcast.emit('mesa:update', mesa);
+  });
+
   socket.on('disconnect', () => {
     console.log(`[WS] Cliente desconectado: ${socket.id}`);
   });

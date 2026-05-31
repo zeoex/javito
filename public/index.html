@@ -1402,9 +1402,8 @@ function initApp() {
   document.getElementById('userRole').textContent = roles[currentUser?.rol] || currentUser?.rol || '';
   // Hide usuarios for non-admin
   if (currentUser?.rol !== 'admin') document.getElementById('navUsuarios').style.display = 'none';
-  // Restore persisted state then refresh from API
+  // Restore persisted state
   loadState();
-  loadMesasFromAPI();
   // Mozo: hide sidebar, show custom top nav
   if (currentUser?.rol === 'mozo') {
     // Hide sidebar entirely and adjust layout
@@ -1430,7 +1429,16 @@ function initApp() {
   try {
     socket = io();
     socket.on('dashboard:stats', updateDashboardStats);
-    socket.on('mesa:update', () => { if(document.getElementById('sec-mesas').classList.contains('active')) loadMesasFromAPI(); });
+    socket.on('mesa:update', (updatedMesa) => {
+      if (updatedMesa && updatedMesa.id) {
+        const idx = mesasData.findIndex(m => m.id === updatedMesa.id);
+        if (idx !== -1) {
+          mesasData[idx] = {...mesasData[idx], estado: updatedMesa.estado, mozo: updatedMesa.mozo, tiempo: updatedMesa.tiempo, pedido: updatedMesa.pedido ?? mesasData[idx].pedido};
+          saveState();
+        }
+      }
+      if(document.getElementById('sec-mesas').classList.contains('active')) renderMesas();
+    });
     socket.on('delivery:update', () => { if(document.getElementById('sec-delivery').classList.contains('active')) renderDelivery(); });
     socket.on('comanda:nueva', () => showToast('Nueva comanda en cocina','success'));
     socket.on('print:job', (job) => {
@@ -1523,6 +1531,11 @@ async function loadMesasFromAPI() {
 }
 
 async function syncMesa(m) {
+  // Broadcast to other connected clients via socket (works even after server restart)
+  if (typeof socket !== 'undefined' && socket?.connected) {
+    socket.emit('client:mesa:update', {id:m.id, estado:m.estado, mozo:m.mozo, tiempo:m.tiempo, pedido:m.pedido});
+  }
+  // Also PATCH backend for kitchen comanda system (best-effort, may 404 after server restart)
   try {
     await apiFetch(`/mesas/${m.id}`, {
       method: 'PATCH',
