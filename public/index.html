@@ -1227,6 +1227,9 @@ function renderActividades() {
     </div>`).join('');
 }
 
+// Categories that go to kitchen comanda (food only)
+const CATS_COMANDA = ['pizzas','empanadas','entradas','postres'];
+
 // ======= MESAS =======
 function switchTab(tab) {
   currentMesaTab = tab;
@@ -1239,14 +1242,39 @@ function renderMesas() {
   const filtered = mesasData.filter(m=>m.zona===currentMesaTab);
   const el = document.getElementById('mesasGrid');
   if(!filtered.length){ el.innerHTML='<div class="empty-state"><div class="empty-icon">🪑</div><p>No hay mesas en esta zona</p></div>'; return; }
-  el.innerHTML = filtered.map(m=>`
-    <div class="mesa-card ${m.estado}" onclick="clickMesa(${m.id})">
-      <div class="mesa-num">${m.numero}</div>
-      <div class="mesa-estado">${m.estado==='libre'?'LIBRE':m.estado==='ocupada'?'OCUPADA':'CUENTA'}</div>
-      <div class="mesa-info">${m.mozo?'👨 '+m.mozo:m.capacidad+' personas'}</div>
-      ${m.tiempo?`<div class="mesa-info">⏱ ${m.tiempo}</div>`:''}
-      ${m.pedido&&m.pedido.length?`<div class="mesa-info">📋 ${m.pedido.reduce((s,i)=>s+i.qty,0)} ítems</div>`:''}
-    </div>`).join('');
+  if(currentUser?.rol==='mozo') {
+    // Panoramic mozo view - large cards with full info
+    el.style.gridTemplateColumns = 'repeat(auto-fill,minmax(260px,1fr))';
+    el.innerHTML = filtered.map(m=>{
+      const total = (m.pedido||[]).reduce((s,i)=>s+i.precio*i.qty,0);
+      const itemsCount = (m.pedido||[]).reduce((s,i)=>s+i.qty,0);
+      const colBg = {libre:'#d4edda',ocupada:'#fff3cd',cuenta:'#f8d7da'};
+      const colText = {libre:'#155724',ocupada:'#7d5a00',cuenta:'#721c24'};
+      const colBorder = {libre:'#28a745',ocupada:'#ffc107',cuenta:'#dc3545'};
+      const statusLabel = {libre:'LIBRE',ocupada:'OCUPADA',cuenta:'CUENTA'};
+      return `<div onclick="clickMesa(${m.id})" style="background:${colBg[m.estado]};border:2.5px solid ${colBorder[m.estado]};border-radius:16px;padding:20px;cursor:pointer;transition:box-shadow .15s" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.15)'" onmouseout="this.style.boxShadow=''">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+          <div style="font-size:38px;font-weight:900;color:${colText[m.estado]};line-height:1">🪑 ${m.numero}</div>
+          <span style="background:${colBorder[m.estado]};color:#fff;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:0.5px">${statusLabel[m.estado]}</span>
+        </div>
+        ${m.mozo?`<div style="font-size:13px;color:${colText[m.estado]};font-weight:600;margin-bottom:6px">👨 ${m.mozo}${m.tiempo?' &nbsp;·&nbsp; ⏱ '+m.tiempo:''}</div>`:`<div style="font-size:13px;color:${colText[m.estado]};opacity:.8">Disponible · ${m.capacidad} personas</div>`}
+        ${itemsCount>0?`<div style="margin-top:12px;padding-top:12px;border-top:1.5px solid ${colBorder[m.estado]}44;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13px;color:${colText[m.estado]}">📋 ${itemsCount} ítem${itemsCount!==1?'s':''}</span>
+          <span style="font-size:18px;font-weight:800;color:${colText[m.estado]}">$${total.toLocaleString('es-AR')}</span>
+        </div>`:''}
+      </div>`;
+    }).join('');
+  } else {
+    el.style.gridTemplateColumns = '';
+    el.innerHTML = filtered.map(m=>`
+      <div class="mesa-card ${m.estado}" onclick="clickMesa(${m.id})">
+        <div class="mesa-num">${m.numero}</div>
+        <div class="mesa-estado">${m.estado==='libre'?'LIBRE':m.estado==='ocupada'?'OCUPADA':'CUENTA'}</div>
+        <div class="mesa-info">${m.mozo?'👨 '+m.mozo:m.capacidad+' personas'}</div>
+        ${m.tiempo?`<div class="mesa-info">⏱ ${m.tiempo}</div>`:''}
+        ${m.pedido&&m.pedido.length?`<div class="mesa-info">📋 ${m.pedido.reduce((s,i)=>s+i.qty,0)} ítems</div>`:''}
+      </div>`).join('');
+  }
 }
 
 function mesaPedidoHTML(id) {
@@ -1267,7 +1295,10 @@ function mesaPedidoHTML(id) {
           <thead><tr><th>Item</th><th style="text-align:center;width:80px">Cant.</th><th style="text-align:right">Precio</th><th style="width:30px"></th></tr></thead>
           <tbody>${(m.pedido||[]).map((i,idx)=>`
             <tr>
-              <td>${i.nombre}${i.size?' ('+i.size+')':''}</td>
+              <td>
+                <div>${i.nombre}${i.size?' <small style="color:var(--gray)">('+i.size+')</small>':''}</div>
+                ${i.nota?`<div style="font-size:11px;color:var(--gray);font-style:italic">📝 ${i.nota}</div>`:''}
+              </td>
               <td style="text-align:center">
                 <button onclick="cambiarQtyMesa(${id},${idx},-1)" style="border:none;background:var(--red);color:#fff;width:20px;height:20px;border-radius:4px;cursor:pointer;font-size:12px">-</button>
                 <span style="margin:0 4px">${i.qty}</span>
@@ -1308,29 +1339,42 @@ function filtrarCatMesa(cat) {
     </div>`).join('') || '<div style="color:#aaa;font-size:12px">Sin productos en esta categoría</div>';
 }
 
+let _selectedProdId = null;
+
 function seleccionarProductoMesa(prodId) {
   const p = productosData.find(x=>x.id===prodId);
   if(!p) return;
-  document.getElementById('addItemNombre').textContent = p.emoji+' '+p.nombre;
+  _selectedProdId = prodId;
+  const esComida = CATS_COMANDA.includes(p.categoria);
+  document.getElementById('addItemNombre').innerHTML = `${p.emoji} <strong>${p.nombre}</strong>`;
   const sizesDiv = document.getElementById('addItemSizes');
+  const notaHTML = esComida ? `
+    <div style="margin-top:10px;width:100%">
+      <input id="addItemNota" class="form-control" placeholder="Aclaración (ej: sin mayonesa)" style="font-size:12px;padding:6px 10px"/>
+    </div>` : '';
   if(p.precio_chica) {
     sizesDiv.innerHTML = `
-      <button onclick="agregarItemMesa(${_mesaModalId},${p.id},'chica',${p.precio_chica})" class="btn btn-outline btn-sm">Chica $${p.precio_chica.toLocaleString()}</button>
-      <button onclick="agregarItemMesa(${_mesaModalId},${p.id},'mediana',${p.precio_mediana})" class="btn btn-outline btn-sm">Mediana $${p.precio_mediana.toLocaleString()}</button>
-      <button onclick="agregarItemMesa(${_mesaModalId},${p.id},'grande',${p.precio_grande})" class="btn btn-success btn-sm">Grande $${p.precio_grande.toLocaleString()}</button>`;
+      <button onclick="agregarItemMesa(${_mesaModalId},${p.id},'chica',${p.precio_chica},'${p.categoria}')" class="btn btn-outline btn-sm">Chica $${p.precio_chica.toLocaleString()}</button>
+      <button onclick="agregarItemMesa(${_mesaModalId},${p.id},'mediana',${p.precio_mediana},'${p.categoria}')" class="btn btn-outline btn-sm">Mediana $${p.precio_mediana.toLocaleString()}</button>
+      <button onclick="agregarItemMesa(${_mesaModalId},${p.id},'grande',${p.precio_grande},'${p.categoria}')" class="btn btn-success btn-sm">Grande $${p.precio_grande.toLocaleString()}</button>
+      ${notaHTML}`;
   } else {
-    sizesDiv.innerHTML = `<button onclick="agregarItemMesa(${_mesaModalId},${p.id},null,${p.precio})" class="btn btn-success btn-sm">Agregar $${p.precio.toLocaleString()}</button>`;
+    sizesDiv.innerHTML = `<button onclick="agregarItemMesa(${_mesaModalId},${p.id},null,${p.precio},'${p.categoria}')" class="btn btn-success btn-sm">Agregar $${p.precio.toLocaleString()}</button>
+      ${notaHTML}`;
   }
   document.getElementById('addItemSizeRow').style.display='block';
 }
 
-function agregarItemMesa(mesaId, prodId, size, precio) {
+function agregarItemMesa(mesaId, prodId, size, precio, categoria) {
   const m = mesasData.find(x=>x.id===mesaId);
   const p = productosData.find(x=>x.id===prodId);
   if(!m||!p) return;
-  const existing = m.pedido.find(i=>i.productoId===prodId&&i.size===size);
+  const nota = (document.getElementById('addItemNota')?.value||'').trim();
+  // For food items with same nota: don't merge (different notes = different items)
+  const esComida = CATS_COMANDA.includes(categoria||p.categoria);
+  const existing = !nota && !esComida && m.pedido.find(i=>i.productoId===prodId&&i.size===size&&!i.nota);
   if(existing) { existing.qty++; }
-  else { m.pedido.push({productoId:prodId,nombre:p.nombre,size,precio,qty:1}); }
+  else { m.pedido.push({productoId:prodId,nombre:p.nombre,size,precio,qty:1,categoria:categoria||p.categoria,nota:nota||''}); }
   document.getElementById('modalMesaBody').innerHTML = mesaPedidoHTML(mesaId);
   document.getElementById('addItemSizeRow').style.display='none';
   saveState();
@@ -1376,11 +1420,16 @@ function clickMesa(id) {
       <button class="btn btn-success" onclick="abrirMesa(${id})">✅ Abrir Mesa</button>`;
   } else {
     body.innerHTML = mesaPedidoHTML(id);
+    const tieneComida = (m.pedido||[]).some(i=>CATS_COMANDA.includes(i.categoria));
+    const tieneItems = (m.pedido||[]).length > 0;
     const btnCuenta = m.estado!=='cuenta' ? `<button class="btn btn-warning" onclick="pedirCuenta(${id})">🧾 Pedir Cuenta</button>` : '';
     const btnCobrar = (!esMozo||m.estado==='cuenta') ? `<button class="btn btn-danger" onclick="cerrarMesa(${id})">✔️ Cobrar y Cerrar</button>` : '';
+    const btnComanda = tieneComida ? `<button class="btn btn-outline btn-sm" onclick="imprimirComanda(${id})" title="Imprimir comanda cocina">🖨️ Comanda</button>` : '';
+    const btnCuenta2 = tieneItems && m.estado==='cuenta' ? `<button class="btn btn-outline btn-sm" onclick="imprimirCuenta(${id})" title="Imprimir cuenta">🧾 Cuenta</button>` : '';
     footer.innerHTML = `<button class="btn btn-outline" onclick="closeModal('modalMesa')">Cancelar</button>
       ${btnCuenta}
-      <button class="btn btn-outline btn-sm" onclick="imprimirComanda(${id})">🖨️ Imprimir</button>
+      ${btnComanda}
+      ${btnCuenta2}
       ${btnCobrar}`;
   }
   openModal('modalMesa');
@@ -1436,20 +1485,44 @@ function crearMesa() {
 }
 
 function imprimirComanda(id) {
+  // Kitchen comanda: FOOD ONLY, NO PRICES
+  const m = mesasData.find(x=>x.id===id);
+  const comida = (m.pedido||[]).filter(i=>CATS_COMANDA.includes(i.categoria));
+  if(!comida.length){ showToast('No hay comidas para imprimir','error'); return; }
+  const lineas = comida.map(i=>{
+    const label = `${i.nombre}${i.size?' ('+i.size+')':''}`;
+    return `<p style="margin:8px 0;font-size:16px"><strong>x${i.qty}</strong> &nbsp; ${label}${i.nota?`<br><em style="font-size:13px;color:#555">  ↳ ${i.nota}</em>`:''}</p>`;
+  }).join('');
+  const win = window.open('', '_blank', 'width=380,height=500');
+  win.document.write(`
+    <html><head><title>Comanda Cocina – Mesa ${m.numero}</title>
+    <style>body{font-family:monospace;padding:20px;font-size:14px}
+    h2{text-align:center;font-size:18px}hr{border:1px dashed #000}</style></head>
+    <body>
+      <h2>🍕 COCINA – Mesa #${m.numero}</h2>
+      <p style="text-align:center">${m.mozo||''} &bull; ${new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}</p>
+      <hr>
+      ${lineas}
+      <hr>
+    </body></html>`);
+  win.document.close();
+  win.print();
+}
+
+function imprimirCuenta(id) {
+  // Bill: ALL items with prices
   const m = mesasData.find(x=>x.id===id);
   const items = m.pedido||[];
   const total = items.reduce((s,i)=>s+i.precio*i.qty,0);
   const lineas = items.map(i=>{
     const label = i.nombre+(i.size?' ('+i.size+')':'');
-    const precio = '$'+(i.precio*i.qty).toLocaleString('es-AR');
-    const dots = '.'.repeat(Math.max(2,42-label.length-i.qty.toString().length-precio.length));
-    return `<p>${label} x${i.qty} ${dots} ${precio}</p>`;
+    return `<p style="display:flex;justify-content:space-between;margin:5px 0"><span>${i.qty}x ${label}</span><span>$${(i.precio*i.qty).toLocaleString('es-AR')}</span></p>`;
   }).join('');
-  const win = window.open('', '_blank', 'width=400,height=600');
+  const win = window.open('', '_blank', 'width=380,height=600');
   win.document.write(`
-    <html><head><title>Comanda Mesa ${m.numero}</title>
-    <style>body{font-family:monospace;padding:20px;font-size:14px}
-    h2{text-align:center}hr{border:1px dashed #000}.total{font-size:18px;font-weight:bold}</style></head>
+    <html><head><title>Cuenta – Mesa ${m.numero}</title>
+    <style>body{font-family:monospace;padding:20px;font-size:13px}
+    h2{text-align:center}hr{border:1px dashed #000}.total{font-size:18px;font-weight:bold;text-align:right}</style></head>
     <body>
       <h2>🍕 PIZZERÍA PRO</h2>
       <p style="text-align:center">Mesa #${m.numero} — ${m.mozo || ''}</p>
@@ -1460,8 +1533,7 @@ function imprimirComanda(id) {
       <p class="total">TOTAL: $${total.toLocaleString('es-AR')}</p>
       <hr>
       <p style="text-align:center">¡Gracias por su visita!</p>
-    </body></html>
-  `);
+    </body></html>`);
   win.document.close();
   win.print();
 }
