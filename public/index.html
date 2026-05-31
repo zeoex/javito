@@ -1101,6 +1101,23 @@ input.form-control:focus{outline:none;border-color:var(--red)}
   </div>
 </div>
 
+<div class="modal-overlay" id="modalMesasAbiertas">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header"><h3>⚠️ Mesas Abiertas</h3><button class="modal-close" onclick="closeModal('modalMesasAbiertas')">✕</button></div>
+    <div class="modal-body">
+      <p style="margin-bottom:10px">Existen <strong id="mesasAbiertasCount">0</strong> mesa(s) abiertas:</p>
+      <p style="color:var(--gray);font-size:13px;margin-bottom:14px" id="mesasAbiertasList"></p>
+      <div style="background:#fff8e1;border:1px solid #ffc107;border-radius:8px;padding:12px;font-size:13px;color:#7a5c00">
+        Para cerrar la caja, todas las mesas deben estar libres. Puede cerrarlas ahora (se cobrarán en efectivo) o cancelar y cerrarlas manualmente.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalMesasAbiertas')">Cancelar</button>
+      <button class="btn btn-danger" onclick="cerrarMesasYCerrarCaja()">✅ Cerrar mesas y continuar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modalCliente">
   <div class="modal">
     <div class="modal-header"><h3 id="modalClienteTitle">Nuevo Cliente</h3><button class="modal-close" onclick="closeModal('modalCliente')">✕</button></div>
@@ -1233,10 +1250,10 @@ const DEMO_USUARIOS = [
 const _HOY = new Date().toISOString().slice(0,10);
 const DEMO_CAJA_MOV = [
   {fecha:_HOY,hora:'09:00',tipo:'ingreso',desc:'Apertura de caja',monto:5000},
-  {fecha:_HOY,hora:'11:30',tipo:'ingreso',desc:'Venta Mesa 3 — efectivo',monto:4800},
-  {fecha:_HOY,hora:'12:00',tipo:'ingreso',desc:'Delivery D-004 — efectivo',monto:2600},
+  {fecha:_HOY,hora:'11:30',tipo:'ingreso',desc:'Venta Mesa 3 — efectivo',monto:4800,pago:'efectivo'},
+  {fecha:_HOY,hora:'12:00',tipo:'ingreso',desc:'Delivery D-004 — efectivo',monto:2600,pago:'efectivo'},
   {fecha:_HOY,hora:'13:00',tipo:'egreso',desc:'Retiro: Compra insumos',monto:1500},
-  {fecha:_HOY,hora:'14:30',tipo:'ingreso',desc:'Venta Mesa 2 — tarjeta',monto:4800},
+  {fecha:_HOY,hora:'14:30',tipo:'ingreso',desc:'Venta Mesa 2 — tarjeta',monto:4800,pago:'tarjeta'},
 ];
 
 let mesasData = [...DEMO_MESAS];
@@ -1963,7 +1980,7 @@ function cerrarMesa(id, metodoPago = 'efectivo') {
   m.estado='libre'; m.mozo=null; m.tiempo=null; m.pedido=[];
   const f = {id:facturasData.length+1,numero:`F-${String(facturasData.length+1).padStart(4,'0')}`,fecha:new Date().toISOString().slice(0,16).replace('T',' '),origen:`Mesa ${m.numero}`,items:itemsCount,total:total||0,pago:metodoPago,estado:'pagada'};
   facturasData.unshift(f);
-  if (total > 0) cajaMoves.push({..._cajaNow(),tipo:'ingreso',desc:`Venta Mesa #${m.numero} — ${metodoPago}`,monto:total});
+  if (total > 0) cajaMoves.push({..._cajaNow(),tipo:'ingreso',desc:`Venta Mesa #${m.numero} — ${metodoPago}`,monto:total,pago:metodoPago});
   _mesaCobroMode = false;
   _mesaCobroConfirm = null;
   closeModal('modalMesa');
@@ -2145,7 +2162,7 @@ function advanceDelivery(id) {
   if(idx<flow.length-1) o.estado=flow[idx+1];
   if (o.estado === 'entregado' && o.total > 0) {
     const pago = o.metodo_pago || 'efectivo';
-    cajaMoves.push({..._cajaNow(),tipo:'ingreso',desc:`Delivery ${o.numero} — ${pago}`,monto:o.total});
+    cajaMoves.push({..._cajaNow(),tipo:'ingreso',desc:`Delivery ${o.numero} — ${pago}`,monto:o.total,pago});
   }
   saveState();
   renderDelivery();
@@ -2366,11 +2383,17 @@ function abrirCajaDesdeGuard() {
 }
 
 function _cajaResumen() {
-  const hoy = new Date().toISOString().slice(0,10);
-  const facturasHoy = facturasData.filter(f=>f.estado==='pagada' && f.fecha && f.fecha.startsWith(hoy));
-  const ventasEfectivo = facturasHoy.filter(f=>f.pago==='efectivo').reduce((s,f)=>s+f.total,0);
-  const ventasTarjeta  = facturasHoy.filter(f=>f.pago==='tarjeta').reduce((s,f)=>s+f.total,0);
-  const ventasTransfer = facturasHoy.filter(f=>f.pago==='transferencia').reduce((s,f)=>s+f.total,0);
+  const _pago = m => {
+    if (m.pago) return m.pago;
+    const d = (m.desc||'').toLowerCase();
+    if (d.includes('tarjeta')||d.includes('posnet')) return 'tarjeta';
+    if (d.includes('transfer')) return 'transferencia';
+    return 'efectivo';
+  };
+  const ingresos = cajaMoves.filter(m=>m.tipo==='ingreso' && !m.desc?.includes('Apertura'));
+  const ventasEfectivo = ingresos.filter(m=>_pago(m)==='efectivo').reduce((s,m)=>s+(m.monto||0),0);
+  const ventasTarjeta  = ingresos.filter(m=>_pago(m)==='tarjeta').reduce((s,m)=>s+(m.monto||0),0);
+  const ventasTransfer = ingresos.filter(m=>_pago(m)==='transferencia').reduce((s,m)=>s+(m.monto||0),0);
   const retiros = cajaMoves.filter(m=>m.tipo==='egreso' && !m.desc?.startsWith('Cierre')).reduce((s,m)=>s+(m.monto||0),0);
   return {ventasEfectivo,ventasTarjeta,ventasTransfer,retiros,
     totalVentas:ventasEfectivo+ventasTarjeta+ventasTransfer,
@@ -2429,6 +2452,13 @@ function abrirCaja() {
 let _cierreDeclared = null;
 
 function cerrarCaja() {
+  const ocupadas = mesasData.filter(m=>m.estado==='ocupada');
+  if (ocupadas.length > 0) {
+    document.getElementById('mesasAbiertasCount').textContent = ocupadas.length;
+    document.getElementById('mesasAbiertasList').textContent = ocupadas.map(m=>`Mesa #${m.numero}`).join(', ');
+    openModal('modalMesasAbiertas');
+    return;
+  }
   const r = _cajaResumen();
   // restore footer button in case we're coming back from step 2
   const bc = document.getElementById('btnConfirmarCierre');
@@ -2465,6 +2495,23 @@ function cerrarCaja() {
       <label for="chkControlado" style="font-size:14px;font-weight:600;color:var(--gray)" id="lblControlado">Controlado por encargado</label>
     </div>`;
   openModal('modalCierreCaja');
+}
+
+function cerrarMesasYCerrarCaja() {
+  closeModal('modalMesasAbiertas');
+  const ocupadas = mesasData.filter(m=>m.estado==='ocupada');
+  ocupadas.forEach(m => {
+    const total = (m.pedido||[]).reduce((s,i)=>s+i.precio*i.qty,0);
+    const itemsCount = (m.pedido||[]).reduce((s,i)=>s+i.qty,0);
+    const mozo = m.mozo || currentUser?.nombre || '-';
+    mozoHistorial.unshift({mozo, mesa:m.numero, fecha:new Date().toISOString(), items:itemsCount, total:total||0, pago:'efectivo'});
+    const f = {id:facturasData.length+1, numero:`F-${String(facturasData.length+1).padStart(4,'0')}`, fecha:new Date().toISOString().slice(0,16).replace('T',' '), origen:`Mesa ${m.numero}`, items:itemsCount, total:total||0, pago:'efectivo', estado:'pagada'};
+    facturasData.unshift(f);
+    if (total > 0) cajaMoves.push({..._cajaNow(),tipo:'ingreso',desc:`Venta Mesa #${m.numero} — efectivo (cierre)`,monto:total,pago:'efectivo'});
+    m.estado='libre'; m.mozo=null; m.tiempo=null; m.pedido=[];
+  });
+  saveState(); renderMesas();
+  setTimeout(() => cerrarCaja(), 100);
 }
 
 function _checkCierreFields() {
