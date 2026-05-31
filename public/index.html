@@ -671,18 +671,29 @@ input.form-control:focus{outline:none;border-color:var(--red)}
           <div class="card">
             <div class="card-header"><h3>Resumen del Turno</h3></div>
             <div class="card-body">
-              <div class="grid-2">
-                <div><div class="stat-label">Efectivo</div><div style="font-size:22px;font-weight:800;color:var(--success)" id="cajaCash">$0</div></div>
-                <div><div class="stat-label">Tarjeta</div><div style="font-size:22px;font-weight:800;color:var(--info)" id="cajaTarjeta">$0</div></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+                <div><div class="stat-label">💵 Efectivo</div><div style="font-size:18px;font-weight:800;color:var(--success)" id="cajaCash">$0</div></div>
+                <div><div class="stat-label">💳 Tarjeta</div><div style="font-size:18px;font-weight:800;color:var(--info)" id="cajaTarjeta">$0</div></div>
+                <div><div class="stat-label">📲 Transfer.</div><div style="font-size:18px;font-weight:800;color:var(--warning)" id="cajaTransfer">$0</div></div>
               </div>
-              <hr style="margin:14px 0;border-color:var(--border)">
+              <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+                <span style="color:var(--gray)">Retiros del turno</span>
+                <span id="cajaRetiros" style="font-weight:700;color:var(--danger)">-$0</span>
+              </div>
+              <hr style="margin:10px 0;border-color:var(--border)">
               <div class="stat-label">Total Turno</div>
               <div class="caja-total" id="cajaTotal">$0</div>
             </div>
           </div>
         </div>
         <div class="card">
-          <div class="card-header"><h3>Movimientos de Caja</h3><button class="btn btn-primary btn-sm" onclick="openModal('modalMovCaja')">+ Movimiento</button></div>
+          <div class="card-header">
+            <h3>Movimientos de Caja</h3>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-warning btn-sm" onclick="openModal('modalRetiroCaja')">💸 Retiro</button>
+              <button class="btn btn-primary btn-sm" onclick="openModal('modalMovCaja')">+ Movimiento</button>
+            </div>
+          </div>
           <div class="card-body">
             <div class="table-wrap"><table>
               <thead><tr><th>Hora</th><th>Tipo</th><th>Descripción</th><th>Monto</th></tr></thead>
@@ -1046,6 +1057,55 @@ input.form-control:focus{outline:none;border-color:var(--red)}
   </div>
 </div>
 
+<div class="modal-overlay" id="modalCierreCaja">
+  <div class="modal">
+    <div class="modal-header"><h3>🔴 Cierre de Caja</h3><button class="modal-close" onclick="closeModal('modalCierreCaja')">✕</button></div>
+    <div class="modal-body" id="cierreCajaBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalCierreCaja')">Cancelar</button>
+      <button class="btn btn-primary" onclick="imprimirCierreCaja()">🖨️ Imprimir</button>
+      <button class="btn btn-danger" onclick="confirmarCierreCaja()">✅ Confirmar Cierre</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalAbrirCaja">
+  <div class="modal">
+    <div class="modal-header"><h3>🟡 Caja Cerrada</h3><button class="modal-close" onclick="closeModal('modalAbrirCaja')">✕</button></div>
+    <div class="modal-body">
+      <div style="text-align:center;padding:12px 0 16px;font-size:15px;color:var(--gray)">La caja está cerrada.<br>¿Desea abrirla para continuar?</div>
+      <div class="form-group">
+        <label>Monto inicial / cambio ($)</label>
+        <input class="form-control" id="cajaAbrirMonto" type="number" placeholder="5000" value="5000"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalAbrirCaja')">No, cancelar</button>
+      <button class="btn btn-success" onclick="abrirCajaDesdeGuard()">🟢 Abrir Caja</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalRetiroCaja">
+  <div class="modal">
+    <div class="modal-header"><h3>💸 Retiro de Caja</h3><button class="modal-close" onclick="closeModal('modalRetiroCaja')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Motivo del retiro <span style="color:var(--danger)">*</span></label>
+        <input class="form-control" id="retiroDesc" placeholder="Ej: Pago proveedor, gastos del local..."/>
+      </div>
+      <div class="form-group">
+        <label>Monto ($) <span style="color:var(--danger)">*</span></label>
+        <input class="form-control" id="retiroMonto" type="number" placeholder="0"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalRetiroCaja')">Cancelar</button>
+      <button class="btn btn-danger" onclick="guardarRetiroCaja()">💸 Registrar Retiro</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modalCliente">
   <div class="modal">
     <div class="modal-header"><h3 id="modalClienteTitle">Nuevo Cliente</h3><button class="modal-close" onclick="closeModal('modalCliente')">✕</button></div>
@@ -1203,6 +1263,9 @@ function saveState() {
     localStorage.setItem('pz_clientes', JSON.stringify(clientesData));
     localStorage.setItem('pz_usuarios', JSON.stringify(usuariosData));
     localStorage.setItem('pz_mozo_historial', JSON.stringify(mozoHistorial));
+    localStorage.setItem('pz_caja_abierta', JSON.stringify(cajaAbierta));
+    localStorage.setItem('pz_caja_inicial', JSON.stringify(cajaInicial));
+    localStorage.setItem('pz_caja_moves', JSON.stringify(cajaMoves));
   } catch(e) {}
 }
 
@@ -1215,6 +1278,9 @@ function loadState() {
     const c = localStorage.getItem('pz_clientes');
     const u = localStorage.getItem('pz_usuarios');
     const h = localStorage.getItem('pz_mozo_historial');
+    const ca = localStorage.getItem('pz_caja_abierta');
+    const ci = localStorage.getItem('pz_caja_inicial');
+    const cm = localStorage.getItem('pz_caja_moves');
     if (m) mesasData = JSON.parse(m);
     if (d) deliveryData = JSON.parse(d);
     if (f) facturasData = JSON.parse(f);
@@ -1222,6 +1288,9 @@ function loadState() {
     if (c) clientesData = JSON.parse(c);
     if (u) usuariosData = JSON.parse(u);
     if (h) mozoHistorial = JSON.parse(h);
+    if (ca !== null) cajaAbierta = JSON.parse(ca);
+    if (ci !== null) cajaInicial = JSON.parse(ci);
+    if (cm) cajaMoves = JSON.parse(cm);
   } catch(e) {}
 }
 
@@ -1846,6 +1915,13 @@ function clickMesa(id) {
 }
 
 function abrirMesa(id) {
+  if (!cajaAbierta) {
+    closeModal('modalMesa');
+    _pendingCajaAction = () => clickMesa(id);
+    document.getElementById('cajaAbrirMonto').value = '5000';
+    openModal('modalAbrirCaja');
+    return;
+  }
   const m = mesasData.find(x=>x.id===id);
   const mozo = document.getElementById('abrirMozo').value;
   m.estado='ocupada'; m.mozo=mozo; m.tiempo='00:00'; m.pedido=[];
@@ -2071,6 +2147,13 @@ function advanceDelivery(id) {
 }
 
 function crearDelivery() {
+  if (!cajaAbierta) {
+    closeModal('modalNuevoDelivery');
+    _pendingCajaAction = () => openModal('modalNuevoDelivery');
+    document.getElementById('cajaAbrirMonto').value = '5000';
+    openModal('modalAbrirCaja');
+    return;
+  }
   const cliente = document.getElementById('dlvCliente').value;
   const tel = document.getElementById('dlvTel').value;
   const dir = document.getElementById('dlvDir').value;
@@ -2255,17 +2338,47 @@ function ajustarStock(id) {
 // ======= CAJA =======
 let cajaAbierta = true;
 let cajaInicial = 5000;
+let _pendingCajaAction = null;
+
+function cajaCheck(callback) {
+  if (cajaAbierta) { callback(); return; }
+  _pendingCajaAction = callback;
+  document.getElementById('cajaAbrirMonto').value = '5000';
+  openModal('modalAbrirCaja');
+}
+
+function abrirCajaDesdeGuard() {
+  const monto = parseInt(document.getElementById('cajaAbrirMonto').value)||5000;
+  cajaInicial = monto; cajaAbierta = true;
+  cajaMoves.push({hora:new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}),tipo:'ingreso',desc:'Apertura de caja',monto});
+  saveState(); renderCaja(); showToast('Caja abierta','success');
+  closeModal('modalAbrirCaja');
+  if (_pendingCajaAction) { const fn = _pendingCajaAction; _pendingCajaAction = null; fn(); }
+}
+
+function _cajaResumen() {
+  const hoy = new Date().toISOString().slice(0,10);
+  const facturasHoy = facturasData.filter(f=>f.estado==='pagada' && f.fecha && f.fecha.startsWith(hoy));
+  const ventasEfectivo = facturasHoy.filter(f=>f.pago==='efectivo').reduce((s,f)=>s+f.total,0);
+  const ventasTarjeta  = facturasHoy.filter(f=>f.pago==='tarjeta').reduce((s,f)=>s+f.total,0);
+  const ventasTransfer = facturasHoy.filter(f=>f.pago==='transferencia').reduce((s,f)=>s+f.total,0);
+  const retiros = cajaMoves.filter(m=>m.tipo==='egreso' && !m.desc.startsWith('Cierre')).reduce((s,m)=>s+m.monto,0);
+  return {ventasEfectivo,ventasTarjeta,ventasTransfer,retiros,
+    totalVentas:ventasEfectivo+ventasTarjeta+ventasTransfer,
+    saldoFinal:cajaInicial+ventasEfectivo-retiros};
+}
 
 function renderCaja() {
-  const total = cajaMoves.reduce((s,m)=>s+(m.tipo==='ingreso'?m.monto:-m.monto),0);
-  const efectivo = cajaMoves.filter(m=>m.tipo==='ingreso').reduce((s,m)=>s+m.monto,0);
-  const egreso = cajaMoves.filter(m=>m.tipo==='egreso').reduce((s,m)=>s+m.monto,0);
-  document.getElementById('cajaCash').textContent = '$'+efectivo.toLocaleString();
-  document.getElementById('cajaTarjeta').textContent = '$3.800';
-  document.getElementById('cajaTotal').textContent = '$'+(total+3800).toLocaleString();
+  const r = _cajaResumen();
+  document.getElementById('cajaCash').textContent    = '$'+r.ventasEfectivo.toLocaleString();
+  document.getElementById('cajaTarjeta').textContent = '$'+r.ventasTarjeta.toLocaleString();
+  document.getElementById('cajaTransfer').textContent= '$'+r.ventasTransfer.toLocaleString();
+  document.getElementById('cajaRetiros').textContent = r.retiros > 0 ? '-$'+r.retiros.toLocaleString() : '-$0';
+  document.getElementById('cajaTotal').textContent   = '$'+(cajaInicial+r.totalVentas-r.retiros).toLocaleString();
+  const horaAp = cajaMoves.find(m=>m.tipo==='ingreso'&&m.desc.includes('Apertura'))?.hora || '--:--';
   document.getElementById('cajaEstado').innerHTML = cajaAbierta ? `
     <div class="badge badge-success" style="font-size:14px;padding:6px 16px;margin-bottom:12px">🟢 CAJA ABIERTA</div>
-    <div style="margin:12px 0;font-size:13px"><strong>Turno iniciado:</strong> 09:00 hs</div>
+    <div style="margin:10px 0;font-size:13px"><strong>Turno iniciado:</strong> ${horaAp} hs</div>
     <div style="font-size:13px"><strong>Monto inicial:</strong> $${cajaInicial.toLocaleString()}</div>
     <button class="btn btn-danger mt-2" onclick="cerrarCaja()">🔴 Cerrar Caja</button>` :
     `<div class="badge badge-danger" style="font-size:14px;padding:6px 16px;margin-bottom:12px">🔴 CAJA CERRADA</div>
@@ -2285,13 +2398,84 @@ function abrirCaja() {
   const monto = parseInt(document.getElementById('cajaInicialInput').value)||5000;
   cajaInicial=monto; cajaAbierta=true;
   cajaMoves.push({hora:new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}),tipo:'ingreso',desc:'Apertura de caja',monto});
-  renderCaja(); showToast('Caja abierta','success');
+  saveState(); renderCaja(); showToast('Caja abierta','success');
 }
 
 function cerrarCaja() {
-  if(!confirm('¿Cerrar la caja del turno actual?')) return;
-  cajaAbierta=false;
-  renderCaja(); showToast('Caja cerrada correctamente');
+  const r = _cajaResumen();
+  document.getElementById('cierreCajaBody').innerHTML = `
+    <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px">
+      <div style="font-size:12px;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Ventas del Turno</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span>💵 Efectivo</span><strong style="color:var(--success)">$${r.ventasEfectivo.toLocaleString()}</strong></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span>💳 Tarjeta</span><strong style="color:var(--info)">$${r.ventasTarjeta.toLocaleString()}</strong></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span>📲 Transferencia</span><strong style="color:var(--warning)">$${r.ventasTransfer.toLocaleString()}</strong></div>
+      <hr style="border-color:var(--border);margin:8px 0">
+      <div style="display:flex;justify-content:space-between;font-weight:800"><span>Total Ventas</span><span>$${r.totalVentas.toLocaleString()}</span></div>
+    </div>
+    <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px">
+      <div style="font-size:12px;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Balance de Caja</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span>Monto inicial</span><strong>$${cajaInicial.toLocaleString()}</strong></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span>+ Ventas efectivo</span><strong style="color:var(--success)">+$${r.ventasEfectivo.toLocaleString()}</strong></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span>- Retiros</span><strong style="color:var(--danger)">-$${r.retiros.toLocaleString()}</strong></div>
+      <hr style="border-color:var(--border);margin:8px 0">
+      <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:900"><span>Saldo en Caja</span><span style="color:var(--blue)">$${r.saldoFinal.toLocaleString()}</span></div>
+    </div>
+    <div style="padding:12px 14px;background:#f8f9fa;border-radius:10px;display:flex;align-items:center;gap:10px">
+      <input type="checkbox" id="chkControlado" style="width:18px;height:18px;cursor:pointer"/>
+      <label for="chkControlado" style="cursor:pointer;font-size:14px;font-weight:600">Controlado por encargado</label>
+    </div>`;
+  openModal('modalCierreCaja');
+}
+
+function confirmarCierreCaja() {
+  cajaAbierta = false;
+  cajaMoves.push({hora:new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}),tipo:'egreso',desc:'Cierre de caja',monto:0});
+  saveState(); closeModal('modalCierreCaja'); renderCaja();
+  showToast('Caja cerrada correctamente','success');
+}
+
+function imprimirCierreCaja() {
+  const r = _cajaResumen();
+  const hoy = new Date().toISOString().slice(0,10);
+  const ahora = new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  const controlado = document.getElementById('chkControlado')?.checked;
+  const win = window.open('','_blank','width=420,height=720');
+  win.document.write(`<html><head><title>Cierre de Caja</title>
+    <style>body{font-family:monospace;padding:20px;font-size:14px;max-width:300px;margin:0 auto}
+    h2,p.c{text-align:center;margin:3px 0}.row{display:flex;justify-content:space-between;margin:3px 0}
+    hr{border:1px dashed #000;margin:8px 0}.bold{font-weight:bold}.big{font-size:16px;font-weight:900}
+    .sign{margin-top:36px;border-top:1px solid #000;padding-top:8px;text-align:center;font-size:12px}</style>
+    </head><body>
+    <h2>🍕 PIZZERÍA PRO</h2><p class="c">CIERRE DE CAJA</p>
+    <p class="c" style="font-size:12px">${hoy} — ${ahora} hs</p>
+    <hr>
+    <p class="bold">VENTAS DEL TURNO</p>
+    <div class="row"><span>Efectivo</span><span>$${r.ventasEfectivo.toLocaleString()}</span></div>
+    <div class="row"><span>Tarjeta</span><span>$${r.ventasTarjeta.toLocaleString()}</span></div>
+    <div class="row"><span>Transferencia</span><span>$${r.ventasTransfer.toLocaleString()}</span></div>
+    <hr><div class="row bold"><span>TOTAL VENTAS</span><span>$${r.totalVentas.toLocaleString()}</span></div>
+    <hr>
+    <p class="bold">BALANCE DE CAJA</p>
+    <div class="row"><span>Monto inicial</span><span>$${cajaInicial.toLocaleString()}</span></div>
+    <div class="row"><span>+ Ventas efectivo</span><span>$${r.ventasEfectivo.toLocaleString()}</span></div>
+    <div class="row"><span>- Retiros</span><span>$${r.retiros.toLocaleString()}</span></div>
+    <hr><div class="row big"><span>SALDO EN CAJA</span><span>$${r.saldoFinal.toLocaleString()}</span></div>
+    <hr>
+    <div class="sign">${controlado?'☑':'☐'} CONTROLADO POR ENCARGADO<br><br>Firma: _________________________</div>
+    </body></html>`);
+  win.document.close(); win.print();
+}
+
+function guardarRetiroCaja() {
+  const desc  = document.getElementById('retiroDesc').value.trim();
+  const monto = parseInt(document.getElementById('retiroMonto').value)||0;
+  if (!desc)  { showToast('Ingresá el motivo del retiro','error'); return; }
+  if (!monto || monto <= 0) { showToast('Ingresá un monto válido','error'); return; }
+  cajaMoves.push({hora:new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}),tipo:'egreso',desc:`Retiro: ${desc}`,monto});
+  document.getElementById('retiroDesc').value='';
+  document.getElementById('retiroMonto').value='';
+  closeModal('modalRetiroCaja');
+  saveState(); renderCaja(); showToast('Retiro registrado','success');
 }
 
 function guardarMovCaja() {
@@ -2301,7 +2485,7 @@ function guardarMovCaja() {
   if(!desc||!monto){ showToast('Completá todos los campos','error'); return; }
   cajaMoves.push({hora:new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}),tipo,desc,monto});
   closeModal('modalMovCaja');
-  renderCaja(); showToast('Movimiento registrado','success');
+  saveState(); renderCaja(); showToast('Movimiento registrado','success');
 }
 
 // ======= FACTURACIÓN =======
