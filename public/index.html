@@ -1391,7 +1391,7 @@ function cerrarMesa(id) {
   const m = mesasData.find(x=>x.id===id);
   const total = (m.pedido||[]).reduce((s,i)=>s+i.precio*i.qty,0);
   const itemsCount = (m.pedido||[]).reduce((s,i)=>s+i.qty,0);
-  const mozo = m.mozo || currentUser?.nombre || '-';
+  const mozo = (currentUser?.rol==='mozo' ? currentUser?.nombre : null) || m.mozo || currentUser?.nombre || '-';
   const registro = {mozo, mesa: m.numero, fecha: new Date().toISOString(), items: itemsCount, total: total||0};
   mozoHistorial.unshift(registro);
   m.estado='libre'; m.mozo=null; m.tiempo=null; m.pedido=[];
