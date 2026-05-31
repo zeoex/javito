@@ -8,7 +8,7 @@
 <script src="/socket.io/socket.io.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--red:#e63946;--blue:#1d3557;--light:#f8f9fa;--white:#fff;--gray:#6c757d;--border:#dee2e6;--success:#28a745;--warning:#fd7e14;--danger:#dc3545;--info:#17a2b8}
+:root{--red:#e63946;--blue:#1d3557;--light:#f8f9fa;--white:#fff;--gray:#6c757d;--border:#dee2e6;--success:#28a745;--warning:#fd7e14;--danger:#dc3545;--info:#17a2b8;--mz-bg:#0d1b2a;--mz-surface:#112233;--mz-border:rgba(255,255,255,0.08);--mz-libre:#16a34a;--mz-libre-glow:rgba(22,163,74,0.4);--mz-ocupada:#d97706;--mz-ocupada-glow:rgba(217,119,6,0.4);--mz-cuenta:#dc2626;--mz-cuenta-glow:rgba(220,38,38,0.4);--tap:44px}
 body{font-family:'Inter',sans-serif;background:var(--light);color:#212529;overflow-x:hidden}
 /* === LOGIN === */
 #loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,#0d1b2a 0%,#1d3557 60%,#2a4a7f 100%);display:flex;align-items:center;justify-content:center;z-index:9999}
@@ -115,6 +115,7 @@ tr:hover td{background:#fafafa}
 .mcp-items{font-size:9px;font-weight:800;color:rgba(255,255,255,0.85);margin-top:4px}
 .tabs.tabs-full{width:100%}
 .tabs-full .tab{flex:1;text-align:center}
+/* === MESA CARDS (admin/shared) === */
 .mesa-card{border-radius:10px;padding:16px 14px;cursor:pointer;transition:all .2s;border:2px solid transparent;text-align:center;position:relative}
 .mesa-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.12)}
 .mesa-card.libre{background:#d4edda;border-color:#c3e6cb}
@@ -126,6 +127,49 @@ tr:hover td{background:#fafafa}
 .mesa-card.ocupada .mesa-estado{color:#856404}
 .mesa-card.cuenta .mesa-estado{color:#721c24}
 .mesa-info{font-size:11px;color:#6c757d;margin-top:4px}
+/* === MOZO DARK CANVAS === */
+#mainContent.mozo-layout{background:var(--mz-bg)}
+#mainContent.mozo-layout .content{background:var(--mz-bg);padding:16px}
+#mainContent.mozo-layout .stat-card,#mainContent.mozo-layout .card{box-shadow:0 2px 12px rgba(0,0,0,0.3)}
+/* === MOZO TAB BAR === */
+#mainContent.mozo-layout #mesasTabs{background:rgba(255,255,255,0.06);border:1px solid var(--mz-border);border-radius:12px;padding:5px;margin-bottom:20px;width:100%}
+#mainContent.mozo-layout #mesasTabs .tab{flex:1;text-align:center;padding:10px 20px;border-radius:9px;font-size:15px;font-weight:700;color:rgba(255,255,255,0.5);min-height:var(--tap);display:flex;align-items:center;justify-content:center}
+#mainContent.mozo-layout #mesasTabs .tab.active{background:rgba(255,255,255,0.13);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
+/* === MOZO MESA GRID === */
+#mainContent.mozo-layout .mesas-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
+/* === MOZO MESA CARDS (override pastel admin cards) === */
+#mainContent.mozo-layout .mesa-card{background:var(--mz-surface);border:1.5px solid var(--mz-border);border-radius:18px;padding:18px 14px 14px;min-height:152px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;overflow:hidden;transition:transform .15s,box-shadow .15s}
+#mainContent.mozo-layout .mesa-card:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,0.4)}
+#mainContent.mozo-layout .mesa-card:active{transform:scale(0.94)}
+#mainContent.mozo-layout .mesa-card.libre{background:linear-gradient(160deg,#0d2218 0%,var(--mz-surface) 60%);border-color:var(--mz-libre)}
+#mainContent.mozo-layout .mesa-card.libre:hover{box-shadow:0 8px 24px var(--mz-libre-glow)}
+#mainContent.mozo-layout .mesa-card.ocupada{background:linear-gradient(160deg,#1e1400 0%,var(--mz-surface) 60%);border-color:var(--mz-ocupada)}
+#mainContent.mozo-layout .mesa-card.ocupada:hover{box-shadow:0 8px 24px var(--mz-ocupada-glow)}
+#mainContent.mozo-layout .mesa-card.cuenta{background:linear-gradient(160deg,#1e0d0d 0%,var(--mz-surface) 60%);border-color:var(--mz-cuenta);animation:cuentaPulse 2.2s ease-in-out infinite}
+@keyframes cuentaPulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,0)}50%{box-shadow:0 0 0 6px rgba(220,38,38,0.18)}}
+/* Hero number */
+#mainContent.mozo-layout .mesa-num{font-size:58px;font-weight:900;line-height:1;letter-spacing:-2px;color:#fff;margin-bottom:4px}
+/* Status badge */
+#mainContent.mozo-layout .mesa-estado{font-size:10px;font-weight:800;letter-spacing:1.5px;padding:3px 9px;border-radius:20px;margin-bottom:6px;margin-top:0}
+#mainContent.mozo-layout .mesa-card.libre .mesa-estado{background:rgba(22,163,74,0.2);color:#4ade80;border:1px solid rgba(22,163,74,0.35)}
+#mainContent.mozo-layout .mesa-card.ocupada .mesa-estado{background:rgba(217,119,6,0.2);color:#fbbf24;border:1px solid rgba(217,119,6,0.35)}
+#mainContent.mozo-layout .mesa-card.cuenta .mesa-estado{background:rgba(220,38,38,0.2);color:#f87171;border:1px solid rgba(220,38,38,0.35)}
+/* Info text */
+#mainContent.mozo-layout .mesa-info{font-size:12px;color:rgba(255,255,255,0.45);margin-top:2px}
+/* Time progress bar */
+#mainContent.mozo-layout .mesa-tiempo-bar-wrap{width:100%;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;margin-top:8px;overflow:hidden}
+#mainContent.mozo-layout .mesa-tiempo-bar{height:100%;border-radius:2px}
+#mainContent.mozo-layout .mesa-tiempo-bar.ok{background:#4ade80}
+#mainContent.mozo-layout .mesa-tiempo-bar.warn{background:#fbbf24}
+#mainContent.mozo-layout .mesa-tiempo-bar.danger{background:#f87171}
+#mainContent.mozo-layout .mesa-tiempo-label{font-size:11px;font-weight:700;margin-top:4px}
+#mainContent.mozo-layout .mesa-tiempo-label.ok{color:#4ade80}
+#mainContent.mozo-layout .mesa-tiempo-label.warn{color:#fbbf24}
+#mainContent.mozo-layout .mesa-tiempo-label.danger{color:#f87171}
+/* Items count badge (top-right corner) */
+#mainContent.mozo-layout .mesa-items-badge{position:absolute;top:10px;right:10px;background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.9);font-size:11px;font-weight:800;border-radius:8px;padding:2px 7px}
+/* Tablet */
+@media (min-width:768px){#mainContent.mozo-layout .mesas-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px}#mainContent.mozo-layout .mesa-num{font-size:64px}#mainContent.mozo-layout .mesa-card{min-height:162px;padding:20px 16px 16px}}
 /* === DELIVERY === */
 .delivery-pipeline{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;margin-bottom:20px}
 .pipeline-col{flex:0 0 220px;background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
@@ -359,40 +403,49 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 }
 /* === MOZO PEDIDO LAYOUT === */
 .mpo-info-bar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
-.mpo-order-section{background:#f8f9fa;border-radius:10px;padding:10px 12px;margin-bottom:12px}
+.mpo-order-section{background:#f0f4f8;border-radius:12px;padding:12px 14px;margin-bottom:12px;border:1px solid #e2e8f0}
 .mpo-browser-section{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px}
 .mpo-section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gray);margin-bottom:8px}
 .mpo-empty{color:#bbb;font-size:13px;font-style:italic;padding:4px 0}
 .mpo-list{display:flex;flex-direction:column}
-.mpo-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #eee}
-.mpo-row:last-child{border-bottom:none}
-.mpo-name{flex:1;font-size:13px;line-height:1.3;min-width:0}
-.mpo-nota{font-size:10px;color:var(--gray);font-style:italic;margin-top:1px}
 .mpo-qty{display:flex;align-items:center;gap:5px;flex-shrink:0}
-.mpo-qbtn{width:26px;height:26px;border:none;border-radius:6px;cursor:pointer;font-size:15px;font-weight:700;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mpo-qbtn{width:36px;height:36px;border:none;border-radius:8px;cursor:pointer;font-size:18px;font-weight:700;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .mpo-minus{background:var(--danger);color:#fff}
 .mpo-plus{background:var(--success);color:#fff}
-.mpo-qnum{font-size:14px;font-weight:700;min-width:22px;text-align:center}
-.mpo-del{border:none;background:none;cursor:pointer;color:#ccc;font-size:14px;padding:2px 6px;flex-shrink:0;line-height:1}
+.mpo-qnum{font-size:16px;font-weight:800;min-width:28px;text-align:center}
+.mpo-del{border:none;background:none;cursor:pointer;color:#ccc;font-size:16px;padding:2px 6px;flex-shrink:0;line-height:1}
 .mpo-del:hover{color:var(--danger)}
 .mpo-price{font-size:13px;font-weight:600;color:var(--blue);flex-shrink:0;min-width:58px;text-align:right}
-.mpo-total{font-size:16px;font-weight:800;color:var(--blue);text-align:right;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
-.mpo-cat-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
-.mpo-cat-pill{padding:5px 12px;border:1.5px solid var(--border);border-radius:20px;background:#fff;font-size:12px;font-weight:600;cursor:pointer;color:var(--gray);transition:all .12s;font-family:inherit}
-.mpo-cat-pill:hover{border-color:var(--red);color:var(--red)}
-.mpo-cat-pill.active{background:var(--red);color:#fff;border-color:var(--red)}
-.mpo-prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:8px;max-height:220px;overflow-y:auto}
-.mpo-prod-card{border:1.5px solid var(--border);border-radius:10px;padding:10px 6px;cursor:pointer;text-align:center;transition:all .12s;background:#fff}
-.mpo-prod-card:hover{border-color:var(--red);background:#fff5f5;transform:translateY(-1px)}
-.mpo-prod-card:active{transform:scale(0.96)}
-.mpo-prod-emoji{font-size:22px;line-height:1}
-.mpo-prod-name{font-size:11px;font-weight:600;margin-top:4px;line-height:1.2;color:#333}
-.mpo-prod-price{font-size:10px;color:var(--red);margin-top:2px;font-weight:600}
+.mpo-name{flex:1;font-size:14px;font-weight:600;line-height:1.3;min-width:0}
+.mpo-nota{font-size:10px;color:var(--gray);font-style:italic;margin-top:1px}
+.mpo-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #eee}
+.mpo-row:last-child{border-bottom:none}
+.mpo-total{font-size:20px;font-weight:900;color:var(--blue);text-align:right;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.mpo-cat-pills{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:4px;margin-bottom:14px}
+.mpo-cat-pills::-webkit-scrollbar{display:none}
+.mpo-cat-pill{flex-shrink:0;padding:9px 18px;border-radius:24px;border:1.5px solid #d1d5db;background:#fff;font-size:13px;font-weight:700;cursor:pointer;color:#4b5563;transition:all .12s;font-family:inherit;min-height:var(--tap);display:flex;align-items:center;white-space:nowrap}
+.mpo-cat-pill:hover{border-color:var(--red);color:var(--red);background:#fff5f5}
+.mpo-cat-pill.active{background:var(--red);color:#fff;border-color:var(--red);box-shadow:0 3px 10px rgba(230,57,70,0.3)}
+.mpo-prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px;max-height:260px;overflow-y:auto}
+.mpo-prod-card{border:1.5px solid #e5e7eb;border-radius:14px;padding:14px 8px 10px;cursor:pointer;text-align:center;transition:all .12s;background:#fff;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.mpo-prod-card:hover{border-color:var(--red);background:#fff5f5;transform:translateY(-2px);box-shadow:0 4px 12px rgba(230,57,70,0.15)}
+.mpo-prod-card:active{transform:scale(0.94)}
+.mpo-prod-emoji{font-size:28px;line-height:1}
+.mpo-prod-name{font-size:12px;font-weight:700;margin-top:2px;line-height:1.25;color:#111827}
+.mpo-prod-price{font-size:11px;color:var(--red);margin-top:1px;font-weight:700}
+/* === MODAL MESA: dark header === */
+.modal-overlay#modalMesa .modal-header{background:linear-gradient(135deg,#1d3557,#2d5a8e);border-bottom:none;border-radius:14px 14px 0 0}
+.modal-overlay#modalMesa .modal-header h3{color:#fff;font-size:20px;font-weight:800}
+.modal-overlay#modalMesa .modal-close{color:rgba(255,255,255,0.7);font-size:24px}
+.modal-overlay#modalMesa .modal-close:hover{color:#fff}
+.modal-overlay#modalMesa .modal-footer .btn{min-height:48px;font-size:15px;font-weight:700}
+@media (max-width:480px){.modal-overlay#modalMesa .modal-footer{flex-direction:column}.modal-overlay#modalMesa .modal-footer .btn{width:100%}}
+/* === SIZE PICKER === */
 .spk-size-list{display:flex;flex-direction:column;gap:10px}
-.spk-size-btn{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border:1.5px solid var(--border);border-radius:10px;background:#fff;cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;transition:all .12s;width:100%}
+.spk-size-btn{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border:1.5px solid var(--border);border-radius:12px;background:#fff;cursor:pointer;font-size:15px;font-weight:600;font-family:inherit;transition:all .12s;width:100%;min-height:56px}
 .spk-size-btn:hover{border-color:var(--red);background:#fff5f5}
-.spk-size-btn.grande{background:var(--success);color:#fff;border-color:var(--success)}
-.spk-size-btn.grande:hover{background:#218838}
+.spk-size-btn.grande{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border-color:transparent;font-size:16px;padding:18px 20px}
+.spk-size-btn.grande:hover{background:linear-gradient(135deg,#15803d,#166534)}
 .spk-size-btn .spk-price{font-size:13px;opacity:.85}
 </style>
 </head>
@@ -1454,6 +1507,12 @@ function switchTab(tab) {
   renderMesas();
 }
 
+function tiempoToMins(t) {
+  if (!t) return 0;
+  const [h, m] = t.split(':').map(Number);
+  return (h||0) * 60 + (m||0);
+}
+
 function renderMesas() {
   const filtered = mesasData.filter(m=>m.zona===currentMesaTab);
   const el = document.getElementById('mesasGrid');
@@ -1464,12 +1523,35 @@ function renderMesas() {
   el.innerHTML = filtered.map(m=>{
     const itemsCount = (m.pedido||[]).reduce((s,i)=>s+i.qty,0);
     const estadoLabel = m.estado==='libre'?'LIBRE':m.estado==='ocupada'?'OCUPADA':'CUENTA';
+    if (esMozo) {
+      let tiempoHTML = '';
+      if (m.tiempo && m.estado !== 'libre') {
+        const mins = tiempoToMins(m.tiempo);
+        const pct = Math.min(Math.round((mins / 120) * 100), 100);
+        const urgency = mins < 60 ? 'ok' : mins < 90 ? 'warn' : 'danger';
+        tiempoHTML = `
+          <div class="mesa-tiempo-bar-wrap">
+            <div class="mesa-tiempo-bar ${urgency}" style="width:${pct}%"></div>
+          </div>
+          <div class="mesa-tiempo-label ${urgency}">⏱ ${m.tiempo}</div>`;
+      }
+      const itemsBadge = itemsCount > 0
+        ? `<div class="mesa-items-badge">${itemsCount}</div>` : '';
+      return `
+        <div class="mesa-card ${m.estado}" onclick="clickMesa('${m.id}')">
+          ${itemsBadge}
+          <div class="mesa-num">${m.numero}</div>
+          <div class="mesa-estado">${estadoLabel}</div>
+          <div class="mesa-info">👥 ${m.capacidad}</div>
+          ${tiempoHTML}
+        </div>`;
+    }
     return `
       <div class="mesa-card ${m.estado}" onclick="clickMesa('${m.id}')">
         <div class="mesa-num">${m.numero}</div>
         <div class="mesa-estado">${estadoLabel}</div>
         <div class="mesa-info">${m.capacidad} personas</div>
-        ${!esMozo && m.mozo ? `<div class="mesa-info">👨 ${m.mozo}</div>` : ''}
+        ${m.mozo ? `<div class="mesa-info">👨 ${m.mozo}</div>` : ''}
         ${m.tiempo ? `<div class="mesa-info">⏱ ${m.tiempo}</div>` : ''}
         ${itemsCount > 0 ? `<div class="mesa-info">📋 ${itemsCount} ítem${itemsCount!==1?'s':''}</div>` : ''}
       </div>`;
@@ -1505,11 +1587,13 @@ function mesaPedidoHTML(id) {
     `<button class="mpo-cat-pill" id="catBtn-${c}" onclick="filtrarCatMesa('${c}')">${catLabels[c]||c}</button>`
   ).join('');
 
+  const infoBarBg = m.estado==='cuenta' ? 'rgba(220,38,38,0.08)' : 'rgba(29,53,87,0.05)';
+  const infoBarBorder = m.estado==='cuenta' ? 'rgba(220,38,38,0.2)' : 'var(--border)';
   return `
-    <div class="mpo-info-bar">
-      <span style="font-weight:600">👨 ${m.mozo||'-'}</span>
-      <span style="color:var(--gray);font-size:13px">⏱ ${m.tiempo||'-'}</span>
-      <span class="badge badge-${m.estado==='cuenta'?'danger':'warning'}">${m.estado.toUpperCase()}</span>
+    <div class="mpo-info-bar" style="background:${infoBarBg};border:1px solid ${infoBarBorder};border-radius:10px;padding:10px 14px;margin-bottom:14px">
+      <span style="font-weight:700;font-size:14px">👨 ${m.mozo||'-'}</span>
+      <span style="margin-left:auto;color:var(--gray);font-size:13px;font-weight:600">⏱ ${m.tiempo||'-'}</span>
+      <span class="badge badge-${m.estado==='cuenta'?'danger':'warning'}" style="margin-left:10px;font-size:12px;padding:4px 12px">${m.estado.toUpperCase()}</span>
     </div>
     <div class="mpo-order-section">
       <div class="mpo-section-label">📋 Pedido</div>
