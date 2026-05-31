@@ -877,20 +877,31 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <!-- MOZO STATS -->
       <div class="section" id="sec-mozostats">
         <div class="section-header"><h2>📊 Mis Estadísticas</h2></div>
-        <div class="stats-grid" style="margin-bottom:20px">
-          <div class="stat-card green"><div class="stat-label">Mesas Atendidas Hoy</div><div class="stat-value" id="mz-hoy">0</div><div class="stat-sub">del día</div></div>
-          <div class="stat-card blue"><div class="stat-label">Total Recaudado Hoy</div><div class="stat-value" id="mz-total-hoy">$0</div><div class="stat-sub">en ventas</div></div>
-          <div class="stat-card teal"><div class="stat-label">Mesas Este Mes</div><div class="stat-value" id="mz-mes">0</div><div class="stat-sub">del mes</div></div>
-          <div class="stat-card orange"><div class="stat-label">Total Recaudado Mes</div><div class="stat-value" id="mz-total-mes">$0</div><div class="stat-sub">en ventas</div></div>
-        </div>
-        <div class="card">
-          <div class="card-header"><h3>🗓️ Historial de Mesas Atendidas</h3></div>
-          <div class="card-body">
-            <div class="table-wrap"><table style="width:100%;font-size:13px;border-collapse:collapse">
-              <thead><tr style="background:#f8f9fa"><th style="padding:8px;text-align:left">Fecha y Hora</th><th style="padding:8px;text-align:center">Mesa</th><th style="padding:8px;text-align:right">Ítems</th><th style="padding:8px;text-align:right">Total</th></tr></thead>
-              <tbody id="mzHistorialTbody"></tbody>
-            </table></div>
+
+        <!-- Hero counter -->
+        <div style="background:#fff;border-radius:16px;padding:20px 24px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.07);display:flex;align-items:center;gap:16px">
+          <div style="width:56px;height:56px;background:#dcfce7;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0">🪑</div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">Mesas atendidas hoy</div>
+            <div id="mz-hoy" style="font-size:42px;font-weight:900;color:#16a34a;line-height:1">0</div>
           </div>
+          <div style="margin-left:auto;text-align:right">
+            <div style="font-size:13px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">Este mes</div>
+            <div id="mz-mes" style="font-size:28px;font-weight:800;color:var(--blue);line-height:1.2">0</div>
+          </div>
+        </div>
+
+        <!-- Day filter -->
+        <div style="background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.06);display:flex;align-items:center;gap:12px">
+          <span style="font-size:13px;font-weight:700;color:#374151">📅 Ver día:</span>
+          <input type="date" id="mzFechaFiltro" class="form-control" style="flex:1;max-width:200px;font-size:14px" onchange="renderMozoStats()"/>
+          <button onclick="document.getElementById('mzFechaFiltro').value='';renderMozoStats()" style="border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:#9ca3af;font-family:inherit">Todos</button>
+        </div>
+
+        <!-- History -->
+        <div class="card">
+          <div class="card-header"><h3 id="mzHistorialTitle">🗓️ Historial</h3></div>
+          <div class="card-body" id="mzHistorialBody" style="padding:0"></div>
         </div>
       </div>
 
@@ -2478,27 +2489,70 @@ function renderMozoStats() {
   const miHistorial = mozoHistorial.filter(h => !miNombre || h.mozo === miNombre);
   const hoyRecs = miHistorial.filter(h => h.fecha.startsWith(hoy));
   const mesRecs = miHistorial.filter(h => h.fecha.startsWith(mesActual));
-  const totalHoy = hoyRecs.reduce((s,h)=>s+h.total,0);
-  const totalMes = mesRecs.reduce((s,h)=>s+h.total,0);
   document.getElementById('mz-hoy').textContent = hoyRecs.length;
-  document.getElementById('mz-total-hoy').textContent = '$'+totalHoy.toLocaleString('es-AR');
   document.getElementById('mz-mes').textContent = mesRecs.length;
-  document.getElementById('mz-total-mes').textContent = '$'+totalMes.toLocaleString('es-AR');
-  const tbody = document.getElementById('mzHistorialTbody');
-  if(!miHistorial.length) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:#aaa">Sin historial aún. Cerrá una mesa para ver el registro.</td></tr>';
+
+  // Set today as default in date picker if empty
+  const filtroEl = document.getElementById('mzFechaFiltro');
+  if (filtroEl && !filtroEl.value) filtroEl.value = hoy;
+
+  const fechaFiltro = filtroEl?.value || '';
+  const body = document.getElementById('mzHistorialBody');
+  const titleEl = document.getElementById('mzHistorialTitle');
+
+  if (!miHistorial.length) {
+    titleEl.textContent = '🗓️ Historial';
+    body.innerHTML = '<div style="text-align:center;padding:32px;color:#aaa;font-size:14px">Sin historial aún. Cerrá una mesa para ver el registro.</div>';
     return;
   }
-  tbody.innerHTML = miHistorial.slice(0,50).map(h=>{
-    const d = new Date(h.fecha);
-    const fecha = d.toLocaleDateString('es-AR')+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
-    return `<tr style="border-bottom:1px solid var(--border)">
-      <td style="padding:8px">${fecha}</td>
-      <td style="padding:8px;text-align:center">Mesa #${h.mesa}</td>
-      <td style="padding:8px;text-align:right">${h.items} ítems</td>
-      <td style="padding:8px;text-align:right;font-weight:600;color:var(--green)">$${h.total.toLocaleString('es-AR')}</td>
-    </tr>`;
-  }).join('');
+
+  if (fechaFiltro) {
+    // Show individual mesas for the selected day
+    const dayRecs = miHistorial.filter(h => h.fecha.startsWith(fechaFiltro));
+    const fechaLabel = new Date(fechaFiltro+'T12:00:00').toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
+    titleEl.textContent = `🗓️ ${fechaLabel.charAt(0).toUpperCase()+fechaLabel.slice(1)}`;
+    if (!dayRecs.length) {
+      body.innerHTML = '<div style="text-align:center;padding:32px;color:#aaa;font-size:14px">Sin mesas ese día.</div>';
+      return;
+    }
+    body.innerHTML = dayRecs.map(h => {
+      const hora = new Date(h.fecha).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+      const pagoIcon = {efectivo:'💵',tarjeta:'💳',transferencia:'📲'}[h.pago] || '💰';
+      return `<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid #f3f4f6">
+        <div style="width:40px;height:40px;background:#f0fdf4;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🪑</div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:14px;color:#111827">Mesa #${h.mesa}</div>
+          <div style="font-size:12px;color:#9ca3af;margin-top:2px">${h.items} ítem${h.items!==1?'s':''} · ${pagoIcon} ${(h.pago||'').charAt(0).toUpperCase()+(h.pago||'').slice(1)}</div>
+        </div>
+        <div style="font-size:13px;font-weight:600;color:#6b7280">${hora}</div>
+      </div>`;
+    }).join('');
+  } else {
+    // Show summary grouped by day
+    titleEl.textContent = '🗓️ Días trabajados';
+    const byDay = {};
+    miHistorial.forEach(h => {
+      const d = h.fecha.slice(0,10);
+      if (!byDay[d]) byDay[d] = 0;
+      byDay[d]++;
+    });
+    const days = Object.keys(byDay).sort((a,b) => b.localeCompare(a));
+    body.innerHTML = days.map(d => {
+      const label = new Date(d+'T12:00:00').toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+      const count = byDay[d];
+      const esHoy = d === hoy;
+      return `<div onclick="document.getElementById('mzFechaFiltro').value='${d}';renderMozoStats()"
+        style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid #f3f4f6;cursor:pointer"
+        onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background=''">
+        <div style="width:40px;height:40px;background:${esHoy?'#dcfce7':'#f3f4f6'};border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📅</div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:14px;color:#111827">${label}${esHoy?' <span style="font-size:11px;background:#dcfce7;color:#16a34a;border-radius:8px;padding:2px 7px;font-weight:700;margin-left:6px">HOY</span>':''}</div>
+          <div style="font-size:12px;color:#9ca3af;margin-top:2px">${count} mesa${count!==1?'s':''} atendida${count!==1?'s':''}</div>
+        </div>
+        <div style="font-size:20px;font-weight:900;color:#1d3557">${count}</div>
+      </div>`;
+    }).join('');
+  }
 }
 
 // ======= CONFIG =======
