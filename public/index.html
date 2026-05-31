@@ -1272,9 +1272,9 @@ function loadState() {
     if (c) clientesData = JSON.parse(c);
     if (u) usuariosData = JSON.parse(u);
     if (h) mozoHistorial = JSON.parse(h);
-    if (ca !== null) cajaAbierta = JSON.parse(ca);
-    if (ci !== null) cajaInicial = JSON.parse(ci);
-    if (cm) cajaMoves = JSON.parse(cm);
+    if (ca !== null) cajaAbierta = JSON.parse(ca) === true;
+    if (ci !== null) cajaInicial = parseInt(JSON.parse(ci)) || 5000;
+    if (cm) { const parsed = JSON.parse(cm); if (Array.isArray(parsed)) cajaMoves = parsed.map(m=>({...m, desc:m.desc||'', monto:Number(m.monto)||0})); }
   } catch(e) {}
 }
 
@@ -2355,7 +2355,7 @@ function _cajaResumen() {
   const ventasEfectivo = facturasHoy.filter(f=>f.pago==='efectivo').reduce((s,f)=>s+f.total,0);
   const ventasTarjeta  = facturasHoy.filter(f=>f.pago==='tarjeta').reduce((s,f)=>s+f.total,0);
   const ventasTransfer = facturasHoy.filter(f=>f.pago==='transferencia').reduce((s,f)=>s+f.total,0);
-  const retiros = cajaMoves.filter(m=>m.tipo==='egreso' && !m.desc.startsWith('Cierre')).reduce((s,m)=>s+m.monto,0);
+  const retiros = cajaMoves.filter(m=>m.tipo==='egreso' && !m.desc?.startsWith('Cierre')).reduce((s,m)=>s+(m.monto||0),0);
   return {ventasEfectivo,ventasTarjeta,ventasTransfer,retiros,
     totalVentas:ventasEfectivo+ventasTarjeta+ventasTransfer,
     saldoFinal:cajaInicial+ventasEfectivo-retiros};
@@ -2369,7 +2369,7 @@ function renderCaja() {
   document.getElementById('cajaRetiros').textContent = r.retiros > 0 ? '-$'+r.retiros.toLocaleString() : '-$0';
   document.getElementById('cajaTotal').textContent   = '$'+(cajaInicial+r.totalVentas-r.retiros).toLocaleString();
   const hoy = new Date().toISOString().slice(0,10);
-  const horaAp = cajaMoves.filter(m=>m.fecha===hoy&&m.tipo==='ingreso'&&m.desc.includes('Apertura')).slice(-1)[0]?.hora || '--:--';
+  const horaAp = cajaMoves.filter(m=>m.tipo==='ingreso'&&m.desc?.includes('Apertura')).slice(-1)[0]?.hora || '--:--';
   document.getElementById('cajaEstado').innerHTML = cajaAbierta ? `
     <div class="badge badge-success" style="font-size:14px;padding:6px 16px;margin-bottom:12px">🟢 CAJA ABIERTA</div>
     <div style="margin:10px 0;font-size:13px"><strong>Turno iniciado:</strong> ${horaAp} hs</div>
@@ -2399,7 +2399,7 @@ function renderCajaMov() {
       <td><span class="badge ${m.tipo==='ingreso'?'badge-success':'badge-danger'}">${m.tipo.toUpperCase()}</span></td>
       <td>${m.desc}</td>
       <td style="font-weight:600;color:${m.tipo==='ingreso'?'var(--success)':'var(--danger)'}">
-        ${m.tipo==='ingreso'?'+':'-'}$${m.monto.toLocaleString()}</td>
+        ${m.tipo==='ingreso'?'+':'-'}$${(m.monto||0).toLocaleString()}</td>
     </tr>`).join('');
 }
 
