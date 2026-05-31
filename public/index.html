@@ -436,10 +436,10 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 /* === MODAL MESA: dark header === */
 .modal-overlay#modalMesa .modal-header{background:linear-gradient(135deg,#1d3557,#2d5a8e);border-bottom:none;border-radius:14px 14px 0 0}
 .modal-overlay#modalMesa .modal-header h3{color:#fff;font-size:20px;font-weight:800}
-.modal-overlay#modalMesa .modal-close{color:rgba(255,255,255,0.7);font-size:24px}
-.modal-overlay#modalMesa .modal-close:hover{color:#fff}
-.modal-overlay#modalMesa .modal-footer .btn{min-height:48px;font-size:15px;font-weight:700}
-@media (max-width:480px){.modal-overlay#modalMesa .modal-footer{flex-direction:column}.modal-overlay#modalMesa .modal-footer .btn{width:100%}}
+.modal-overlay#modalMesa .modal-close{color:rgba(255,255,255,0.7);font-size:24px;width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,255,255,0.4)!important;display:flex;align-items:center;justify-content:center;padding:0;font-size:16px}
+.modal-overlay#modalMesa .modal-close:hover{color:#fff;background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.7)!important}
+.modal-overlay#modalMesa .modal-footer .btn{min-height:40px;font-size:13px;font-weight:700;padding:8px 14px}
+@media (max-width:480px){.modal-overlay#modalMesa .modal-footer{flex-direction:row;flex-wrap:wrap}.modal-overlay#modalMesa .modal-footer .btn{flex:1;min-width:80px}}
 /* === SIZE PICKER === */
 .spk-size-list{display:flex;flex-direction:column;gap:10px}
 .spk-size-btn{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border:1.5px solid var(--border);border-radius:12px;background:#fff;cursor:pointer;font-size:15px;font-weight:600;font-family:inherit;transition:all .12s;width:100%;min-height:56px}
@@ -1764,9 +1764,7 @@ function renderMesaFooter(id) {
     ? `<button class="btn btn-danger" onclick="_mesaCobroMode=true;renderMesaFooter(${sid})">💳 Cobrar</button>` : '';
   const btnComanda = tieneComida
     ? `<button class="btn btn-outline" onclick="imprimirComanda(${sid})">🖨️ Comanda</button>` : '';
-  footer.innerHTML =
-    `<button class="btn btn-outline" onclick="closeModal('modalMesa')">Cancelar</button>
-     ${btnLiberar}${btnCuenta}${btnComanda}${btnCobrar}`;
+  footer.innerHTML = `${btnLiberar}${btnCuenta}${btnComanda}${btnCobrar}`;
 }
 
 function agregarItemMesa(mesaId, prodId, size, precio, categoria) {
@@ -1828,8 +1826,7 @@ function clickMesa(id) {
       <div class="form-group"><label>Mozo</label>
         <select class="form-control" id="abrirMozo">${mozosOpts}</select>
       </div>`;
-    footer.innerHTML = `<button class="btn btn-outline" onclick="closeModal('modalMesa')">Cancelar</button>
-      <button class="btn btn-success" onclick="abrirMesa(${sid})">✅ Abrir Mesa</button>`;
+    footer.innerHTML = `<button class="btn btn-success" style="width:100%" onclick="abrirMesa(${sid})">✅ Abrir Mesa</button>`;
   } else {
     body.innerHTML = zonaHtml + mesaPedidoHTML(id);
     renderMesaFooter(id);
