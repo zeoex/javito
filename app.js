@@ -289,6 +289,11 @@ app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'portal.
 app.get('/portal', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'portal.html')));
 app.get('/admin', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/mozo',  (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('/carta', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'carta.html')));
+app.get('/menu',  (_req, res) => res.sendFile(path.join(__dirname, 'public', 'menu.html')));
+app.get('/cocina', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'cocina.html')));
+app.get('/repartidor', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'repartidor.html')));
+app.get('/cliente', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'cliente.html')));
 
 app.use(express.static(path.join(__dirname, 'public')));
 

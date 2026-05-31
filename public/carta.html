@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Carta QR – PIZZERÍA PRO</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--red:#e74c3c;--dark:#1a1a2e;--card:#1e1e3f;--border:#2d2d5e;--text:#eee;--gray:#aaa}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--dark);color:var(--text);min-height:100vh;padding-bottom:120px}
+/* HEADER */
+.header{background:linear-gradient(135deg,var(--red),#c0392b);padding:20px 16px 28px;text-align:center;position:relative}
+.header-back{position:absolute;top:16px;left:16px;color:rgba(255,255,255,0.8);font-size:13px;text-decoration:none}
+.header-emoji{font-size:48px;display:block;margin-bottom:8px}
+.header h1{font-size:24px;font-weight:900;color:#fff}
+.header p{color:rgba(255,255,255,0.8);font-size:13px;margin-top:4px}
+.mesa-badge{display:inline-block;background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.4);color:#fff;padding:4px 16px;border-radius:20px;font-size:12px;font-weight:700;margin-top:8px}
+/* CATS */
+.cats{display:flex;gap:8px;overflow-x:auto;padding:16px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.cats::-webkit-scrollbar{display:none}
+.cat-pill{flex-shrink:0;padding:8px 16px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--gray);font-size:13px;cursor:pointer;white-space:nowrap;transition:all .15s;font-family:inherit}
+.cat-pill.active{background:var(--red);border-color:var(--red);color:#fff}
+/* ITEMS */
+.items{padding:0 12px}
+.cat-section{margin-bottom:28px}
+.cat-title{font-size:15px;font-weight:800;color:var(--red);margin:0 4px 12px;display:flex;align-items:center;gap:6px}
+.item-row{background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;cursor:pointer;transition:all .15s}
+.item-row:hover,.item-row:active{border-color:var(--red);background:#22224a}
+.item-emoji{font-size:36px;flex-shrink:0;line-height:1}
+.item-body{flex:1;min-width:0}
+.item-name{font-size:15px;font-weight:700;margin-bottom:3px}
+.item-desc{font-size:12px;color:var(--gray);line-height:1.4}
+.item-price{font-size:13px;color:var(--red);font-weight:700;margin-top:6px}
+.item-add{flex-shrink:0;width:34px;height:34px;border-radius:50%;background:var(--red);border:none;color:#fff;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;transition:transform .1s}
+.item-add:active{transform:scale(.9)}
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-sheet{background:#1e1e3f;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:85vh;overflow-y:auto}
+.modal-title{font-size:18px;font-weight:800;margin-bottom:4px}
+.modal-sub{color:var(--gray);font-size:13px;margin-bottom:16px}
+.size-btn{padding:10px 16px;border-radius:10px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-size:13px;cursor:pointer;text-align:left;width:100%;margin-bottom:8px;display:flex;justify-content:space-between;font-family:inherit;transition:all .15s}
+.size-btn:hover,.size-btn.sel{background:var(--red);border-color:var(--red);color:#fff}
+.nota-input{width:100%;background:#12122b;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;margin-top:8px;font-family:inherit}
+.nota-input:focus{outline:none;border-color:var(--red)}
+.btn-confirm{width:100%;padding:14px;background:var(--red);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-top:14px;font-family:inherit}
+.btn-cancel{width:100%;padding:12px;background:transparent;border:1.5px solid var(--border);border-radius:12px;color:var(--gray);font-size:14px;cursor:pointer;margin-top:8px;font-family:inherit}
+/* CARRITO BOTTOM */
+.cart-bar{display:none;position:fixed;bottom:0;left:0;right:0;background:#e74c3c;padding:14px 20px;cursor:pointer;z-index:50}
+.cart-bar.visible{display:block}
+.cart-inner{max-width:500px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.cart-info{color:#fff}
+.cart-count{font-size:13px;opacity:.9}
+.cart-label{font-size:16px;font-weight:800}
+.cart-total{font-size:18px;font-weight:900;color:#fff}
+/* CARRITO MODAL */
+.cart-item-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.cart-item-name{flex:1;font-size:14px}
+.cart-item-nota{font-size:11px;color:var(--gray);font-style:italic}
+.qty-ctrl{display:flex;align-items:center;gap:8px}
+.qty-btn{width:28px;height:28px;border-radius:50%;border:none;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;font-family:inherit}
+.qty-minus{background:#2d2d5e;color:var(--text)}
+.qty-plus{background:var(--red);color:#fff}
+.cart-price{font-size:14px;font-weight:700;color:var(--red);white-space:nowrap}
+.total-row{display:flex;justify-content:space-between;padding:16px 0 8px;font-size:18px;font-weight:800}
+/* CONFIRMED */
+.confirmed{text-align:center;padding:40px 20px}
+.confirmed-emoji{font-size:64px;display:block;margin-bottom:16px}
+.confirmed h2{font-size:24px;font-weight:900;margin-bottom:8px}
+.confirmed p{color:var(--gray);font-size:14px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a href="/portal.html" class="header-back">← Portal</a>
+  <span class="header-emoji">🍕</span>
+  <h1>PIZZERÍA PRO</h1>
+  <p>Escanea para pedir desde tu mesa</p>
+  <span class="mesa-badge" id="mesaBadge">Mesa ?</span>
+</div>
+
+<div class="cats" id="catList"></div>
+<div class="items" id="itemList"></div>
+
+<!-- ADD ITEM MODAL -->
+<div class="modal-overlay" id="addModal" onclick="closeAddModal(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-title" id="addModalTitle"></div>
+    <div class="modal-sub" id="addModalSub"></div>
+    <div id="addModalSizes"></div>
+    <input type="text" class="nota-input" id="addModalNota" placeholder="Aclaración (ej: sin cebolla, bien cocida...)" style="display:none"/>
+    <button class="btn-confirm" id="addModalConfirm" style="display:none">Agregar al pedido</button>
+    <button class="btn-cancel" onclick="closeAddModal()">Cancelar</button>
+  </div>
+</div>
+
+<!-- CART MODAL -->
+<div class="modal-overlay" id="cartModal" onclick="closeCartModal(event)">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-title">🛒 Tu pedido</div>
+    <div style="color:var(--gray);font-size:13px;margin-bottom:16px" id="cartMesaLabel"></div>
+    <div id="cartItems"></div>
+    <div class="total-row"><span>Total</span><span id="cartTotal" style="color:var(--red)"></span></div>
+    <button class="btn-confirm" onclick="confirmarPedido()">✅ Confirmar pedido</button>
+    <button class="btn-cancel" onclick="closeCartModal()">Seguir agregando</button>
+  </div>
+</div>
+
+<!-- CONFIRMED MODAL -->
+<div class="modal-overlay" id="confirmedModal">
+  <div class="modal-sheet">
+    <div class="confirmed">
+      <span class="confirmed-emoji">🎉</span>
+      <h2>¡Pedido enviado!</h2>
+      <p>Tu pedido fue enviado a cocina.<br>El mozo se acercará en breve.</p>
+      <button class="btn-confirm" onclick="resetPedido()" style="margin-top:24px">Hacer otro pedido</button>
+    </div>
+  </div>
+</div>
+
+<!-- CART BAR -->
+<div class="cart-bar" id="cartBar" onclick="openCartModal()">
+  <div class="cart-inner">
+    <div class="cart-info">
+      <div class="cart-count" id="cartCount">0 ítems</div>
+      <div class="cart-label">Ver pedido</div>
+    </div>
+    <div class="cart-total" id="cartTotalBar">$0</div>
+  </div>
+</div>
+
+<script>
+const CATS_COMANDA = ['pizzas','empanadas','entradas','postres'];
+
+const MENU = [
+  {cat:'pizzas',label:'🍕 Pizzas',items:[
+    {id:1,emoji:'🍕',nombre:'Pizza Muzarella',desc:'Clásica con salsa de tomate y queso',precios:{Chica:800,Mediana:1200,Grande:1600}},
+    {id:2,emoji:'🍕',nombre:'Pizza Napolitana',desc:'Tomate, mozzarella, tomates frescos y albahaca',precios:{Chica:900,Mediana:1400,Grande:1800}},
+    {id:3,emoji:'🍕',nombre:'Pizza 4 Quesos',desc:'Muzarella, provolone, gorgonzola y parmesano',precios:{Chica:1000,Mediana:1500,Grande:2000}},
+    {id:4,emoji:'🍕',nombre:'Pizza Fugazzeta',desc:'Rellena de queso con cebolla y aceitunas',precios:{Chica:850,Mediana:1300,Grande:1700}},
+    {id:5,emoji:'🍕',nombre:'Especial de la Casa',desc:'Jamón, morrón, aceitunas, huevo y salsa golf',precios:{Chica:1000,Mediana:1600,Grande:2100}},
+  ]},
+  {cat:'empanadas',label:'🥟 Empanadas',items:[
+    {id:6,emoji:'🥟',nombre:'Empanada de Carne',desc:'Carne cortada a cuchillo, jugosa y condimentada',precio:350},
+    {id:7,emoji:'🥟',nombre:'Empanada J&Q',desc:'Jamón cocido y queso muzarella',precio:350},
+  ]},
+  {cat:'entradas',label:'🧀 Entradas',items:[
+    {id:8,emoji:'🧀',nombre:'Provoleta',desc:'Provolone grillado con orégano',precio:1100},
+  ]},
+  {cat:'bebidas',label:'🥤 Bebidas',items:[
+    {id:9,emoji:'🥤',nombre:'Coca-Cola 500ml',desc:'Gaseosa Coca-Cola fría',precio:600},
+    {id:10,emoji:'💧',nombre:'Agua Mineral',desc:'Sin gas 500ml',precio:400},
+    {id:11,emoji:'🍺',nombre:'Cerveza Quilmes',desc:'Botella 340ml',precio:800},
+  ]},
+  {cat:'tragos',label:'🍹 Tragos',items:[
+    {id:12,emoji:'🍹',nombre:'Fernet con Coca',desc:'Fernet Branca + Coca-Cola',precio:1800},
+  ]},
+  {cat:'postres',label:'🍮 Postres',items:[
+    {id:13,emoji:'🍮',nombre:'Tiramisu',desc:'Clásico italiano con mascarpone',precio:900},
+  ]},
+];
+
+let cart = [];
+let selectedItem = null;
+let selectedSize = null;
+
+// Read mesa from URL param ?mesa=3
+const urlParams = new URLSearchParams(window.location.search);
+const mesaNum = urlParams.get('mesa') || '?';
+document.getElementById('mesaBadge').textContent = `Mesa ${mesaNum}`;
+document.getElementById('cartMesaLabel').textContent = `Mesa ${mesaNum}`;
+
+// Render categories
+const activeCats = ['Todos', ...MENU.map(s=>s.label)];
+let activeCat = 'Todos';
+function renderCats() {
+  document.getElementById('catList').innerHTML = activeCats.map(c=>
+    `<button class="cat-pill${c===activeCat?' active':''}" onclick="setCat('${c}')">${c}</button>`
+  ).join('');
+}
+function setCat(c) { activeCat=c; renderCats(); renderItems(); }
+
+function renderItems() {
+  const sections = activeCat==='Todos' ? MENU : MENU.filter(s=>s.label===activeCat);
+  document.getElementById('itemList').innerHTML = sections.map(s=>`
+    <div class="cat-section">
+      <div class="cat-title">${s.label}</div>
+      ${s.items.map(i=>`
+        <div class="item-row" onclick="openAddModal(${i.id},'${s.cat}')">
+          <span class="item-emoji">${i.emoji}</span>
+          <div class="item-body">
+            <div class="item-name">${i.nombre}</div>
+            <div class="item-desc">${i.desc}</div>
+            <div class="item-price">${i.precio?'$'+i.precio.toLocaleString('es-AR'):'desde $'+Math.min(...Object.values(i.precios)).toLocaleString('es-AR')}</div>
+          </div>
+          <button class="item-add" onclick="event.stopPropagation();openAddModal(${i.id},'${s.cat}')">+</button>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+function findItem(id) {
+  for(const s of MENU) { const i = s.items.find(x=>x.id===id); if(i) return {item:i,cat:s.cat}; }
+  return null;
+}
+
+function openAddModal(id, cat) {
+  const found = findItem(id);
+  if(!found) return;
+  const {item} = found;
+  selectedItem = {id, cat, item};
+  selectedSize = null;
+  document.getElementById('addModalTitle').textContent = `${item.emoji} ${item.nombre}`;
+  document.getElementById('addModalSub').textContent = item.desc;
+  const sizesDiv = document.getElementById('addModalSizes');
+  const esComida = CATS_COMANDA.includes(cat);
+  document.getElementById('addModalNota').style.display = esComida ? 'block' : 'none';
+  document.getElementById('addModalNota').value = '';
+  if(item.precios) {
+    sizesDiv.innerHTML = Object.entries(item.precios).map(([k,v])=>
+      `<button class="size-btn" onclick="selectSize('${k}',${v},this)">${k} <span>$${v.toLocaleString('es-AR')}</span></button>`
+    ).join('');
+    document.getElementById('addModalConfirm').style.display='none';
+  } else {
+    sizesDiv.innerHTML = '';
+    selectedSize = {label:'Única',precio:item.precio};
+    document.getElementById('addModalConfirm').style.display='block';
+    document.getElementById('addModalConfirm').textContent = `Agregar — $${item.precio.toLocaleString('es-AR')}`;
+  }
+  document.getElementById('addModal').classList.add('open');
+}
+
+function selectSize(label, precio, btn) {
+  document.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  selectedSize = {label, precio};
+  document.getElementById('addModalConfirm').style.display='block';
+  document.getElementById('addModalConfirm').textContent = `Agregar ${label} — $${precio.toLocaleString('es-AR')}`;
+}
+
+document.getElementById('addModalConfirm').onclick = function() {
+  if(!selectedItem||!selectedSize) return;
+  const nota = document.getElementById('addModalNota').value.trim();
+  cart.push({
+    id: Date.now(),
+    prodId: selectedItem.id,
+    nombre: selectedItem.item.nombre,
+    emoji: selectedItem.item.emoji,
+    size: selectedSize.label !== 'Única' ? selectedSize.label : null,
+    precio: selectedSize.precio,
+    qty: 1,
+    cat: selectedItem.cat,
+    nota
+  });
+  closeAddModal();
+  updateCartBar();
+  showToast(`${selectedItem.item.emoji} ${selectedItem.item.nombre} agregado`);
+};
+
+function closeAddModal(e) {
+  if(e && e.target !== document.getElementById('addModal')) return;
+  document.getElementById('addModal').classList.remove('open');
+}
+
+function openCartModal() {
+  renderCart();
+  document.getElementById('cartModal').classList.add('open');
+}
+
+function closeCartModal(e) {
+  if(e && e.target !== document.getElementById('cartModal')) return;
+  document.getElementById('cartModal').classList.remove('open');
+}
+
+function renderCart() {
+  const total = cart.reduce((s,i)=>s+i.precio*i.qty,0);
+  document.getElementById('cartTotal').textContent = '$'+total.toLocaleString('es-AR');
+  document.getElementById('cartItems').innerHTML = cart.map(i=>`
+    <div class="cart-item-row">
+      <div class="cart-item-name">
+        <div>${i.emoji} ${i.nombre}${i.size?' ('+i.size+')':''}</div>
+        ${i.nota?`<div class="cart-item-nota">📝 ${i.nota}</div>`:''}
+      </div>
+      <div class="qty-ctrl">
+        <button class="qty-btn qty-minus" onclick="changeQty(${i.id},-1)">−</button>
+        <span>${i.qty}</span>
+        <button class="qty-btn qty-plus" onclick="changeQty(${i.id},1)">+</button>
+      </div>
+      <div class="cart-price">$${(i.precio*i.qty).toLocaleString('es-AR')}</div>
+    </div>`).join('');
+}
+
+function changeQty(id, delta) {
+  const item = cart.find(x=>x.id===id);
+  if(!item) return;
+  item.qty += delta;
+  if(item.qty<=0) cart = cart.filter(x=>x.id!==id);
+  updateCartBar();
+  renderCart();
+}
+
+function updateCartBar() {
+  const count = cart.reduce((s,i)=>s+i.qty,0);
+  const total = cart.reduce((s,i)=>s+i.precio*i.qty,0);
+  const bar = document.getElementById('cartBar');
+  bar.classList.toggle('visible', count>0);
+  document.getElementById('cartCount').textContent = `${count} ítem${count!==1?'s':''}`;
+  document.getElementById('cartTotalBar').textContent = '$'+total.toLocaleString('es-AR');
+}
+
+function confirmarPedido() {
+  if(!cart.length) return;
+  // In real app: POST to API
+  document.getElementById('cartModal').classList.remove('open');
+  document.getElementById('confirmedModal').classList.add('open');
+}
+
+function resetPedido() {
+  cart = [];
+  updateCartBar();
+  document.getElementById('confirmedModal').classList.remove('open');
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#28a745;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:200;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.3)';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2500);
+}
+
+renderCats();
+renderItems();
+</script>
+</body>
+</html>
