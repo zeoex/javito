@@ -916,6 +916,16 @@ input.form-control:focus{outline:none;border-color:var(--red)}
   </div>
 </div>
 
+<div class="modal-overlay" id="modalAddItem">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header" style="background:linear-gradient(135deg,#1d3557,#2d5a8e);border-radius:14px 14px 0 0">
+      <h3 id="addItemTitle" style="color:#fff;font-size:18px;font-weight:800">Agregar ítem</h3>
+      <button class="modal-close" style="color:rgba(255,255,255,0.7);font-size:24px" onclick="closeModal('modalAddItem')">✕</button>
+    </div>
+    <div class="modal-body" id="addItemBody" style="padding:16px"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modalNuevaMesa">
   <div class="modal">
     <div class="modal-header"><h3>Nueva Mesa</h3><button class="modal-close" onclick="closeModal('modalNuevaMesa')">✕</button></div>
@@ -1600,16 +1610,59 @@ function mesaPedidoHTML(id) {
         ? '<div class="mpo-empty">Sin ítems aún</div>'
         : `<div class="mpo-list">${orderRows}</div>${totalRow}`}
     </div>
-    <div class="mpo-browser-section">
-      <div class="mpo-section-label">➕ Agregar ítem</div>
-      <div class="mpo-cat-pills">${catPills}</div>
-      <div id="productosMenuMesa" class="mpo-prod-grid"></div>
-    </div>`;
+    <button onclick="openAddItem(${sid})" style="width:100%;padding:14px;border:2px dashed #d1d5db;border-radius:12px;background:transparent;cursor:pointer;font-size:15px;font-weight:700;color:#6b7280;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;font-family:inherit" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='#d1d5db';this.style.color='#6b7280'">
+      ➕ Agregar ítem
+    </button>`;
 }
 
 let _mesaModalId = null;
 let _mesaCobroMode = false;
 let _mesaCobroConfirm = null; // metodoPago pending confirmation
+
+const _addItemCatLabels = {pizzas:'🍕 Pizzas',empanadas:'🥟 Empanadas',bebidas:'🥤 Bebidas',tragos:'🍹 Tragos',postres:'🍮 Postres',entradas:'🧀 Entradas'};
+
+function openAddItem(mesaId) {
+  const m = mesasData.find(x=>x.id===mesaId);
+  if(!m) return;
+  document.getElementById('addItemTitle').textContent = `Agregar a Mesa #${m.numero}`;
+  showAddItemCats(mesaId);
+  document.getElementById('modalAddItem').classList.add('open');
+}
+
+function showAddItemCats(mesaId) {
+  const cats = [...new Set(productosData.filter(p=>p.activo).map(p=>p.categoria))];
+  document.getElementById('addItemBody').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      ${cats.map(c=>`
+        <button onclick="showAddItemProds('${mesaId}','${c}')"
+          style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:20px 12px;border:1.5px solid #e5e7eb;border-radius:14px;background:#fff;cursor:pointer;font-family:inherit;transition:all .15s;min-height:90px"
+          onmouseover="this.style.borderColor='var(--red)';this.style.background='#fff5f5'"
+          onmouseout="this.style.borderColor='#e5e7eb';this.style.background='#fff'">
+          <span style="font-size:32px;line-height:1">${(_addItemCatLabels[c]||c).split(' ')[0]}</span>
+          <span style="font-size:14px;font-weight:700;color:#1d3557">${(_addItemCatLabels[c]||c).replace(/^\S+\s*/,'')}</span>
+        </button>`).join('')}
+    </div>`;
+}
+
+function showAddItemProds(mesaId, cat) {
+  const esMozo = currentUser?.rol === 'mozo';
+  const prods = productosData.filter(p=>p.categoria===cat&&p.activo);
+  const label = _addItemCatLabels[cat] || cat;
+  document.getElementById('addItemBody').innerHTML = `
+    <button onclick="showAddItemCats('${mesaId}')"
+      style="display:flex;align-items:center;gap:6px;margin-bottom:14px;border:none;background:none;cursor:pointer;font-size:14px;font-weight:600;color:var(--blue);font-family:inherit;padding:0">
+      ← Volver
+    </button>
+    <div style="font-size:13px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">${label}</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px">
+      ${prods.map(p=>`
+        <div class="mpo-prod-card" onclick="seleccionarProductoMesa(${p.id})" style="min-height:80px;border-radius:12px;padding:12px 8px">
+          <div class="mpo-prod-emoji" style="font-size:26px">${p.emoji}</div>
+          <div class="mpo-prod-name" style="font-size:12px">${p.nombre}</div>
+          ${!esMozo?`<div class="mpo-prod-price">${p.precio_chica?'desde $'+p.precio_chica.toLocaleString():'$'+p.precio.toLocaleString()}</div>`:''}
+        </div>`).join('') || '<div style="color:#bbb;font-size:13px;padding:8px">Sin productos</div>'}
+    </div>`;
+}
 
 function filtrarCatMesa(cat) {
   document.querySelectorAll('.mpo-cat-pill').forEach(b=>b.classList.remove('active'));
@@ -1725,6 +1778,7 @@ function agregarItemMesa(mesaId, prodId, size, precio, categoria) {
   if(existing) { existing.qty++; }
   else { m.pedido.push({productoId:prodId,nombre:p.nombre,size,precio,qty:1,categoria:categoria||p.categoria,nota:nota||''}); }
   closeModal('modalSizePicker');
+  closeModal('modalAddItem');
   document.getElementById('modalMesaBody').innerHTML = mesaPedidoHTML(mesaId);
   renderMesaFooter(mesaId);
   syncMesa(m); saveState(); renderMesas();
