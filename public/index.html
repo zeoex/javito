@@ -751,20 +751,59 @@ input.form-control:focus{outline:none;border-color:var(--red)}
               <button class="btn btn-danger" onclick="confirmarResetDemo()">🗑️ Restablecer datos demo</button>
             </div>
           </div>
-          <div class="card">
-            <div class="card-header"><h3>🔧 Integraciones</h3></div>
+          <div class="card" id="cardComanderas">
+            <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
+              <h3>🖨️ Comandera Térmica</h3>
+              <span id="cfgPrinterStatus" style="font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;background:#d4edda;color:#155724">● Activo en esta PC</span>
+            </div>
             <div class="card-body">
-              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)">
-                <div><strong>🖨️ Impresora Térmica</strong><div class="text-muted" style="font-size:12px">Impresión automática de tickets</div></div>
-                <label class="switch"><input type="checkbox" id="cfgPrinter" checked><span class="slider"></span></label>
+              <!-- Estado hub -->
+              <div style="background:#f8f9fa;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:var(--gray)">
+                <strong style="color:var(--dark)">Esta PC es el hub de impresión.</strong><br>
+                Todos los trabajos (comanda + cuenta) que disparen cualquier dispositivo en la red llegarán aquí automáticamente vía red local.
               </div>
-              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)">
-                <div><strong>💬 WhatsApp</strong><div class="text-muted" style="font-size:12px">Envío de comprobantes por WA</div></div>
-                <label class="switch"><input type="checkbox" id="cfgWA"><span class="slider"></span></label>
+
+              <!-- Ancho de papel -->
+              <div class="form-group" style="margin-bottom:12px">
+                <label style="font-weight:600;font-size:13px">Ancho de papel</label>
+                <div style="display:flex;gap:10px;margin-top:6px">
+                  <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+                    <input type="radio" name="cfgPaperWidth" value="58mm" id="cfgPaper58"> 58 mm
+                  </label>
+                  <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px">
+                    <input type="radio" name="cfgPaperWidth" value="80mm" id="cfgPaper80" checked> 80 mm
+                  </label>
+                </div>
               </div>
-              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0">
-                <div><strong>🔔 Notificaciones Sonoras</strong><div class="text-muted" style="font-size:12px">Beep al recibir pedidos</div></div>
-                <label class="switch"><input type="checkbox" id="cfgSound" checked><span class="slider"></span></label>
+
+              <!-- Auto-imprimir -->
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:14px">
+                <div>
+                  <strong style="font-size:13px">Auto-imprimir</strong>
+                  <div style="font-size:12px;color:var(--gray)">Imprime automáticamente al recibir el trabajo. Si está apagado, aparece un botón de confirmación.</div>
+                </div>
+                <label class="switch" style="flex-shrink:0;margin-left:12px">
+                  <input type="checkbox" id="cfgAutoPrint" checked onchange="savePrintConfig()">
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <!-- Instrucciones Chrome -->
+              <details style="margin-bottom:14px">
+                <summary style="font-size:13px;font-weight:600;cursor:pointer;padding:4px 0">📋 Cómo configurar Chrome para impresión automática</summary>
+                <ol style="font-size:12px;color:var(--gray);margin:10px 0 0 16px;line-height:1.8">
+                  <li>Abrí Chrome en esta PC y andá a <strong>chrome://settings/printers</strong></li>
+                  <li>Asegurate de que tu comandera (ej: <em>Epson TM-T20</em>, <em>Star TSP</em>) esté instalada</li>
+                  <li>Al aparecer el diálogo de impresión, seleccioná tu comandera y marcá <strong>"Guardar como predeterminada"</strong></li>
+                  <li>Desactivá <strong>"Encabezados y pies de página"</strong> en Más opciones</li>
+                  <li>Opcionalmente instalá la extensión <strong>Auto Print</strong> de Chrome para saltar el diálogo</li>
+                </ol>
+              </details>
+
+              <!-- Botones -->
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn btn-primary btn-sm" onclick="savePrintConfig()">💾 Guardar configuración</button>
+                <button class="btn btn-outline btn-sm" onclick="testPrint()">🧪 Imprimir prueba</button>
               </div>
             </div>
           </div>
@@ -990,6 +1029,10 @@ let token = localStorage.getItem('pizzeria_token');
 let currentUser = (() => { try { return JSON.parse(localStorage.getItem('pizzeria_user') || 'null'); } catch(e) { return null; } })();
 let socket = null;
 let currentMesaTab = 'salon';
+let printConfig = (() => {
+  try { return {...{autoPrint:true,paperWidth:'80mm'}, ...JSON.parse(localStorage.getItem('pz_print_cfg')||'{}')}; }
+  catch(e) { return {autoPrint:true,paperWidth:'80mm'}; }
+})();
 let editingProdId = null;
 let editingClienteId = null;
 
@@ -1232,8 +1275,10 @@ function initApp() {
       const rol = currentUser?.rol;
       if (rol !== 'admin' && rol !== 'cajero') return;
       autoPrint(job.html);
-      showToast(`🖨️ Imprimiendo ${job.type === 'cuenta' ? 'cuenta' : 'comanda'} Mesa #${job.mesaNumero}`, 'success');
+      if (printConfig.autoPrint) showToast(`🖨️ Imprimiendo ${job.type==='cuenta'?'cuenta':job.type==='test'?'prueba':'comanda'} Mesa #${job.mesaNumero}`, 'success');
     });
+    socket.on('connect',    () => updatePrinterHubStatus(true));
+    socket.on('disconnect', () => updatePrinterHubStatus(false));
   } catch(e){}
   // Load first section: mozo goes straight to mesas
   if (currentUser?.rol === 'mozo') {
@@ -1281,7 +1326,7 @@ function navTo(section, el) {
   document.getElementById('sec-'+section).classList.add('active');
   const titles = {dashboard:'Dashboard',mesas:'Mesas',delivery:'Delivery',productos:'Productos',stock:'Stock',caja:'Caja',facturacion:'Facturación',clientes:'Clientes',reportes:'Reportes',usuarios:'Usuarios',config:'Configuración',mozostats:'Mis Estadísticas'};
   document.getElementById('topbarTitle').textContent = titles[section] || section;
-  const loaders = {dashboard:loadDashboard,mesas:renderMesas,delivery:renderDelivery,productos:renderProductos,stock:renderStock,caja:renderCaja,facturacion:loadFacturacion,clientes:renderClientes,reportes:renderReportes,usuarios:renderUsuarios,mozostats:renderMozoStats};
+  const loaders = {dashboard:loadDashboard,mesas:renderMesas,delivery:renderDelivery,productos:renderProductos,stock:renderStock,caja:renderCaja,facturacion:loadFacturacion,clientes:renderClientes,reportes:renderReportes,usuarios:renderUsuarios,mozostats:renderMozoStats,config:loadPrintConfigUI};
   if(loaders[section]) loaders[section]();
 }
 
@@ -1702,11 +1747,13 @@ async function crearMesa() {
 }
 
 function buildPrintDoc(titulo, cuerpo) {
+  const w = printConfig.paperWidth || '80mm';
+  const inner = w === '58mm' ? '52mm' : '72mm';
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${titulo}</title>
   <style>
-    @page { size: 80mm auto; margin: 4mm 3mm; }
+    @page { size: ${w} auto; margin: 4mm 3mm; }
     * { box-sizing: border-box; }
-    body { font-family: 'Courier New', Courier, monospace; font-size: 12px; width: 72mm; margin: 0 auto; color: #000; }
+    body { font-family: 'Courier New', Courier, monospace; font-size: 12px; width: ${inner}; margin: 0 auto; color: #000; }
     h2 { font-size: 14px; text-align: center; margin: 4px 0; }
     p { margin: 3px 0; }
     .center { text-align: center; }
@@ -1718,6 +1765,44 @@ function buildPrintDoc(titulo, cuerpo) {
 }
 
 function autoPrint(html) {
+  if (!printConfig.autoPrint) {
+    // Manual mode: show sticky notification with print button
+    showPrintNotification(html);
+    return;
+  }
+  let fr = document.getElementById('_printFrame');
+  if (!fr) {
+    fr = document.createElement('iframe');
+    fr.id = '_printFrame';
+    fr.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:0';
+    document.body.appendChild(fr);
+  }
+  const doc = fr.contentDocument || fr.contentWindow.document;
+  doc.open(); doc.write(html); doc.close();
+  setTimeout(() => { try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch(e){} }, 300);
+}
+
+function showPrintNotification(html) {
+  // Persistent toast with manual print button
+  let pn = document.getElementById('_printNotif');
+  if (!pn) {
+    pn = document.createElement('div');
+    pn.id = '_printNotif';
+    pn.style.cssText = 'position:fixed;bottom:80px;right:16px;background:#1e2a3a;color:#fff;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.35);font-size:13px;max-width:280px';
+    document.body.appendChild(pn);
+  }
+  pn._pendingHtml = html;
+  pn.innerHTML = `<span>🖨️ Trabajo listo para imprimir</span>
+    <button onclick="autoPrintManual()" style="background:var(--success);color:#fff;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap">Imprimir</button>
+    <button onclick="this.closest('#_printNotif').remove()" style="background:none;border:none;color:#aaa;cursor:pointer;font-size:16px;line-height:1">✕</button>`;
+}
+
+function autoPrintManual() {
+  const pn = document.getElementById('_printNotif');
+  if (pn?._pendingHtml) { autoPrint_direct(pn._pendingHtml); pn.remove(); }
+}
+
+function autoPrint_direct(html) {
   let fr = document.getElementById('_printFrame');
   if (!fr) {
     fr = document.createElement('iframe');
@@ -2266,6 +2351,47 @@ function renderMozoStats() {
 // ======= CONFIG =======
 function saveConfig() {
   showToast('Configuración guardada','success');
+}
+
+function savePrintConfig() {
+  printConfig.autoPrint = document.getElementById('cfgAutoPrint')?.checked ?? true;
+  printConfig.paperWidth = document.querySelector('input[name="cfgPaperWidth"]:checked')?.value || '80mm';
+  localStorage.setItem('pz_print_cfg', JSON.stringify(printConfig));
+  showToast('Configuración de comandera guardada','success');
+}
+
+function loadPrintConfigUI() {
+  const ap = document.getElementById('cfgAutoPrint');
+  const p80 = document.getElementById('cfgPaper80');
+  const p58 = document.getElementById('cfgPaper58');
+  if (ap)  ap.checked = printConfig.autoPrint;
+  if (p80) p80.checked = printConfig.paperWidth === '80mm';
+  if (p58) p58.checked = printConfig.paperWidth === '58mm';
+  updatePrinterHubStatus(socket?.connected);
+}
+
+function updatePrinterHubStatus(connected) {
+  const badge = document.getElementById('cfgPrinterStatus');
+  if (!badge) return;
+  const isHub = connected && (currentUser?.rol==='admin'||currentUser?.rol==='cajero');
+  badge.textContent = isHub ? '● Activo en esta PC' : '○ Sin conexión';
+  badge.style.background = isHub ? '#d4edda' : '#f8d7da';
+  badge.style.color       = isHub ? '#155724' : '#721c24';
+}
+
+async function testPrint() {
+  const nombre = document.getElementById('cfgNombre')?.value || 'PIZZERÍA PRO';
+  const pie    = document.getElementById('cfgRecibo')?.value  || '¡Gracias por su visita!';
+  const cuerpo = `<h2>${nombre}</h2>
+    <p class="center">🖨️ PRUEBA DE IMPRESIÓN</p><hr>
+    <p>Papel: ${printConfig.paperWidth}</p>
+    <p>Fecha: ${new Date().toLocaleString('es-AR')}</p><hr>
+    <p class="center">${pie}</p>`;
+  const html = buildPrintDoc('Prueba de impresión', cuerpo);
+  try {
+    await apiFetch('/print', {method:'POST', body:JSON.stringify({type:'test',html,mesaNumero:'TEST'})});
+    showToast('🖨️ Prueba enviada — revisá la comandera','success');
+  } catch(e) { _printLocal(html); }
 }
 
 function confirmarResetDemo() {
