@@ -113,7 +113,7 @@ tr:hover td{background:#fafafa}
 .mesa-chip-mozo:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,0.18)}
 .mcp-num{font-size:26px;font-weight:900;color:#fff;line-height:1}
 .mcp-items{font-size:9px;font-weight:800;color:rgba(255,255,255,0.85);margin-top:4px}
-.tabs.tabs-full{width:100%}
+.tabs.tabs-full{display:flex;width:100%}
 .tabs-full .tab{flex:1;text-align:center}
 /* === MESA CARDS (admin/shared) === */
 .mesa-card{border-radius:10px;padding:16px 14px;cursor:pointer;transition:all .2s;border:2px solid transparent;text-align:center;position:relative}
@@ -131,7 +131,7 @@ tr:hover td{background:#fafafa}
 #mainContent.mozo-layout{background:#f4f6fb}
 #mainContent.mozo-layout .content{background:#f4f6fb;padding:16px}
 /* === MOZO TAB BAR === */
-#mainContent.mozo-layout #mesasTabs{background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;padding:5px;margin-bottom:20px;width:100%;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+#mainContent.mozo-layout #mesasTabs{display:flex;background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;padding:5px;margin-bottom:20px;width:100%;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
 #mainContent.mozo-layout #mesasTabs .tab{flex:1;text-align:center;padding:10px 20px;border-radius:9px;font-size:15px;font-weight:700;color:#9ca3af;min-height:var(--tap);display:flex;align-items:center;justify-content:center}
 #mainContent.mozo-layout #mesasTabs .tab.active{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(29,53,87,0.25)}
 /* === MOZO MESA GRID === */
@@ -1491,7 +1491,7 @@ function initApp() {
     socket.on('dashboard:stats', updateDashboardStats);
     socket.on('mesa:update', (updatedMesa) => {
       if (updatedMesa && updatedMesa.id) {
-        const idx = mesasData.findIndex(m => m.id === updatedMesa.id);
+        const idx = mesasData.findIndex(m => String(m.id) === String(updatedMesa.id));
         if (idx !== -1) {
           mesasData[idx] = {...mesasData[idx], estado: updatedMesa.estado, mozo: updatedMesa.mozo, tiempo: updatedMesa.tiempo, pedido: updatedMesa.pedido ?? mesasData[idx].pedido};
           saveState();
@@ -1566,7 +1566,7 @@ function mozoNavTo(section) {
   navTo(section, null);
 }
 function cambiarZonaMesa(id, zona) {
-  const m = mesasData.find(x=>x.id===id);
+  const m = mesasData.find(x=>String(x.id)===String(id));
   if(m) { m.zona = zona; syncMesa(m); saveState(); }
 }
 
@@ -1741,7 +1741,7 @@ function renderMesas() {
 }
 
 function mesaPedidoHTML(id) {
-  const m = mesasData.find(x=>x.id===id);
+  const m = mesasData.find(x=>String(x.id)===String(id));
   const esMozo = currentUser?.rol === 'mozo';
   const cats = [...new Set(productosData.map(p=>p.categoria))];
   const catLabels = {pizzas:'🍕 Pizzas',empanadas:'🥟 Empanadas',bebidas:'🥤 Bebidas',tragos:'🍹 Tragos',postres:'🍮 Postres',entradas:'🧀 Entradas'};
@@ -1795,7 +1795,7 @@ let _mesaCobroConfirm = null; // metodoPago pending confirmation
 const _addItemCatLabels = {pizzas:'🍕 Pizzas',empanadas:'🥟 Empanadas',bebidas:'🥤 Bebidas',tragos:'🍹 Tragos',postres:'🍮 Postres',entradas:'🧀 Entradas'};
 
 function openAddItem(mesaId) {
-  const m = mesasData.find(x=>x.id===mesaId);
+  const m = mesasData.find(x=>String(x.id)===String(mesaId));
   if(!m) return;
   document.getElementById('addItemTitle').textContent = `Agregar a Mesa #${m.numero}`;
   showAddItemCats(mesaId);
@@ -1893,7 +1893,7 @@ function seleccionarProductoMesa(prodId) {
 }
 
 function renderMesaFooter(id) {
-  const m = mesasData.find(x=>x.id===id);
+  const m = mesasData.find(x=>String(x.id)===String(id));
   if(!m) return;
   const sid = `'${id}'`;
   const footer = document.getElementById('modalMesaFooter');
@@ -1940,7 +1940,7 @@ function renderMesaFooter(id) {
 }
 
 function agregarItemMesa(mesaId, prodId, size, precio, categoria) {
-  const m = mesasData.find(x=>x.id===mesaId);
+  const m = mesasData.find(x=>String(x.id)===String(mesaId));
   const p = productosData.find(x=>x.id===prodId);
   if(!m||!p) return;
   const nota = (document.getElementById('addItemNota')?.value||'').trim();
@@ -1956,7 +1956,7 @@ function agregarItemMesa(mesaId, prodId, size, precio, categoria) {
 }
 
 function cambiarQtyMesa(mesaId, idx, delta) {
-  const m = mesasData.find(x=>x.id===mesaId);
+  const m = mesasData.find(x=>String(x.id)===String(mesaId));
   if(!m) return;
   m.pedido[idx].qty += delta;
   if(m.pedido[idx].qty<=0) m.pedido.splice(idx,1);
@@ -1966,7 +1966,7 @@ function cambiarQtyMesa(mesaId, idx, delta) {
 }
 
 function quitarItemMesa(mesaId, idx) {
-  const m = mesasData.find(x=>x.id===mesaId);
+  const m = mesasData.find(x=>String(x.id)===String(mesaId));
   if(!m) return;
   m.pedido.splice(idx,1);
   document.getElementById('modalMesaBody').innerHTML = mesaPedidoHTML(mesaId);
@@ -1975,7 +1975,7 @@ function quitarItemMesa(mesaId, idx) {
 }
 
 function clickMesa(id) {
-  const m = mesasData.find(x=>x.id===id);
+  const m = mesasData.find(x=>String(x.id)===String(id));
   if(!m) return;
   _mesaModalId = id;
   const sid = `'${id}'`;
@@ -2014,7 +2014,7 @@ function abrirMesa(id) {
     openModal('modalAbrirCaja');
     return;
   }
-  const m = mesasData.find(x=>x.id===id);
+  const m = mesasData.find(x=>String(x.id)===String(id));
   const mozo = document.getElementById('abrirMozo').value;
   m.estado='ocupada'; m.mozo=mozo; m.tiempo='00:00'; m.pedido=[];
   closeModal('modalMesa');
@@ -2024,7 +2024,7 @@ function abrirMesa(id) {
 }
 
 function pedirCuenta(id) {
-  const m = mesasData.find(x=>x.id===id);
+  const m = mesasData.find(x=>String(x.id)===String(id));
   m.estado = 'cuenta';
   imprimirCuenta(id);
   renderMesaFooter(id);
@@ -2033,7 +2033,7 @@ function pedirCuenta(id) {
 }
 
 function liberarMesaVacia(id) {
-  const m = mesasData.find(x=>x.id===id);
+  const m = mesasData.find(x=>String(x.id)===String(id));
   if(!m) return;
   m.estado='libre'; m.mozo=null; m.tiempo=null; m.pedido=[];
   closeModal('modalMesa');
@@ -2043,7 +2043,7 @@ function liberarMesaVacia(id) {
 }
 
 function cerrarMesa(id, metodoPago = 'efectivo') {
-  const m = mesasData.find(x=>x.id===id);
+  const m = mesasData.find(x=>String(x.id)===String(id));
   const total = (m.pedido||[]).reduce((s,i)=>s+i.precio*i.qty,0);
   const itemsCount = (m.pedido||[]).reduce((s,i)=>s+i.qty,0);
   const mozo = (currentUser?.rol==='mozo' ? currentUser?.nombre : null) || m.mozo || currentUser?.nombre || '-';
@@ -2154,7 +2154,7 @@ function _printLocal(html) {
 }
 
 async function imprimirComanda(id) {
-  const m = mesasData.find(x=>x.id===id);
+  const m = mesasData.find(x=>String(x.id)===String(id));
   const comida = (m.pedido||[]).filter(i=>CATS_COMANDA.includes(i.categoria));
   if(!comida.length){ showToast('No hay comidas para imprimir','error'); return; }
   const hora = new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
@@ -2172,7 +2172,7 @@ async function imprimirComanda(id) {
 }
 
 async function imprimirCuenta(id) {
-  const m = mesasData.find(x=>x.id===id);
+  const m = mesasData.find(x=>String(x.id)===String(id));
   const items = m.pedido||[];
   const total = items.reduce((s,i)=>s+i.precio*i.qty,0);
   const lineas = items.map(i=>{
@@ -2229,7 +2229,7 @@ function renderDeliveryCard(o,stage) {
 }
 
 function advanceDelivery(id) {
-  const o = deliveryData.find(x=>x.id===id);
+  const o = deliveryData.find(x=>String(x.id)===String(id));
   const flow = ['nuevo','en_cocina','listo','en_camino','entregado'];
   const idx = flow.indexOf(o.estado);
   if(idx<flow.length-1) o.estado=flow[idx+1];
@@ -2272,7 +2272,7 @@ function crearDelivery() {
 }
 
 function imprimirDelivery(id) {
-  const o = deliveryData.find(x=>x.id===id);
+  const o = deliveryData.find(x=>String(x.id)===String(id));
   const win = window.open('', '_blank', 'width=400,height=600');
   win.document.write(`
     <html><head><title>Pedido ${o.numero}</title>
@@ -2343,7 +2343,7 @@ function toggleProdPrecios() {
 }
 
 function editProducto(id) {
-  const p = productosData.find(x=>x.id===id);
+  const p = productosData.find(x=>String(x.id)===String(id));
   editingProdId = id;
   document.getElementById('modalProdTitle').textContent = 'Editar Producto';
   document.getElementById('prodNombre').value = p.nombre;
@@ -2421,13 +2421,13 @@ function renderStock() {
 }
 
 function updateStock(id, val) {
-  const s = stockData.find(x=>x.id===id);
+  const s = stockData.find(x=>String(x.id)===String(id));
   if(s) s.actual = parseInt(val)||0;
   renderStock();
 }
 
 function ajustarStock(id) {
-  const s = stockData.find(x=>x.id===id);
+  const s = stockData.find(x=>String(x.id)===String(id));
   const qty = prompt(`Ajustar stock de "${s.nombre}" (actual: ${s.actual} ${s.unidad}).\nIngresá la nueva cantidad:`);
   if(qty!==null && !isNaN(qty)) { s.actual=parseInt(qty); renderStock(); showToast('Stock actualizado','success'); }
 }
@@ -2878,7 +2878,7 @@ function filterClientes(v) {
 }
 
 function verCliente(id) {
-  const c = clientesData.find(x=>x.id===id);
+  const c = clientesData.find(x=>String(x.id)===String(id));
   alert(`Cliente: ${c.nombre}\nTel: ${c.telefono}\nEmail: ${c.email}\nPedidos: ${c.pedidos}\nTotal gastado: $${c.total_gastado.toLocaleString()}`);
 }
 
@@ -2979,7 +2979,7 @@ function renderUsuarios() {
 }
 
 function toggleUsuario(id) {
-  const u = usuariosData.find(x=>x.id===id);
+  const u = usuariosData.find(x=>String(x.id)===String(id));
   u.activo=!u.activo; renderUsuarios();
   showToast(`Usuario ${u.nombre} ${u.activo?'activado':'desactivado'}`);
 }
