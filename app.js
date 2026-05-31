@@ -13,6 +13,51 @@ const jwt        = require('jsonwebtoken');
 const { Server } = require('socket.io');
 const { v4: uuidv4 } = require('uuid');
 
+// ─────────────────────────────────────────────
+//  POSTGRESQL
+// ─────────────────────────────────────────────
+const { Pool } = require('pg');
+let pgPool = null;
+function getPool() {
+  if (!pgPool && process.env.DATABASE_URL) {
+    pgPool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.DATABASE_URL?.includes('localhost') ? false : { rejectUnauthorized: false }
+    });
+  }
+  return pgPool;
+}
+
+async function initPG() {
+  const pool = getPool();
+  if (!pool) {
+    console.log('[PG] DATABASE_URL not set — skipping PostgreSQL init');
+    return;
+  }
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS app_state (
+        id INTEGER PRIMARY KEY DEFAULT 1,
+        mesas JSONB DEFAULT '[]',
+        delivery JSONB DEFAULT '[]',
+        facturas JSONB DEFAULT '[]',
+        clientes JSONB DEFAULT '[]',
+        usuarios JSONB DEFAULT '[]',
+        productos JSONB DEFAULT '[]',
+        mozo_historial JSONB DEFAULT '[]',
+        caja_abierta BOOLEAN DEFAULT TRUE,
+        caja_inicial INTEGER DEFAULT 5000,
+        caja_moves JSONB DEFAULT '[]',
+        caja_cierres JSONB DEFAULT '[]',
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    console.log('[PG] app_state table ready');
+  } catch(e) {
+    console.error('[PG] init failed:', e.message);
+  }
+}
+
 const PORT       = process.env.PORT || 3000;
 const JWT_SECRET = 'pizzeria-pro-secret-2024';
 const JWT_EXPIRY = '8h';
@@ -247,6 +292,9 @@ const db = {
   console.log(`[SEED] Usuarios: ${db.users.length} | Productos: ${db.productos.length} | Mesas: ${db.mesas.length}`);
 })();
 
+// Initialize PostgreSQL after seed block
+initPG();
+
 // ─────────────────────────────────────────────
 //  HELPERS
 // ─────────────────────────────────────────────
@@ -330,6 +378,7 @@ function authMiddleware(req, res, next) {
 // Aplicar auth a /api/* excepto /api/auth/*
 app.use('/api', (req, res, next) => {
   if (req.path.startsWith('/auth')) return next();
+  if (req.path === '/state' && req.method === 'GET') return next();
   authMiddleware(req, res, next);
 });
 
@@ -1079,6 +1128,43 @@ setInterval(() => {
     emitDashboardStats();
   }
 }, 10000);
+
+// ─────────────────────────────────────────────
+//  STATE PERSISTENCE ROUTES
+// ─────────────────────────────────────────────
+app.get('/api/state', async (_req, res) => {
+  try {
+    const pool = getPool();
+    if (!pool) return res.json(null);
+    const { rows } = await pool.query('SELECT * FROM app_state WHERE id = 1');
+    res.json(rows[0] || null);
+  } catch(e) { console.error('[state:get]', e.message); res.json(null); }
+});
+
+app.post('/api/state', authMiddleware, async (req, res) => {
+  try {
+    const pool = getPool();
+    if (!pool) return res.json({ ok: true, skipped: true });
+    const { mesas, delivery, facturas, clientes, usuarios, productos, mozo_historial,
+            caja_abierta, caja_inicial, caja_moves, caja_cierres } = req.body;
+    await pool.query(`
+      INSERT INTO app_state (id, mesas, delivery, facturas, clientes, usuarios, productos, mozo_historial,
+        caja_abierta, caja_inicial, caja_moves, caja_cierres, updated_at)
+      VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+      ON CONFLICT (id) DO UPDATE SET
+        mesas=$1, delivery=$2, facturas=$3, clientes=$4, usuarios=$5, productos=$6,
+        mozo_historial=$7, caja_abierta=$8, caja_inicial=$9,
+        caja_moves=$10, caja_cierres=$11, updated_at=NOW()
+    `, [
+      JSON.stringify(mesas||[]), JSON.stringify(delivery||[]), JSON.stringify(facturas||[]),
+      JSON.stringify(clientes||[]), JSON.stringify(usuarios||[]), JSON.stringify(productos||[]),
+      JSON.stringify(mozo_historial||[]),
+      caja_abierta ?? true, caja_inicial ?? 5000,
+      JSON.stringify(caja_moves||[]), JSON.stringify(caja_cierres||[])
+    ]);
+    res.json({ ok: true });
+  } catch(e) { console.error('[state:post]', e.message); res.status(500).json({ error: e.message }); }
+});
 
 // ─────────────────────────────────────────────
 //  CATCH-ALL – SPA fallback

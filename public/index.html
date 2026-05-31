@@ -1284,6 +1284,25 @@ function saveState() {
     localStorage.setItem('pz_caja_moves', JSON.stringify(cajaMoves));
     localStorage.setItem('pz_caja_cierres', JSON.stringify(cajaCierres));
   } catch(e) {}
+  // Sync to PostgreSQL (fire and forget)
+  if (typeof token !== 'undefined' && token) {
+    apiFetch('/state', {
+      method: 'POST',
+      body: JSON.stringify({
+        mesas: mesasData,
+        delivery: deliveryData,
+        facturas: facturasData,
+        clientes: clientesData,
+        usuarios: usuariosData,
+        productos: productosData,
+        mozo_historial: mozoHistorial,
+        caja_abierta: cajaAbierta,
+        caja_inicial: cajaInicial,
+        caja_moves: cajaMoves,
+        caja_cierres: cajaCierres
+      })
+    }).catch(() => {});
+  }
 }
 
 function loadState() {
@@ -1311,6 +1330,40 @@ function loadState() {
     const cc = localStorage.getItem('pz_caja_cierres');
     if (cc) { const parsed = JSON.parse(cc); if (Array.isArray(parsed)) cajaCierres = parsed; }
   } catch(e) {}
+}
+
+async function loadStateFromAPI() {
+  try {
+    const res = await apiFetch('/state');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data) return;
+    const arr = (v, def=[]) => Array.isArray(v) ? v : def;
+    if (arr(data.mesas).length > 0) mesasData = data.mesas;
+    if (arr(data.delivery).length > 0) deliveryData = data.delivery;
+    if (arr(data.facturas).length > 0) facturasData = data.facturas;
+    if (arr(data.clientes).length > 0) clientesData = data.clientes;
+    if (arr(data.usuarios).length > 0) usuariosData = data.usuarios;
+    if (arr(data.productos).length > 0) productosData = data.productos;
+    if (arr(data.mozo_historial).length > 0) mozoHistorial = data.mozo_historial;
+    if (data.caja_abierta !== null && data.caja_abierta !== undefined) cajaAbierta = data.caja_abierta === true;
+    if (data.caja_inicial) cajaInicial = parseInt(data.caja_inicial) || 5000;
+    if (arr(data.caja_moves).length > 0) cajaMoves = data.caja_moves.map(m=>({...m, desc:m.desc||'', monto:Number(m.monto)||0}));
+    if (arr(data.caja_cierres).length > 0) cajaCierres = data.caja_cierres;
+    // Also update localStorage cache
+    try {
+      localStorage.setItem('pz_mesas', JSON.stringify(mesasData));
+      localStorage.setItem('pz_delivery', JSON.stringify(deliveryData));
+      localStorage.setItem('pz_facturas', JSON.stringify(facturasData));
+      localStorage.setItem('pz_caja_abierta', JSON.stringify(cajaAbierta));
+      localStorage.setItem('pz_caja_inicial', JSON.stringify(cajaInicial));
+      localStorage.setItem('pz_caja_moves', JSON.stringify(cajaMoves));
+      localStorage.setItem('pz_caja_cierres', JSON.stringify(cajaCierres));
+    } catch(e) {}
+    console.log('[state] Loaded from DB — mesas:', mesasData.length, '| cajaAbierta:', cajaAbierta);
+  } catch(e) {
+    console.log('[state] DB not available, using localStorage');
+  }
 }
 
 function resetState() {
@@ -1404,6 +1457,13 @@ function initApp() {
   if (currentUser?.rol !== 'admin') document.getElementById('navUsuarios').style.display = 'none';
   // Restore persisted state
   loadState();
+  loadStateFromAPI().then(() => {
+    const activeSection = (document.querySelector('.section.active') || {}).id?.replace('sec-','') || 'dashboard';
+    const loaders = {dashboard:loadDashboard,mesas:renderMesas,delivery:renderDelivery,productos:renderProductos,stock:renderStock,caja:renderCaja,facturacion:loadFacturacion,clientes:renderClientes,reportes:renderReportes,usuarios:renderUsuarios,mozostats:renderMozoStats,config:loadPrintConfigUI};
+    if (loaders[activeSection]) loaders[activeSection]();
+    renderCaja();
+    loadDashboard();
+  });
   // Mozo: hide sidebar, show custom top nav
   if (currentUser?.rol === 'mozo') {
     // Hide sidebar entirely and adjust layout
