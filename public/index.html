@@ -862,14 +862,14 @@ let editingClienteId = null;
 
 // ======= DEMO DATA =======
 const DEMO_MESAS = [
-  {id:1,numero:1,capacidad:4,estado:'libre',zona:'salon',mozo:null,tiempo:null,items:0},
-  {id:2,numero:2,capacidad:4,estado:'ocupada',zona:'salon',mozo:'Carlos',tiempo:'00:45',items:3},
-  {id:3,numero:3,capacidad:2,estado:'libre',zona:'salon',mozo:null,tiempo:null,items:0},
-  {id:4,numero:4,capacidad:6,estado:'ocupada',zona:'salon',mozo:'Ana',tiempo:'01:20',items:5},
-  {id:5,numero:5,capacidad:4,estado:'libre',zona:'salon',mozo:null,tiempo:null,items:0},
-  {id:6,numero:6,capacidad:4,estado:'cuenta',zona:'salon',mozo:'Carlos',tiempo:'01:55',items:7},
-  {id:7,numero:7,capacidad:4,estado:'libre',zona:'salon',mozo:null,tiempo:null,items:0},
-  {id:8,numero:8,capacidad:8,estado:'ocupada',zona:'salon',mozo:'María',tiempo:'00:30',items:2},
+  {id:1,numero:1,capacidad:4,estado:'libre',zona:'salon',mozo:null,tiempo:null,pedido:[]},
+  {id:2,numero:2,capacidad:4,estado:'ocupada',zona:'salon',mozo:'Carlos',tiempo:'00:45',pedido:[{productoId:1,nombre:'Pizza Muzarella',size:'grande',precio:1600,qty:1},{productoId:7,nombre:'Coca-Cola 500ml',size:null,precio:600,qty:2}]},
+  {id:3,numero:3,capacidad:2,estado:'libre',zona:'salon',mozo:null,tiempo:null,pedido:[]},
+  {id:4,numero:4,capacidad:6,estado:'ocupada',zona:'salon',mozo:'Ana',tiempo:'01:20',pedido:[{productoId:2,nombre:'Pizza Napolitana',size:'grande',precio:1800,qty:1},{productoId:3,nombre:'Pizza 4 Quesos',size:'mediana',precio:1500,qty:1},{productoId:12,nombre:'Provoleta',size:null,precio:1100,qty:1},{productoId:9,nombre:'Cerveza 1L',size:null,precio:1200,qty:2}]},
+  {id:5,numero:5,capacidad:4,estado:'libre',zona:'salon',mozo:null,tiempo:null,pedido:[]},
+  {id:6,numero:6,capacidad:4,estado:'cuenta',zona:'salon',mozo:'Carlos',tiempo:'01:55',pedido:[{productoId:4,nombre:'Pizza Fugazzeta',size:'grande',precio:1700,qty:2},{productoId:10,nombre:'Fernet con Coca',size:null,precio:1800,qty:2},{productoId:11,nombre:'Tiramisu',size:null,precio:900,qty:2}]},
+  {id:7,numero:7,capacidad:4,estado:'libre',zona:'salon',mozo:null,tiempo:null,pedido:[]},
+  {id:8,numero:8,capacidad:8,estado:'ocupada',zona:'salon',mozo:'María',tiempo:'00:30',pedido:[{productoId:5,nombre:'Empanada de Carne',size:null,precio:350,qty:4},{productoId:8,nombre:'Agua Mineral',size:null,precio:400,qty:2}]},
 ];
 const DEMO_PRODUCTOS = [
   {id:1,nombre:'Pizza Muzarella',categoria:'pizzas',emoji:'🍕',precio_chica:800,precio_mediana:1200,precio_grande:1600,activo:true},
@@ -1016,6 +1016,13 @@ function initApp() {
   document.getElementById('userRole').textContent = roles[currentUser?.rol] || currentUser?.rol || '';
   // Hide usuarios for non-admin
   if (currentUser?.rol !== 'admin') document.getElementById('navUsuarios').style.display = 'none';
+  // Mozo: only show mesas and delivery
+  if (currentUser?.rol === 'mozo') {
+    ['productos','stock','caja','facturacion','clientes','reportes','config'].forEach(s => {
+      const el = document.querySelector(`[data-section="${s}"]`);
+      if(el) el.style.display='none';
+    });
+  }
   // Clock
   updateClock();
   setInterval(updateClock, 1000);
@@ -1027,8 +1034,12 @@ function initApp() {
     socket.on('delivery:update', () => { if(document.getElementById('sec-delivery').classList.contains('active')) renderDelivery(); });
     socket.on('comanda:nueva', () => showToast('Nueva comanda en cocina','success'));
   } catch(e){}
-  // Load first section
-  loadDashboard();
+  // Load first section: mozo goes straight to mesas
+  if (currentUser?.rol === 'mozo') {
+    navTo('mesas', document.querySelector('[data-section="mesas"]'));
+  } else {
+    loadDashboard();
+  }
 }
 
 if (token && currentUser) {
@@ -1137,44 +1148,140 @@ function renderMesas() {
       <div class="mesa-estado">${m.estado==='libre'?'LIBRE':m.estado==='ocupada'?'OCUPADA':'CUENTA'}</div>
       <div class="mesa-info">${m.mozo?'👨 '+m.mozo:m.capacidad+' personas'}</div>
       ${m.tiempo?`<div class="mesa-info">⏱ ${m.tiempo}</div>`:''}
-      ${m.items?`<div class="mesa-info">📋 ${m.items} ítems</div>`:''}
+      ${m.pedido&&m.pedido.length?`<div class="mesa-info">📋 ${m.pedido.reduce((s,i)=>s+i.qty,0)} ítems</div>`:''}
     </div>`).join('');
+}
+
+function mesaPedidoHTML(id) {
+  const m = mesasData.find(x=>x.id===id);
+  const cats = [...new Set(productosData.map(p=>p.categoria))];
+  const catLabels = {pizzas:'🍕 Pizzas',empanadas:'🥟 Empanadas',bebidas:'🥤 Bebidas',tragos:'🍹 Tragos',postres:'🍮 Postres',entradas:'🧀 Entradas'};
+  const subtotal = (m.pedido||[]).reduce((s,i)=>s+i.precio*i.qty,0);
+  return `
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <span style="font-weight:600">👨 ${m.mozo||'-'}</span>
+      <span style="color:var(--gray)">⏱ ${m.tiempo||'-'}</span>
+      <span class="badge badge-${m.estado==='cuenta'?'danger':'warning'}">${m.estado.toUpperCase()}</span>
+    </div>
+    <div style="background:#f8f9fa;border-radius:10px;padding:12px;margin-bottom:14px">
+      <div style="font-weight:600;margin-bottom:8px;font-size:13px">📋 Pedido actual</div>
+      ${(m.pedido||[]).length===0?'<div style="color:#aaa;font-size:13px">Sin ítems aún</div>':
+        `<table style="width:100%;font-size:12.5px">
+          <thead><tr><th>Item</th><th style="text-align:center;width:80px">Cant.</th><th style="text-align:right">Precio</th><th style="width:30px"></th></tr></thead>
+          <tbody>${(m.pedido||[]).map((i,idx)=>`
+            <tr>
+              <td>${i.nombre}${i.size?' ('+i.size+')':''}</td>
+              <td style="text-align:center">
+                <button onclick="cambiarQtyMesa(${id},${idx},-1)" style="border:none;background:var(--red);color:#fff;width:20px;height:20px;border-radius:4px;cursor:pointer;font-size:12px">-</button>
+                <span style="margin:0 4px">${i.qty}</span>
+                <button onclick="cambiarQtyMesa(${id},${idx},1)" style="border:none;background:var(--green);color:#fff;width:20px;height:20px;border-radius:4px;cursor:pointer;font-size:12px">+</button>
+              </td>
+              <td style="text-align:right">$${(i.precio*i.qty).toLocaleString()}</td>
+              <td><button onclick="quitarItemMesa(${id},${idx})" style="border:none;background:none;cursor:pointer;color:var(--red);font-size:14px">✕</button></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+        <div style="font-size:18px;font-weight:800;color:var(--blue);text-align:right;margin-top:8px;border-top:1px solid var(--border);padding-top:8px">Total: $${subtotal.toLocaleString()}</div>`}
+    </div>
+    <div style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:12px">
+      <div style="font-weight:600;margin-bottom:10px;font-size:13px">➕ Agregar ítem</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        ${cats.map(c=>`<button onclick="filtrarCatMesa('${c}')" class="btn btn-outline btn-sm" id="catBtn-${c}" style="font-size:11px">${catLabels[c]||c}</button>`).join('')}
+      </div>
+      <div id="productosMenuMesa" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;max-height:160px;overflow-y:auto"></div>
+      <div id="addItemSizeRow" style="display:none;margin-top:10px;padding:10px;background:#f8f9fa;border-radius:8px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px" id="addItemNombre"></div>
+        <div id="addItemSizes" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      </div>
+    </div>`;
+}
+
+let _mesaModalId = null;
+
+function filtrarCatMesa(cat) {
+  document.querySelectorAll('[id^="catBtn-"]').forEach(b=>b.style.background='');
+  const btn = document.getElementById('catBtn-'+cat);
+  if(btn) { btn.style.background='var(--red)'; btn.style.color='#fff'; btn.style.borderColor='var(--red)'; }
+  const prods = productosData.filter(p=>p.categoria===cat&&p.activo);
+  document.getElementById('productosMenuMesa').innerHTML = prods.map(p=>`
+    <div onclick="seleccionarProductoMesa(${p.id})" style="background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:8px;cursor:pointer;text-align:center;font-size:12px;transition:all .15s" onmouseover="this.style.borderColor='var(--red)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="font-size:20px">${p.emoji}</div>
+      <div style="font-weight:600;font-size:11px;line-height:1.2">${p.nombre}</div>
+      <div style="color:var(--red);font-size:11px">${p.precio_chica?'desde $'+p.precio_chica.toLocaleString():'$'+p.precio.toLocaleString()}</div>
+    </div>`).join('') || '<div style="color:#aaa;font-size:12px">Sin productos en esta categoría</div>';
+}
+
+function seleccionarProductoMesa(prodId) {
+  const p = productosData.find(x=>x.id===prodId);
+  if(!p) return;
+  document.getElementById('addItemNombre').textContent = p.emoji+' '+p.nombre;
+  const sizesDiv = document.getElementById('addItemSizes');
+  if(p.precio_chica) {
+    sizesDiv.innerHTML = `
+      <button onclick="agregarItemMesa(${_mesaModalId},${p.id},'chica',${p.precio_chica})" class="btn btn-outline btn-sm">Chica $${p.precio_chica.toLocaleString()}</button>
+      <button onclick="agregarItemMesa(${_mesaModalId},${p.id},'mediana',${p.precio_mediana})" class="btn btn-outline btn-sm">Mediana $${p.precio_mediana.toLocaleString()}</button>
+      <button onclick="agregarItemMesa(${_mesaModalId},${p.id},'grande',${p.precio_grande})" class="btn btn-success btn-sm">Grande $${p.precio_grande.toLocaleString()}</button>`;
+  } else {
+    sizesDiv.innerHTML = `<button onclick="agregarItemMesa(${_mesaModalId},${p.id},null,${p.precio})" class="btn btn-success btn-sm">Agregar $${p.precio.toLocaleString()}</button>`;
+  }
+  document.getElementById('addItemSizeRow').style.display='block';
+}
+
+function agregarItemMesa(mesaId, prodId, size, precio) {
+  const m = mesasData.find(x=>x.id===mesaId);
+  const p = productosData.find(x=>x.id===prodId);
+  if(!m||!p) return;
+  const existing = m.pedido.find(i=>i.productoId===prodId&&i.size===size);
+  if(existing) { existing.qty++; }
+  else { m.pedido.push({productoId:prodId,nombre:p.nombre,size,precio,qty:1}); }
+  document.getElementById('modalMesaBody').innerHTML = mesaPedidoHTML(mesaId);
+  document.getElementById('addItemSizeRow').style.display='none';
+  renderMesas();
+}
+
+function cambiarQtyMesa(mesaId, idx, delta) {
+  const m = mesasData.find(x=>x.id===mesaId);
+  if(!m) return;
+  m.pedido[idx].qty += delta;
+  if(m.pedido[idx].qty<=0) m.pedido.splice(idx,1);
+  document.getElementById('modalMesaBody').innerHTML = mesaPedidoHTML(mesaId);
+  renderMesas();
+}
+
+function quitarItemMesa(mesaId, idx) {
+  const m = mesasData.find(x=>x.id===mesaId);
+  if(!m) return;
+  m.pedido.splice(idx,1);
+  document.getElementById('modalMesaBody').innerHTML = mesaPedidoHTML(mesaId);
+  renderMesas();
 }
 
 function clickMesa(id) {
   const m = mesasData.find(x=>x.id===id);
   if(!m) return;
+  _mesaModalId = id;
   document.getElementById('modalMesaTitle').textContent = `Mesa #${m.numero}`;
   const body = document.getElementById('modalMesaBody');
   const footer = document.getElementById('modalMesaFooter');
+  const esMozo = currentUser?.rol === 'mozo';
   if(m.estado==='libre') {
+    const mozosOpts = esMozo
+      ? `<option value="${currentUser.nombre}">${currentUser.nombre}</option>`
+      : `<option value="Carlos">Carlos</option><option value="Ana">Ana</option><option value="María">María</option>`;
     body.innerHTML = `<p style="margin-bottom:14px;color:var(--gray)">Mesa libre · ${m.capacidad} personas</p>
       <div class="form-group"><label>Mozo</label>
-        <select class="form-control" id="abrirMozo">
-          <option value="Carlos">Carlos</option><option value="Ana">Ana</option><option value="María">María</option>
-        </select>
+        <select class="form-control" id="abrirMozo">${mozosOpts}</select>
       </div>`;
     footer.innerHTML = `<button class="btn btn-outline" onclick="closeModal('modalMesa')">Cancelar</button>
       <button class="btn btn-success" onclick="abrirMesa(${id})">✅ Abrir Mesa</button>`;
   } else {
-    const items = [
-      {nombre:'Pizza Muzarella Grande',qty:1,precio:1600},
-      {nombre:'Coca-Cola 500ml',qty:2,precio:600},
-    ];
-    const subtotal = items.reduce((s,i)=>s+i.precio*i.qty,0);
-    body.innerHTML = `
-      <div style="display:flex;gap:10px;margin-bottom:16px">
-        <span>👨 ${m.mozo||'-'}</span><span>⏱ ${m.tiempo||'-'}</span><span class="badge badge-${m.estado==='cuenta'?'danger':'warning'}">${m.estado.toUpperCase()}</span>
-      </div>
-      <table style="width:100%;font-size:13px;margin-bottom:16px">
-        <thead><tr><th>Item</th><th style="text-align:right">Cant.</th><th style="text-align:right">Precio</th></tr></thead>
-        <tbody>${items.map(i=>`<tr><td>${i.nombre}</td><td style="text-align:right">${i.qty}</td><td style="text-align:right">$${(i.precio*i.qty).toLocaleString()}</td></tr>`).join('')}</tbody>
-      </table>
-      <div style="font-size:20px;font-weight:800;color:var(--blue);text-align:right">Total: $${subtotal.toLocaleString()}</div>`;
+    body.innerHTML = mesaPedidoHTML(id);
+    const btnCuenta = m.estado!=='cuenta' ? `<button class="btn btn-warning" onclick="pedirCuenta(${id})">🧾 Pedir Cuenta</button>` : '';
+    const btnCobrar = (!esMozo||m.estado==='cuenta') ? `<button class="btn btn-danger" onclick="cerrarMesa(${id})">✔️ Cobrar y Cerrar</button>` : '';
     footer.innerHTML = `<button class="btn btn-outline" onclick="closeModal('modalMesa')">Cancelar</button>
-      <button class="btn btn-warning" onclick="pedirCuenta(${id})">🧾 Pedir Cuenta</button>
+      ${btnCuenta}
       <button class="btn btn-outline btn-sm" onclick="imprimirComanda(${id})">🖨️ Imprimir</button>
-      <button class="btn btn-danger" onclick="cerrarMesa(${id})">✔️ Cobrar y Cerrar</button>`;
+      ${btnCobrar}`;
   }
   openModal('modalMesa');
 }
@@ -1182,7 +1289,7 @@ function clickMesa(id) {
 function abrirMesa(id) {
   const m = mesasData.find(x=>x.id===id);
   const mozo = document.getElementById('abrirMozo').value;
-  m.estado='ocupada'; m.mozo=mozo; m.tiempo='00:00'; m.items=0;
+  m.estado='ocupada'; m.mozo=mozo; m.tiempo='00:00'; m.pedido=[];
   closeModal('modalMesa');
   renderMesas();
   showToast(`Mesa #${m.numero} abierta por ${mozo}`,'success');
@@ -1199,8 +1306,10 @@ function pedirCuenta(id) {
 
 function cerrarMesa(id) {
   const m = mesasData.find(x=>x.id===id);
-  m.estado='libre'; m.mozo=null; m.tiempo=null; m.items=0;
-  const f = {id:facturasData.length+1,numero:`F-${String(facturasData.length+1).padStart(4,'0')}`,fecha:new Date().toISOString().slice(0,16).replace('T',' '),origen:`Mesa ${m.numero}`,items:2,total:2800,pago:'efectivo',estado:'pagada'};
+  const total = (m.pedido||[]).reduce((s,i)=>s+i.precio*i.qty,0);
+  const itemsCount = (m.pedido||[]).reduce((s,i)=>s+i.qty,0);
+  m.estado='libre'; m.mozo=null; m.tiempo=null; m.pedido=[];
+  const f = {id:facturasData.length+1,numero:`F-${String(facturasData.length+1).padStart(4,'0')}`,fecha:new Date().toISOString().slice(0,16).replace('T',' '),origen:`Mesa ${m.numero}`,items:itemsCount,total:total||0,pago:'efectivo',estado:'pagada'};
   facturasData.unshift(f);
   closeModal('modalMesa');
   renderMesas();
@@ -1213,7 +1322,7 @@ function crearMesa() {
   const cap = parseInt(document.getElementById('nuevaMesaCap').value)||4;
   const zona = document.getElementById('nuevaMesaZona').value;
   if(!num){ showToast('Ingresá número de mesa','error'); return; }
-  mesasData.push({id:Date.now(),numero:num,capacidad:cap,estado:'libre',zona,mozo:null,tiempo:null,items:0});
+  mesasData.push({id:Date.now(),numero:num,capacidad:cap,estado:'libre',zona,mozo:null,tiempo:null,pedido:[]});
   closeModal('modalNuevaMesa');
   renderMesas();
   showToast(`Mesa #${num} creada`,'success');
@@ -1221,6 +1330,14 @@ function crearMesa() {
 
 function imprimirComanda(id) {
   const m = mesasData.find(x=>x.id===id);
+  const items = m.pedido||[];
+  const total = items.reduce((s,i)=>s+i.precio*i.qty,0);
+  const lineas = items.map(i=>{
+    const label = i.nombre+(i.size?' ('+i.size+')':'');
+    const precio = '$'+(i.precio*i.qty).toLocaleString('es-AR');
+    const dots = '.'.repeat(Math.max(2,42-label.length-i.qty.toString().length-precio.length));
+    return `<p>${label} x${i.qty} ${dots} ${precio}</p>`;
+  }).join('');
   const win = window.open('', '_blank', 'width=400,height=600');
   win.document.write(`
     <html><head><title>Comanda Mesa ${m.numero}</title>
@@ -1231,10 +1348,9 @@ function imprimirComanda(id) {
       <p style="text-align:center">Mesa #${m.numero} — ${m.mozo || ''}</p>
       <p style="text-align:center">${new Date().toLocaleString('es-AR')}</p>
       <hr>
-      <p>Pizza Muzarella Grande x1 ......... $1.600</p>
-      <p>Coca-Cola 500ml x2 ............... $1.200</p>
+      ${lineas||'<p>Sin ítems</p>'}
       <hr>
-      <p class="total">TOTAL: $2.800</p>
+      <p class="total">TOTAL: $${total.toLocaleString('es-AR')}</p>
       <hr>
       <p style="text-align:center">¡Gracias por su visita!</p>
     </body></html>
