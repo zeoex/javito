@@ -103,6 +103,9 @@ tr:hover td{background:#fafafa}
 .badge-primary{background:#cce5ff;color:#004085}
 /* === MESAS === */
 .mesas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px}
+.mesas-grid-mozo{grid-template-columns:1fr;gap:12px}
+@media(min-width:640px){.mesas-grid-mozo{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1100px){.mesas-grid-mozo{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}}
 .mesa-card{border-radius:10px;padding:16px 14px;cursor:pointer;transition:all .2s;border:2px solid transparent;text-align:center;position:relative}
 .mesa-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.12)}
 .mesa-card.libre{background:#d4edda;border-color:#c3e6cb}
@@ -310,7 +313,8 @@ input.form-control:focus{outline:none;border-color:var(--red)}
   .modal{max-width:100% !important;border-radius:14px 14px 0 0;margin:0}
 
   /* mesas grid: 3 cols */
-  .mesas-grid{grid-template-columns:repeat(3,1fr) !important}
+  .mesas-grid:not(.mesas-grid-mozo){grid-template-columns:repeat(3,1fr) !important}
+  .mesas-grid-mozo{grid-template-columns:1fr !important}
 
   /* tables: horizontal scroll */
   .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -1296,7 +1300,8 @@ function renderMesas() {
   if(!filtered.length){ el.innerHTML='<div class="empty-state"><div class="empty-icon">🪑</div><p>No hay mesas en esta zona</p></div>'; return; }
   if(currentUser?.rol==='mozo') {
     // Panoramic mozo view - large cards with full info
-    el.style.gridTemplateColumns = 'repeat(auto-fill,minmax(260px,1fr))';
+    el.classList.add('mesas-grid-mozo');
+    el.style.gridTemplateColumns = '';
     el.innerHTML = filtered.map(m=>{
       const total = (m.pedido||[]).reduce((s,i)=>s+i.precio*i.qty,0);
       const itemsCount = (m.pedido||[]).reduce((s,i)=>s+i.qty,0);
@@ -1317,6 +1322,7 @@ function renderMesas() {
       </div>`;
     }).join('');
   } else {
+    el.classList.remove('mesas-grid-mozo');
     el.style.gridTemplateColumns = '';
     el.innerHTML = filtered.map(m=>`
       <div class="mesa-card ${m.estado}" onclick="clickMesa(${m.id})">
