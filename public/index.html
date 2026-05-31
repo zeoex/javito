@@ -334,6 +334,16 @@ input.form-control:focus{outline:none;border-color:var(--red)}
   .mozo-topnav .mtn-logo span{font-size:20px}
   .mtn-btn{padding:7px 10px;font-size:12px}
 }
+
+@media (max-width:520px){
+  /* On small phones: hide logo text + button labels, show only emojis */
+  .mtn-logo-text{display:none}
+  .mtn-label{display:none}
+  .mtn-btn{padding:9px 11px;border-radius:10px;font-size:16px}
+  .mozo-topnav{padding:0 12px;gap:8px}
+  .mozo-topnav-btns{gap:6px}
+  .mtn-avatar{width:34px;height:34px;font-size:13px}
+}
 </style>
 </head>
 <body>
@@ -427,11 +437,11 @@ input.form-control:focus{outline:none;border-color:var(--red)}
   <div class="main" id="mainContent">
     <!-- Mozo-only top navigation bar -->
     <div class="mozo-topnav" id="mozoTopnav">
-      <div class="mtn-logo"><span>🍕</span>PIZZERÍA PRO</div>
+      <div class="mtn-logo"><span>🍕</span><span class="mtn-logo-text">PIZZERÍA PRO</span></div>
       <div class="mozo-topnav-btns">
-        <button class="mtn-btn active" id="mtnBtnMesas" onclick="mozoNavTo('mesas')">🪑 Mesas</button>
-        <button class="mtn-btn" id="mtnBtnStats" onclick="mozoNavTo('mozostats')">📊 Estadísticas</button>
-        <button class="mtn-btn mtn-btn-logout" onclick="doLogout()">🔴 Sesión</button>
+        <button class="mtn-btn active" id="mtnBtnMesas" onclick="mozoNavTo('mesas')">🪑 <span class="mtn-label">Mesas</span></button>
+        <button class="mtn-btn" id="mtnBtnStats" onclick="mozoNavTo('mozostats')">📊 <span class="mtn-label">Estadísticas</span></button>
+        <button class="mtn-btn mtn-btn-logout" onclick="doLogout()">🔴 <span class="mtn-label">Sesión</span></button>
         <div class="mtn-avatar" id="mozoAvatar" title="">CM</div>
       </div>
     </div>
