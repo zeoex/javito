@@ -104,31 +104,17 @@ tr:hover td{background:#fafafa}
 .badge-primary{background:#cce5ff;color:#004085}
 /* === MESAS === */
 .mesas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px}
-.mesas-grid-mozo{grid-template-columns:1fr;gap:14px;padding-bottom:16px}
-@media(min-width:640px){.mesas-grid-mozo{grid-template-columns:repeat(2,1fr)}}
-@media(min-width:1100px){.mesas-grid-mozo{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}}
-.mesa-card-mozo{border-radius:18px;padding:20px 18px;cursor:pointer;transition:transform .15s,box-shadow .15s;position:relative;overflow:hidden;border:none;min-height:120px;display:flex;flex-direction:column;justify-content:space-between}
-.mesa-card-mozo:active{transform:scale(0.97)}
-.mesa-card-mozo.libre{background:linear-gradient(135deg,#e8f5e9,#c8e6c9);box-shadow:0 2px 12px rgba(40,167,69,0.15)}
-.mesa-card-mozo.ocupada{background:linear-gradient(135deg,#fff8e1,#ffecb3);box-shadow:0 2px 12px rgba(255,193,7,0.2)}
-.mesa-card-mozo.cuenta{background:linear-gradient(135deg,#fce4ec,#f8bbd9);box-shadow:0 2px 12px rgba(220,53,69,0.2)}
-.mesa-card-mozo:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,0.15)}
-.mc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
-.mc-num{font-size:32px;font-weight:900;line-height:1}
-.mc-num.libre{color:#1b5e20}
-.mc-num.ocupada{color:#7d5a00}
-.mc-num.cuenta{color:#880e4f}
-.mc-badge{font-size:10px;font-weight:800;padding:4px 10px;border-radius:20px;letter-spacing:0.8px;text-transform:uppercase}
-.mc-badge.libre{background:#28a745;color:#fff}
-.mc-badge.ocupada{background:#ffc107;color:#5a3e00}
-.mc-badge.cuenta{background:#dc3545;color:#fff}
-.mc-info{font-size:12px;font-weight:600;margin-bottom:4px;opacity:0.8}
-.mc-footer{display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1.5px solid rgba(0,0,0,0.08);margin-top:auto}
-.mc-items{font-size:12px;font-weight:600;opacity:0.7}
-.mc-total{font-size:18px;font-weight:900}
-.mc-total.libre{color:#1b5e20}
-.mc-total.ocupada{color:#7d5a00}
-.mc-total.cuenta{color:#880e4f}
+.mesas-grid-mozo{display:grid;grid-template-columns:repeat(auto-fill,minmax(75px,1fr));gap:10px;padding-bottom:16px}
+.mesa-chip-mozo{border-radius:16px;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform .12s,box-shadow .12s}
+.mesa-chip-mozo:active{transform:scale(0.91)}
+.mesa-chip-mozo.libre{background:linear-gradient(135deg,#22c55e,#15803d);box-shadow:0 3px 10px rgba(34,197,94,0.35)}
+.mesa-chip-mozo.ocupada{background:linear-gradient(135deg,#fbbf24,#d97706);box-shadow:0 3px 10px rgba(251,191,36,0.35)}
+.mesa-chip-mozo.cuenta{background:linear-gradient(135deg,#f87171,#dc2626);box-shadow:0 3px 10px rgba(248,113,113,0.35)}
+.mesa-chip-mozo:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,0.18)}
+.mcp-num{font-size:26px;font-weight:900;color:#fff;line-height:1}
+.mcp-items{font-size:9px;font-weight:800;color:rgba(255,255,255,0.85);margin-top:4px}
+.tabs-full{width:100%}
+.tabs-full .tab{flex:1;text-align:center}
 .mesa-card{border-radius:10px;padding:16px 14px;cursor:pointer;transition:all .2s;border:2px solid transparent;text-align:center;position:relative}
 .mesa-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.12)}
 .mesa-card.libre{background:#d4edda;border-color:#c3e6cb}
@@ -343,7 +329,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 
   /* mesas grid: 3 cols */
   .mesas-grid:not(.mesas-grid-mozo){grid-template-columns:repeat(3,1fr) !important}
-  .mesas-grid-mozo{grid-template-columns:1fr !important}
+  .mesas-grid-mozo{grid-template-columns:repeat(auto-fill,minmax(70px,1fr)) !important}
 
   /* tables: horizontal scroll */
   .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -523,10 +509,11 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <div class="section" id="sec-mesas">
         <div class="section-header">
           <h2>🪑 Mesas</h2>
-          <button class="btn btn-primary btn-sm" onclick="openModal('modalNuevaMesa')">+ Nueva Mesa</button>
+          <button class="btn btn-primary btn-sm" id="btnNuevaMesa" onclick="openModal('modalNuevaMesa')">+ Nueva Mesa</button>
         </div>
-        <div class="tabs">
-          <div class="tab active" onclick="switchTab('salon')">🏠 Salón</div>
+        <div class="tabs" id="mesasTabs">
+          <div class="tab active" id="tabSalon" onclick="switchTab('salon')">🏠 Salón</div>
+          <div class="tab" id="tabVereda" onclick="switchTab('vereda')">🌿 Vereda</div>
         </div>
         <div class="mesas-grid" id="mesasGrid"></div>
       </div>
@@ -801,7 +788,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <div class="form-group"><label>Número de Mesa</label><input class="form-control" id="nuevaMesaNum" type="number" placeholder="Ej: 13"/></div>
       <div class="form-group"><label>Capacidad (personas)</label><input class="form-control" id="nuevaMesaCap" type="number" placeholder="4" value="4"/></div>
       <div class="form-group"><label>Ubicación</label>
-        <select class="form-control" id="nuevaMesaZona"><option value="salon">Salón</option><option value="terraza">Terraza</option></select>
+        <select class="form-control" id="nuevaMesaZona"><option value="salon">Salón</option><option value="vereda">Vereda</option></select>
       </div>
     </div>
     <div class="modal-footer">
@@ -972,6 +959,9 @@ const DEMO_MESAS = [
   {id:6,numero:6,capacidad:4,estado:'cuenta',zona:'salon',mozo:'Carlos',tiempo:'01:55',pedido:[{productoId:4,nombre:'Pizza Fugazzeta',size:'grande',precio:1700,qty:2},{productoId:10,nombre:'Fernet con Coca',size:null,precio:1800,qty:2},{productoId:11,nombre:'Tiramisu',size:null,precio:900,qty:2}]},
   {id:7,numero:7,capacidad:4,estado:'libre',zona:'salon',mozo:null,tiempo:null,pedido:[]},
   {id:8,numero:8,capacidad:8,estado:'ocupada',zona:'salon',mozo:'María',tiempo:'00:30',pedido:[{productoId:5,nombre:'Empanada de Carne',size:null,precio:350,qty:4},{productoId:8,nombre:'Agua Mineral',size:null,precio:400,qty:2}]},
+  {id:9,numero:1,capacidad:4,estado:'libre',zona:'vereda',mozo:null,tiempo:null,pedido:[]},
+  {id:10,numero:2,capacidad:2,estado:'ocupada',zona:'vereda',mozo:'Carlos',tiempo:'00:20',pedido:[{productoId:1,nombre:'Pizza Muzarella',size:'mediana',precio:1200,qty:1},{productoId:7,nombre:'Coca-Cola 500ml',size:null,precio:600,qty:2}]},
+  {id:11,numero:3,capacidad:4,estado:'libre',zona:'vereda',mozo:null,tiempo:null,pedido:[]},
 ];
 const DEMO_PRODUCTOS = [
   {id:1,nombre:'Pizza Muzarella',categoria:'pizzas',emoji:'🍕',precio_chica:800,precio_mediana:1200,precio_grande:1600,activo:true},
@@ -1174,6 +1164,8 @@ function initApp() {
     // Show mozo topnav, hide regular topbar
     document.getElementById('mozoTopnav').classList.add('visible');
     document.getElementById('mainTopbar').style.display = 'none';
+    document.getElementById('btnNuevaMesa').style.display = 'none';
+    document.getElementById('mesasTabs').classList.add('tabs-full');
     // Set avatar initials (up to 2 words)
     const nombre = currentUser?.nombre || '';
     const initials = nombre.split(' ').filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');
@@ -1246,6 +1238,10 @@ function mozoNavTo(section) {
   document.getElementById('mtnBtnMesas').classList.toggle('active', section==='mesas');
   document.getElementById('mtnBtnStats').classList.toggle('active', section==='mozostats');
   navTo(section, null);
+}
+function cambiarZonaMesa(id, zona) {
+  const m = mesasData.find(x=>x.id===id);
+  if(m) m.zona = zona;
 }
 function toggleMozoMenu() {
   document.getElementById('mozoAvatarMenu').classList.toggle('open');
@@ -1328,8 +1324,8 @@ const CATS_COMANDA = ['pizzas','empanadas','entradas','postres'];
 // ======= MESAS =======
 function switchTab(tab) {
   currentMesaTab = tab;
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  event.target.classList.add('active');
+  document.querySelectorAll('#mesasTabs .tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(tab==='salon'?'tabSalon':'tabVereda').classList.add('active');
   renderMesas();
 }
 
@@ -1342,21 +1338,10 @@ function renderMesas() {
     el.classList.add('mesas-grid-mozo');
     el.style.gridTemplateColumns = '';
     el.innerHTML = filtered.map(m=>{
-      const total = (m.pedido||[]).reduce((s,i)=>s+i.precio*i.qty,0);
       const itemsCount = (m.pedido||[]).reduce((s,i)=>s+i.qty,0);
-      const statusLabel = {libre:'LIBRE',ocupada:'OCUPADA',cuenta:'CUENTA'};
-      return `<div onclick="clickMesa(${m.id})" class="mesa-card-mozo ${m.estado}">
-  <div class="mc-top">
-    <div class="mc-num ${m.estado}">🪑 ${m.numero}</div>
-    <span class="mc-badge ${m.estado}">${statusLabel[m.estado]}</span>
-  </div>
-  <div class="mc-info">${m.mozo ? '👨 ' + m.mozo + (m.tiempo ? '  ·  ⏱ ' + m.tiempo : '') : '👥 ' + m.capacidad + ' personas'}</div>
-  ${itemsCount > 0 ? `<div class="mc-footer">
-    <span class="mc-items">📋 ${itemsCount} ítem${itemsCount !== 1 ? 's' : ''}</span>
-    <span class="mc-total ${m.estado}">$${total.toLocaleString('es-AR')}</span>
-  </div>` : `<div class="mc-footer">
-    <span class="mc-items" style="opacity:0.5">Sin pedidos</span>
-  </div>`}
+      return `<div onclick="clickMesa(${m.id})" class="mesa-chip-mozo ${m.estado}">
+  <div class="mcp-num">${m.numero}</div>
+  ${itemsCount > 0 ? `<div class="mcp-items">${itemsCount} ítem${itemsCount!==1?'s':''}</div>` : ''}
 </div>`;
     }).join('');
   } else {
@@ -1504,18 +1489,25 @@ function clickMesa(id) {
   const body = document.getElementById('modalMesaBody');
   const footer = document.getElementById('modalMesaFooter');
   const esMozo = currentUser?.rol === 'mozo';
+  const esAdmin = !esMozo;
+  const zonaHtml = esAdmin ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:8px 12px;background:#f8f9fa;border-radius:8px">
+    <span style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px">Zona</span>
+    <select id="mesaZonaSelect" class="form-control" style="width:auto;padding:4px 10px;font-size:13px;flex:1" onchange="cambiarZonaMesa(${id},this.value)">
+      <option value="salon" ${m.zona==='salon'?'selected':''}>🏠 Salón</option>
+      <option value="vereda" ${m.zona==='vereda'?'selected':''}>🌿 Vereda</option>
+    </select></div>` : '';
   if(m.estado==='libre') {
     const mozosOpts = esMozo
       ? `<option value="${currentUser.nombre}">${currentUser.nombre}</option>`
       : `<option value="Carlos">Carlos</option><option value="Ana">Ana</option><option value="María">María</option>`;
-    body.innerHTML = `<p style="margin-bottom:14px;color:var(--gray)">Mesa libre · ${m.capacidad} personas</p>
+    body.innerHTML = zonaHtml + `<p style="margin-bottom:14px;color:var(--gray)">Mesa libre · ${m.capacidad} personas</p>
       <div class="form-group"><label>Mozo</label>
         <select class="form-control" id="abrirMozo">${mozosOpts}</select>
       </div>`;
     footer.innerHTML = `<button class="btn btn-outline" onclick="closeModal('modalMesa')">Cancelar</button>
       <button class="btn btn-success" onclick="abrirMesa(${id})">✅ Abrir Mesa</button>`;
   } else {
-    body.innerHTML = mesaPedidoHTML(id);
+    body.innerHTML = zonaHtml + mesaPedidoHTML(id);
     const tieneComida = (m.pedido||[]).some(i=>CATS_COMANDA.includes(i.categoria));
     const tieneItems = (m.pedido||[]).length > 0;
     const btnCuenta = m.estado!=='cuenta' ? `<button class="btn btn-warning" onclick="pedirCuenta(${id})">🧾 Pedir Cuenta</button>` : '';
