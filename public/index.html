@@ -358,6 +358,43 @@ input.form-control:focus{outline:none;border-color:var(--red)}
   .mozo-topnav-btns{gap:6px}
   .mtn-avatar{width:34px;height:34px;font-size:13px}
 }
+/* === MOZO PEDIDO LAYOUT === */
+.mpo-info-bar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.mpo-order-section{background:#f8f9fa;border-radius:10px;padding:10px 12px;margin-bottom:12px}
+.mpo-browser-section{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px}
+.mpo-section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--gray);margin-bottom:8px}
+.mpo-empty{color:#bbb;font-size:13px;font-style:italic;padding:4px 0}
+.mpo-list{display:flex;flex-direction:column}
+.mpo-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #eee}
+.mpo-row:last-child{border-bottom:none}
+.mpo-name{flex:1;font-size:13px;line-height:1.3;min-width:0}
+.mpo-nota{font-size:10px;color:var(--gray);font-style:italic;margin-top:1px}
+.mpo-qty{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.mpo-qbtn{width:26px;height:26px;border:none;border-radius:6px;cursor:pointer;font-size:15px;font-weight:700;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mpo-minus{background:var(--danger);color:#fff}
+.mpo-plus{background:var(--success);color:#fff}
+.mpo-qnum{font-size:14px;font-weight:700;min-width:22px;text-align:center}
+.mpo-del{border:none;background:none;cursor:pointer;color:#ccc;font-size:14px;padding:2px 6px;flex-shrink:0;line-height:1}
+.mpo-del:hover{color:var(--danger)}
+.mpo-price{font-size:13px;font-weight:600;color:var(--blue);flex-shrink:0;min-width:58px;text-align:right}
+.mpo-total{font-size:16px;font-weight:800;color:var(--blue);text-align:right;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.mpo-cat-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.mpo-cat-pill{padding:5px 12px;border:1.5px solid var(--border);border-radius:20px;background:#fff;font-size:12px;font-weight:600;cursor:pointer;color:var(--gray);transition:all .12s;font-family:inherit}
+.mpo-cat-pill:hover{border-color:var(--red);color:var(--red)}
+.mpo-cat-pill.active{background:var(--red);color:#fff;border-color:var(--red)}
+.mpo-prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:8px;max-height:220px;overflow-y:auto}
+.mpo-prod-card{border:1.5px solid var(--border);border-radius:10px;padding:10px 6px;cursor:pointer;text-align:center;transition:all .12s;background:#fff}
+.mpo-prod-card:hover{border-color:var(--red);background:#fff5f5;transform:translateY(-1px)}
+.mpo-prod-card:active{transform:scale(0.96)}
+.mpo-prod-emoji{font-size:22px;line-height:1}
+.mpo-prod-name{font-size:11px;font-weight:600;margin-top:4px;line-height:1.2;color:#333}
+.mpo-prod-price{font-size:10px;color:var(--red);margin-top:2px;font-weight:600}
+.spk-size-list{display:flex;flex-direction:column;gap:10px}
+.spk-size-btn{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border:1.5px solid var(--border);border-radius:10px;background:#fff;cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;transition:all .12s;width:100%}
+.spk-size-btn:hover{border-color:var(--red);background:#fff5f5}
+.spk-size-btn.grande{background:var(--success);color:#fff;border-color:var(--success)}
+.spk-size-btn.grande:hover{background:#218838}
+.spk-size-btn .spk-price{font-size:13px;opacity:.85}
 </style>
 </head>
 <body>
@@ -776,6 +813,16 @@ input.form-control:focus{outline:none;border-color:var(--red)}
     <div class="modal-header"><h3 id="modalMesaTitle">Mesa #1</h3><button class="modal-close" onclick="closeModal('modalMesa')">✕</button></div>
     <div class="modal-body" id="modalMesaBody"></div>
     <div class="modal-footer" id="modalMesaFooter"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalSizePicker">
+  <div class="modal" style="max-width:320px">
+    <div class="modal-header">
+      <h3 id="sizePickerTitle" style="font-size:16px"></h3>
+      <button class="modal-close" onclick="closeModal('modalSizePicker')">✕</button>
+    </div>
+    <div class="modal-body" id="sizePickerBody"></div>
   </div>
 </div>
 
@@ -1367,7 +1414,7 @@ function renderMesas() {
     el.style.gridTemplateColumns = '';
     el.innerHTML = filtered.map(m=>{
       const itemsCount = (m.pedido||[]).reduce((s,i)=>s+i.qty,0);
-      return `<div onclick="clickMesa(${m.id})" class="mesa-chip-mozo ${m.estado}">
+      return `<div onclick="clickMesa('${m.id}')" class="mesa-chip-mozo ${m.estado}">
   <div class="mcp-num">${m.numero}</div>
   ${itemsCount > 0 ? `<div class="mcp-items">${itemsCount} ítem${itemsCount!==1?'s':''}</div>` : ''}
 </div>`;
@@ -1376,7 +1423,7 @@ function renderMesas() {
     el.classList.remove('mesas-grid-mozo');
     el.style.gridTemplateColumns = '';
     el.innerHTML = filtered.map(m=>`
-      <div class="mesa-card ${m.estado}" onclick="clickMesa(${m.id})">
+      <div class="mesa-card ${m.estado}" onclick="clickMesa('${m.id}')">
         <div class="mesa-num">${m.numero}</div>
         <div class="mesa-estado">${m.estado==='libre'?'LIBRE':m.estado==='ocupada'?'OCUPADA':'CUENTA'}</div>
         <div class="mesa-info">${m.mozo?'👨 '+m.mozo:m.capacidad+' personas'}</div>
@@ -1388,90 +1435,107 @@ function renderMesas() {
 
 function mesaPedidoHTML(id) {
   const m = mesasData.find(x=>x.id===id);
+  const esMozo = currentUser?.rol === 'mozo';
   const cats = [...new Set(productosData.map(p=>p.categoria))];
   const catLabels = {pizzas:'🍕 Pizzas',empanadas:'🥟 Empanadas',bebidas:'🥤 Bebidas',tragos:'🍹 Tragos',postres:'🍮 Postres',entradas:'🧀 Entradas'};
   const subtotal = (m.pedido||[]).reduce((s,i)=>s+i.precio*i.qty,0);
+  const sid = JSON.stringify(id);
+
+  const orderRows = (m.pedido||[]).map((i,idx)=>`
+    <div class="mpo-row">
+      <div class="mpo-name">${i.nombre}${i.size?` <small style="opacity:.65">(${i.size})</small>`:''}
+        ${i.nota?`<div class="mpo-nota">📝 ${i.nota}</div>`:''}
+      </div>
+      <div class="mpo-qty">
+        <button class="mpo-qbtn mpo-minus" onclick="cambiarQtyMesa(${sid},${idx},-1)">−</button>
+        <span class="mpo-qnum">${i.qty}</span>
+        <button class="mpo-qbtn mpo-plus" onclick="cambiarQtyMesa(${sid},${idx},1)">+</button>
+      </div>
+      ${!esMozo?`<div class="mpo-price">$${(i.precio*i.qty).toLocaleString()}</div>`:''}
+      <button class="mpo-del" onclick="quitarItemMesa(${sid},${idx})">✕</button>
+    </div>`).join('');
+
+  const totalRow = !esMozo && (m.pedido||[]).length > 0
+    ? `<div class="mpo-total">Total: $${subtotal.toLocaleString()}</div>` : '';
+
+  const catPills = cats.map(c=>
+    `<button class="mpo-cat-pill" id="catBtn-${c}" onclick="filtrarCatMesa('${c}')">${catLabels[c]||c}</button>`
+  ).join('');
+
   return `
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+    <div class="mpo-info-bar">
       <span style="font-weight:600">👨 ${m.mozo||'-'}</span>
-      <span style="color:var(--gray)">⏱ ${m.tiempo||'-'}</span>
+      <span style="color:var(--gray);font-size:13px">⏱ ${m.tiempo||'-'}</span>
       <span class="badge badge-${m.estado==='cuenta'?'danger':'warning'}">${m.estado.toUpperCase()}</span>
     </div>
-    <div style="background:#f8f9fa;border-radius:10px;padding:12px;margin-bottom:14px">
-      <div style="font-weight:600;margin-bottom:8px;font-size:13px">📋 Pedido actual</div>
-      ${(m.pedido||[]).length===0?'<div style="color:#aaa;font-size:13px">Sin ítems aún</div>':
-        `<table style="width:100%;font-size:12.5px">
-          <thead><tr><th>Item</th><th style="text-align:center;width:80px">Cant.</th><th style="text-align:right">Precio</th><th style="width:30px"></th></tr></thead>
-          <tbody>${(m.pedido||[]).map((i,idx)=>`
-            <tr>
-              <td>
-                <div>${i.nombre}${i.size?' <small style="color:var(--gray)">('+i.size+')</small>':''}</div>
-                ${i.nota?`<div style="font-size:11px;color:var(--gray);font-style:italic">📝 ${i.nota}</div>`:''}
-              </td>
-              <td style="text-align:center">
-                <button onclick="cambiarQtyMesa(${id},${idx},-1)" style="border:none;background:var(--red);color:#fff;width:20px;height:20px;border-radius:4px;cursor:pointer;font-size:12px">-</button>
-                <span style="margin:0 4px">${i.qty}</span>
-                <button onclick="cambiarQtyMesa(${id},${idx},1)" style="border:none;background:var(--green);color:#fff;width:20px;height:20px;border-radius:4px;cursor:pointer;font-size:12px">+</button>
-              </td>
-              <td style="text-align:right">$${(i.precio*i.qty).toLocaleString()}</td>
-              <td><button onclick="quitarItemMesa(${id},${idx})" style="border:none;background:none;cursor:pointer;color:var(--red);font-size:14px">✕</button></td>
-            </tr>`).join('')}
-          </tbody>
-        </table>
-        <div style="font-size:18px;font-weight:800;color:var(--blue);text-align:right;margin-top:8px;border-top:1px solid var(--border);padding-top:8px">Total: $${subtotal.toLocaleString()}</div>`}
+    <div class="mpo-order-section">
+      <div class="mpo-section-label">📋 Pedido</div>
+      ${(m.pedido||[]).length===0
+        ? '<div class="mpo-empty">Sin ítems aún</div>'
+        : `<div class="mpo-list">${orderRows}</div>${totalRow}`}
     </div>
-    <div style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:12px">
-      <div style="font-weight:600;margin-bottom:10px;font-size:13px">➕ Agregar ítem</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-        ${cats.map(c=>`<button onclick="filtrarCatMesa('${c}')" class="btn btn-outline btn-sm" id="catBtn-${c}" style="font-size:11px">${catLabels[c]||c}</button>`).join('')}
-      </div>
-      <div id="productosMenuMesa" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;max-height:160px;overflow-y:auto"></div>
-      <div id="addItemSizeRow" style="display:none;margin-top:10px;padding:10px;background:#f8f9fa;border-radius:8px">
-        <div style="font-size:13px;font-weight:600;margin-bottom:8px" id="addItemNombre"></div>
-        <div id="addItemSizes" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-      </div>
+    <div class="mpo-browser-section">
+      <div class="mpo-section-label">➕ Agregar ítem</div>
+      <div class="mpo-cat-pills">${catPills}</div>
+      <div id="productosMenuMesa" class="mpo-prod-grid"></div>
     </div>`;
 }
 
 let _mesaModalId = null;
 
 function filtrarCatMesa(cat) {
-  document.querySelectorAll('[id^="catBtn-"]').forEach(b=>b.style.background='');
+  document.querySelectorAll('.mpo-cat-pill').forEach(b=>b.classList.remove('active'));
   const btn = document.getElementById('catBtn-'+cat);
-  if(btn) { btn.style.background='var(--red)'; btn.style.color='#fff'; btn.style.borderColor='var(--red)'; }
+  if(btn) btn.classList.add('active');
+  const esMozo = currentUser?.rol === 'mozo';
   const prods = productosData.filter(p=>p.categoria===cat&&p.activo);
   document.getElementById('productosMenuMesa').innerHTML = prods.map(p=>`
-    <div onclick="seleccionarProductoMesa(${p.id})" style="background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:8px;cursor:pointer;text-align:center;font-size:12px;transition:all .15s" onmouseover="this.style.borderColor='var(--red)'" onmouseout="this.style.borderColor='var(--border)'">
-      <div style="font-size:20px">${p.emoji}</div>
-      <div style="font-weight:600;font-size:11px;line-height:1.2">${p.nombre}</div>
-      <div style="color:var(--red);font-size:11px">${p.precio_chica?'desde $'+p.precio_chica.toLocaleString():'$'+p.precio.toLocaleString()}</div>
-    </div>`).join('') || '<div style="color:#aaa;font-size:12px">Sin productos en esta categoría</div>';
+    <div class="mpo-prod-card" onclick="seleccionarProductoMesa(${p.id})">
+      <div class="mpo-prod-emoji">${p.emoji}</div>
+      <div class="mpo-prod-name">${p.nombre}</div>
+      ${!esMozo?`<div class="mpo-prod-price">${p.precio_chica?'desde $'+p.precio_chica.toLocaleString():'$'+p.precio.toLocaleString()}</div>`:''}
+    </div>`).join('') || '<div style="color:#bbb;font-size:12px;padding:8px">Sin productos</div>';
 }
 
 let _selectedProdId = null;
 
 function seleccionarProductoMesa(prodId) {
   const p = productosData.find(x=>x.id===prodId);
-  if(!p) return;
+  if(!p || !_mesaModalId) return;
   _selectedProdId = prodId;
+  const esMozo = currentUser?.rol === 'mozo';
   const esComida = CATS_COMANDA.includes(p.categoria);
-  document.getElementById('addItemNombre').innerHTML = `${p.emoji} <strong>${p.nombre}</strong>`;
-  const sizesDiv = document.getElementById('addItemSizes');
+  const sid = JSON.stringify(_mesaModalId);
+
+  document.getElementById('sizePickerTitle').innerHTML = `${p.emoji} ${p.nombre}`;
+
   const notaHTML = esComida ? `
-    <div style="margin-top:10px;width:100%">
-      <input id="addItemNota" class="form-control" placeholder="Aclaración (ej: sin mayonesa)" style="font-size:12px;padding:6px 10px"/>
+    <div style="margin-top:14px">
+      <input id="addItemNota" class="form-control" placeholder="Aclaración (ej: sin mayonesa)" style="font-size:13px"/>
     </div>` : '';
+
+  let html = '<div class="spk-size-list">';
   if(p.precio_chica) {
-    sizesDiv.innerHTML = `
-      <button onclick="agregarItemMesa(${_mesaModalId},${p.id},'chica',${p.precio_chica},'${p.categoria}')" class="btn btn-outline btn-sm">Chica $${p.precio_chica.toLocaleString()}</button>
-      <button onclick="agregarItemMesa(${_mesaModalId},${p.id},'mediana',${p.precio_mediana},'${p.categoria}')" class="btn btn-outline btn-sm">Mediana $${p.precio_mediana.toLocaleString()}</button>
-      <button onclick="agregarItemMesa(${_mesaModalId},${p.id},'grande',${p.precio_grande},'${p.categoria}')" class="btn btn-success btn-sm">Grande $${p.precio_grande.toLocaleString()}</button>
-      ${notaHTML}`;
+    html += `
+      <button class="spk-size-btn" onclick="agregarItemMesa(${sid},${p.id},'chica',${p.precio_chica},'${p.categoria}')">
+        <span>Chica</span>${!esMozo?`<span class="spk-price">$${p.precio_chica.toLocaleString()}</span>`:''}
+      </button>
+      <button class="spk-size-btn" onclick="agregarItemMesa(${sid},${p.id},'mediana',${p.precio_mediana},'${p.categoria}')">
+        <span>Mediana</span>${!esMozo?`<span class="spk-price">$${p.precio_mediana.toLocaleString()}</span>`:''}
+      </button>
+      <button class="spk-size-btn grande" onclick="agregarItemMesa(${sid},${p.id},'grande',${p.precio_grande},'${p.categoria}')">
+        <span>Grande</span>${!esMozo?`<span class="spk-price">$${p.precio_grande.toLocaleString()}</span>`:''}
+      </button>`;
   } else {
-    sizesDiv.innerHTML = `<button onclick="agregarItemMesa(${_mesaModalId},${p.id},null,${p.precio},'${p.categoria}')" class="btn btn-success btn-sm">Agregar $${p.precio.toLocaleString()}</button>
-      ${notaHTML}`;
+    html += `
+      <button class="spk-size-btn grande" onclick="agregarItemMesa(${sid},${p.id},null,${p.precio},'${p.categoria}')">
+        <span>Agregar</span>${!esMozo?`<span class="spk-price">$${p.precio.toLocaleString()}</span>`:''}
+      </button>`;
   }
-  document.getElementById('addItemSizeRow').style.display='block';
+  html += notaHTML + '</div>';
+
+  document.getElementById('sizePickerBody').innerHTML = html;
+  openModal('modalSizePicker');
 }
 
 function agregarItemMesa(mesaId, prodId, size, precio, categoria) {
@@ -1484,8 +1548,8 @@ function agregarItemMesa(mesaId, prodId, size, precio, categoria) {
   const existing = !nota && !esComida && m.pedido.find(i=>i.productoId===prodId&&i.size===size&&!i.nota);
   if(existing) { existing.qty++; }
   else { m.pedido.push({productoId:prodId,nombre:p.nombre,size,precio,qty:1,categoria:categoria||p.categoria,nota:nota||''}); }
+  closeModal('modalSizePicker');
   document.getElementById('modalMesaBody').innerHTML = mesaPedidoHTML(mesaId);
-  document.getElementById('addItemSizeRow').style.display='none';
   syncMesa(m); saveState(); renderMesas();
 }
 
@@ -1510,6 +1574,7 @@ function clickMesa(id) {
   const m = mesasData.find(x=>x.id===id);
   if(!m) return;
   _mesaModalId = id;
+  const sid = JSON.stringify(id);
   document.getElementById('modalMesaTitle').textContent = `Mesa #${m.numero}`;
   const body = document.getElementById('modalMesaBody');
   const footer = document.getElementById('modalMesaFooter');
@@ -1517,7 +1582,7 @@ function clickMesa(id) {
   const esAdmin = !esMozo;
   const zonaHtml = esAdmin ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:8px 12px;background:#f8f9fa;border-radius:8px">
     <span style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px">Zona</span>
-    <select id="mesaZonaSelect" class="form-control" style="width:auto;padding:4px 10px;font-size:13px;flex:1" onchange="cambiarZonaMesa(${id},this.value)">
+    <select id="mesaZonaSelect" class="form-control" style="width:auto;padding:4px 10px;font-size:13px;flex:1" onchange="cambiarZonaMesa(${sid},this.value)">
       <option value="salon" ${m.zona==='salon'?'selected':''}>🏠 Salón</option>
       <option value="vereda" ${m.zona==='vereda'?'selected':''}>🌿 Vereda</option>
     </select></div>` : '';
@@ -1530,20 +1595,20 @@ function clickMesa(id) {
         <select class="form-control" id="abrirMozo">${mozosOpts}</select>
       </div>`;
     footer.innerHTML = `<button class="btn btn-outline" onclick="closeModal('modalMesa')">Cancelar</button>
-      <button class="btn btn-success" onclick="abrirMesa(${id})">✅ Abrir Mesa</button>`;
+      <button class="btn btn-success" onclick="abrirMesa(${sid})">✅ Abrir Mesa</button>`;
   } else {
     body.innerHTML = zonaHtml + mesaPedidoHTML(id);
     const tieneComida = (m.pedido||[]).some(i=>CATS_COMANDA.includes(i.categoria));
     const tieneItems = (m.pedido||[]).length > 0;
-    const btnCuenta = m.estado!=='cuenta' ? `<button class="btn btn-warning" onclick="pedirCuenta(${id})">🧾 Pedir Cuenta</button>` : '';
-    const btnCobrar = (!esMozo||m.estado==='cuenta') ? `<button class="btn btn-danger" onclick="cerrarMesa(${id})">✔️ Cobrar y Cerrar</button>` : '';
-    const btnComanda = tieneComida ? `<button class="btn btn-outline btn-sm" onclick="imprimirComanda(${id})" title="Imprimir comanda cocina">🖨️ Comanda</button>` : '';
-    const btnCuenta2 = tieneItems && m.estado==='cuenta' ? `<button class="btn btn-outline btn-sm" onclick="imprimirCuenta(${id})" title="Imprimir cuenta">🧾 Cuenta</button>` : '';
+    const btnLiberar = esMozo && !tieneItems && m.estado==='ocupada'
+      ? `<button class="btn btn-outline" onclick="liberarMesaVacia(${sid})">🔓 Liberar Mesa</button>` : '';
+    const btnCuenta = !btnLiberar && m.estado!=='cuenta'
+      ? `<button class="btn btn-warning" onclick="pedirCuenta(${sid})">🧾 Pedir Cuenta</button>` : '';
+    const btnCobrar = (!esMozo||m.estado==='cuenta') ? `<button class="btn btn-danger" onclick="cerrarMesa(${sid})">✔️ Cobrar y Cerrar</button>` : '';
+    const btnComanda = tieneComida ? `<button class="btn btn-outline btn-sm" onclick="imprimirComanda(${sid})" title="Imprimir comanda cocina">🖨️ Comanda</button>` : '';
+    const btnCuenta2 = tieneItems && m.estado==='cuenta' ? `<button class="btn btn-outline btn-sm" onclick="imprimirCuenta(${sid})" title="Imprimir cuenta">🧾 Cuenta</button>` : '';
     footer.innerHTML = `<button class="btn btn-outline" onclick="closeModal('modalMesa')">Cancelar</button>
-      ${btnCuenta}
-      ${btnComanda}
-      ${btnCuenta2}
-      ${btnCobrar}`;
+      ${btnLiberar}${btnCuenta}${btnComanda}${btnCuenta2}${btnCobrar}`;
   }
   openModal('modalMesa');
 }
@@ -1564,6 +1629,16 @@ function pedirCuenta(id) {
   closeModal('modalMesa');
   syncMesa(m); saveState(); renderMesas();
   showToast(`Mesa #${m.numero} — cuenta solicitada`);
+}
+
+function liberarMesaVacia(id) {
+  const m = mesasData.find(x=>x.id===id);
+  if(!m) return;
+  m.estado='libre'; m.mozo=null; m.tiempo=null; m.pedido=[];
+  closeModal('modalMesa');
+  syncMesa(m); saveState(); renderMesas();
+  showToast(`Mesa #${m.numero} liberada`,'success');
+  loadDashboard();
 }
 
 function cerrarMesa(id) {
