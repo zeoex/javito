@@ -1046,7 +1046,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
     <div class="modal-body" id="cierreCajaBody"></div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modalCierreCaja')">Cancelar</button>
-      <button class="btn btn-primary" onclick="imprimirCierreCaja()">🖨️ Imprimir</button>
+      <button class="btn btn-primary" id="btnImprimirCierre" disabled onclick="imprimirCierreCaja()" style="opacity:0.45;cursor:not-allowed">🖨️ Imprimir</button>
       <button class="btn btn-danger" onclick="confirmarCierreCaja()">✅ Confirmar Cierre</button>
     </div>
   </div>
@@ -1245,6 +1245,9 @@ let facturasData = [...DEMO_FACTURAS];
 let clientesData = [...DEMO_CLIENTES];
 let usuariosData = [...DEMO_USUARIOS];
 let cajaMoves = [...DEMO_CAJA_MOV];
+let cajaAbierta = true;
+let cajaInicial = 5000;
+let cajaCierres = [];
 
 let mozoHistorial = [];
 
@@ -2338,9 +2341,6 @@ function ajustarStock(id) {
 }
 
 // ======= CAJA =======
-let cajaAbierta = true;
-let cajaInicial = 5000;
-let cajaCierres = [];
 let _pendingCajaAction = null;
 
 function cajaCheck(callback) {
@@ -2444,7 +2444,7 @@ function cerrarCaja() {
       <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:900"><span>Saldo en Caja</span><span style="color:var(--blue)">$${r.saldoFinal.toLocaleString()}</span></div>
     </div>
     <div style="padding:12px 14px;background:#f8f9fa;border-radius:10px;display:flex;align-items:center;gap:10px">
-      <input type="checkbox" id="chkControlado" style="width:18px;height:18px;cursor:pointer"/>
+      <input type="checkbox" id="chkControlado" style="width:18px;height:18px;cursor:pointer" onchange="const b=document.getElementById('btnImprimirCierre');b.disabled=!this.checked;b.style.opacity=this.checked?'1':'0.45';b.style.cursor=this.checked?'pointer':'not-allowed'"/>
       <label for="chkControlado" style="cursor:pointer;font-size:14px;font-weight:600">Controlado por encargado</label>
     </div>`;
   openModal('modalCierreCaja');
