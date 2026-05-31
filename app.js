@@ -40,7 +40,8 @@ const db = {
   clientes:   [],
   caja:       [],
   facturas:   [],
-  stock:      []
+  stock:      [],
+  printJobs:  []
 };
 
 // ─────────────────────────────────────────────
@@ -537,6 +538,19 @@ app.patch('/api/mesas/:id', authMiddleware, (req, res) => {
   io.emit('mesa:update', mesa);
   emitDashboardStats();
   res.json(mesa);
+});
+
+// ─────────────────────────────────────────────
+//  PRINT ROUTES
+// ─────────────────────────────────────────────
+app.post('/api/print', authMiddleware, (req, res) => {
+  const { type, html, mesaNumero } = req.body;
+  if (!html) return res.status(400).json({ error: 'html requerido' });
+  const job = { id: uuidv4(), type: type||'comanda', html, mesaNumero, createdAt: new Date().toISOString() };
+  db.printJobs.push(job);
+  if (db.printJobs.length > 100) db.printJobs.shift(); // keep last 100
+  io.emit('print:job', job);
+  res.status(201).json({ ok: true, jobId: job.id });
 });
 
 // ─────────────────────────────────────────────
