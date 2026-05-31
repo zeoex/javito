@@ -954,6 +954,7 @@ function handleLogin() {
 
   errEl.textContent = '';
   currentDriver = { user, ...driver };
+  try { localStorage.setItem('rep_driver', JSON.stringify(currentDriver)); } catch(e) {}
   bootApp();
 }
 
@@ -970,6 +971,7 @@ function handleLogout() {
   currentDriver = null;
   pedidos = [];
   disponible = true;
+  try { localStorage.removeItem('rep_driver'); } catch(e) {}
   document.getElementById('input-conductor').value = '';
   document.getElementById('input-pin').value = '';
   document.getElementById('login-error').textContent = '';
@@ -1238,6 +1240,17 @@ function escHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+
+/* ── AUTO-RESTORE SESSION ON RELOAD ─────────────── */
+(function restoreSession() {
+  try {
+    const saved = localStorage.getItem('rep_driver');
+    if (saved) {
+      currentDriver = JSON.parse(saved);
+      bootApp();
+    }
+  } catch(e) {}
+})();
 </script>
 </body>
 </html>
