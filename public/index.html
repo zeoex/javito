@@ -113,7 +113,7 @@ tr:hover td{background:#fafafa}
 .mesa-chip-mozo:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,0.18)}
 .mcp-num{font-size:26px;font-weight:900;color:#fff;line-height:1}
 .mcp-items{font-size:9px;font-weight:800;color:rgba(255,255,255,0.85);margin-top:4px}
-.tabs-full{width:100%}
+.tabs.tabs-full{width:100%}
 .tabs-full .tab{flex:1;text-align:center}
 .mesa-card{border-radius:10px;padding:16px 14px;cursor:pointer;transition:all .2s;border:2px solid transparent;text-align:center;position:relative}
 .mesa-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.12)}
@@ -986,7 +986,7 @@ input:checked+.slider:before{transform:translateX(20px)}
 </style>
 
 <script>
-const API = '';
+const API = '/api';
 let token = localStorage.getItem('pizzeria_token');
 let currentUser = (() => { try { return JSON.parse(localStorage.getItem('pizzeria_user') || 'null'); } catch(e) { return null; } })();
 let socket = null;
