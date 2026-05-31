@@ -1431,7 +1431,7 @@ function mesaPedidoHTML(id) {
   const cats = [...new Set(productosData.map(p=>p.categoria))];
   const catLabels = {pizzas:'🍕 Pizzas',empanadas:'🥟 Empanadas',bebidas:'🥤 Bebidas',tragos:'🍹 Tragos',postres:'🍮 Postres',entradas:'🧀 Entradas'};
   const subtotal = (m.pedido||[]).reduce((s,i)=>s+i.precio*i.qty,0);
-  const sid = JSON.stringify(id);
+  const sid = `'${id}'`;
 
   const orderRows = (m.pedido||[]).map((i,idx)=>`
     <div class="mpo-row">
@@ -1497,7 +1497,7 @@ function seleccionarProductoMesa(prodId) {
   _selectedProdId = prodId;
   const esMozo = currentUser?.rol === 'mozo';
   const esComida = CATS_COMANDA.includes(p.categoria);
-  const sid = JSON.stringify(_mesaModalId);
+  const sid = `'${_mesaModalId}'`;
 
   document.getElementById('sizePickerTitle').innerHTML = `${p.emoji} ${p.nombre}`;
 
@@ -1566,7 +1566,7 @@ function clickMesa(id) {
   const m = mesasData.find(x=>x.id===id);
   if(!m) return;
   _mesaModalId = id;
-  const sid = JSON.stringify(id);
+  const sid = `'${id}'`;
   document.getElementById('modalMesaTitle').textContent = `Mesa #${m.numero}`;
   const body = document.getElementById('modalMesaBody');
   const footer = document.getElementById('modalMesaFooter');
