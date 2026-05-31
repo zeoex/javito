@@ -353,9 +353,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 }
 
 @media (max-width:520px){
-  /* On small phones: hide button labels, show only emojis */
-  .mtn-label{display:none}
-  .mtn-btn{padding:9px 11px;border-radius:10px;font-size:16px}
+  .mtn-btn{padding:9px 14px;border-radius:10px;font-size:13px}
   .mozo-topnav{padding:0 12px;gap:8px}
   .mozo-topnav-btns{gap:6px}
   .mtn-avatar{width:34px;height:34px;font-size:13px}
@@ -1153,8 +1151,9 @@ function initApp() {
   document.getElementById('userRole').textContent = roles[currentUser?.rol] || currentUser?.rol || '';
   // Hide usuarios for non-admin
   if (currentUser?.rol !== 'admin') document.getElementById('navUsuarios').style.display = 'none';
-  // Restore persisted state
+  // Restore persisted state then refresh from API
   loadState();
+  loadMesasFromAPI();
   // Mozo: hide sidebar, show custom top nav
   if (currentUser?.rol === 'mozo') {
     // Hide sidebar entirely and adjust layout
@@ -1180,7 +1179,7 @@ function initApp() {
   try {
     socket = io();
     socket.on('dashboard:stats', updateDashboardStats);
-    socket.on('mesa:update', () => { if(document.getElementById('sec-mesas').classList.contains('active')) renderMesas(); });
+    socket.on('mesa:update', () => { if(document.getElementById('sec-mesas').classList.contains('active')) loadMesasFromAPI(); });
     socket.on('delivery:update', () => { if(document.getElementById('sec-delivery').classList.contains('active')) renderDelivery(); });
     socket.on('comanda:nueva', () => showToast('Nueva comanda en cocina','success'));
   } catch(e){}
@@ -1241,7 +1240,36 @@ function mozoNavTo(section) {
 }
 function cambiarZonaMesa(id, zona) {
   const m = mesasData.find(x=>x.id===id);
-  if(m) m.zona = zona;
+  if(m) { m.zona = zona; syncMesa(m); saveState(); }
+}
+
+async function loadMesasFromAPI() {
+  try {
+    const res = await apiFetch('/mesas');
+    if (!res.ok) return;
+    const data = await res.json();
+    mesasData = data.map(m => ({
+      id: m.id,
+      numero: m.numero,
+      capacidad: m.capacidad || 4,
+      estado: m.estado || 'libre',
+      zona: (m.zona || 'salon').toLowerCase(),
+      mozo: m.mozo || null,
+      tiempo: m.tiempo || null,
+      pedido: Array.isArray(m.pedido) ? m.pedido : [],
+    }));
+    saveState();
+    renderMesas();
+  } catch(e) {}
+}
+
+async function syncMesa(m) {
+  try {
+    await apiFetch(`/mesas/${m.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ estado: m.estado, mozo: m.mozo, tiempo: m.tiempo, pedido: m.pedido, zona: m.zona, capacidad: m.capacidad })
+    });
+  } catch(e) {}
 }
 function toggleMozoMenu() {
   document.getElementById('mozoAvatarMenu').classList.toggle('open');
@@ -1458,8 +1486,7 @@ function agregarItemMesa(mesaId, prodId, size, precio, categoria) {
   else { m.pedido.push({productoId:prodId,nombre:p.nombre,size,precio,qty:1,categoria:categoria||p.categoria,nota:nota||''}); }
   document.getElementById('modalMesaBody').innerHTML = mesaPedidoHTML(mesaId);
   document.getElementById('addItemSizeRow').style.display='none';
-  saveState();
-  renderMesas();
+  syncMesa(m); saveState(); renderMesas();
 }
 
 function cambiarQtyMesa(mesaId, idx, delta) {
@@ -1468,8 +1495,7 @@ function cambiarQtyMesa(mesaId, idx, delta) {
   m.pedido[idx].qty += delta;
   if(m.pedido[idx].qty<=0) m.pedido.splice(idx,1);
   document.getElementById('modalMesaBody').innerHTML = mesaPedidoHTML(mesaId);
-  saveState();
-  renderMesas();
+  syncMesa(m); saveState(); renderMesas();
 }
 
 function quitarItemMesa(mesaId, idx) {
@@ -1477,8 +1503,7 @@ function quitarItemMesa(mesaId, idx) {
   if(!m) return;
   m.pedido.splice(idx,1);
   document.getElementById('modalMesaBody').innerHTML = mesaPedidoHTML(mesaId);
-  saveState();
-  renderMesas();
+  syncMesa(m); saveState(); renderMesas();
 }
 
 function clickMesa(id) {
@@ -1528,8 +1553,7 @@ function abrirMesa(id) {
   const mozo = document.getElementById('abrirMozo').value;
   m.estado='ocupada'; m.mozo=mozo; m.tiempo='00:00'; m.pedido=[];
   closeModal('modalMesa');
-  saveState();
-  renderMesas();
+  syncMesa(m); saveState(); renderMesas();
   showToast(`Mesa #${m.numero} abierta por ${mozo}`,'success');
   loadDashboard();
 }
@@ -1538,8 +1562,7 @@ function pedirCuenta(id) {
   const m = mesasData.find(x=>x.id===id);
   m.estado='cuenta';
   closeModal('modalMesa');
-  saveState();
-  renderMesas();
+  syncMesa(m); saveState(); renderMesas();
   showToast(`Mesa #${m.numero} — cuenta solicitada`);
 }
 
@@ -1554,21 +1577,25 @@ function cerrarMesa(id) {
   const f = {id:facturasData.length+1,numero:`F-${String(facturasData.length+1).padStart(4,'0')}`,fecha:new Date().toISOString().slice(0,16).replace('T',' '),origen:`Mesa ${m.numero}`,items:itemsCount,total:total||0,pago:'efectivo',estado:'pagada'};
   facturasData.unshift(f);
   closeModal('modalMesa');
-  saveState();
-  renderMesas();
+  syncMesa(m); saveState(); renderMesas();
   showToast(`Mesa #${m.numero} cerrada. Factura ${f.numero} emitida.`,'success');
   loadDashboard();
 }
 
-function crearMesa() {
+async function crearMesa() {
   const num = parseInt(document.getElementById('nuevaMesaNum').value);
   const cap = parseInt(document.getElementById('nuevaMesaCap').value)||4;
   const zona = document.getElementById('nuevaMesaZona').value;
   if(!num){ showToast('Ingresá número de mesa','error'); return; }
-  mesasData.push({id:Date.now(),numero:num,capacidad:cap,estado:'libre',zona,mozo:null,tiempo:null,pedido:[]});
+  let newId = String(Date.now());
+  try {
+    const res = await apiFetch('/mesas', { method:'POST', body: JSON.stringify({numero:num, zona, capacidad:cap}) });
+    const nueva = await res.json();
+    newId = nueva.id;
+  } catch(e) {}
+  mesasData.push({id:newId, numero:num, capacidad:cap, estado:'libre', zona, mozo:null, tiempo:null, pedido:[]});
   closeModal('modalNuevaMesa');
-  saveState();
-  renderMesas();
+  saveState(); renderMesas();
   showToast(`Mesa #${num} creada`,'success');
 }
 

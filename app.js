@@ -178,20 +178,26 @@ const db = {
   // ---------- MESAS ----------
   const mozoA = db.users.find(u => u.email === 'mozo01@pizzeriapro.com').id;
   const mozoB = db.users.find(u => u.email === 'mozo02@pizzeriapro.com').id;
+  const mozoANombre = db.users.find(u => u.id === mozoA)?.nombre || null;
+  const mozoBNombre = db.users.find(u => u.id === mozoB)?.nombre || null;
   db.mesas = [
-    { id: uuidv4(), numero: 1,  zona: 'Salón',   estado: 'libre',    mozoid: null,  apertura: null, consumo: 0, pedidos: [] },
-    { id: uuidv4(), numero: 2,  zona: 'Salón',   estado: 'ocupada',  mozoid: mozoA, apertura: new Date(Date.now() - 45 * 60000).toISOString(), consumo: 3200, pedidos: [
-      { id: uuidv4(), productoId: db.productos[0].id, nombre: 'Muzzarella', variante: 'grande', cantidad: 1, precio: 2100, extras: [], observacion: '' },
-      { id: uuidv4(), productoId: db.productos[7].id, nombre: 'Coca-Cola',  variante: '1.5L',   cantidad: 2, precio: 900,  extras: [], observacion: '' }
-    ]},
-    { id: uuidv4(), numero: 3,  zona: 'Salón',   estado: 'libre',    mozoid: null,  apertura: null, consumo: 0, pedidos: [] },
-    { id: uuidv4(), numero: 4,  zona: 'Salón',   estado: 'reservada',mozoid: mozoB, apertura: null, consumo: 0, pedidos: [] },
-    { id: uuidv4(), numero: 5,  zona: 'Salón',   estado: 'libre',    mozoid: null,  apertura: null, consumo: 0, pedidos: [] },
-    { id: uuidv4(), numero: 6,  zona: 'Terraza', estado: 'ocupada',  mozoid: mozoB, apertura: new Date(Date.now() - 20 * 60000).toISOString(), consumo: 1600, pedidos: [
-      { id: uuidv4(), productoId: db.productos[1].id, nombre: 'Napolitana', variante: 'mediana', cantidad: 1, precio: 1850, extras: [], observacion: 'Sin ajo' }
-    ]},
-    { id: uuidv4(), numero: 7,  zona: 'Terraza', estado: 'libre',    mozoid: null,  apertura: null, consumo: 0, pedidos: [] },
-    { id: uuidv4(), numero: 8,  zona: 'Terraza', estado: 'libre',    mozoid: null,  apertura: null, consumo: 0, pedidos: [] }
+    { id: uuidv4(), numero: 1,  zona: 'salon',   capacidad: 4, estado: 'libre',    mozoid: null,  mozo: null,       apertura: null, tiempo: null,  consumo: 0, pedido: [], pedidos: [] },
+    { id: uuidv4(), numero: 2,  zona: 'salon',   capacidad: 4, estado: 'ocupada',  mozoid: mozoA, mozo: mozoANombre, apertura: new Date(Date.now() - 45 * 60000).toISOString(), tiempo: '00:45', consumo: 3200, pedido: [
+      { productoId: db.productos[0].id, nombre: 'Muzzarella', size: 'grande', precio: 2100, qty: 1, categoria: 'pizzas', nota: '' },
+      { productoId: db.productos[7].id, nombre: 'Coca-Cola',  size: '1.5L',   precio: 900,  qty: 2, categoria: 'bebidas', nota: '' }
+    ], pedidos: [] },
+    { id: uuidv4(), numero: 3,  zona: 'salon',   capacidad: 2, estado: 'libre',    mozoid: null,  mozo: null,       apertura: null, tiempo: null,  consumo: 0, pedido: [], pedidos: [] },
+    { id: uuidv4(), numero: 4,  zona: 'salon',   capacidad: 6, estado: 'libre',    mozoid: null,  mozo: null,       apertura: null, tiempo: null,  consumo: 0, pedido: [], pedidos: [] },
+    { id: uuidv4(), numero: 5,  zona: 'salon',   capacidad: 4, estado: 'libre',    mozoid: null,  mozo: null,       apertura: null, tiempo: null,  consumo: 0, pedido: [], pedidos: [] },
+    { id: uuidv4(), numero: 6,  zona: 'salon',   capacidad: 4, estado: 'cuenta',   mozoid: mozoA, mozo: mozoANombre, apertura: new Date(Date.now() - 90 * 60000).toISOString(), tiempo: '01:30', consumo: 4200, pedido: [
+      { productoId: db.productos[1].id, nombre: 'Napolitana', size: 'grande', precio: 2400, qty: 1, categoria: 'pizzas', nota: '' },
+      { productoId: db.productos[7].id, nombre: 'Coca-Cola',  size: '500ml',  precio: 600,  qty: 3, categoria: 'bebidas', nota: '' }
+    ], pedidos: [] },
+    { id: uuidv4(), numero: 1,  zona: 'vereda',  capacidad: 4, estado: 'libre',    mozoid: null,  mozo: null,       apertura: null, tiempo: null,  consumo: 0, pedido: [], pedidos: [] },
+    { id: uuidv4(), numero: 2,  zona: 'vereda',  capacidad: 2, estado: 'ocupada',  mozoid: mozoB, mozo: mozoBNombre, apertura: new Date(Date.now() - 20 * 60000).toISOString(), tiempo: '00:20', consumo: 1850, pedido: [
+      { productoId: db.productos[1].id, nombre: 'Napolitana', size: 'mediana', precio: 1850, qty: 1, categoria: 'pizzas', nota: 'Sin ajo' }
+    ], pedidos: [] },
+    { id: uuidv4(), numero: 3,  zona: 'vereda',  capacidad: 4, estado: 'libre',    mozoid: null,  mozo: null,       apertura: null, tiempo: null,  consumo: 0, pedido: [], pedidos: [] }
   ];
 
   // ---------- CLIENTES ----------
@@ -504,6 +510,33 @@ app.get('/api/mesas/:id/cuenta', (req, res) => {
   const total    = parseFloat((subtotal + iva).toFixed(2));
 
   res.json({ mesa: mesa.numero, zona: mesa.zona, items: mesa.pedidos, subtotal, iva, total, apertura: mesa.apertura });
+});
+
+// Create a new mesa (admin)
+app.post('/api/mesas', authMiddleware, (req, res) => {
+  const { numero, zona, capacidad } = req.body;
+  if (!numero) return res.status(400).json({ error: 'Número requerido' });
+  const mesa = {
+    id: uuidv4(), numero: parseInt(numero),
+    zona: (zona || 'salon').toLowerCase(), capacidad: parseInt(capacidad || 4),
+    estado: 'libre', mozoid: null, mozo: null, apertura: null,
+    tiempo: null, consumo: 0, pedido: [], pedidos: []
+  };
+  db.mesas.push(mesa);
+  io.emit('mesa:update', mesa);
+  res.status(201).json(mesa);
+});
+
+// Flexible patch — frontend syncs full mesa state
+app.patch('/api/mesas/:id', authMiddleware, (req, res) => {
+  const mesa = db.mesas.find(m => m.id === req.params.id);
+  if (!mesa) return res.status(404).json({ error: 'Mesa no encontrada' });
+  ['estado','mozo','tiempo','pedido','zona','capacidad','mozoid','apertura','consumo'].forEach(k => {
+    if (req.body[k] !== undefined) mesa[k] = req.body[k];
+  });
+  io.emit('mesa:update', mesa);
+  emitDashboardStats();
+  res.json(mesa);
 });
 
 // ─────────────────────────────────────────────
