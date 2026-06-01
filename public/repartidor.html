@@ -23,8 +23,10 @@
     --text-muted: #8b949e;
     --border: rgba(255,255,255,0.08);
     --status-asignado: #fd7e14;
+    --status-listo: #f7c948;
     --status-en-camino: #0dcaf0;
     --status-entregado: #28a745;
+    --status-preparando: #6c757d;
     --nav-height: 64px;
     --shadow: 0 4px 20px rgba(0,0,0,0.5);
   }
@@ -389,7 +391,10 @@
     border-left: 4px solid transparent;
   }
 
-  .order-card.estado-asignado { border-left-color: var(--status-asignado); }
+  .order-card.estado-asignado  { border-left-color: var(--status-asignado); }
+  .order-card.estado-listo     { border-left-color: var(--status-listo); }
+  .order-card.estado-nuevo     { border-left-color: var(--status-preparando); opacity: 0.7; }
+  .order-card.estado-en_cocina { border-left-color: var(--status-preparando); opacity: 0.7; }
   .order-card.estado-en_camino { border-left-color: var(--status-en-camino); }
   .order-card.estado-entregado { border-left-color: var(--status-entregado); opacity: 0.65; }
 
@@ -438,9 +443,12 @@
     flex-shrink: 0;
   }
 
-  .badge-asignado { background: rgba(253,126,20,0.15); color: var(--status-asignado); }
-  .badge-en_camino { background: rgba(13,202,240,0.15); color: #0aa2c0; }
-  .badge-entregado { background: rgba(40,167,69,0.15); color: var(--status-entregado); }
+  .badge-asignado  { background: rgba(253,126,20,0.15);  color: var(--status-asignado); }
+  .badge-listo     { background: rgba(247,201,72,0.18);  color: #c9961a; }
+  .badge-nuevo     { background: rgba(108,117,125,0.15); color: var(--status-preparando); }
+  .badge-en_cocina { background: rgba(108,117,125,0.15); color: var(--status-preparando); }
+  .badge-en_camino { background: rgba(13,202,240,0.15);  color: #0aa2c0; }
+  .badge-entregado { background: rgba(40,167,69,0.15);   color: var(--status-entregado); }
 
   .card-divider {
     height: 1px;
@@ -1072,10 +1080,10 @@ function renderOrders() {
 
   list.innerHTML = '';
 
-  // Sort: asignado first, en_camino second, entregado last
+  // Sort: listo/asignado → en_camino → entregado → preparando
   const sorted = [...pedidos].sort((a, b) => {
-    const order = { asignado: 0, en_camino: 1, entregado: 2 };
-    return (order[a.estado] ?? 3) - (order[b.estado] ?? 3);
+    const order = { listo: 0, asignado: 0, en_camino: 1, entregado: 2, nuevo: 3, en_cocina: 3 };
+    return (order[a.estado] ?? 4) - (order[b.estado] ?? 4);
   });
 
   sorted.forEach((p, i) => {
@@ -1091,10 +1099,17 @@ function buildOrderCard(p) {
   card.className = 'order-card estado-' + p.estado;
   card.id = 'card-' + p.id;
 
-  const badgeLabel = { asignado: '● NUEVO', en_camino: '▶ EN CAMINO', entregado: '✓ ENTREGADO' };
-  const payLabel   = { efectivo: '💵 Efectivo', tarjeta: '💳 Tarjeta', transferencia: '📱 Transferencia' };
+  const badgeLabel = {
+    listo:     '🟡 LISTO P/ RETIRAR',
+    asignado:  '● ASIGNADO',
+    en_camino: '▶ EN CAMINO',
+    entregado: '✓ ENTREGADO',
+    nuevo:     '⏳ PREPARANDO',
+    en_cocina: '👨‍🍳 EN COCINA',
+  };
+  const payLabel = { efectivo: '💵 Efectivo', tarjeta: '💳 Tarjeta', transferencia: '📱 Transferencia' };
 
-  const itemsHtml = p.items.map(item =>
+  const itemsHtml = (p.items || []).map(item =>
     `<div class="item-row">
       <span class="item-name">🍕 ${escHtml(item.nombre)}</span>
       <span class="item-qty">x${item.qty}</span>
@@ -1102,14 +1117,16 @@ function buildOrderCard(p) {
   ).join('');
 
   let actionsHtml = '';
-  if (p.estado === 'asignado') {
-    actionsHtml = `<button class="btn-action btn-start" onclick="iniciarViaje(${p.id})">▶ Iniciar viaje</button>`;
+  if (p.estado === 'listo' || p.estado === 'asignado') {
+    actionsHtml = `<button class="btn-action btn-start" onclick="iniciarViaje('${p.id}')">▶ Iniciar viaje</button>`;
   } else if (p.estado === 'en_camino') {
     actionsHtml = `
-      <button class="btn-action btn-maps" onclick="verEnMaps(${p.id})">📍 Ver en Maps</button>
-      <button class="btn-action btn-deliver" onclick="marcarEntregado(${p.id})">✅ Marcar Entregado</button>`;
-  } else {
+      <button class="btn-action btn-maps" onclick="verEnMaps('${p.id}')">📍 Ver en Maps</button>
+      <button class="btn-action btn-deliver" onclick="marcarEntregado('${p.id}')">✅ Marcar Entregado</button>`;
+  } else if (p.estado === 'entregado') {
     actionsHtml = `<button class="btn-action btn-done" disabled>✓ Entregado</button>`;
+  } else {
+    actionsHtml = `<button class="btn-action btn-done" disabled style="opacity:.5">⏳ En preparación</button>`;
   }
 
   card.innerHTML = `
@@ -1148,7 +1165,7 @@ function buildOrderCard(p) {
 /* ── ORDER ACTIONS ───────────────────────────────── */
 function iniciarViaje(id) {
   const p = pedidos.find(p => String(p.id) === String(id));
-  if (!p || p.estado !== 'asignado') return;
+  if (!p || !['asignado','listo'].includes(p.estado)) return;
   p.estado = 'en_camino';
   renderOrders();
   showToast('🛵 Viaje iniciado hacia ' + p.cliente.nombre);
