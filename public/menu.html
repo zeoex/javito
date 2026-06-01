@@ -3,62 +3,305 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Carta QR – ResTito</title>
+<title>Carta QR</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',system-ui,sans-serif;background:#0f0f0f;color:#fff;min-height:100vh}
-.hero{background:linear-gradient(135deg,#c0392b,#e74c3c);padding:40px 20px;text-align:center}
-.hero-logo{max-height:70px;max-width:160px;object-fit:contain;margin-bottom:12px;display:none}
-.hero-emoji{font-size:64px;display:block;margin-bottom:16px}
-.hero h1{font-size:32px;font-weight:900;margin-bottom:8px}
-.hero p{color:rgba(255,255,255,0.8);font-size:15px}
-.container{max-width:800px;margin:0 auto;padding:24px 16px}
-.cat-filter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid #222}
-.cat-btn{padding:8px 16px;border-radius:20px;border:1.5px solid #333;background:transparent;color:#aaa;font-size:13px;cursor:pointer;transition:all .15s;font-family:inherit}
-.cat-btn.active,.cat-btn:hover{background:#e74c3c;border-color:#e74c3c;color:#fff}
-.cat-section{margin-bottom:32px}
-.cat-title{font-size:18px;font-weight:800;color:#e74c3c;margin-bottom:16px;display:flex;align-items:center;gap:8px}
-.items-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
-.item-card{background:#1a1a1a;border:1.5px solid #222;border-radius:14px;padding:16px;transition:all .15s}
-.item-card:hover{border-color:#e74c3c;transform:translateY(-2px)}
-.item-emoji{font-size:36px;margin-bottom:10px;display:block}
-.item-name{font-size:15px;font-weight:700;margin-bottom:4px}
-.item-desc{font-size:12px;color:#666;margin-bottom:10px;line-height:1.4}
-.item-price{font-size:13px;font-weight:600;color:#e74c3c}
-.item-price span{display:block}
-.back-link{display:inline-flex;align-items:center;gap:6px;color:#666;font-size:13px;text-decoration:none;margin-bottom:20px}
-.back-link:hover{color:#e74c3c}
-.empty{text-align:center;padding:40px;color:#555}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#f5f4f2;color:#1a1a1a;min-height:100vh}
+
+/* ── HERO ── */
+.hero{
+  position:relative;
+  height:220px;
+  background:linear-gradient(145deg,#1a1a2e 0%,#6b1414 55%,#c0392b 100%);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  padding:20px 20px 24px;
+}
+.hero::before{
+  content:'';
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse at 70% 20%,rgba(231,76,60,.35) 0%,transparent 65%),
+             radial-gradient(ellipse at 15% 80%,rgba(192,57,43,.25) 0%,transparent 55%);
+  pointer-events:none;
+}
+.hero-back{
+  position:absolute;top:16px;left:16px;
+  display:inline-flex;align-items:center;gap:5px;
+  padding:6px 14px;border-radius:20px;
+  background:rgba(255,255,255,.12);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,.2);
+  color:#fff;font-size:13px;font-weight:500;text-decoration:none;
+  transition:background .15s;z-index:2;
+}
+.hero-back:hover{background:rgba(255,255,255,.22)}
+.hero-identity{display:flex;align-items:flex-end;gap:14px;position:relative;z-index:2}
+.hero-logo-wrap{
+  width:72px;height:72px;flex-shrink:0;
+  background:#fff;border-radius:16px;
+  box-shadow:0 4px 20px rgba(0,0,0,.35);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.hero-logo-wrap img{width:100%;height:100%;object-fit:cover;display:none}
+.hero-logo-wrap .hero-emoji-inner{font-size:36px;line-height:1}
+.hero-text{flex:1;min-width:0}
+.hero-text h1{font-size:24px;font-weight:800;color:#fff;letter-spacing:-.3px;line-height:1.15;margin-bottom:4px}
+.hero-text p{font-size:13px;color:rgba(255,255,255,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── CATEGORY NAV ── */
+.cat-nav-wrap{
+  position:sticky;top:0;z-index:100;
+  background:#fff;
+  box-shadow:0 2px 12px rgba(0,0,0,.08);
+}
+.cat-nav{
+  display:flex;gap:6px;
+  overflow-x:auto;
+  padding:10px 14px;
+  scroll-behavior:smooth;
+  -webkit-overflow-scrolling:touch;
+}
+.cat-nav::-webkit-scrollbar{display:none}
+.cat-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:7px 14px;border-radius:20px;
+  border:1.5px solid #ebebeb;
+  background:transparent;color:#555;
+  font-size:13px;font-weight:500;
+  white-space:nowrap;cursor:pointer;
+  font-family:inherit;
+  transition:all .15s;flex-shrink:0;
+}
+.cat-pill:hover{border-color:#e74c3c;color:#e74c3c}
+.cat-pill.active{background:#e74c3c;border-color:#e74c3c;color:#fff;font-weight:600}
+
+/* ── MAIN CONTENT ── */
+.content{max-width:760px;margin:0 auto;padding:20px 14px 40px}
+
+/* ── SECTION HEADER ── */
+.section-hdr{
+  display:flex;align-items:center;gap:10px;
+  margin:28px 0 14px;
+}
+.section-hdr:first-child{margin-top:0}
+.section-hdr-bar{width:4px;height:28px;background:#e74c3c;border-radius:3px;flex-shrink:0}
+.section-hdr-text{font-size:20px;font-weight:800;letter-spacing:-.3px}
+
+/* ── PRODUCT CARDS ── */
+.product-card{
+  background:#fff;
+  border-radius:14px;
+  box-shadow:0 2px 12px rgba(0,0,0,.07);
+  display:flex;align-items:stretch;
+  overflow:hidden;
+  margin-bottom:10px;
+  border:1px solid #ebebeb;
+  transition:box-shadow .15s,transform .15s;
+  min-height:90px;
+}
+.product-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.12);transform:translateY(-1px)}
+.product-card:last-child{margin-bottom:0}
+.card-body{flex:1;padding:13px 14px;display:flex;flex-direction:column;justify-content:center;min-width:0}
+.card-name{font-size:15px;font-weight:700;margin-bottom:3px;line-height:1.3}
+.card-desc{
+  font-size:12px;color:#888;line-height:1.45;margin-bottom:8px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.card-price{font-size:16px;font-weight:800;color:#e74c3c;line-height:1}
+.card-price-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
+.price-chip{
+  display:inline-block;
+  background:#fff0ef;color:#c0392b;
+  font-size:11px;font-weight:700;
+  padding:3px 8px;border-radius:10px;
+  border:1px solid #fcd0cc;
+}
+.card-media{
+  width:100px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#fff5f5,#ffeee8);
+  position:relative;overflow:hidden;
+}
+.card-media img{width:100%;height:100%;object-fit:cover;display:none}
+.card-media .card-emoji{font-size:42px;line-height:1}
+
+/* ── LOADING ── */
+.loading{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:60px 20px;gap:16px;color:#888;font-size:14px;
+}
+.spinner{
+  width:36px;height:36px;
+  border:3px solid #ebebeb;
+  border-top-color:#e74c3c;
+  border-radius:50%;
+  animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty-state{text-align:center;padding:60px 20px;color:#aaa;font-size:14px}
+
+/* ── FOOTER ── */
+.footer{
+  text-align:center;padding:20px;
+  font-size:12px;color:#bbb;
+  border-top:1px solid #ebebeb;
+  background:#fff;margin-top:20px;
+}
+.footer strong{color:#888}
+
+/* ── DESKTOP ── */
+@media(min-width:600px){
+  .hero{height:280px;padding:28px 32px 32px}
+  .hero-back{top:24px;left:24px}
+  .hero-text h1{font-size:30px}
+  .content{padding:24px 24px 60px}
+  .card-media{width:110px}
+}
 </style>
 </head>
 <body>
+
 <div class="hero">
-  <img class="hero-logo" id="heroLogo" src="" alt="logo"/>
-  <span class="hero-emoji" id="heroEmoji">🍕</span>
-  <h1 id="heroNombre">ResTito</h1>
-  <p id="heroDir"></p>
+  <a href="/portal.html" class="hero-back">← Portal</a>
+  <div class="hero-identity">
+    <div class="hero-logo-wrap">
+      <img id="heroLogo" src="" alt="logo"/>
+      <span class="hero-emoji-inner" id="heroEmoji">🍕</span>
+    </div>
+    <div class="hero-text">
+      <h1 id="heroNombre">Pizzería</h1>
+      <p id="heroSub"></p>
+    </div>
+  </div>
 </div>
 
-<div class="container">
-  <a href="/portal.html" class="back-link">← Volver al portal</a>
-  <div class="cat-filter" id="catFilter"></div>
-  <div id="menuContent"><div class="empty">Cargando carta...</div></div>
+<div class="cat-nav-wrap">
+  <div class="cat-nav" id="catNav"></div>
+</div>
+
+<div class="content" id="menuContent">
+  <div class="loading"><div class="spinner"></div>Cargando carta…</div>
+</div>
+
+<div class="footer" id="footer">
+  <strong id="footerNombre">Pizzería</strong> · Carta digital
 </div>
 
 <script>
 let MENU = [];
-let activeCat = 'Todos';
-let allCats = ['Todos'];
+let observer = null;
+let scrolling = false;
 
 function applyBizConfig(biz) {
-  if (biz.nombre) document.getElementById('heroNombre').textContent = biz.nombre;
+  if (biz.nombre) {
+    document.getElementById('heroNombre').textContent = biz.nombre;
+    document.getElementById('footerNombre').textContent = biz.nombre;
+    document.title = biz.nombre + ' – Carta';
+  }
   if (biz.logo) {
-    document.getElementById('heroLogo').src = biz.logo;
-    document.getElementById('heroLogo').style.display = 'block';
+    const img = document.getElementById('heroLogo');
+    img.src = biz.logo;
+    img.style.display = 'block';
     document.getElementById('heroEmoji').style.display = 'none';
   }
-  const dirParts = [biz.dir, biz.tel].filter(Boolean);
-  if (dirParts.length) document.getElementById('heroDir').textContent = dirParts.join(' · ');
+  const parts = [biz.dir, biz.tel].filter(Boolean);
+  if (parts.length) document.getElementById('heroSub').textContent = parts.join(' · ');
+}
+
+function formatPrice(n) {
+  return '$' + Number(n).toLocaleString('es-AR');
+}
+
+function renderCard(item) {
+  const mediaContent = item.foto
+    ? `<img src="${item.foto}" alt="${item.nombre}" onload="this.style.display='block'" onerror="this.style.display='none'">`
+    : `<span class="card-emoji">${item.emoji}</span>`;
+
+  let priceBlock;
+  if (item.precios) {
+    const chips = Object.entries(item.precios)
+      .filter(([,v]) => v)
+      .map(([k,v]) => `<span class="price-chip">${k} ${formatPrice(v)}</span>`)
+      .join('');
+    priceBlock = `<div class="card-price-chips">${chips}</div>`;
+  } else {
+    priceBlock = `<div class="card-price">${formatPrice(item.precio)}</div>`;
+  }
+
+  return `
+    <div class="product-card">
+      <div class="card-body">
+        <div class="card-name">${item.nombre}</div>
+        ${item.desc ? `<div class="card-desc">${item.desc}</div>` : ''}
+        ${priceBlock}
+      </div>
+      <div class="card-media">${mediaContent}</div>
+    </div>`;
+}
+
+function renderMenu() {
+  if (!MENU.length) {
+    document.getElementById('menuContent').innerHTML =
+      '<div class="empty-state">No hay productos disponibles en la carta.</div>';
+    document.getElementById('catNav').innerHTML = '';
+    return;
+  }
+
+  // Category nav
+  const navHtml = MENU.map((s, i) =>
+    `<button class="cat-pill${i===0?' active':''}" data-idx="${i}" onclick="scrollToSection(${i})">${s.label}</button>`
+  ).join('');
+  document.getElementById('catNav').innerHTML = navHtml;
+
+  // Sections
+  const sectionsHtml = MENU.map((s, i) => `
+    <div class="menu-section" data-idx="${i}" id="section-${i}">
+      <div class="section-hdr">
+        <div class="section-hdr-bar"></div>
+        <div class="section-hdr-text">${s.label}</div>
+      </div>
+      ${s.items.map(renderCard).join('')}
+    </div>`).join('');
+
+  document.getElementById('menuContent').innerHTML = sectionsHtml;
+  setupObserver();
+}
+
+function scrollToSection(idx) {
+  scrolling = true;
+  setActivePill(idx);
+  const el = document.getElementById('section-' + idx);
+  if (el) {
+    const navH = document.querySelector('.cat-nav-wrap').offsetHeight;
+    const top = el.getBoundingClientRect().top + window.scrollY - navH - 8;
+    window.scrollTo({top, behavior:'smooth'});
+  }
+  setTimeout(() => { scrolling = false; }, 700);
+}
+
+function setActivePill(idx) {
+  document.querySelectorAll('.cat-pill').forEach((p, i) => {
+    p.classList.toggle('active', i === idx);
+  });
+  // scroll pill into view
+  const pill = document.querySelector(`.cat-pill[data-idx="${idx}"]`);
+  if (pill) pill.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
+}
+
+function setupObserver() {
+  if (observer) observer.disconnect();
+  const navH = document.querySelector('.cat-nav-wrap').offsetHeight;
+  observer = new IntersectionObserver(entries => {
+    if (scrolling) return;
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        setActivePill(Number(entry.target.dataset.idx));
+      }
+    });
+  }, {rootMargin: `-${navH + 4}px 0px -60% 0px`, threshold: 0});
+  document.querySelectorAll('.menu-section').forEach(el => observer.observe(el));
 }
 
 async function loadMenu() {
@@ -66,39 +309,47 @@ async function loadMenu() {
     const saved = localStorage.getItem('pz_biz_cfg');
     if (saved) applyBizConfig(JSON.parse(saved));
   } catch(e) {}
+
   try {
     const res = await fetch('/api/state');
     const state = await res.json();
     const biz = state.biz_config || {};
     applyBizConfig(biz);
-    const productos = (state.productos || []).filter(p => p.activo !== false && p.en_carta_qr !== false);
+
+    const productos = (state.productos || [])
+      .filter(p => p.activo !== false && p.en_carta_qr !== false);
     const categorias = state.categorias || [];
+
     const groups = {};
     for (const p of productos) {
-      if (!groups[p.categoria]) groups[p.categoria] = [];
-      groups[p.categoria].push(p);
+      const key = p.categoria || '__sin_cat';
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(p);
     }
+
     MENU = [];
     for (const cat of categorias) {
       if (groups[cat.id] && groups[cat.id].length) {
         MENU.push({
-          cat: cat.id,
-          label: `${cat.emoji} ${cat.nombre}`,
+          label: `${cat.emoji || ''} ${cat.nombre}`.trim(),
           items: groups[cat.id].map(p => ({
             id: p.id,
             emoji: p.emoji || '🍽️',
             foto: p.foto || null,
             nombre: p.nombre,
             desc: p.descripcion || '',
-            ...(p.precio_chica ? {precios:{Chica:p.precio_chica,Mediana:p.precio_mediana,Grande:p.precio_grande}} : {precio:p.precio})
+            ...(p.precio_chica
+              ? { precios: { Chica: p.precio_chica, Mediana: p.precio_mediana, Grande: p.precio_grande } }
+              : { precio: p.precio })
           }))
         });
       }
     }
+
+    // Uncategorized products
     for (const [catId, items] of Object.entries(groups)) {
-      if (!categorias.find(c => c.id === catId)) {
+      if (catId !== '__sin_cat' && !categorias.find(c => c.id === catId)) {
         MENU.push({
-          cat: catId,
           label: catId,
           items: items.map(p => ({
             id: p.id,
@@ -106,54 +357,33 @@ async function loadMenu() {
             foto: p.foto || null,
             nombre: p.nombre,
             desc: p.descripcion || '',
-            ...(p.precio_chica ? {precios:{Chica:p.precio_chica,Mediana:p.precio_mediana,Grande:p.precio_grande}} : {precio:p.precio})
+            ...(p.precio_chica
+              ? { precios: { Chica: p.precio_chica, Mediana: p.precio_mediana, Grande: p.precio_grande } }
+              : { precio: p.precio })
           }))
         });
       }
     }
+    if (groups['__sin_cat'] && groups['__sin_cat'].length) {
+      MENU.push({
+        label: 'Otros',
+        items: groups['__sin_cat'].map(p => ({
+          id: p.id,
+          emoji: p.emoji || '🍽️',
+          foto: p.foto || null,
+          nombre: p.nombre,
+          desc: p.descripcion || '',
+          ...(p.precio_chica
+            ? { precios: { Chica: p.precio_chica, Mediana: p.precio_mediana, Grande: p.precio_grande } }
+            : { precio: p.precio })
+        }))
+      });
+    }
+
   } catch(e) {
     MENU = [];
   }
-  allCats = ['Todos', ...MENU.map(s => s.label)];
-  renderFilter();
   renderMenu();
-}
-
-function renderFilter() {
-  document.getElementById('catFilter').innerHTML = allCats.map(c =>
-    `<button class="cat-btn${c===activeCat?' active':''}" onclick="setcat('${c.replace(/'/g,"\\'")}'">${c}</button>`
-  ).join('');
-}
-
-function setcat(cat) {
-  activeCat = cat;
-  renderFilter();
-  renderMenu();
-}
-
-function priceHTML(item) {
-  if (item.precio) return `<span>$${item.precio.toLocaleString('es-AR')}</span>`;
-  return Object.entries(item.precios).map(([k,v]) => `<span>${k}: $${v.toLocaleString('es-AR')}</span>`).join('');
-}
-
-function renderMenu() {
-  const sections = activeCat === 'Todos' ? MENU : MENU.filter(s => s.label === activeCat);
-  if (!sections.length) {
-    document.getElementById('menuContent').innerHTML = '<div class="empty">No hay productos disponibles</div>';
-    return;
-  }
-  document.getElementById('menuContent').innerHTML = sections.map(s => `
-    <div class="cat-section">
-      <div class="cat-title">${s.label}</div>
-      <div class="items-grid">${s.items.map(i => `
-        <div class="item-card">
-          ${i.foto ? `<img src="${i.foto}" style="width:100%;height:140px;object-fit:cover;border-radius:8px;margin-bottom:10px;display:block">` : `<span class="item-emoji">${i.emoji}</span>`}
-          <div class="item-name">${i.nombre}</div>
-          <div class="item-desc">${i.desc}</div>
-          <div class="item-price">${priceHTML(i)}</div>
-        </div>`).join('')}
-      </div>
-    </div>`).join('');
 }
 
 loadMenu();
