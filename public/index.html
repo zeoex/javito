@@ -598,7 +598,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <div class="section" id="sec-mesas">
         <div class="section-header">
           <h2>🪑 Mesas</h2>
-          <button class="btn btn-primary btn-sm" id="btnNuevaMesa" onclick="openModal('modalNuevaMesa')">+ Nueva Mesa</button>
+          <button class="btn btn-primary btn-sm" id="btnNuevaMesa" onclick="abrirModalNuevaMesa()">+ Nueva Mesa</button>
         </div>
         <div class="tabs" id="mesasTabs">
           <div class="tab active" id="tabSalon" onclick="switchTab('salon')">🏠 Salón</div>
@@ -620,25 +620,35 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <div class="section" id="sec-productos">
         <div class="section-header">
           <h2>🍕 Productos</h2>
-          <button class="btn btn-primary btn-sm" onclick="openModal('modalProducto')">+ Nuevo Producto</button>
+          <div style="display:flex;gap:6px;align-items:center;flex:1;margin:0 12px">
+            <button class="btn btn-sm" id="prodTabBtnLista" style="background:var(--blue);color:#fff;border:none" onclick="switchProdTab('lista')">Lista</button>
+            <button class="btn btn-outline btn-sm" id="prodTabBtnCats" onclick="switchProdTab('categorias')">Categorías</button>
+          </div>
+          <button class="btn btn-primary btn-sm" id="btnNuevoProdAction" onclick="_resetModalProducto();openModal('modalProducto')">+ Nuevo Producto</button>
         </div>
-        <div class="filter-bar">
-          <input class="search-input" placeholder="Buscar producto..." oninput="filterProductos(this.value)"/>
-          <select class="form-control" onchange="filterProductosCat(this.value)">
-            <option value="">Todas las categorías</option>
-            <option value="pizzas">🍕 Pizzas</option>
-            <option value="empanadas">🥟 Empanadas</option>
-            <option value="bebidas">🥤 Bebidas</option>
-            <option value="postres">🍮 Postres</option>
-            <option value="entradas">🧀 Entradas</option>
-            <option value="tragos">🍹 Tragos</option>
-          </select>
+        <!-- Vista: Lista de Productos -->
+        <div id="prodVistaLista">
+          <div class="filter-bar">
+            <input class="search-input" placeholder="Buscar producto..." oninput="filterProductos(this.value)"/>
+            <select class="form-control" id="filtroCategoriaProd" onchange="filterProductosCat(this.value)">
+              <option value="">Todas las categorías</option>
+            </select>
+          </div>
+          <div class="card">
+            <div class="table-wrap"><table id="productosTable">
+              <thead><tr><th>Producto</th><th>Categoría</th><th>Precio Chica</th><th>Precio Med.</th><th>Precio Grande</th><th>Estado</th><th>Acciones</th></tr></thead>
+              <tbody id="productosTbody"></tbody>
+            </table></div>
+          </div>
         </div>
-        <div class="card">
-          <div class="table-wrap"><table id="productosTable">
-            <thead><tr><th>Producto</th><th>Categoría</th><th>Precio Chica</th><th>Precio Med.</th><th>Precio Grande</th><th>Estado</th><th>Acciones</th></tr></thead>
-            <tbody id="productosTbody"></tbody>
-          </table></div>
+        <!-- Vista: Categorías -->
+        <div id="prodVistaCats" style="display:none">
+          <div class="card">
+            <div class="table-wrap"><table>
+              <thead><tr><th>Emoji</th><th>Nombre</th><th>ID</th><th>Va a Comanda</th><th>Acciones</th></tr></thead>
+              <tbody id="categoriasTbody"></tbody>
+            </table></div>
+          </div>
         </div>
       </div>
 
@@ -730,7 +740,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <div class="section" id="sec-clientes">
         <div class="section-header">
           <h2>👥 Clientes</h2>
-          <button class="btn btn-primary btn-sm" onclick="openModal('modalCliente')">+ Nuevo Cliente</button>
+          <button class="btn btn-primary btn-sm" onclick="document.getElementById('cliEditId').value='';document.getElementById('modalClienteTitle').textContent='Nuevo Cliente';document.getElementById('cliNombre').value='';document.getElementById('cliTel').value='';document.getElementById('cliEmail').value='';document.getElementById('cliDir').value='';openModal('modalCliente')">+ Nuevo Cliente</button>
         </div>
         <div class="filter-bar">
           <input class="search-input" placeholder="Buscar por nombre o teléfono..." oninput="filterClientes(this.value)"/>
@@ -785,7 +795,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <div class="section" id="sec-usuarios">
         <div class="section-header">
           <h2>👤 Usuarios</h2>
-          <button class="btn btn-primary btn-sm" onclick="openModal('modalUsuario')">+ Nuevo Usuario</button>
+          <button class="btn btn-primary btn-sm" onclick="_resetModalUsuario();openModal('modalUsuario')">+ Nuevo Usuario</button>
         </div>
         <div class="card">
           <div class="table-wrap"><table>
@@ -975,14 +985,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <div class="form-row">
         <div class="form-group"><label>Nombre</label><input class="form-control" id="prodNombre" placeholder="Pizza Muzarella"/></div>
         <div class="form-group"><label>Categoría</label>
-          <select class="form-control" id="prodCat" onchange="toggleProdPrecios()">
-            <option value="pizzas">🍕 Pizzas</option>
-            <option value="empanadas">🥟 Empanadas</option>
-            <option value="bebidas">🥤 Bebidas</option>
-            <option value="postres">🍮 Postres</option>
-            <option value="entradas">🧀 Entradas</option>
-            <option value="tragos">🍹 Tragos</option>
-          </select>
+          <select class="form-control" id="prodCat" onchange="toggleProdPrecios()"></select>
         </div>
       </div>
       <div class="form-group"><label>Descripción</label><input class="form-control" id="prodDesc" placeholder="Descripción breve..."/></div>
@@ -1001,6 +1004,28 @@ input.form-control:focus{outline:none;border-color:var(--red)}
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modalProducto')">Cancelar</button>
       <button class="btn btn-primary" onclick="guardarProducto()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalCategoria">
+  <div class="modal">
+    <div class="modal-header"><h3 id="modalCategoriaTitle">Nueva Categoría</h3><button class="modal-close" onclick="closeModal('modalCategoria')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="catEditId"/>
+      <div class="form-row">
+        <div class="form-group" style="flex:2"><label>Nombre</label><input class="form-control" id="catNombre" placeholder="Pizzas"/></div>
+        <div class="form-group" style="flex:0 0 90px"><label>Emoji</label><input class="form-control" id="catEmoji" placeholder="🍕" style="text-align:center;font-size:20px"/></div>
+      </div>
+      <div class="form-group"><label>ID interno</label><input class="form-control" id="catIdInput" placeholder="pizzas" style="font-family:monospace"/><small style="color:var(--gray);font-size:11px">Solo letras minúsculas, sin espacios. No modificar si ya tiene productos.</small></div>
+      <div class="form-group" style="display:flex;align-items:center;gap:10px">
+        <label style="margin:0">Va a Comanda (cocina)</label>
+        <label class="switch"><input type="checkbox" id="catComanda"/><span class="slider"></span></label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalCategoria')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarCategoria()">Guardar</button>
     </div>
   </div>
 </div>
@@ -1122,6 +1147,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
   <div class="modal">
     <div class="modal-header"><h3 id="modalClienteTitle">Nuevo Cliente</h3><button class="modal-close" onclick="closeModal('modalCliente')">✕</button></div>
     <div class="modal-body">
+      <input type="hidden" id="cliEditId"/>
       <div class="form-group"><label>Nombre</label><input class="form-control" id="cliNombre" placeholder="Juan García"/></div>
       <div class="form-group"><label>Teléfono</label><input class="form-control" id="cliTel" placeholder="11-4567-8901"/></div>
       <div class="form-group"><label>Email</label><input class="form-control" id="cliEmail" placeholder="juan@email.com"/></div>
@@ -1136,11 +1162,12 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 
 <div class="modal-overlay" id="modalUsuario">
   <div class="modal">
-    <div class="modal-header"><h3>Nuevo Usuario</h3><button class="modal-close" onclick="closeModal('modalUsuario')">✕</button></div>
+    <div class="modal-header"><h3 id="modalUsuarioTitle">Nuevo Usuario</h3><button class="modal-close" onclick="closeModal('modalUsuario')">✕</button></div>
     <div class="modal-body">
+      <input type="hidden" id="usrEditId"/>
       <div class="form-group"><label>Nombre</label><input class="form-control" id="usrNombre" placeholder="Carlos López"/></div>
       <div class="form-group"><label>Email</label><input class="form-control" id="usrEmail" placeholder="carlos@pizzeriapro.com"/></div>
-      <div class="form-group"><label>Contraseña</label><input class="form-control" id="usrPass" type="password" placeholder="••••••••"/></div>
+      <div class="form-group"><label id="usrPassLabel">Contraseña</label><input class="form-control" id="usrPass" type="password" placeholder="••••••••"/></div>
       <div class="form-group"><label>Rol</label>
         <select class="form-control" id="usrRol">
           <option value="admin">Administrador</option>
@@ -1152,7 +1179,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modalUsuario')">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarUsuario()">Crear</button>
+      <button class="btn btn-primary" id="btnGuardarUsuario" onclick="guardarUsuario()">Crear</button>
     </div>
   </div>
 </div>
@@ -1192,9 +1219,9 @@ const DEMO_MESAS = [
   {id:6,numero:6,capacidad:4,estado:'cuenta',zona:'salon',mozo:'Carlos',tiempo:'01:55',pedido:[{productoId:4,nombre:'Pizza Fugazzeta',size:'grande',precio:1700,qty:2},{productoId:10,nombre:'Fernet con Coca',size:null,precio:1800,qty:2},{productoId:11,nombre:'Tiramisu',size:null,precio:900,qty:2}]},
   {id:7,numero:7,capacidad:4,estado:'libre',zona:'salon',mozo:null,tiempo:null,pedido:[]},
   {id:8,numero:8,capacidad:8,estado:'ocupada',zona:'salon',mozo:'María',tiempo:'00:30',pedido:[{productoId:5,nombre:'Empanada de Carne',size:null,precio:350,qty:4},{productoId:8,nombre:'Agua Mineral',size:null,precio:400,qty:2}]},
-  {id:9,numero:1,capacidad:4,estado:'libre',zona:'vereda',mozo:null,tiempo:null,pedido:[]},
-  {id:10,numero:2,capacidad:2,estado:'ocupada',zona:'vereda',mozo:'Carlos',tiempo:'00:20',pedido:[{productoId:1,nombre:'Pizza Muzarella',size:'mediana',precio:1200,qty:1},{productoId:7,nombre:'Coca-Cola 500ml',size:null,precio:600,qty:2}]},
-  {id:11,numero:3,capacidad:4,estado:'libre',zona:'vereda',mozo:null,tiempo:null,pedido:[]},
+  {id:9,numero:7,capacidad:4,estado:'libre',zona:'vereda',mozo:null,tiempo:null,pedido:[]},
+  {id:10,numero:8,capacidad:2,estado:'ocupada',zona:'vereda',mozo:'Carlos',tiempo:'00:20',pedido:[{productoId:1,nombre:'Pizza Muzarella',size:'mediana',precio:1200,qty:1},{productoId:7,nombre:'Coca-Cola 500ml',size:null,precio:600,qty:2}]},
+  {id:11,numero:9,capacidad:4,estado:'libre',zona:'vereda',mozo:null,tiempo:null,pedido:[]},
 ];
 const DEMO_PRODUCTOS = [
   {id:1,nombre:'Pizza Muzarella',categoria:'pizzas',emoji:'🍕',precio_chica:800,precio_mediana:1200,precio_grande:1600,activo:true},
@@ -1267,8 +1294,16 @@ let cajaMoves = [...DEMO_CAJA_MOV];
 let cajaAbierta = true;
 let cajaInicial = 5000;
 let cajaCierres = [];
-
 let mozoHistorial = [];
+const DEMO_CATEGORIAS = [
+  {id:'pizzas',nombre:'Pizzas',emoji:'🍕',comanda:true},
+  {id:'empanadas',nombre:'Empanadas',emoji:'🥟',comanda:true},
+  {id:'bebidas',nombre:'Bebidas',emoji:'🥤',comanda:false},
+  {id:'tragos',nombre:'Tragos',emoji:'🍹',comanda:false},
+  {id:'postres',nombre:'Postres',emoji:'🍮',comanda:true},
+  {id:'entradas',nombre:'Entradas',emoji:'🧀',comanda:true},
+];
+let categoriasData = [...DEMO_CATEGORIAS];
 
 function saveState() {
   try {
@@ -1283,6 +1318,7 @@ function saveState() {
     localStorage.setItem('pz_caja_inicial', JSON.stringify(cajaInicial));
     localStorage.setItem('pz_caja_moves', JSON.stringify(cajaMoves));
     localStorage.setItem('pz_caja_cierres', JSON.stringify(cajaCierres));
+    localStorage.setItem('pz_categorias', JSON.stringify(categoriasData));
   } catch(e) {}
   // Sync to PostgreSQL (fire and forget)
   if (typeof token !== 'undefined' && token) {
@@ -1299,7 +1335,8 @@ function saveState() {
         caja_abierta: cajaAbierta,
         caja_inicial: cajaInicial,
         caja_moves: cajaMoves,
-        caja_cierres: cajaCierres
+        caja_cierres: cajaCierres,
+        categorias: categoriasData
       })
     }).catch(() => {});
   }
@@ -1329,6 +1366,8 @@ function loadState() {
     if (cm) { const parsed = JSON.parse(cm); if (Array.isArray(parsed)) cajaMoves = parsed.map(m=>({...m, desc:m.desc||'', monto:Number(m.monto)||0})); }
     const cc = localStorage.getItem('pz_caja_cierres');
     if (cc) { const parsed = JSON.parse(cc); if (Array.isArray(parsed)) cajaCierres = parsed; }
+    const cats = localStorage.getItem('pz_categorias');
+    if (cats) { const parsed = JSON.parse(cats); if (Array.isArray(parsed) && parsed.length > 0) categoriasData = parsed; }
   } catch(e) {}
 }
 
@@ -1350,6 +1389,7 @@ async function loadStateFromAPI() {
     if (data.caja_inicial) cajaInicial = parseInt(data.caja_inicial) || 5000;
     if (arr(data.caja_moves).length > 0) cajaMoves = data.caja_moves.map(m=>({...m, desc:m.desc||'', monto:Number(m.monto)||0}));
     if (arr(data.caja_cierres).length > 0) cajaCierres = data.caja_cierres;
+    if (arr(data.categorias).length > 0) categoriasData = data.categorias;
     // Also update localStorage cache
     try {
       localStorage.setItem('pz_mesas', JSON.stringify(mesasData));
@@ -1374,6 +1414,7 @@ function resetState() {
   clientesData = [...DEMO_CLIENTES];
   usuariosData = [...DEMO_USUARIOS];
   cajaMoves = [...DEMO_CAJA_MOV];
+  categoriasData = [...DEMO_CATEGORIAS];
   saveState();
   showToast('Datos restablecidos a demo','success');
 }
@@ -1458,6 +1499,7 @@ function initApp() {
   // Restore persisted state
   loadState();
   loadStateFromAPI().then(() => {
+    _populateCatSelects();
     const activeSection = (document.querySelector('.section.active') || {}).id?.replace('sec-','') || 'dashboard';
     const loaders = {dashboard:loadDashboard,mesas:renderMesas,delivery:renderDelivery,productos:renderProductos,stock:renderStock,caja:renderCaja,facturacion:loadFacturacion,clientes:renderClientes,reportes:renderReportes,usuarios:renderUsuarios,mozostats:renderMozoStats,config:loadPrintConfigUI};
     if (loaders[activeSection]) loaders[activeSection]();
@@ -1678,10 +1720,17 @@ function renderActividades() {
     </div>`).join('');
 }
 
-// Categories that go to kitchen comanda (food only)
-const CATS_COMANDA = ['pizzas','empanadas','entradas','postres'];
+function getCatsComanda() { return categoriasData.filter(c=>c.comanda).map(c=>c.id); }
 
 // ======= MESAS =======
+function abrirModalNuevaMesa() {
+  const nextNum = mesasData.length > 0 ? Math.max(...mesasData.map(m=>m.numero||0)) + 1 : 1;
+  document.getElementById('nuevaMesaNum').value = nextNum;
+  document.getElementById('nuevaMesaCap').value = 4;
+  document.getElementById('nuevaMesaZona').value = currentMesaTab || 'salon';
+  openModal('modalNuevaMesa');
+}
+
 function switchTab(tab) {
   currentMesaTab = tab;
   document.querySelectorAll('#mesasTabs .tab').forEach(t=>t.classList.remove('active'));
@@ -1744,7 +1793,7 @@ function mesaPedidoHTML(id) {
   const m = mesasData.find(x=>String(x.id)===String(id));
   const esMozo = currentUser?.rol === 'mozo';
   const cats = [...new Set(productosData.map(p=>p.categoria))];
-  const catLabels = {pizzas:'🍕 Pizzas',empanadas:'🥟 Empanadas',bebidas:'🥤 Bebidas',tragos:'🍹 Tragos',postres:'🍮 Postres',entradas:'🧀 Entradas'};
+  const catLabels = Object.fromEntries(categoriasData.map(c=>[c.id,`${c.emoji} ${c.nombre}`]));
   const subtotal = (m.pedido||[]).reduce((s,i)=>s+i.precio*i.qty,0);
   const sid = `'${id}'`;
 
@@ -1858,7 +1907,7 @@ function seleccionarProductoMesa(prodId) {
   if(!p || !_mesaModalId) return;
   _selectedProdId = prodId;
   const esMozo = currentUser?.rol === 'mozo';
-  const esComida = CATS_COMANDA.includes(p.categoria);
+  const esComida = getCatsComanda().includes(p.categoria);
   const sid = `'${_mesaModalId}'`;
 
   document.getElementById('sizePickerTitle').innerHTML = `${p.emoji} ${p.nombre}`;
@@ -1927,7 +1976,7 @@ function renderMesaFooter(id) {
 
   const esMozo = currentUser?.rol === 'mozo';
   const tieneItems = (m.pedido||[]).length > 0;
-  const tieneComida = (m.pedido||[]).some(i=>CATS_COMANDA.includes(i.categoria));
+  const tieneComida = (m.pedido||[]).some(i=>getCatsComanda().includes(i.categoria));
   const btnLiberar = esMozo && !tieneItems && m.estado==='ocupada'
     ? `<button class="btn btn-outline" onclick="liberarMesaVacia(${sid})">🔓 Liberar</button>` : '';
   const btnCuenta = tieneItems && m.estado!=='cuenta'
@@ -1944,7 +1993,7 @@ function agregarItemMesa(mesaId, prodId, size, precio, categoria) {
   const p = productosData.find(x=>x.id===prodId);
   if(!m||!p) return;
   const nota = (document.getElementById('addItemNota')?.value||'').trim();
-  const esComida = CATS_COMANDA.includes(categoria||p.categoria);
+  const esComida = getCatsComanda().includes(categoria||p.categoria);
   const existing = !nota && !esComida && m.pedido.find(i=>i.productoId===prodId&&i.size===size&&!i.nota);
   if(existing) { existing.qty++; }
   else { m.pedido.push({productoId:prodId,nombre:p.nombre,size,precio,qty:1,categoria:categoria||p.categoria,nota:nota||''}); }
@@ -2155,7 +2204,7 @@ function _printLocal(html) {
 
 async function imprimirComanda(id) {
   const m = mesasData.find(x=>String(x.id)===String(id));
-  const comida = (m.pedido||[]).filter(i=>CATS_COMANDA.includes(i.categoria));
+  const comida = (m.pedido||[]).filter(i=>getCatsComanda().includes(i.categoria));
   if(!comida.length){ showToast('No hay comidas para imprimir','error'); return; }
   const hora = new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
   const lineas = comida.map(i=>{
@@ -2311,8 +2360,115 @@ function addDlvItem() {
 // ======= PRODUCTOS =======
 let productosFiltro = '';
 let productosCatFiltro = '';
+let _prodTabActual = 'lista';
+
+function switchProdTab(tab) {
+  _prodTabActual = tab;
+  document.getElementById('prodVistaLista').style.display = tab==='lista' ? '' : 'none';
+  document.getElementById('prodVistaCats').style.display = tab==='categorias' ? '' : 'none';
+  document.getElementById('prodTabBtnLista').style.cssText = tab==='lista' ? 'background:var(--blue);color:#fff;border:none' : '';
+  document.getElementById('prodTabBtnCats').style.cssText = tab==='categorias' ? 'background:var(--blue);color:#fff;border:none' : '';
+  document.getElementById('btnNuevoProdAction').textContent = tab==='lista' ? '+ Nuevo Producto' : '+ Nueva Categoría';
+  document.getElementById('btnNuevoProdAction').onclick = tab==='lista'
+    ? () => { _resetModalProducto(); openModal('modalProducto'); }
+    : () => { _resetModalCategoria(); openModal('modalCategoria'); };
+  if (tab==='categorias') renderCategorias();
+}
+
+function _populateCatSelects() {
+  const opts = categoriasData.map(c=>`<option value="${c.id}">${c.emoji} ${c.nombre}</option>`).join('');
+  const optsFiltro = '<option value="">Todas las categorías</option>' + opts;
+  const filtro = document.getElementById('filtroCategoriaProd');
+  if (filtro) filtro.innerHTML = optsFiltro;
+  const prodCat = document.getElementById('prodCat');
+  if (prodCat) { const cur = prodCat.value; prodCat.innerHTML = opts; if (cur) prodCat.value = cur; }
+}
+
+function renderCategorias() {
+  document.getElementById('categoriasTbody').innerHTML = categoriasData.map(c=>`
+    <tr>
+      <td style="font-size:22px;text-align:center">${c.emoji}</td>
+      <td><strong>${c.nombre}</strong></td>
+      <td style="font-family:monospace;font-size:12px;color:var(--gray)">${c.id}</td>
+      <td style="text-align:center"><span class="badge ${c.comanda?'badge-success':'badge-secondary'}">${c.comanda?'Sí':'No'}</span></td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick="editarCategoria('${c.id}')">✏️ Editar</button>
+        <button class="btn btn-danger btn-sm" style="margin-left:4px" onclick="deleteCategoria('${c.id}')">🗑️</button>
+      </td>
+    </tr>`).join('');
+}
+
+function _resetModalCategoria() {
+  document.getElementById('catEditId').value='';
+  document.getElementById('modalCategoriaTitle').textContent='Nueva Categoría';
+  document.getElementById('catNombre').value='';
+  document.getElementById('catEmoji').value='';
+  document.getElementById('catIdInput').value='';
+  document.getElementById('catIdInput').readOnly=false;
+  document.getElementById('catComanda').checked=false;
+}
+
+function editarCategoria(id) {
+  const c = categoriasData.find(x=>x.id===id);
+  if(!c) return;
+  document.getElementById('catEditId').value=id;
+  document.getElementById('modalCategoriaTitle').textContent='Editar Categoría';
+  document.getElementById('catNombre').value=c.nombre;
+  document.getElementById('catEmoji').value=c.emoji;
+  document.getElementById('catIdInput').value=c.id;
+  document.getElementById('catIdInput').readOnly=true;
+  document.getElementById('catComanda').checked=!!c.comanda;
+  openModal('modalCategoria');
+}
+
+function guardarCategoria() {
+  const nombre=document.getElementById('catNombre').value.trim();
+  const emoji=document.getElementById('catEmoji').value.trim()||'📦';
+  const comanda=document.getElementById('catComanda').checked;
+  const editId=document.getElementById('catEditId').value;
+  if(!nombre){ showToast('Ingresá el nombre','error'); return; }
+  if(editId) {
+    const c=categoriasData.find(x=>x.id===editId);
+    if(c){ c.nombre=nombre; c.emoji=emoji; c.comanda=comanda; }
+  } else {
+    let id=document.getElementById('catIdInput').value.trim().toLowerCase().replace(/\s+/g,'_');
+    if(!id) id=nombre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+    if(categoriasData.find(x=>x.id===id)){ showToast('Ya existe una categoría con ese ID','error'); return; }
+    categoriasData.push({id,nombre,emoji,comanda});
+  }
+  closeModal('modalCategoria');
+  saveState();
+  _populateCatSelects();
+  renderCategorias();
+  showToast('Categoría guardada','success');
+}
+
+function deleteCategoria(id) {
+  if(productosData.some(p=>p.categoria===id)){ showToast('Hay productos con esta categoría — no se puede eliminar','error'); return; }
+  if(!confirm('¿Eliminar esta categoría?')) return;
+  categoriasData=categoriasData.filter(c=>c.id!==id);
+  saveState();
+  _populateCatSelects();
+  renderCategorias();
+  showToast('Categoría eliminada');
+}
+
+function _resetModalProducto() {
+  editingProdId = null;
+  document.getElementById('modalProdTitle').textContent = 'Nuevo Producto';
+  document.getElementById('prodNombre').value='';
+  document.getElementById('prodDesc').value='';
+  document.getElementById('prodEmoji').value='🍕';
+  document.getElementById('prodPChica').value='';
+  document.getElementById('prodPMed').value='';
+  document.getElementById('prodPGrande').value='';
+  document.getElementById('prodPrecio').value='';
+  _populateCatSelects();
+  toggleProdPrecios();
+}
 
 function renderProductos() {
+  _populateCatSelects();
   let data = productosData.filter(p=>{
     const matchNombre = p.nombre.toLowerCase().includes(productosFiltro.toLowerCase());
     const matchCat = !productosCatFiltro || p.categoria===productosCatFiltro;
@@ -2346,6 +2502,7 @@ function editProducto(id) {
   const p = productosData.find(x=>String(x.id)===String(id));
   editingProdId = id;
   document.getElementById('modalProdTitle').textContent = 'Editar Producto';
+  _populateCatSelects();
   document.getElementById('prodNombre').value = p.nombre;
   document.getElementById('prodCat').value = p.categoria;
   document.getElementById('prodDesc').value = p.descripcion||'';
@@ -2857,7 +3014,7 @@ function renderClientes() {
       <td>${c.pedidos}</td>
       <td><strong>$${c.total_gastado.toLocaleString()}</strong></td>
       <td>${c.ultimo}</td>
-      <td><button class="btn btn-outline btn-sm" onclick="verCliente(${c.id})">Ver</button></td>
+      <td><button class="btn btn-outline btn-sm" onclick="editarCliente(${c.id})">✏️ Editar</button></td>
     </tr>`).join('');
 }
 
@@ -2873,22 +3030,36 @@ function filterClientes(v) {
       <td>${c.pedidos}</td>
       <td><strong>$${c.total_gastado.toLocaleString()}</strong></td>
       <td>${c.ultimo}</td>
-      <td><button class="btn btn-outline btn-sm" onclick="verCliente(${c.id})">Ver</button></td>
+      <td><button class="btn btn-outline btn-sm" onclick="editarCliente(${c.id})">✏️ Editar</button></td>
     </tr>`).join('');
 }
 
-function verCliente(id) {
+function editarCliente(id) {
   const c = clientesData.find(x=>String(x.id)===String(id));
-  alert(`Cliente: ${c.nombre}\nTel: ${c.telefono}\nEmail: ${c.email}\nPedidos: ${c.pedidos}\nTotal gastado: $${c.total_gastado.toLocaleString()}`);
+  if(!c) return;
+  document.getElementById('cliEditId').value = id;
+  document.getElementById('modalClienteTitle').textContent = 'Editar Cliente';
+  document.getElementById('cliNombre').value = c.nombre;
+  document.getElementById('cliTel').value = c.telefono||'';
+  document.getElementById('cliEmail').value = c.email||'';
+  document.getElementById('cliDir').value = c.direccion||'';
+  openModal('modalCliente');
 }
 
 function guardarCliente() {
-  const nombre = document.getElementById('cliNombre').value;
+  const nombre = document.getElementById('cliNombre').value.trim();
   if(!nombre){ showToast('Ingresá el nombre','error'); return; }
-  clientesData.unshift({id:Date.now(),nombre,telefono:document.getElementById('cliTel').value,email:document.getElementById('cliEmail').value,direccion:document.getElementById('cliDir').value,pedidos:0,total_gastado:0,ultimo:new Date().toISOString().slice(0,10)});
-  closeModal('modalCliente');
-  saveState();
-  renderClientes(); showToast('Cliente guardado','success');
+  const editId = document.getElementById('cliEditId').value;
+  if(editId) {
+    const c = clientesData.find(x=>String(x.id)===String(editId));
+    if(c){ c.nombre=nombre; c.telefono=document.getElementById('cliTel').value; c.email=document.getElementById('cliEmail').value; c.direccion=document.getElementById('cliDir').value; }
+    closeModal('modalCliente');
+    saveState(); renderClientes(); showToast('Cliente actualizado','success');
+  } else {
+    clientesData.unshift({id:Date.now(),nombre,telefono:document.getElementById('cliTel').value,email:document.getElementById('cliEmail').value,direccion:document.getElementById('cliDir').value,pedidos:0,total_gastado:0,ultimo:new Date().toISOString().slice(0,10)});
+    closeModal('modalCliente');
+    saveState(); renderClientes(); showToast('Cliente guardado','success');
+  }
 }
 
 // ======= REPORTES =======
@@ -2972,35 +3143,72 @@ function renderUsuarios() {
       <td><span class="badge ${u.activo?'badge-success':'badge-secondary'}">${u.activo?'Activo':'Inactivo'}</span></td>
       <td style="font-size:12px">${u.ultimo}</td>
       <td>
-        <button class="btn btn-outline btn-sm" onclick="toggleUsuario(${u.id})">${u.activo?'Desactivar':'Activar'}</button>
-        ${u.id!==currentUser?.id?`<button class="btn btn-danger btn-sm" style="margin-left:4px" onclick="deleteUsuario(${u.id})">🗑️</button>`:''}
+        <button class="btn btn-outline btn-sm" onclick="editarUsuario('${u.id}')">✏️ Editar</button>
+        <button class="btn btn-outline btn-sm" style="margin-left:4px" onclick="toggleUsuario('${u.id}')">${u.activo?'Desactivar':'Activar'}</button>
+        ${String(u.id)!==String(currentUser?.id)?`<button class="btn btn-danger btn-sm" style="margin-left:4px" onclick="deleteUsuario('${u.id}')">🗑️</button>`:''}
       </td>
     </tr>`).join('');
 }
 
+function editarUsuario(id) {
+  const u = usuariosData.find(x=>String(x.id)===String(id));
+  if(!u) return;
+  document.getElementById('usrEditId').value = id;
+  document.getElementById('modalUsuarioTitle').textContent = 'Editar Usuario';
+  document.getElementById('usrNombre').value = u.nombre;
+  document.getElementById('usrEmail').value = u.email;
+  document.getElementById('usrPass').value = '';
+  document.getElementById('usrPassLabel').textContent = 'Contraseña (dejar vacío para no cambiar)';
+  document.getElementById('usrRol').value = u.rol;
+  document.getElementById('btnGuardarUsuario').textContent = 'Guardar';
+  openModal('modalUsuario');
+}
+
 function toggleUsuario(id) {
   const u = usuariosData.find(x=>String(x.id)===String(id));
-  u.activo=!u.activo; renderUsuarios();
+  u.activo=!u.activo; saveState(); renderUsuarios();
   showToast(`Usuario ${u.nombre} ${u.activo?'activado':'desactivado'}`);
 }
 
 function deleteUsuario(id) {
   if(!confirm('¿Eliminar este usuario?')) return;
-  usuariosData=usuariosData.filter(x=>x.id!==id);
+  usuariosData=usuariosData.filter(x=>String(x.id)!==String(id));
   saveState();
   renderUsuarios();
   showToast('Usuario eliminado');
 }
 
 function guardarUsuario() {
-  const nombre=document.getElementById('usrNombre').value;
-  const email=document.getElementById('usrEmail').value;
+  const nombre=document.getElementById('usrNombre').value.trim();
+  const email=document.getElementById('usrEmail').value.trim();
+  const pass=document.getElementById('usrPass').value;
+  const rol=document.getElementById('usrRol').value;
+  const editId=document.getElementById('usrEditId').value;
   if(!nombre||!email){ showToast('Completá nombre y email','error'); return; }
-  usuariosData.push({id:Date.now(),nombre,email,rol:document.getElementById('usrRol').value,activo:true,ultimo:'-'});
-  closeModal('modalUsuario');
-  saveState();
-  renderUsuarios();
-  showToast('Usuario creado','success');
+  if(editId) {
+    const u = usuariosData.find(x=>String(x.id)===String(editId));
+    if(u) { u.nombre=nombre; u.email=email; u.rol=rol; if(pass) u.password=pass; }
+    closeModal('modalUsuario');
+    saveState(); renderUsuarios();
+    showToast('Usuario actualizado','success');
+  } else {
+    if(!pass){ showToast('Ingresá una contraseña','error'); return; }
+    usuariosData.push({id:Date.now(),nombre,email,password:pass,rol,activo:true,ultimo:'-'});
+    closeModal('modalUsuario');
+    saveState(); renderUsuarios();
+    showToast('Usuario creado','success');
+  }
+}
+
+function _resetModalUsuario() {
+  document.getElementById('usrEditId').value='';
+  document.getElementById('modalUsuarioTitle').textContent='Nuevo Usuario';
+  document.getElementById('usrNombre').value='';
+  document.getElementById('usrEmail').value='';
+  document.getElementById('usrPass').value='';
+  document.getElementById('usrPassLabel').textContent='Contraseña';
+  document.getElementById('usrRol').value='mozo';
+  document.getElementById('btnGuardarUsuario').textContent='Crear';
 }
 
 // ======= MOZO STATS =======
