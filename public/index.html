@@ -1571,6 +1571,9 @@ function initApp() {
   document.getElementById('userRole').textContent = roles[currentUser?.rol] || currentUser?.rol || '';
   // Hide usuarios for non-admin
   if (currentUser?.rol !== 'admin') document.getElementById('navUsuarios').style.display = 'none';
+  // Mesa management (create/edit/delete) only for admin and supervisor
+  const esAdminRole = ['admin','supervisor'].includes(currentUser?.rol);
+  document.getElementById('btnNuevaMesa').style.display = esAdminRole ? '' : 'none';
   // Restore persisted state
   loadState();
   loadStateFromAPI().then(() => {
@@ -1591,7 +1594,6 @@ function initApp() {
     // Show mozo topnav, hide regular topbar
     document.getElementById('mozoTopnav').classList.add('visible');
     document.getElementById('mainTopbar').style.display = 'none';
-    document.getElementById('btnNuevaMesa').style.display = 'none';
     document.getElementById('mesasTabs').classList.add('tabs-full');
     // Set avatar initials (up to 2 words)
     const nombre = currentUser?.nombre || '';
