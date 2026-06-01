@@ -629,14 +629,48 @@ app.patch('/api/mesas/:id', authMiddleware, (req, res) => {
 //  PRINT ROUTES
 // ─────────────────────────────────────────────
 app.post('/api/print', authMiddleware, (req, res) => {
-  const { type, html, mesaNumero } = req.body;
+  const { type, html, mesaNumero, label } = req.body;
   if (!html) return res.status(400).json({ error: 'html requerido' });
-  const job = { id: uuidv4(), type: type||'comanda', html, mesaNumero, createdAt: new Date().toISOString() };
+  const job = {
+    id: uuidv4(),
+    type: type || 'comanda',
+    html,
+    mesaNumero,
+    label: label || null,
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString() // 1 hora
+  };
   db.printJobs.push(job);
-  if (db.printJobs.length > 100) db.printJobs.shift(); // keep last 100
+  if (db.printJobs.length > 200) db.printJobs.shift();
   io.emit('print:job', job);
+  io.emit('print:queue:update', _pendingJobs());
   res.status(201).json({ ok: true, jobId: job.id });
 });
+
+function _pendingJobs() {
+  const now = Date.now();
+  return db.printJobs.filter(j => j.status === 'pending' && new Date(j.expiresAt).getTime() > now);
+}
+
+app.get('/api/print/queue', authMiddleware, (_req, res) => {
+  res.json(_pendingJobs());
+});
+
+app.patch('/api/print/:id', authMiddleware, (req, res) => {
+  const job = db.printJobs.find(j => j.id === req.params.id);
+  if (!job) return res.status(404).json({ error: 'Job no encontrado' });
+  if (req.body.status) job.status = req.body.status;
+  io.emit('print:queue:update', _pendingJobs());
+  res.json(job);
+});
+
+// Clean expired jobs every 5 minutes
+setInterval(() => {
+  const before = db.printJobs.length;
+  db.printJobs = db.printJobs.filter(j => new Date(j.expiresAt || '2099').getTime() > Date.now());
+  if (db.printJobs.length !== before) io.emit('print:queue:update', _pendingJobs());
+}, 5 * 60 * 1000);
 
 // ─────────────────────────────────────────────
 //  PRODUCTOS ROUTES
