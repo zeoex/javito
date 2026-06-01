@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Carta QR – PIZZERÍA PRO</title>
+<title>Menú Online – ResTito</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--red:#e74c3c;--dark:#1a1a2e;--card:#1e1e3f;--border:#2d2d5e;--text:#eee;--gray:#aaa}
@@ -11,6 +11,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--dark);color:var(-
 /* HEADER */
 .header{background:linear-gradient(135deg,var(--red),#c0392b);padding:20px 16px 28px;text-align:center;position:relative}
 .header-back{position:absolute;top:16px;left:16px;color:rgba(255,255,255,0.8);font-size:13px;text-decoration:none}
+.header-logo{max-height:56px;max-width:140px;object-fit:contain;margin-bottom:8px;display:none}
 .header-emoji{font-size:48px;display:block;margin-bottom:8px}
 .header h1{font-size:24px;font-weight:900;color:#fff}
 .header p{color:rgba(255,255,255,0.8);font-size:13px;margin-top:4px}
@@ -82,20 +83,23 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--dark);color:var(-
 .confirmed-emoji{font-size:64px;display:block;margin-bottom:16px}
 .confirmed h2{font-size:24px;font-weight:900;margin-bottom:8px}
 .confirmed p{color:var(--gray);font-size:14px}
+/* LOADING */
+.loading{text-align:center;padding:60px 20px;color:var(--gray);font-size:14px}
 </style>
 </head>
 <body>
 
 <div class="header">
   <a href="/portal.html" class="header-back">← Portal</a>
-  <span class="header-emoji">🍕</span>
-  <h1>PIZZERÍA PRO</h1>
-  <p>Escanea para pedir desde tu mesa</p>
-  <span class="mesa-badge" id="mesaBadge">Mesa ?</span>
+  <img class="header-logo" id="headerLogo" src="" alt="logo"/>
+  <span class="header-emoji" id="headerEmoji">🍕</span>
+  <h1 id="headerNombre">ResTito</h1>
+  <p>Pedí online desde donde estés</p>
+  <span class="mesa-badge" id="mesaBadge" style="display:none">Mesa ?</span>
 </div>
 
 <div class="cats" id="catList"></div>
-<div class="items" id="itemList"></div>
+<div class="items" id="itemList"><div class="loading">Cargando menú...</div></div>
 
 <!-- ADD ITEM MODAL -->
 <div class="modal-overlay" id="addModal" onclick="closeAddModal(event)">
@@ -145,68 +149,113 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--dark);color:var(-
 </div>
 
 <script>
-const CATS_COMANDA = ['pizzas','empanadas','entradas','postres'];
-
-const MENU = [
-  {cat:'pizzas',label:'🍕 Pizzas',items:[
-    {id:1,emoji:'🍕',nombre:'Pizza Muzarella',desc:'Clásica con salsa de tomate y queso',precios:{Chica:800,Mediana:1200,Grande:1600}},
-    {id:2,emoji:'🍕',nombre:'Pizza Napolitana',desc:'Tomate, mozzarella, tomates frescos y albahaca',precios:{Chica:900,Mediana:1400,Grande:1800}},
-    {id:3,emoji:'🍕',nombre:'Pizza 4 Quesos',desc:'Muzarella, provolone, gorgonzola y parmesano',precios:{Chica:1000,Mediana:1500,Grande:2000}},
-    {id:4,emoji:'🍕',nombre:'Pizza Fugazzeta',desc:'Rellena de queso con cebolla y aceitunas',precios:{Chica:850,Mediana:1300,Grande:1700}},
-    {id:5,emoji:'🍕',nombre:'Especial de la Casa',desc:'Jamón, morrón, aceitunas, huevo y salsa golf',precios:{Chica:1000,Mediana:1600,Grande:2100}},
-  ]},
-  {cat:'empanadas',label:'🥟 Empanadas',items:[
-    {id:6,emoji:'🥟',nombre:'Empanada de Carne',desc:'Carne cortada a cuchillo, jugosa y condimentada',precio:350},
-    {id:7,emoji:'🥟',nombre:'Empanada J&Q',desc:'Jamón cocido y queso muzarella',precio:350},
-  ]},
-  {cat:'entradas',label:'🧀 Entradas',items:[
-    {id:8,emoji:'🧀',nombre:'Provoleta',desc:'Provolone grillado con orégano',precio:1100},
-  ]},
-  {cat:'bebidas',label:'🥤 Bebidas',items:[
-    {id:9,emoji:'🥤',nombre:'Coca-Cola 500ml',desc:'Gaseosa Coca-Cola fría',precio:600},
-    {id:10,emoji:'💧',nombre:'Agua Mineral',desc:'Sin gas 500ml',precio:400},
-    {id:11,emoji:'🍺',nombre:'Cerveza Quilmes',desc:'Botella 340ml',precio:800},
-  ]},
-  {cat:'tragos',label:'🍹 Tragos',items:[
-    {id:12,emoji:'🍹',nombre:'Fernet con Coca',desc:'Fernet Branca + Coca-Cola',precio:1800},
-  ]},
-  {cat:'postres',label:'🍮 Postres',items:[
-    {id:13,emoji:'🍮',nombre:'Tiramisu',desc:'Clásico italiano con mascarpone',precio:900},
-  ]},
-];
-
+let MENU = [];
 let cart = [];
 let selectedItem = null;
 let selectedSize = null;
-
-// Read mesa from URL param ?mesa=3
-const urlParams = new URLSearchParams(window.location.search);
-const mesaNum = urlParams.get('mesa') || '?';
-document.getElementById('mesaBadge').textContent = `Mesa ${mesaNum}`;
-document.getElementById('cartMesaLabel').textContent = `Mesa ${mesaNum}`;
-
-// Render categories
-const activeCats = ['Todos', ...MENU.map(s=>s.label)];
 let activeCat = 'Todos';
+let activeCats = ['Todos'];
+
+const urlParams = new URLSearchParams(window.location.search);
+const mesaNum = urlParams.get('mesa');
+if (mesaNum) {
+  const badge = document.getElementById('mesaBadge');
+  badge.textContent = `Mesa ${mesaNum}`;
+  badge.style.display = 'inline-block';
+  document.getElementById('cartMesaLabel').textContent = `Mesa ${mesaNum}`;
+}
+
+function applyBizConfig(biz) {
+  if (biz.nombre) document.getElementById('headerNombre').textContent = biz.nombre;
+  if (biz.logo) {
+    document.getElementById('headerLogo').src = biz.logo;
+    document.getElementById('headerLogo').style.display = 'block';
+    document.getElementById('headerEmoji').style.display = 'none';
+  }
+}
+
+async function loadMenu() {
+  try {
+    const saved = localStorage.getItem('pz_biz_cfg');
+    if (saved) applyBizConfig(JSON.parse(saved));
+  } catch(e) {}
+  try {
+    const res = await fetch('/api/state');
+    const state = await res.json();
+    const biz = state.biz_config || {};
+    applyBizConfig(biz);
+    const productos = (state.productos || []).filter(p => p.activo !== false && p.en_menu_online !== false);
+    const categorias = state.categorias || [];
+    const groups = {};
+    for (const p of productos) {
+      if (!groups[p.categoria]) groups[p.categoria] = [];
+      groups[p.categoria].push(p);
+    }
+    MENU = [];
+    for (const cat of categorias) {
+      if (groups[cat.id] && groups[cat.id].length) {
+        MENU.push({
+          cat: cat.id,
+          label: `${cat.emoji} ${cat.nombre}`,
+          items: groups[cat.id].map(p => ({
+            id: p.id,
+            emoji: p.emoji || '🍽️',
+            nombre: p.nombre,
+            desc: p.descripcion || '',
+            cat: cat.id,
+            ...(p.precio_chica ? {precios:{Chica:p.precio_chica,Mediana:p.precio_mediana,Grande:p.precio_grande}} : {precio:p.precio})
+          }))
+        });
+      }
+    }
+    for (const [catId, items] of Object.entries(groups)) {
+      if (!categorias.find(c => c.id === catId)) {
+        MENU.push({
+          cat: catId,
+          label: catId,
+          items: items.map(p => ({
+            id: p.id,
+            emoji: p.emoji || '🍽️',
+            nombre: p.nombre,
+            desc: p.descripcion || '',
+            cat: catId,
+            ...(p.precio_chica ? {precios:{Chica:p.precio_chica,Mediana:p.precio_mediana,Grande:p.precio_grande}} : {precio:p.precio})
+          }))
+        });
+      }
+    }
+  } catch(e) {
+    MENU = [];
+  }
+  activeCats = ['Todos', ...MENU.map(s => s.label)];
+  renderCats();
+  renderItems();
+}
+
 function renderCats() {
-  document.getElementById('catList').innerHTML = activeCats.map(c=>
-    `<button class="cat-pill${c===activeCat?' active':''}" onclick="setCat('${c}')">${c}</button>`
+  document.getElementById('catList').innerHTML = activeCats.map(c =>
+    `<button class="cat-pill${c===activeCat?' active':''}" onclick="setCat('${c.replace(/'/g,"\\'")}'">${c}</button>`
   ).join('');
 }
-function setCat(c) { activeCat=c; renderCats(); renderItems(); }
+
+function setCat(c) { activeCat = c; renderCats(); renderItems(); }
 
 function renderItems() {
-  const sections = activeCat==='Todos' ? MENU : MENU.filter(s=>s.label===activeCat);
-  document.getElementById('itemList').innerHTML = sections.map(s=>`
+  const sections = activeCat === 'Todos' ? MENU : MENU.filter(s => s.label === activeCat);
+  if (!sections.length) {
+    document.getElementById('itemList').innerHTML = '<div class="loading">No hay productos disponibles</div>';
+    return;
+  }
+  document.getElementById('itemList').innerHTML = sections.map(s => `
     <div class="cat-section">
       <div class="cat-title">${s.label}</div>
-      ${s.items.map(i=>`
+      ${s.items.map(i => `
         <div class="item-row" onclick="openAddModal(${i.id},'${s.cat}')">
           <span class="item-emoji">${i.emoji}</span>
           <div class="item-body">
             <div class="item-name">${i.nombre}</div>
             <div class="item-desc">${i.desc}</div>
-            <div class="item-price">${i.precio?'$'+i.precio.toLocaleString('es-AR'):'desde $'+Math.min(...Object.values(i.precios)).toLocaleString('es-AR')}</div>
+            <div class="item-price">${i.precio ? '$'+i.precio.toLocaleString('es-AR') : 'desde $'+Math.min(...Object.values(i.precios)).toLocaleString('es-AR')}</div>
           </div>
           <button class="item-add" onclick="event.stopPropagation();openAddModal(${i.id},'${s.cat}')">+</button>
         </div>`).join('')}
@@ -214,46 +263,48 @@ function renderItems() {
 }
 
 function findItem(id) {
-  for(const s of MENU) { const i = s.items.find(x=>x.id===id); if(i) return {item:i,cat:s.cat}; }
+  for (const s of MENU) {
+    const i = s.items.find(x => String(x.id) === String(id));
+    if (i) return {item: i, cat: s.cat};
+  }
   return null;
 }
 
 function openAddModal(id, cat) {
   const found = findItem(id);
-  if(!found) return;
+  if (!found) return;
   const {item} = found;
   selectedItem = {id, cat, item};
   selectedSize = null;
   document.getElementById('addModalTitle').textContent = `${item.emoji} ${item.nombre}`;
   document.getElementById('addModalSub').textContent = item.desc;
   const sizesDiv = document.getElementById('addModalSizes');
-  const esComida = CATS_COMANDA.includes(cat);
-  document.getElementById('addModalNota').style.display = esComida ? 'block' : 'none';
+  document.getElementById('addModalNota').style.display = 'block';
   document.getElementById('addModalNota').value = '';
-  if(item.precios) {
-    sizesDiv.innerHTML = Object.entries(item.precios).map(([k,v])=>
+  if (item.precios) {
+    sizesDiv.innerHTML = Object.entries(item.precios).map(([k,v]) =>
       `<button class="size-btn" onclick="selectSize('${k}',${v},this)">${k} <span>$${v.toLocaleString('es-AR')}</span></button>`
     ).join('');
-    document.getElementById('addModalConfirm').style.display='none';
+    document.getElementById('addModalConfirm').style.display = 'none';
   } else {
     sizesDiv.innerHTML = '';
-    selectedSize = {label:'Única',precio:item.precio};
-    document.getElementById('addModalConfirm').style.display='block';
+    selectedSize = {label:'Única', precio:item.precio};
+    document.getElementById('addModalConfirm').style.display = 'block';
     document.getElementById('addModalConfirm').textContent = `Agregar — $${item.precio.toLocaleString('es-AR')}`;
   }
   document.getElementById('addModal').classList.add('open');
 }
 
 function selectSize(label, precio, btn) {
-  document.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('sel'));
+  document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('sel'));
   btn.classList.add('sel');
   selectedSize = {label, precio};
-  document.getElementById('addModalConfirm').style.display='block';
+  document.getElementById('addModalConfirm').style.display = 'block';
   document.getElementById('addModalConfirm').textContent = `Agregar ${label} — $${precio.toLocaleString('es-AR')}`;
 }
 
 document.getElementById('addModalConfirm').onclick = function() {
-  if(!selectedItem||!selectedSize) return;
+  if (!selectedItem || !selectedSize) return;
   const nota = document.getElementById('addModalNota').value.trim();
   cart.push({
     id: Date.now(),
@@ -272,7 +323,7 @@ document.getElementById('addModalConfirm').onclick = function() {
 };
 
 function closeAddModal(e) {
-  if(e && e.target !== document.getElementById('addModal')) return;
+  if (e && e.target !== document.getElementById('addModal')) return;
   document.getElementById('addModal').classList.remove('open');
 }
 
@@ -282,49 +333,48 @@ function openCartModal() {
 }
 
 function closeCartModal(e) {
-  if(e && e.target !== document.getElementById('cartModal')) return;
+  if (e && e.target !== document.getElementById('cartModal')) return;
   document.getElementById('cartModal').classList.remove('open');
 }
 
 function renderCart() {
-  const total = cart.reduce((s,i)=>s+i.precio*i.qty,0);
-  document.getElementById('cartTotal').textContent = '$'+total.toLocaleString('es-AR');
-  document.getElementById('cartItems').innerHTML = cart.map(i=>`
+  const total = cart.reduce((s,i) => s + i.precio * i.qty, 0);
+  document.getElementById('cartTotal').textContent = '$' + total.toLocaleString('es-AR');
+  document.getElementById('cartItems').innerHTML = cart.map(i => `
     <div class="cart-item-row">
       <div class="cart-item-name">
-        <div>${i.emoji} ${i.nombre}${i.size?' ('+i.size+')':''}</div>
-        ${i.nota?`<div class="cart-item-nota">📝 ${i.nota}</div>`:''}
+        <div>${i.emoji} ${i.nombre}${i.size ? ' ('+i.size+')' : ''}</div>
+        ${i.nota ? `<div class="cart-item-nota">📝 ${i.nota}</div>` : ''}
       </div>
       <div class="qty-ctrl">
         <button class="qty-btn qty-minus" onclick="changeQty(${i.id},-1)">−</button>
         <span>${i.qty}</span>
         <button class="qty-btn qty-plus" onclick="changeQty(${i.id},1)">+</button>
       </div>
-      <div class="cart-price">$${(i.precio*i.qty).toLocaleString('es-AR')}</div>
+      <div class="cart-price">$${(i.precio * i.qty).toLocaleString('es-AR')}</div>
     </div>`).join('');
 }
 
 function changeQty(id, delta) {
-  const item = cart.find(x=>x.id===id);
-  if(!item) return;
+  const item = cart.find(x => x.id === id);
+  if (!item) return;
   item.qty += delta;
-  if(item.qty<=0) cart = cart.filter(x=>x.id!==id);
+  if (item.qty <= 0) cart = cart.filter(x => x.id !== id);
   updateCartBar();
   renderCart();
 }
 
 function updateCartBar() {
-  const count = cart.reduce((s,i)=>s+i.qty,0);
-  const total = cart.reduce((s,i)=>s+i.precio*i.qty,0);
+  const count = cart.reduce((s,i) => s + i.qty, 0);
+  const total = cart.reduce((s,i) => s + i.precio * i.qty, 0);
   const bar = document.getElementById('cartBar');
-  bar.classList.toggle('visible', count>0);
-  document.getElementById('cartCount').textContent = `${count} ítem${count!==1?'s':''}`;
-  document.getElementById('cartTotalBar').textContent = '$'+total.toLocaleString('es-AR');
+  bar.classList.toggle('visible', count > 0);
+  document.getElementById('cartCount').textContent = `${count} ítem${count !== 1 ? 's' : ''}`;
+  document.getElementById('cartTotalBar').textContent = '$' + total.toLocaleString('es-AR');
 }
 
 function confirmarPedido() {
-  if(!cart.length) return;
-  // In real app: POST to API
+  if (!cart.length) return;
   document.getElementById('cartModal').classList.remove('open');
   document.getElementById('confirmedModal').classList.add('open');
 }
@@ -340,11 +390,10 @@ function showToast(msg) {
   t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#28a745;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:200;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.3)';
   t.textContent = msg;
   document.body.appendChild(t);
-  setTimeout(()=>t.remove(),2500);
+  setTimeout(() => t.remove(), 2500);
 }
 
-renderCats();
-renderItems();
+loadMenu();
 </script>
 </body>
 </html>

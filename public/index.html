@@ -640,7 +640,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
           </div>
           <div class="card">
             <div class="table-wrap"><table id="productosTable">
-              <thead><tr><th>Producto</th><th>Categoría</th><th>Precio Chica</th><th>Precio Med.</th><th>Precio Grande</th><th>Estado</th><th>Acciones</th></tr></thead>
+              <thead><tr><th>Producto</th><th>Categoría</th><th>Precio Chica</th><th>Precio Med.</th><th>Precio Grande</th><th>Estado</th><th>Visibilidad</th><th>Acciones</th></tr></thead>
               <tbody id="productosTbody"></tbody>
             </table></div>
           </div>
@@ -1017,6 +1017,11 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <div id="prodPrecioUnico" style="display:none">
         <div class="form-group"><label>Precio</label><input class="form-control" id="prodPrecio" type="number" placeholder="350"/></div>
       </div>
+      <div class="form-group" style="margin-top:12px">
+        <label style="margin-bottom:8px;display:block">Visibilidad</label>
+        <label style="display:inline-flex;align-items:center;gap:6px;margin-right:20px;cursor:pointer;font-size:14px"><input type="checkbox" id="prodEnCartaQr" checked style="width:16px;height:16px;cursor:pointer"> 📲 Ver en Carta QR</label>
+        <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:14px"><input type="checkbox" id="prodEnMenuOnline" checked style="width:16px;height:16px;cursor:pointer"> 📋 Ver en Menú Online</label>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modalProducto')">Cancelar</button>
@@ -1246,18 +1251,18 @@ const DEMO_MESAS = [
   {id:11,numero:9,capacidad:4,estado:'libre',zona:'vereda',mozo:null,tiempo:null,pedido:[]},
 ];
 const DEMO_PRODUCTOS = [
-  {id:1,nombre:'Pizza Muzarella',categoria:'pizzas',emoji:'🍕',precio_chica:800,precio_mediana:1200,precio_grande:1600,activo:true},
-  {id:2,nombre:'Pizza Napolitana',categoria:'pizzas',emoji:'🍕',precio_chica:900,precio_mediana:1400,precio_grande:1800,activo:true},
-  {id:3,nombre:'Pizza 4 Quesos',categoria:'pizzas',emoji:'🍕',precio_chica:1000,precio_mediana:1500,precio_grande:2000,activo:true},
-  {id:4,nombre:'Pizza Fugazzeta',categoria:'pizzas',emoji:'🍕',precio_chica:850,precio_mediana:1300,precio_grande:1700,activo:true},
-  {id:5,nombre:'Empanada de Carne',categoria:'empanadas',emoji:'🥟',precio:350,activo:true},
-  {id:6,nombre:'Empanada J&Q',categoria:'empanadas',emoji:'🥟',precio:350,activo:true},
-  {id:7,nombre:'Coca-Cola 500ml',categoria:'bebidas',emoji:'🥤',precio:600,activo:true},
-  {id:8,nombre:'Agua Mineral',categoria:'bebidas',emoji:'💧',precio:400,activo:true},
-  {id:9,nombre:'Cerveza 1L',categoria:'bebidas',emoji:'🍺',precio:1200,activo:true},
-  {id:10,nombre:'Fernet con Coca',categoria:'tragos',emoji:'🍹',precio:1800,activo:true},
-  {id:11,nombre:'Tiramisu',categoria:'postres',emoji:'🍮',precio:900,activo:true},
-  {id:12,nombre:'Provoleta',categoria:'entradas',emoji:'🧀',precio:1100,activo:true},
+  {id:1,nombre:'Pizza Muzarella',categoria:'pizzas',emoji:'🍕',precio_chica:800,precio_mediana:1200,precio_grande:1600,activo:true,en_carta_qr:true,en_menu_online:true},
+  {id:2,nombre:'Pizza Napolitana',categoria:'pizzas',emoji:'🍕',precio_chica:900,precio_mediana:1400,precio_grande:1800,activo:true,en_carta_qr:true,en_menu_online:true},
+  {id:3,nombre:'Pizza 4 Quesos',categoria:'pizzas',emoji:'🍕',precio_chica:1000,precio_mediana:1500,precio_grande:2000,activo:true,en_carta_qr:true,en_menu_online:true},
+  {id:4,nombre:'Pizza Fugazzeta',categoria:'pizzas',emoji:'🍕',precio_chica:850,precio_mediana:1300,precio_grande:1700,activo:true,en_carta_qr:true,en_menu_online:true},
+  {id:5,nombre:'Empanada de Carne',categoria:'empanadas',emoji:'🥟',precio:350,activo:true,en_carta_qr:true,en_menu_online:true},
+  {id:6,nombre:'Empanada J&Q',categoria:'empanadas',emoji:'🥟',precio:350,activo:true,en_carta_qr:true,en_menu_online:true},
+  {id:7,nombre:'Coca-Cola 500ml',categoria:'bebidas',emoji:'🥤',precio:600,activo:true,en_carta_qr:true,en_menu_online:true},
+  {id:8,nombre:'Agua Mineral',categoria:'bebidas',emoji:'💧',precio:400,activo:true,en_carta_qr:true,en_menu_online:true},
+  {id:9,nombre:'Cerveza 1L',categoria:'bebidas',emoji:'🍺',precio:1200,activo:true,en_carta_qr:true,en_menu_online:true},
+  {id:10,nombre:'Fernet con Coca',categoria:'tragos',emoji:'🍹',precio:1800,activo:true,en_carta_qr:true,en_menu_online:true},
+  {id:11,nombre:'Tiramisu',categoria:'postres',emoji:'🍮',precio:900,activo:true,en_carta_qr:true,en_menu_online:true},
+  {id:12,nombre:'Provoleta',categoria:'entradas',emoji:'🧀',precio:1100,activo:true,en_carta_qr:true,en_menu_online:true},
 ];
 const DEMO_DELIVERY = [
   {id:1,numero:'D-001',estado:'nuevo',cliente:{nombre:'Juan García',telefono:'11-4567-8901'},direccion:'Av. Corrientes 1234, 3°B',items:[{nombre:'Pizza Muzarella Grande',qty:1,precio:1600},{nombre:'Coca-Cola 500ml',qty:2,precio:600}],total:2800,metodo_pago:'efectivo',repartidor:null,hora:'14:32'},
@@ -2515,6 +2520,8 @@ function _resetModalProducto() {
   document.getElementById('prodPMed').value='';
   document.getElementById('prodPGrande').value='';
   document.getElementById('prodPrecio').value='';
+  document.getElementById('prodEnCartaQr').checked=true;
+  document.getElementById('prodEnMenuOnline').checked=true;
   _populateCatSelects();
   toggleProdPrecios();
 }
@@ -2534,11 +2541,12 @@ function renderProductos() {
       <td>${p.precio_mediana?'$'+p.precio_mediana.toLocaleString():p.precio?'$'+p.precio.toLocaleString():'-'}</td>
       <td>${p.precio_grande?'$'+p.precio_grande.toLocaleString():'-'}</td>
       <td><span class="badge ${p.activo?'badge-success':'badge-secondary'}">${p.activo?'Activo':'Inactivo'}</span></td>
+      <td style="font-size:13px">${p.en_carta_qr!==false?'📲':''} ${p.en_menu_online!==false?'📋':''}</td>
       <td>
         <button class="btn btn-outline btn-sm" onclick="editProducto(${p.id})">✏️</button>
         <button class="btn btn-danger btn-sm" onclick="deleteProducto(${p.id})" style="margin-left:4px">🗑️</button>
       </td>
-    </tr>`).join('') || '<tr><td colspan="7" class="text-muted" style="text-align:center;padding:24px">No se encontraron productos</td></tr>';
+    </tr>`).join('') || '<tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px">No se encontraron productos</td></tr>';
 }
 
 function filterProductos(v){ productosFiltro=v; renderProductos(); }
@@ -2562,6 +2570,8 @@ function editProducto(id) {
   toggleProdPrecios();
   if(p.precio_chica){ document.getElementById('prodPChica').value=p.precio_chica; document.getElementById('prodPMed').value=p.precio_mediana; document.getElementById('prodPGrande').value=p.precio_grande; }
   else if(p.precio){ document.getElementById('prodPrecio').value=p.precio; }
+  document.getElementById('prodEnCartaQr').checked = p.en_carta_qr !== false;
+  document.getElementById('prodEnMenuOnline').checked = p.en_menu_online !== false;
   openModal('modalProducto');
 }
 
@@ -2569,7 +2579,7 @@ function guardarProducto() {
   const nombre = document.getElementById('prodNombre').value;
   const cat = document.getElementById('prodCat').value;
   if(!nombre){ showToast('Ingresá el nombre del producto','error'); return; }
-  const base = { nombre, categoria:cat, emoji:document.getElementById('prodEmoji').value||'🍕', descripcion:document.getElementById('prodDesc').value, activo:true };
+  const base = { nombre, categoria:cat, emoji:document.getElementById('prodEmoji').value||'🍕', descripcion:document.getElementById('prodDesc').value, activo:true, en_carta_qr:document.getElementById('prodEnCartaQr').checked, en_menu_online:document.getElementById('prodEnMenuOnline').checked };
   if(cat==='pizzas'){
     base.precio_chica=parseInt(document.getElementById('prodPChica').value)||0;
     base.precio_mediana=parseInt(document.getElementById('prodPMed').value)||0;
