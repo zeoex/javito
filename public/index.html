@@ -2374,6 +2374,8 @@ function advanceDelivery(id) {
     cajaMoves.push({..._cajaNow(),tipo:'ingreso',desc:`Delivery ${o.numero} — ${pago}`,monto:o.total,pago});
   }
   saveState();
+  // Broadcast to repartidor in real time
+  if (socket) socket.emit('delivery:broadcast', o);
   renderDelivery();
   loadDashboard();
   showToast(`Pedido ${o.numero} → ${o.estado}`);
@@ -2402,6 +2404,8 @@ function crearDelivery() {
   });
   closeModal('modalNuevoDelivery');
   saveState();
+  // Notify repartidor of the new order in real time
+  if (socket) socket.emit('delivery:broadcast', deliveryData[0]);
   renderDelivery();
   loadDashboard();
   showToast(`Delivery ${deliveryData[0].numero} creado`,'success');

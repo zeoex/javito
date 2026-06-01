@@ -1056,7 +1056,7 @@ function initSocket() {
 }
 
 function addOrderToList(pedido) {
-  const exists = pedidos.find(p => p.id === pedido.id);
+  const exists = pedidos.find(p => String(p.id) === String(pedido.id));
   if (!exists) {
     pedidos.unshift(pedido);
     renderOrders();
@@ -1064,9 +1064,13 @@ function addOrderToList(pedido) {
 }
 
 function updateOrder(data) {
-  const idx = pedidos.findIndex(p => p.id === data.id);
+  const idx = pedidos.findIndex(p => String(p.id) === String(data.id));
   if (idx !== -1) {
     pedidos[idx] = { ...pedidos[idx], ...data };
+    renderOrders();
+  } else if (!['entregado', 'cancelado'].includes(data.estado)) {
+    // New order received via socket — add it to the list
+    pedidos.unshift(data);
     renderOrders();
   }
 }

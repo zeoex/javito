@@ -381,6 +381,9 @@ function authMiddleware(req, res, next) {
 app.use('/api', (req, res, next) => {
   if (req.path.startsWith('/auth')) return next();
   if (req.path === '/state' && req.method === 'GET') return next();
+  // Repartidor accesses these without admin JWT (has its own auth)
+  if (req.path === '/delivery/activos' && req.method === 'GET') return next();
+  if (/^\/delivery\/[^/]+\/estado$/.test(req.path) && req.method === 'PUT') return next();
   authMiddleware(req, res, next);
 });
 
@@ -1172,6 +1175,15 @@ io.on('connection', (socket) => {
     const out = inMem || { id, estado };
     io.emit('delivery:update', out);
     console.log(`[WS] delivery:status id=${id} → ${estado}`);
+  });
+
+  // Admin broadcasts a full delivery object to all clients (new orders or state changes)
+  socket.on('delivery:broadcast', (pedido) => {
+    if (!pedido || !pedido.id) return;
+    const exists = db.delivery.find(d => String(d.id) === String(pedido.id));
+    if (!exists) db.delivery.push(pedido);
+    else Object.assign(exists, pedido);
+    io.emit('delivery:update', pedido);
   });
 
   socket.on('disconnect', () => {
