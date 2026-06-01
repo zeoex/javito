@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>PIZZERÍA PRO – Sistema POS</title>
+<title>ResTito – Sistema POS</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <script src="/socket.io/socket.io.js"></script>
 <style>
@@ -455,8 +455,9 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 <div id="loginScreen" style="display:none">
   <div class="login-card">
     <div class="login-logo">
-      <span class="emoji" id="loginEmoji">🍕</span>
-      <h1 id="loginTitle">PIZZERÍA PRO</h1>
+      <div id="loginLogoWrap" style="margin-bottom:4px"></div>
+      <span class="emoji" id="loginEmoji">🍴</span>
+      <h1 id="loginTitle">ResTito</h1>
       <p id="loginSubtitle">Sistema de gestión integral</p>
     </div>
     <div class="form-group">
@@ -480,10 +481,10 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 <div id="app">
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
   <div class="sidebar">
-    <div class="sidebar-logo">
-      <span class="s-emoji">🍕</span>
+    <div class="sidebar-logo" id="sidebarLogoWrap" style="cursor:pointer" onclick="navTo('config',document.querySelector('[data-section=config]'));closeSidebar()">
+      <span class="s-emoji" id="sidebarEmoji">🍴</span>
       <span class="sidebar-logo-text">
-        <h2>PIZZERÍA PRO</h2>
+        <h2 id="sidebarName">ResTito</h2>
         <p id="sidebarBiz">Sistema POS</p>
       </span>
     </div>
@@ -815,11 +816,24 @@ input.form-control:focus{outline:none;border-color:var(--red)}
           <div class="card">
             <div class="card-header"><h3>🏢 Datos del Negocio</h3></div>
             <div class="card-body">
-              <div class="form-group"><label>Nombre del local</label><input class="form-control" id="cfgNombre" value="Pizzería PRO"/></div>
-              <div class="form-group"><label>Dirección</label><input class="form-control" id="cfgDir" value="Av. Corrientes 1234, CABA"/></div>
-              <div class="form-group"><label>Teléfono</label><input class="form-control" id="cfgTel" value="11-4567-8901"/></div>
-              <div class="form-group"><label>Emoji / Logo</label><input class="form-control" id="cfgEmoji" value="🍕"/></div>
-              <div class="form-group"><label>Pie de recibo</label><input class="form-control" id="cfgRecibo" value="¡Gracias por su visita! Vuelva pronto."/></div>
+              <div class="form-group"><label>Nombre del local</label><input class="form-control" id="cfgNombre" value="ResTito"/></div>
+              <div class="form-group"><label>Dirección</label><input class="form-control" id="cfgDir" value=""/></div>
+              <div class="form-group"><label>Teléfono</label><input class="form-control" id="cfgTel" value=""/></div>
+              <div class="form-group"><label>Pie de recibo</label><input class="form-control" id="cfgRecibo" value="¡Gracias por su visita!"/></div>
+              <div class="form-group">
+                <label>Logo del local</label>
+                <div id="cfgLogoPreview" style="margin-bottom:8px;min-height:60px;display:flex;align-items:center;gap:12px">
+                  <span style="font-size:12px;color:var(--gray)" id="cfgLogoPlaceholder">Sin logo cargado</span>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                  <label class="btn btn-outline btn-sm" style="cursor:pointer;margin:0">
+                    📁 Subir logo
+                    <input type="file" id="cfgLogoInput" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="display:none" onchange="onLogoSelected(this)"/>
+                  </label>
+                  <button class="btn btn-outline btn-sm" onclick="removeLogoConfig()" id="btnRemoveLogo" style="display:none">🗑️ Quitar logo</button>
+                </div>
+                <small style="color:var(--gray);font-size:11px;display:block;margin-top:4px">PNG, JPG o SVG · Recomendado: 400×160 px · Máx 2 MB</small>
+              </div>
               <button class="btn btn-primary" onclick="saveConfig()">💾 Guardar</button>
             </div>
           </div>
@@ -1169,7 +1183,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
     <div class="modal-body">
       <input type="hidden" id="usrEditId"/>
       <div class="form-group"><label>Nombre</label><input class="form-control" id="usrNombre" placeholder="Carlos López"/></div>
-      <div class="form-group"><label>Email</label><input class="form-control" id="usrEmail" placeholder="carlos@pizzeriapro.com"/></div>
+      <div class="form-group"><label>Email</label><input class="form-control" id="usrEmail" placeholder="carlos@restito.com"/></div>
       <div class="form-group"><label id="usrPassLabel">Contraseña</label><input class="form-control" id="usrPass" type="password" placeholder="••••••••"/></div>
       <div class="form-group"><label>Rol</label>
         <select class="form-control" id="usrRol">
@@ -1201,8 +1215,13 @@ input:checked+.slider:before{transform:translateX(20px)}
 
 <script>
 const API = '/api';
-let token = localStorage.getItem('pizzeria_token');
-let currentUser = (() => { try { return JSON.parse(localStorage.getItem('pizzeria_user') || 'null'); } catch(e) { return null; } })();
+// Migrate old auth keys on first load
+if (!localStorage.getItem('restito_token') && localStorage.getItem('pizzeria_token')) {
+  localStorage.setItem('restito_token', localStorage.getItem('pizzeria_token'));
+  localStorage.setItem('restito_user', localStorage.getItem('pizzeria_user') || 'null');
+}
+let token = localStorage.getItem('restito_token');
+let currentUser = (() => { try { return JSON.parse(localStorage.getItem('restito_user') || 'null'); } catch(e) { return null; } })();
 let socket = null;
 let currentMesaTab = 'salon';
 let printConfig = (() => {
@@ -1271,11 +1290,11 @@ const DEMO_CLIENTES = [
   {id:5,nombre:'Roberto Silva',telefono:'11-7777-8888',email:'roberto@email.com',pedidos:15,total_gastado:55000,ultimo:'2026-05-27'},
 ];
 const DEMO_USUARIOS = [
-  {id:1,nombre:'Admin Principal',email:'admin@pizzeriapro.com',rol:'admin',activo:true,ultimo:'2026-05-30 14:00'},
-  {id:2,nombre:'Carlos Mozo',email:'carlos@pizzeriapro.com',rol:'mozo',activo:true,ultimo:'2026-05-30 13:30'},
-  {id:3,nombre:'Ana Moza',email:'ana@pizzeriapro.com',rol:'mozo',activo:true,ultimo:'2026-05-30 12:00'},
-  {id:4,nombre:'Pedro Cajero',email:'pedro@pizzeriapro.com',rol:'cajero',activo:true,ultimo:'2026-05-30 09:00'},
-  {id:5,nombre:'Luis Cocina',email:'luis@pizzeriapro.com',rol:'cocina',activo:false,ultimo:'2026-05-25 18:00'},
+  {id:1,nombre:'Admin Principal',email:'admin@restito.com',rol:'admin',activo:true,ultimo:'2026-05-30 14:00'},
+  {id:2,nombre:'Carlos Mozo',email:'carlos@restito.com',rol:'mozo',activo:true,ultimo:'2026-05-30 13:30'},
+  {id:3,nombre:'Ana Moza',email:'ana@restito.com',rol:'mozo',activo:true,ultimo:'2026-05-30 12:00'},
+  {id:4,nombre:'Pedro Cajero',email:'pedro@restito.com',rol:'cajero',activo:true,ultimo:'2026-05-30 09:00'},
+  {id:5,nombre:'Luis Cocina',email:'luis@restito.com',rol:'cocina',activo:false,ultimo:'2026-05-25 18:00'},
 ];
 const _HOY = new Date().toISOString().slice(0,10);
 const DEMO_CAJA_MOV = [
@@ -1437,20 +1456,20 @@ async function doLogin() {
       const data = await res.json();
       token = data.token;
       currentUser = data.usuario || data.user;
-      localStorage.setItem('pizzeria_token', token);
-      localStorage.setItem('pizzeria_user', JSON.stringify(currentUser));
+      localStorage.setItem('restito_token', token);
+      localStorage.setItem('restito_user', JSON.stringify(currentUser));
     } else {
       // Demo fallback
       const demoMap = {
-        'admin@pizzeriapro.com':{ id:1, nombre:'Admin Principal', email, rol:'admin' },
-        'carlos@pizzeriapro.com':{ id:2, nombre:'Carlos Mozo', email, rol:'mozo' },
+        'admin@restito.com':{ id:1, nombre:'Admin Principal', email, rol:'admin' },
+        'carlos@restito.com':{ id:2, nombre:'Carlos Mozo', email, rol:'mozo' },
       };
       const demoUser = demoMap[email];
       if (demoUser && (pass === 'admin123' || pass === 'mozo123')) {
         token = 'demo-token';
         currentUser = demoUser;
-        localStorage.setItem('pizzeria_token', token);
-        localStorage.setItem('pizzeria_user', JSON.stringify(currentUser));
+        localStorage.setItem('restito_token', token);
+        localStorage.setItem('restito_user', JSON.stringify(currentUser));
       } else {
         errEl.style.display = 'block';
         return;
@@ -1458,26 +1477,28 @@ async function doLogin() {
     }
   } catch(e) {
     const demoMap = {
-      'admin@pizzeriapro.com':{ id:1, nombre:'Admin Principal', email, rol:'admin' },
-      'carlos@pizzeriapro.com':{ id:2, nombre:'Carlos Mozo', email, rol:'mozo' },
+      'admin@restito.com':{ id:1, nombre:'Admin Principal', email, rol:'admin' },
+      'carlos@restito.com':{ id:2, nombre:'Carlos Mozo', email, rol:'mozo' },
     };
     const demoUser = demoMap[email];
     if (demoUser && (pass === 'admin123' || pass === 'mozo123')) {
       token = 'demo-token';
       currentUser = demoUser;
-      localStorage.setItem('pizzeria_token', token);
-      localStorage.setItem('pizzeria_user', JSON.stringify(currentUser));
+      localStorage.setItem('restito_token', token);
+      localStorage.setItem('restito_user', JSON.stringify(currentUser));
     } else { errEl.style.display = 'block'; return; }
   }
   initApp();
 }
 
 document.getElementById('loginPass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+// Apply logo/name to login screen before user logs in
+loadBizConfig();
 
 function doLogout() {
   token = null; currentUser = null;
-  localStorage.removeItem('pizzeria_token');
-  localStorage.removeItem('pizzeria_user');
+  localStorage.removeItem('restito_token');
+  localStorage.removeItem('restito_user');
   if (socket) socket.disconnect();
   document.getElementById('app').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
@@ -1491,6 +1512,7 @@ function apiFetch(url, opts={}) {
 function initApp() {
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
+  loadBizConfig();
   // User UI
   const av = document.getElementById('userAvatar');
   av.textContent = (currentUser?.nombre||'U')[0].toUpperCase();
@@ -1568,12 +1590,12 @@ function initApp() {
 (function setupLoginBranding() {
   const path = window.location.pathname;
   const roles = {
-    '/mozo':       { emoji:'🧑‍🍳', title:'Panel de Mozo', subtitle:'Acceso exclusivo para mozos', email:'carlos@pizzeriapro.com', pass:'mozo123', hint:'Mozo: carlos@pizzeriapro.com / mozo123' },
-    '/admin':      { emoji:'🍕', title:'PIZZERÍA PRO', subtitle:'Panel de Administración', email:'admin@pizzeriapro.com', pass:'admin123', hint:'Admin: admin@pizzeriapro.com / admin123' },
+    '/mozo':       { emoji:'🧑‍🍳', title:'Panel de Mozo', subtitle:'Acceso exclusivo para mozos', email:'carlos@restito.com', pass:'mozo123', hint:'Mozo: carlos@restito.com / mozo123' },
+    '/admin':      { emoji:'🍴', title:'ResTito', subtitle:'Panel de Administración', email:'admin@restito.com', pass:'admin123', hint:'Admin: admin@restito.com / admin123' },
     '/cocina':     { emoji:'👨‍🍳', title:'Pantalla de Cocina', subtitle:'Acceso para cocina', email:'', pass:'', hint:'' },
     '/repartidor': { emoji:'🛵', title:'App de Repartidor', subtitle:'Acceso para repartidores', email:'', pass:'', hint:'' },
   };
-  const cfg = roles[path] || { emoji:'🍕', title:'PIZZERÍA PRO', subtitle:'Sistema de gestión integral', email:'admin@pizzeriapro.com', pass:'admin123', hint:'Admin: admin@pizzeriapro.com / admin123 · Mozo: carlos@pizzeriapro.com / mozo123' };
+  const cfg = roles[path] || { emoji:'🍴', title:'ResTito', subtitle:'Sistema de gestión integral', email:'admin@restito.com', pass:'admin123', hint:'Admin: admin@restito.com / admin123 · Mozo: carlos@restito.com / mozo123' };
   document.getElementById('loginEmoji').textContent = cfg.emoji;
   document.getElementById('loginTitle').textContent = cfg.title;
   document.getElementById('loginSubtitle').textContent = cfg.subtitle;
@@ -2143,6 +2165,10 @@ async function crearMesa() {
 }
 
 function buildPrintDoc(titulo, cuerpo) {
+  const biz = getBizConfig();
+  const logoHtml = biz.logo
+    ? `<div style="text-align:center;margin-bottom:4px"><img src="${biz.logo}" style="max-height:60px;max-width:160px;object-fit:contain"></div>`
+    : '';
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${titulo}</title>
   <style>
     @page { size: 80mm auto; margin: 2mm 3mm; }
@@ -2161,7 +2187,7 @@ function buildPrintDoc(titulo, cuerpo) {
     .sep { border: none; border-top: 1px dashed #000; margin: 4px 0; }
     .big { font-size: 16px; font-weight: bold; text-align: center; margin: 4px 0; }
     @media print { * { -webkit-print-color-adjust: exact; } }
-  </style></head><body>${cuerpo}</body></html>`;
+  </style></head><body>${logoHtml}${cuerpo}</body></html>`;
 }
 
 function autoPrint(html) {
@@ -2249,7 +2275,8 @@ async function imprimirCuenta(id) {
     const lbl = i.nombre+(i.size?' ('+i.size+')':'');
     return `<div class="row" style="margin:3px 0"><span class="row-l">${i.qty}x ${lbl}</span><span class="row-r">$${(i.precio*i.qty).toLocaleString('es-AR')}</span></div>`;
   }).join('');
-  const cuerpo = `<h1>PIZZERÍA PRO</h1>
+  const bizName = getBizConfig().nombre;
+  const cuerpo = `<h1>${bizName}</h1>
     <hr class="sep">
     <p class="center bold">Mesa #${m.numero}${m.mozo?' — '+m.mozo:''}</p>
     <p class="center">${new Date().toLocaleString('es-AR')}</p>
@@ -2352,7 +2379,7 @@ function imprimirDelivery(id) {
     <html><head><title>Pedido ${o.numero}</title>
     <style>body{font-family:monospace;padding:20px;font-size:14px}h2{text-align:center}hr{border:1px dashed #000}.total{font-size:18px;font-weight:bold}</style></head>
     <body>
-      <h2>🍕 PIZZERÍA PRO</h2>
+      <h2>${getBizConfig().nombre}</h2>
       <p style="text-align:center">DELIVERY ${o.numero}</p>
       <p style="text-align:center">${new Date().toLocaleString('es-AR')}</p>
       <hr>
@@ -2946,7 +2973,7 @@ function _printCierreTpl(data) {
     ${hasDec?`<div class="row" style="margin:1px 0;font-size:10px;color:#555"><span>&nbsp;&nbsp;Decl.</span><span>$${(dec||0).toLocaleString()}</span></div>
     <div class="row" style="margin:1px 0;font-size:10px;font-weight:bold"><span>&nbsp;&nbsp;Dif.</span><span>${difFmt(dif)}</span></div>`:''}`;
   const cuerpo = `
-    <h1>PIZZERIA PRO</h1>
+    <h1>${getBizConfig().nombre}</h1>
     <p class="center">CIERRE DE CAJA</p>
     <hr class="sep">
     <p class="center">${fecha} ${hora} hs</p>
@@ -3320,7 +3347,96 @@ function renderMozoStats() {
 }
 
 // ======= CONFIG =======
+// ======= BIZ CONFIG + LOGO =======
+function getBizConfig() {
+  try { return {...{nombre:'ResTito',dir:'',tel:'',recibo:'¡Gracias por su visita!',logo:null}, ...JSON.parse(localStorage.getItem('pz_biz_cfg')||'{}')}; }
+  catch(e) { return {nombre:'ResTito',dir:'',tel:'',recibo:'¡Gracias por su visita!',logo:null}; }
+}
+
+function loadBizConfig() {
+  const biz = getBizConfig();
+  // Sidebar
+  const sn = document.getElementById('sidebarName');
+  if (sn) sn.textContent = biz.nombre;
+  // Login screen
+  const lt = document.getElementById('loginTitle');
+  if (lt) lt.textContent = biz.nombre;
+  // Logo in sidebar
+  const se = document.getElementById('sidebarEmoji');
+  if (biz.logo && se) {
+    se.innerHTML = `<img src="${biz.logo}" alt="logo" style="max-height:40px;max-width:80px;object-fit:contain;border-radius:4px">`;
+    se.style.fontSize = '0';
+  } else if (se) {
+    se.innerHTML = '🍴';
+    se.style.fontSize = '';
+  }
+  // Logo in login screen
+  const ll = document.getElementById('loginLogoWrap');
+  const le = document.getElementById('loginEmoji');
+  if (biz.logo && ll) {
+    ll.innerHTML = `<img src="${biz.logo}" alt="logo" style="max-height:80px;max-width:200px;object-fit:contain;border-radius:6px;margin-bottom:8px">`;
+    if (le) le.style.display = 'none';
+  } else if (ll) {
+    ll.innerHTML = '';
+    if (le) le.style.display = '';
+  }
+  // Config form fields
+  const n = document.getElementById('cfgNombre'); if (n) n.value = biz.nombre;
+  const d = document.getElementById('cfgDir');    if (d) d.value = biz.dir||'';
+  const t = document.getElementById('cfgTel');    if (t) t.value = biz.tel||'';
+  const r = document.getElementById('cfgRecibo'); if (r) r.value = biz.recibo||'';
+  // Logo preview in config
+  _renderLogoPreview(biz.logo);
+}
+
+function _renderLogoPreview(logoB64) {
+  const wrap = document.getElementById('cfgLogoPreview');
+  const ph   = document.getElementById('cfgLogoPlaceholder');
+  const btn  = document.getElementById('btnRemoveLogo');
+  if (!wrap) return;
+  if (logoB64) {
+    wrap.innerHTML = `<img src="${logoB64}" alt="logo" style="max-height:80px;max-width:240px;object-fit:contain;border-radius:6px;border:1px solid var(--border)">`;
+    if (btn) btn.style.display = '';
+  } else {
+    wrap.innerHTML = '<span style="font-size:12px;color:var(--gray)">Sin logo cargado</span>';
+    if (btn) btn.style.display = 'none';
+  }
+}
+
+function onLogoSelected(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { showToast('El archivo supera los 2 MB','error'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const b64 = e.target.result;
+    const biz = getBizConfig();
+    biz.logo = b64;
+    localStorage.setItem('pz_biz_cfg', JSON.stringify(biz));
+    _renderLogoPreview(b64);
+    loadBizConfig();
+    showToast('Logo actualizado','success');
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeLogoConfig() {
+  const biz = getBizConfig();
+  biz.logo = null;
+  localStorage.setItem('pz_biz_cfg', JSON.stringify(biz));
+  _renderLogoPreview(null);
+  loadBizConfig();
+  showToast('Logo eliminado');
+}
+
 function saveConfig() {
+  const biz = getBizConfig();
+  biz.nombre  = document.getElementById('cfgNombre')?.value?.trim() || 'ResTito';
+  biz.dir     = document.getElementById('cfgDir')?.value?.trim()    || '';
+  biz.tel     = document.getElementById('cfgTel')?.value?.trim()    || '';
+  biz.recibo  = document.getElementById('cfgRecibo')?.value?.trim() || '¡Gracias por su visita!';
+  localStorage.setItem('pz_biz_cfg', JSON.stringify(biz));
+  loadBizConfig();
   showToast('Configuración guardada','success');
 }
 
@@ -3339,6 +3455,7 @@ function loadPrintConfigUI() {
   if (p80) p80.checked = printConfig.paperWidth === '80mm';
   if (p58) p58.checked = printConfig.paperWidth === '58mm';
   updatePrinterHubStatus(socket?.connected);
+  loadBizConfig();
 }
 
 function updatePrinterHubStatus(connected) {
@@ -3351,7 +3468,7 @@ function updatePrinterHubStatus(connected) {
 }
 
 async function testPrint() {
-  const nombre = document.getElementById('cfgNombre')?.value || 'PIZZERÍA PRO';
+  const nombre = document.getElementById('cfgNombre')?.value || getBizConfig().nombre;
   const pie    = document.getElementById('cfgRecibo')?.value  || '¡Gracias por su visita!';
   const cuerpo = `<h2>${nombre}</h2>
     <p class="center">🖨️ PRUEBA DE IMPRESIÓN</p><hr>

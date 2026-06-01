@@ -1,7 +1,7 @@
 'use strict';
 
 // ─────────────────────────────────────────────
-//  PIZZERÍA PRO – Backend completo (single file)
+//  ResTito – Backend completo (single file)
 // ─────────────────────────────────────────────
 
 const express    = require('express');
@@ -214,18 +214,18 @@ const db = {
   // ---------- USUARIOS ----------
   const hash = pwd => bcrypt.hashSync(pwd, 10);
   db.users = [
-    { id: uuidv4(), nombre: 'Administrador',  email: 'admin@pizzeriapro.com',      password: hash('admin123'),    rol: 'admin',      activo: true, createdAt: new Date().toISOString() },
-    { id: uuidv4(), nombre: 'Supervisor',     email: 'supervisor@pizzeriapro.com', password: hash('super123'),    rol: 'supervisor', activo: true, createdAt: new Date().toISOString() },
-    { id: uuidv4(), nombre: 'Cajero 01',      email: 'cajero01@pizzeriapro.com',   password: hash('cajero123'),   rol: 'cajero',     activo: true, createdAt: new Date().toISOString() },
-    { id: uuidv4(), nombre: 'Mozo Martín',    email: 'mozo01@pizzeriapro.com',     password: hash('mozo123'),     rol: 'mozo',       activo: true, createdAt: new Date().toISOString() },
-    { id: uuidv4(), nombre: 'Mozo Laura',     email: 'mozo02@pizzeriapro.com',     password: hash('mozo456'),     rol: 'mozo',       activo: true, createdAt: new Date().toISOString() },
-    { id: uuidv4(), nombre: 'Cocinero Pedro', email: 'cocinero@pizzeriapro.com',   password: hash('cocina123'),   rol: 'cocinero',   activo: true, createdAt: new Date().toISOString() },
-    { id: uuidv4(), nombre: 'Repartidor 01',  email: 'repartidor@pizzeriapro.com', password: hash('delivery123'), rol: 'repartidor', activo: true, createdAt: new Date().toISOString() }
+    { id: uuidv4(), nombre: 'Administrador',  email: 'admin@restito.com',      password: hash('admin123'),    rol: 'admin',      activo: true, createdAt: new Date().toISOString() },
+    { id: uuidv4(), nombre: 'Supervisor',     email: 'supervisor@restito.com', password: hash('super123'),    rol: 'supervisor', activo: true, createdAt: new Date().toISOString() },
+    { id: uuidv4(), nombre: 'Cajero 01',      email: 'cajero01@restito.com',   password: hash('cajero123'),   rol: 'cajero',     activo: true, createdAt: new Date().toISOString() },
+    { id: uuidv4(), nombre: 'Mozo Martín',    email: 'mozo01@restito.com',     password: hash('mozo123'),     rol: 'mozo',       activo: true, createdAt: new Date().toISOString() },
+    { id: uuidv4(), nombre: 'Mozo Laura',     email: 'mozo02@restito.com',     password: hash('mozo456'),     rol: 'mozo',       activo: true, createdAt: new Date().toISOString() },
+    { id: uuidv4(), nombre: 'Cocinero Pedro', email: 'cocinero@restito.com',   password: hash('cocina123'),   rol: 'cocinero',   activo: true, createdAt: new Date().toISOString() },
+    { id: uuidv4(), nombre: 'Repartidor 01',  email: 'repartidor@restito.com', password: hash('delivery123'), rol: 'repartidor', activo: true, createdAt: new Date().toISOString() }
   ];
 
   // ---------- MESAS ----------
-  const mozoA = db.users.find(u => u.email === 'mozo01@pizzeriapro.com').id;
-  const mozoB = db.users.find(u => u.email === 'mozo02@pizzeriapro.com').id;
+  const mozoA = db.users.find(u => u.email === 'mozo01@restito.com').id;
+  const mozoB = db.users.find(u => u.email === 'mozo02@restito.com').id;
   const mozoANombre = db.users.find(u => u.id === mozoA)?.nombre || null;
   const mozoBNombre = db.users.find(u => u.id === mozoB)?.nombre || null;
   db.mesas = [
@@ -1193,7 +1193,7 @@ app.use((err, _req, res, _next) => {
 //  START SERVER
 // ─────────────────────────────────────────────
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n🍕 PIZZERÍA PRO – Backend corriendo en http://0.0.0.0:${PORT}`);
+  console.log(`\n🍴 ResTito – Backend corriendo en http://0.0.0.0:${PORT}`);
   console.log(`   JWT Secret: ${JWT_SECRET}`);
   console.log(`   Tokens expiran en: ${JWT_EXPIRY}\n`);
 });
