@@ -3023,34 +3023,49 @@ function loadFacturacion() {
 }
 
 // ======= CLIENTES =======
+function _cliRow(c) {
+  const activo = c.activo !== false;
+  return `<tr style="${activo?'':'opacity:0.5'}">
+    <td><strong>${c.nombre}</strong>${activo?'':' <span class="badge badge-secondary" style="font-size:10px">Inactivo</span>'}</td>
+    <td>${c.telefono||'-'}</td>
+    <td>${c.email||'-'}</td>
+    <td>${c.pedidos||0}</td>
+    <td><strong>$${(c.total_gastado||0).toLocaleString()}</strong></td>
+    <td>${c.ultimo||'-'}</td>
+    <td style="white-space:nowrap">
+      <button class="btn btn-outline btn-sm" onclick="editarCliente('${c.id}')">✏️</button>
+      <button class="btn btn-outline btn-sm" style="margin-left:4px" onclick="toggleCliente('${c.id}')">${activo?'Desactivar':'Activar'}</button>
+      <button class="btn btn-danger btn-sm" style="margin-left:4px" onclick="deleteCliente('${c.id}')">🗑️</button>
+    </td>
+  </tr>`;
+}
+
 function renderClientes() {
-  let data = clientesData.filter(c=>!c._filter||c.nombre.toLowerCase().includes(c._filter)||c.telefono.includes(c._filter));
-  document.getElementById('clientesTbody').innerHTML = clientesData.map(c=>`
-    <tr>
-      <td><strong>${c.nombre}</strong></td>
-      <td>${c.telefono}</td>
-      <td>${c.email||'-'}</td>
-      <td>${c.pedidos}</td>
-      <td><strong>$${c.total_gastado.toLocaleString()}</strong></td>
-      <td>${c.ultimo}</td>
-      <td><button class="btn btn-outline btn-sm" onclick="editarCliente(${c.id})">✏️ Editar</button></td>
-    </tr>`).join('');
+  document.getElementById('clientesTbody').innerHTML = clientesData.map(_cliRow).join('');
 }
 
 function filterClientes(v) {
   const vl = v.toLowerCase();
-  document.getElementById('clientesTbody').innerHTML = clientesData.filter(c=>
-    c.nombre.toLowerCase().includes(vl)||c.telefono.includes(vl)||(c.email||'').toLowerCase().includes(vl)
-  ).map(c=>`
-    <tr>
-      <td><strong>${c.nombre}</strong></td>
-      <td>${c.telefono}</td>
-      <td>${c.email||'-'}</td>
-      <td>${c.pedidos}</td>
-      <td><strong>$${c.total_gastado.toLocaleString()}</strong></td>
-      <td>${c.ultimo}</td>
-      <td><button class="btn btn-outline btn-sm" onclick="editarCliente(${c.id})">✏️ Editar</button></td>
-    </tr>`).join('');
+  document.getElementById('clientesTbody').innerHTML = clientesData
+    .filter(c=>c.nombre.toLowerCase().includes(vl)||(c.telefono||'').includes(vl)||(c.email||'').toLowerCase().includes(vl))
+    .map(_cliRow).join('');
+}
+
+function toggleCliente(id) {
+  const c = clientesData.find(x=>String(x.id)===String(id));
+  if(!c) return;
+  c.activo = c.activo === false;
+  saveState(); renderClientes();
+  showToast(`Cliente ${c.nombre} ${c.activo?'activado':'desactivado'}`);
+}
+
+function deleteCliente(id) {
+  const c = clientesData.find(x=>String(x.id)===String(id));
+  if(!c) return;
+  if(!confirm(`¿Eliminar a ${c.nombre}? Esta acción no se puede deshacer.`)) return;
+  clientesData = clientesData.filter(x=>String(x.id)!==String(id));
+  saveState(); renderClientes();
+  showToast('Cliente eliminado');
 }
 
 function editarCliente(id) {
