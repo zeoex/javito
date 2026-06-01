@@ -981,9 +981,7 @@ function handleLogout() {
 }
 
 /* ── BOOT ────────────────────────────────────────── */
-function bootApp() {
-  pedidos = JSON.parse(JSON.stringify(PEDIDOS_DEMO));
-
+async function bootApp() {
   // Populate UI — 2 initials
   const initials = currentDriver.nombre.split(' ').slice(0, 2).map(w => w[0].toUpperCase()).join('');
   document.getElementById('top-avatar').textContent      = initials;
@@ -993,12 +991,24 @@ function bootApp() {
   document.getElementById('profile-phone').textContent   = '📞 ' + currentDriver.telefono;
   document.getElementById('p-usuario').textContent       = currentDriver.user;
 
-  renderOrders();
-  renderHistory();
-
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app').classList.add('visible');
 
+  // Load real deliveries from API; fall back to demo data if unreachable
+  try {
+    const res = await fetch('/api/delivery/activos');
+    if (res.ok) {
+      const data = await res.json();
+      pedidos = Array.isArray(data) ? data : JSON.parse(JSON.stringify(PEDIDOS_DEMO));
+    } else {
+      pedidos = JSON.parse(JSON.stringify(PEDIDOS_DEMO));
+    }
+  } catch(e) {
+    pedidos = JSON.parse(JSON.stringify(PEDIDOS_DEMO));
+  }
+
+  renderOrders();
+  renderHistory();
   initSocket();
 }
 
@@ -1009,6 +1019,15 @@ function initSocket() {
 
     socket.on('connect', () => {
       console.log('[socket] conectado', socket.id);
+      socket.emit('join:room', 'delivery');
+    });
+
+    socket.on('delivery:init', (lista) => {
+      if (Array.isArray(lista) && lista.length) {
+        pedidos = lista;
+        renderOrders();
+        renderHistory();
+      }
     });
 
     socket.on('delivery:nuevo', (pedido) => {
@@ -1128,12 +1147,13 @@ function buildOrderCard(p) {
 
 /* ── ORDER ACTIONS ───────────────────────────────── */
 function iniciarViaje(id) {
-  const p = pedidos.find(p => p.id === id);
+  const p = pedidos.find(p => String(p.id) === String(id));
   if (!p || p.estado !== 'asignado') return;
   p.estado = 'en_camino';
-  if (socket) socket.emit('delivery:status', { id, estado: 'en_camino' });
   renderOrders();
   showToast('🛵 Viaje iniciado hacia ' + p.cliente.nombre);
+  fetch('/api/delivery/' + id + '/estado', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ estado: 'en_camino' }) })
+    .catch(() => { if (socket) socket.emit('delivery:status', { id, estado: 'en_camino' }); });
 }
 
 function verEnMaps(id) {
@@ -1144,11 +1164,10 @@ function verEnMaps(id) {
 }
 
 function marcarEntregado(id) {
-  const p = pedidos.find(p => p.id === id);
+  const p = pedidos.find(p => String(p.id) === String(id));
   if (!p || p.estado !== 'en_camino') return;
   p.estado = 'entregado';
   p.hora_entrega = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-  if (socket) socket.emit('delivery:status', { id, estado: 'entregado' });
 
   // Update stats
   const current = parseInt(document.getElementById('stat-entregas').textContent) || 0;
@@ -1157,6 +1176,8 @@ function marcarEntregado(id) {
   renderOrders();
   renderHistory();
   showToast('✅ Pedido #' + p.numero + ' entregado!');
+  fetch('/api/delivery/' + id + '/estado', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ estado: 'entregado' }) })
+    .catch(() => { if (socket) socket.emit('delivery:status', { id, estado: 'entregado' }); });
 }
 
 /* ── HISTORY ─────────────────────────────────────── */

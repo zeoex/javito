@@ -1117,6 +1117,16 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('mesa:update', mesa);
   });
 
+  // Repartidor updates delivery status
+  socket.on('delivery:status', ({ id, estado }) => {
+    const envio = db.delivery.find(d => String(d.id) === String(id));
+    if (!envio) return;
+    envio.estado = estado;
+    if (estado === 'entregado') envio.entregado_at = new Date().toISOString();
+    io.emit('delivery:update', envio);
+    console.log(`[WS] delivery:status id=${id} → ${estado}`);
+  });
+
   socket.on('disconnect', () => {
     console.log(`[WS] Cliente desconectado: ${socket.id}`);
   });

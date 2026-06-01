@@ -1572,7 +1572,18 @@ function initApp() {
       }
       if(document.getElementById('sec-mesas').classList.contains('active')) renderMesas();
     });
-    socket.on('delivery:update', () => { if(document.getElementById('sec-delivery').classList.contains('active')) renderDelivery(); });
+    socket.on('delivery:update', (updated) => {
+      if (updated && updated.id) {
+        const idx = deliveryData.findIndex(d => String(d.id) === String(updated.id));
+        if (idx >= 0) deliveryData[idx] = {...deliveryData[idx], ...updated};
+        else deliveryData.unshift(updated);
+        saveState();
+      }
+      if(document.getElementById('sec-delivery').classList.contains('active')) renderDelivery();
+      const enDelivery = deliveryData.filter(d=>['nuevo','en_cocina','en_camino','listo'].includes(d.estado)).length;
+      const badge = document.getElementById('deliveryBadge');
+      if(badge) badge.textContent = enDelivery || 0;
+    });
     socket.on('comanda:nueva', () => showToast('Nueva comanda en cocina','success'));
     socket.on('print:job', (job) => {
       const rol = currentUser?.rol;
