@@ -100,6 +100,47 @@ body{font-family:'Inter',sans-serif;background:var(--light);color:#212529;overfl
 .pq-footer{padding:12px 16px;border-top:1px solid var(--border);flex-shrink:0}
 .pq-overlay{position:fixed;inset:0;background:rgba(0,0,0,.2);z-index:7999;display:none}
 .pq-overlay.open{display:block}
+/* === LLAMADOR === */
+.lld-btn{position:relative;background:#f8f9fa;border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:18px;cursor:pointer;line-height:1;display:none;align-items:center;gap:5px;transition:background .15s}
+.lld-btn:hover{background:#e9ecef}
+.lld-btn.has-calls{display:flex;border-color:var(--success);background:#f0fff4;animation:lld-pulse 1.8s ease-in-out infinite}
+@keyframes lld-pulse{0%,100%{box-shadow:0 0 0 0 rgba(40,167,69,.4)}50%{box-shadow:0 0 0 6px rgba(40,167,69,0)}}
+.lld-badge{position:absolute;top:-6px;right:-6px;background:var(--success);color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid #fff}
+.lld-drawer{position:fixed;top:0;right:0;width:360px;max-width:100vw;height:100vh;background:#fff;box-shadow:-4px 0 24px rgba(0,0,0,.15);z-index:8100;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1)}
+.lld-drawer.open{transform:translateX(0)}
+.lld-header{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--blue);color:#fff}
+.lld-header h3{flex:1;font-size:16px;font-weight:700;color:#fff}
+.lld-header .modal-close{color:rgba(255,255,255,.7)}
+.lld-header .modal-close:hover{color:#fff}
+.lld-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.lld-tab{flex:1;padding:10px 0;text-align:center;font-size:13px;font-weight:600;cursor:pointer;color:var(--gray);border-bottom:2px solid transparent;transition:all .15s}
+.lld-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.lld-list{flex:1;overflow-y:auto;padding:12px}
+.lld-item{border-radius:12px;padding:14px;margin-bottom:10px;border:1.5px solid;display:flex;flex-direction:column;gap:10px}
+.lld-item.activo.mesa{background:#f0fdf4;border-color:#86efac}
+.lld-item.activo.delivery{background:#eff6ff;border-color:#93c5fd}
+.lld-item.reconocido{background:#f9fafb;border-color:#e5e7eb;opacity:.7}
+.lld-item-top{display:flex;align-items:center;gap:10px}
+.lld-item-icon{font-size:26px;flex-shrink:0}
+.lld-item-info{flex:1;min-width:0}
+.lld-item-title{font-size:15px;font-weight:800;color:#111}
+.lld-item-sub{font-size:12px;color:var(--gray);margin-top:2px}
+.lld-item-badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px}
+.lld-item-badge.activo{background:#dcfce7;color:#166534}
+.lld-item-badge.reconocido{background:#f3f4f6;color:var(--gray)}
+.lld-item-actions{display:flex;gap:6px;flex-wrap:wrap}
+.lld-empty{text-align:center;padding:40px 20px;color:var(--gray)}
+.lld-empty .lld-empty-icon{font-size:40px;margin-bottom:8px}
+/* Mozo overlay notification */
+.mz-llamado-overlay{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(22,163,74,.96);animation:fadeInLlamado .3s ease-out;pointer-events:all}
+@keyframes fadeInLlamado{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+.mz-llamado-card{background:#fff;border-radius:24px;padding:40px 32px;text-align:center;max-width:340px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.mz-llamado-bell{font-size:72px;animation:ringBell 0.5s ease-in-out 3;margin-bottom:8px;display:block}
+@keyframes ringBell{0%,100%{transform:rotate(0)}25%{transform:rotate(-18deg)}75%{transform:rotate(18deg)}}
+.mz-llamado-title{font-size:15px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.mz-llamado-mesa{font-size:56px;font-weight:900;color:var(--blue);line-height:1;margin-bottom:4px}
+.mz-llamado-mozo{font-size:14px;color:var(--gray);margin-bottom:20px}
+.mz-llamado-items{font-size:13px;color:#555;margin-bottom:20px;text-align:left;background:#f8f9fa;border-radius:10px;padding:10px 14px;max-height:120px;overflow-y:auto}
 .content{flex:1;overflow-y:auto;padding:24px}
 .content::-webkit-scrollbar{width:6px}
 .content::-webkit-scrollbar-thumb{background:#dee2e6;border-radius:3px}
@@ -597,12 +638,38 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <button class="hamburger" onclick="toggleSidebar()" aria-label="Abrir menú">☰</button>
       <div class="topbar-title" id="topbarTitle">Vista Principal</div>
       <span class="topbar-badge" id="topbarBadge" style="display:none"></span>
+      <button class="lld-btn" id="lldBtn" onclick="toggleLlamador()" title="Llamador de pedidos">
+        🔔
+        <span class="lld-badge" id="lldBadge">0</span>
+      </button>
       <button class="pq-btn" id="pqBtn" onclick="togglePrintQueue()" title="Cola de impresión">
         🖨️
         <span class="pq-badge" id="pqBadge">0</span>
       </button>
       <span class="topbar-time" id="topbarTime"></span>
     </div>
+
+    <!-- Llamador Drawer -->
+    <div class="pq-overlay" id="lldOverlay" onclick="closeLlamador()" style="z-index:8099"></div>
+    <div class="lld-drawer" id="lldDrawer">
+      <div class="lld-header">
+        <span style="font-size:22px">🔔</span>
+        <h3>Llamador de Pedidos</h3>
+        <button class="modal-close" onclick="closeLlamador()" style="color:rgba(255,255,255,.7)">✕</button>
+      </div>
+      <div class="lld-tabs">
+        <div class="lld-tab active" id="lldTabTodos"   onclick="switchLldTab('todos')">Todos</div>
+        <div class="lld-tab"        id="lldTabMesas"   onclick="switchLldTab('mesa')">🪑 Mesas</div>
+        <div class="lld-tab"        id="lldTabDelivery" onclick="switchLldTab('delivery')">🛵 Delivery</div>
+      </div>
+      <div class="lld-list" id="lldList"></div>
+      <div style="padding:12px 16px;border-top:1px solid var(--border);flex-shrink:0">
+        <button class="btn btn-outline btn-sm" style="width:100%" onclick="llamarMesaManual()">➕ Llamar mesa manualmente</button>
+      </div>
+    </div>
+
+    <!-- Mozo llamado overlay (full screen) -->
+    <div id="mzLlamadoOverlay" style="display:none"></div>
 
     <!-- Print Queue Drawer -->
     <div class="pq-overlay" id="pqOverlay" onclick="closePrintQueue()"></div>
@@ -1704,15 +1771,50 @@ function initApp() {
       const drawer = document.getElementById('pqDrawer');
       if (drawer?.classList.contains('open')) renderPqList();
     });
+    socket.on('llamado:mesa', (llamado) => {
+      if (!llamado) return;
+      const idx = llamados.findIndex(l => l.id === llamado.id);
+      if (idx >= 0) llamados[idx] = llamado; else llamados.unshift(llamado);
+      const rol = currentUser?.rol;
+      if (rol === 'mozo') {
+        // Show overlay only if this mozo is assigned to that mesa
+        const misMesas = mesasData.filter(m => m.mozoid === currentUser?.id || m.mozo === currentUser?.nombre);
+        const esMia = misMesas.some(m => m.numero === llamado.mesaNumero);
+        if (esMia || !llamado.mozoid) showMozoLlamado(llamado);
+      } else {
+        updateLldBadge();
+        playBell(llamado.recallCount > 0 ? 'recall' : 'mesa');
+        showToast(`🔔 Mesa #${llamado.mesaNumero} lista${llamado.mozo ? ' — ' + llamado.mozo : ''}`, 'success');
+        if (document.getElementById('lldDrawer')?.classList.contains('open')) renderLldList();
+      }
+    });
+    socket.on('llamado:delivery', (llamado) => {
+      if (!llamado) return;
+      const idx = llamados.findIndex(l => l.id === llamado.id);
+      if (idx >= 0) llamados[idx] = llamado; else llamados.unshift(llamado);
+      updateLldBadge();
+      playBell('delivery');
+      showToast(`🛵 Delivery listo — ${llamado.clienteNombre || 'Cliente'}`, 'success');
+      if (document.getElementById('lldDrawer')?.classList.contains('open')) renderLldList();
+    });
+    socket.on('llamado:update', (llamado) => {
+      if (!llamado) return;
+      const idx = llamados.findIndex(l => l.id === llamado.id);
+      if (idx >= 0) llamados[idx] = llamado; else llamados.unshift(llamado);
+      updateLldBadge();
+      if (document.getElementById('lldDrawer')?.classList.contains('open')) renderLldList();
+    });
     socket.on('connect', () => {
       updatePrinterHubStatus(true);
       // Re-fetch queue on reconnect so missed jobs show up
       loadPrintQueue();
+      loadLlamados();
     });
     socket.on('disconnect', () => updatePrinterHubStatus(false));
   } catch(e){}
-  // Load pending print jobs for admin/cajero on login
+  // Load pending print jobs and llamados on login
   loadPrintQueue();
+  loadLlamados();
   // Load first section: mozo goes straight to mesas
   if (currentUser?.rol === 'mozo') {
     mozoNavTo('mesas');
@@ -3818,6 +3920,186 @@ function closeSidebar() {
     document.getElementById('sidebarOverlay').classList.remove('open');
   }
   // Desktop: clicking a nav item doesn't close the sidebar (it stays expanded/collapsed as-is)
+}
+
+// ======= LLAMADOR =======
+let llamados = [];
+let lldCurrentTab = 'todos';
+
+function playBell(pattern) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const sequences = {
+      mesa:     [[523,0],[659,.22],[784,.44]],       // C-E-G ascending
+      delivery: [[784,0],[659,.2],[523,.4],[784,.65]], // down then up
+      recall:   [[880,0],[880,.15],[880,.3]]           // triple beep
+    };
+    (sequences[pattern] || sequences.mesa).forEach(([freq, delay]) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.value = freq;
+      const t = ctx.currentTime + delay;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.55, t + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+      osc.start(t); osc.stop(t + 0.55);
+    });
+  } catch(e) {}
+}
+
+async function loadLlamados() {
+  const rol = currentUser?.rol;
+  if (!['admin','supervisor','cajero'].includes(rol)) return;
+  try {
+    const res = await apiFetch('/llamados');
+    if (!res.ok) return;
+    llamados = await res.json();
+    updateLldBadge();
+  } catch(e) {}
+}
+
+function updateLldBadge() {
+  const btn = document.getElementById('lldBtn');
+  const badge = document.getElementById('lldBadge');
+  if (!btn) return;
+  const activos = llamados.filter(l => l.estado === 'activo').length;
+  badge.textContent = activos;
+  btn.classList.toggle('has-calls', activos > 0);
+}
+
+function toggleLlamador() {
+  const drawer = document.getElementById('lldDrawer');
+  drawer.classList.contains('open') ? closeLlamador() : openLlamador();
+}
+function openLlamador() {
+  renderLldList();
+  document.getElementById('lldDrawer').classList.add('open');
+  document.getElementById('lldOverlay').classList.add('open');
+}
+function closeLlamador() {
+  document.getElementById('lldDrawer').classList.remove('open');
+  document.getElementById('lldOverlay').classList.remove('open');
+}
+function switchLldTab(tab) {
+  lldCurrentTab = tab;
+  ['todos','mesa','delivery'].forEach(t => {
+    document.getElementById('lldTab'+t.charAt(0).toUpperCase()+t.slice(1))?.classList.toggle('active', t===tab);
+  });
+  renderLldList();
+}
+
+function renderLldList() {
+  const list = document.getElementById('lldList');
+  const cutoff = Date.now() - 2 * 60 * 60 * 1000;
+  let items = llamados.filter(l => new Date(l.creadoAt).getTime() > cutoff);
+  if (lldCurrentTab !== 'todos') items = items.filter(l => l.tipo === lldCurrentTab);
+  items = items.sort((a,b) => {
+    if (a.estado === 'activo' && b.estado !== 'activo') return -1;
+    if (b.estado === 'activo' && a.estado !== 'activo') return 1;
+    return new Date(b.creadoAt) - new Date(a.creadoAt);
+  });
+
+  if (!items.length) {
+    list.innerHTML = `<div class="lld-empty"><div class="lld-empty-icon">✅</div><p>Sin llamados activos</p></div>`;
+    return;
+  }
+
+  list.innerHTML = items.map(l => {
+    const isMesa = l.tipo === 'mesa';
+    const icon = isMesa ? '🪑' : '🛵';
+    const title = isMesa
+      ? `Mesa #${l.mesaNumero}`
+      : `Delivery — ${l.clienteNombre || 'Cliente'}`;
+    const sub = isMesa
+      ? (l.mozo ? `👨 ${l.mozo}` : '') + (l.recallCount > 0 ? ` · Re-llamado ×${l.recallCount}` : '')
+      : (l.recallCount > 0 ? `Re-llamado ×${l.recallCount}` : 'Listo para retirar');
+    const statusLabel = l.estado === 'activo' ? '🟢 Activo' : '✓ Reconocido';
+    const recallBtn = `<button class="btn btn-warning btn-sm" onclick="recallLlamado('${l.id}')">🔔 Re-llamar</button>`;
+    const ackBtn = l.estado === 'activo'
+      ? `<button class="btn btn-outline btn-sm" onclick="ackLlamadoAdmin('${l.id}')">✓ Marcar OK</button>` : '';
+    const itemsHtml = isMesa && l.items?.length
+      ? `<div style="font-size:12px;color:#555;margin-top:4px">${l.items.map(i=>`${i.cantidad||i.qty||1}× ${i.nombre}`).join(' · ')}</div>` : '';
+    return `
+    <div class="lld-item ${l.estado} ${l.tipo}">
+      <div class="lld-item-top">
+        <span class="lld-item-icon">${icon}</span>
+        <div class="lld-item-info">
+          <div class="lld-item-title">${title}</div>
+          <div class="lld-item-sub">${sub}</div>
+          ${itemsHtml}
+          <div class="lld-item-sub">${timeAgo(l.creadoAt)}</div>
+        </div>
+        <span class="lld-item-badge ${l.estado}">${statusLabel}</span>
+      </div>
+      <div class="lld-item-actions">${recallBtn}${ackBtn}</div>
+    </div>`;
+  }).join('');
+}
+
+async function recallLlamado(id) {
+  try { await apiFetch(`/llamados/${id}/recall`, { method:'POST' }); } catch(e) {}
+  playBell('recall');
+  showToast('🔔 Re-llamando...', 'success');
+}
+
+async function ackLlamadoAdmin(id) {
+  try {
+    await apiFetch(`/llamados/${id}`, { method:'PATCH', body: JSON.stringify({ estado:'reconocido', reconocidoAt: new Date().toISOString() }) });
+  } catch(e) {}
+  const l = llamados.find(x => x.id === id);
+  if (l) { l.estado = 'reconocido'; l.reconocidoAt = new Date().toISOString(); }
+  updateLldBadge();
+  renderLldList();
+}
+
+async function llamarMesaManual() {
+  const num = prompt('Número de mesa a llamar:');
+  if (!num || isNaN(parseInt(num))) return;
+  const mesa = mesasData.find(m => m.numero === parseInt(num));
+  await apiFetch('/llamados/mesa', {
+    method:'POST',
+    body: JSON.stringify({ mesaNumero: parseInt(num), mesaId: mesa?.id, mozo: mesa?.mozo, mozoid: mesa?.mozoid, nota: 'Llamado manual' })
+  }).catch(()=>{});
+  playBell('mesa');
+  showToast(`🔔 Mesa #${num} llamada`, 'success');
+}
+
+// Full-screen overlay for mozo when their table is called
+let _mzPendingLlamados = [];
+
+function showMozoLlamado(llamado) {
+  _mzPendingLlamados.push(llamado);
+  if (_mzPendingLlamados.length === 1) _renderMozoLlamado();
+}
+
+function _renderMozoLlamado() {
+  const llamado = _mzPendingLlamados[0];
+  if (!llamado) return;
+  playBell('mesa');
+  const itemsHtml = llamado.items?.length
+    ? `<div class="mz-llamado-items">${llamado.items.map(i=>`<div>▸ ${i.cantidad||i.qty||1}× ${i.nombre}</div>`).join('')}</div>` : '';
+  const overlay = document.getElementById('mzLlamadoOverlay');
+  overlay.innerHTML = `
+    <div class="mz-llamado-overlay">
+      <div class="mz-llamado-card">
+        <span class="mz-llamado-bell">🔔</span>
+        <div class="mz-llamado-title">¡Pedido listo!</div>
+        <div class="mz-llamado-mesa">#${llamado.mesaNumero}</div>
+        <div class="mz-llamado-mozo">Llevar a Mesa ${llamado.mesaNumero}</div>
+        ${itemsHtml}
+        <button class="btn btn-success btn-lg" style="width:100%;font-size:16px" onclick="ackMozoLlamado('${llamado.id}')">✓ Entendido — voy</button>
+      </div>
+    </div>`;
+  overlay.style.display = 'block';
+}
+
+function ackMozoLlamado(id) {
+  if (socket?.connected) socket.emit('llamado:ack', { llamadoId: id });
+  _mzPendingLlamados = _mzPendingLlamados.filter(l => l.id !== id);
+  const overlay = document.getElementById('mzLlamadoOverlay');
+  if (_mzPendingLlamados.length > 0) _renderMozoLlamado();
+  else overlay.style.display = 'none';
 }
 
 // ======= PRINT QUEUE =======

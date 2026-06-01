@@ -88,7 +88,8 @@ const db = {
   caja:       [],
   facturas:   [],
   stock:      [],
-  printJobs:  []
+  printJobs:  [],
+  llamados:   []
 };
 
 // ─────────────────────────────────────────────
@@ -932,6 +933,21 @@ app.put('/api/delivery/:id/estado', async (req, res) => {
 
   const out = result || { id: targetId, estado: nuevoEstado };
   io.emit('delivery:update', out);
+
+  // Trigger llamado when delivery is ready for pickup
+  if (nuevoEstado === 'listo') {
+    const llamado = {
+      id: uuidv4(), tipo: 'delivery',
+      deliveryId: targetId,
+      clienteNombre: out.clienteNombre || 'Cliente',
+      repartidorId:  out.repartidorId  || null,
+      estado: 'activo', recallCount: 0,
+      creadoAt: new Date().toISOString(), reconocidoAt: null
+    };
+    db.llamados.push(llamado);
+    io.emit('llamado:delivery', llamado);
+  }
+
   emitDashboardStats();
   res.json(out);
 });
@@ -1248,6 +1264,33 @@ io.on('connection', (socket) => {
     console.log(`[WS] delivery:status id=${id} → ${estado}`);
   });
 
+  // Kitchen updates comanda state — relay + trigger llamado when ready
+  socket.on('comanda:update', ({ id, estado }) => {
+    const comanda = db.comandas.find(c => String(c.id) === String(id));
+    if (comanda) {
+      if (estado === 'entregado') db.comandas = db.comandas.filter(c => String(c.id) !== String(id));
+      else comanda.estado = estado;
+    }
+    socket.broadcast.emit('comanda:update', { id, estado });
+
+    if (estado === 'listo' && comanda) {
+      const mesa = db.mesas.find(m => String(m.id) === String(comanda.mesaId) || m.numero === comanda.mesa);
+      const llamado = {
+        id: uuidv4(), tipo: 'mesa',
+        mesaNumero: comanda.mesa, mesaId: mesa?.id || null,
+        mozo: comanda.mozo || mesa?.mozo || null,
+        mozoid: mesa?.mozoid || null,
+        comandaId: id, comandaNum: comanda.numero,
+        items: comanda.items || [],
+        nota: null, estado: 'activo', recallCount: 0,
+        creadoAt: new Date().toISOString(), reconocidoAt: null
+      };
+      db.llamados.push(llamado);
+      io.emit('llamado:mesa', llamado);
+      console.log(`[LLAMADO] Mesa #${comanda.mesa} lista — Mozo: ${comanda.mozo || '-'}`);
+    }
+  });
+
   // Admin broadcasts a full delivery object to all clients (new orders or state changes)
   socket.on('delivery:broadcast', (pedido) => {
     if (!pedido || !pedido.id) return;
@@ -1255,6 +1298,16 @@ io.on('connection', (socket) => {
     if (!exists) db.delivery.push(pedido);
     else Object.assign(exists, pedido);
     io.emit('delivery:update', pedido);
+  });
+
+  // Mozo/repartidor acknowledges a llamado
+  socket.on('llamado:ack', ({ llamadoId }) => {
+    const llamado = db.llamados.find(l => l.id === llamadoId);
+    if (llamado) {
+      llamado.estado = 'reconocido';
+      llamado.reconocidoAt = new Date().toISOString();
+      io.emit('llamado:update', llamado);
+    }
   });
 
   socket.on('disconnect', () => {
@@ -1314,6 +1367,55 @@ app.post('/api/state', authMiddleware, async (req, res) => {
     res.json({ ok: true });
   } catch(e) { console.error('[state:post]', e.message); res.status(500).json({ error: e.message }); }
 });
+
+// ─────────────────────────────────────────────
+//  LLAMADOR ROUTES
+// ─────────────────────────────────────────────
+app.get('/api/llamados', authMiddleware, (_req, res) => {
+  const cutoff = Date.now() - 2 * 60 * 60 * 1000;
+  res.json(db.llamados.filter(l => new Date(l.creadoAt).getTime() > cutoff));
+});
+
+app.post('/api/llamados/mesa', authMiddleware, (req, res) => {
+  const { mesaNumero, mesaId, mozo, mozoid, nota } = req.body;
+  if (!mesaNumero) return res.status(400).json({ error: 'mesaNumero requerido' });
+  const llamado = {
+    id: uuidv4(), tipo: 'mesa',
+    mesaNumero, mesaId: mesaId || null, mozo: mozo || null, mozoid: mozoid || null,
+    nota: nota || null, items: [],
+    estado: 'activo', recallCount: 0,
+    creadoAt: new Date().toISOString(), reconocidoAt: null
+  };
+  db.llamados.push(llamado);
+  io.emit('llamado:mesa', llamado);
+  res.status(201).json(llamado);
+});
+
+app.post('/api/llamados/:id/recall', authMiddleware, (req, res) => {
+  const llamado = db.llamados.find(l => l.id === req.params.id);
+  if (!llamado) return res.status(404).json({ error: 'Llamado no encontrado' });
+  llamado.estado = 'activo';
+  llamado.reconocidoAt = null;
+  llamado.recallCount = (llamado.recallCount || 0) + 1;
+  const event = llamado.tipo === 'delivery' ? 'llamado:delivery' : 'llamado:mesa';
+  io.emit(event, llamado);
+  res.json(llamado);
+});
+
+app.patch('/api/llamados/:id', authMiddleware, (req, res) => {
+  const llamado = db.llamados.find(l => l.id === req.params.id);
+  if (!llamado) return res.status(404).json({ error: 'Llamado no encontrado' });
+  if (req.body.estado) llamado.estado = req.body.estado;
+  if (req.body.reconocidoAt) llamado.reconocidoAt = req.body.reconocidoAt;
+  io.emit('llamado:update', llamado);
+  res.json(llamado);
+});
+
+// Clean llamados older than 2 hours
+setInterval(() => {
+  const cutoff = Date.now() - 2 * 60 * 60 * 1000;
+  db.llamados = db.llamados.filter(l => new Date(l.creadoAt).getTime() > cutoff);
+}, 30 * 60 * 1000);
 
 // ─────────────────────────────────────────────
 //  CATCH-ALL – SPA fallback
