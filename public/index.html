@@ -4,6 +4,14 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>ResTito – Sistema POS</title>
+<!-- PWA -->
+<link rel="manifest" href="/manifest-mozo.json"/>
+<meta name="theme-color" content="#1d3557"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="ResTito"/>
+<link rel="apple-touch-icon" href="/icon-mozo.svg"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <script src="/socket.io/socket.io.js"></script>
 <style>
@@ -3747,6 +3755,13 @@ function closeSidebar() {
     document.getElementById('sidebarOverlay').classList.remove('open');
   }
   // Desktop: clicking a nav item doesn't close the sidebar (it stays expanded/collapsed as-is)
+}
+
+// ======= PWA SERVICE WORKER =======
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
 }
 </script>
 </body>

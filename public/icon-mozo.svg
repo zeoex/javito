@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1d3557"/>
+      <stop offset="100%" stop-color="#0d1b2a"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- Plate -->
+  <circle cx="256" cy="280" r="130" fill="none" stroke="white" stroke-width="22"/>
+  <circle cx="256" cy="280" r="56" fill="white" opacity=".18"/>
+  <!-- Fork (left) -->
+  <rect x="100" y="80" width="14" height="120" rx="7" fill="white"/>
+  <rect x="124" y="80" width="14" height="120" rx="7" fill="white"/>
+  <rect x="148" y="80" width="14" height="120" rx="7" fill="white"/>
+  <rect x="100" y="192" width="62" height="14" rx="7" fill="white"/>
+  <rect x="124" y="200" width="14" height="180" rx="7" fill="white"/>
+  <!-- Knife (right) -->
+  <path d="M362 80 Q400 80 400 170 L362 190 Z" fill="white"/>
+  <rect x="362" y="80" width="14" height="300" rx="7" fill="white"/>
+  <!-- ResTito wordmark -->
+  <text x="256" y="478" font-size="52" font-weight="700" text-anchor="middle" fill="white" font-family="Arial,sans-serif" opacity=".85">MOZO</text>
+</svg>
