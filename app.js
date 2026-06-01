@@ -796,7 +796,15 @@ app.get('/api/delivery', (_req, res) => {
   res.json(db.delivery.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
 });
 
-app.get('/api/delivery/activos', (_req, res) => {
+app.get('/api/delivery/activos', async (_req, res) => {
+  const pool = getPool();
+  if (pool) {
+    try {
+      const { rows } = await pool.query('SELECT delivery FROM app_state WHERE id = 1');
+      const list = rows[0]?.delivery || [];
+      return res.json(list.filter(d => !['entregado', 'cancelado'].includes(d.estado)));
+    } catch(e) { console.error('[delivery:activos]', e.message); }
+  }
   res.json(db.delivery.filter(d => !['entregado', 'cancelado'].includes(d.estado)));
 });
 
@@ -827,16 +835,38 @@ app.post('/api/delivery', (req, res) => {
   res.status(201).json(envio);
 });
 
-app.put('/api/delivery/:id/estado', (req, res) => {
-  const envio = db.delivery.find(d => d.id === req.params.id);
-  if (!envio) return res.status(404).json({ error: 'Envío no encontrado' });
+app.put('/api/delivery/:id/estado', async (req, res) => {
+  const targetId = req.params.id;
+  const nuevoEstado = req.body.estado;
 
-  envio.estado = req.body.estado || envio.estado;
-  if (req.body.repartidorId) envio.repartidorId = req.body.repartidorId;
+  // Update in-memory if present
+  const inMem = db.delivery.find(d => String(d.id) === String(targetId));
+  if (inMem) {
+    inMem.estado = nuevoEstado || inMem.estado;
+    if (req.body.repartidorId) inMem.repartidorId = req.body.repartidorId;
+  }
 
-  io.emit('delivery:update', envio);
+  // Persist to PostgreSQL (source of truth for admin panel)
+  let result = inMem;
+  const pool = getPool();
+  if (pool) {
+    try {
+      const { rows } = await pool.query('SELECT delivery FROM app_state WHERE id = 1');
+      const list = rows[0]?.delivery || [];
+      const idx = list.findIndex(d => String(d.id) === String(targetId));
+      if (idx >= 0) {
+        list[idx] = { ...list[idx], estado: nuevoEstado || list[idx].estado };
+        if (req.body.repartidorId) list[idx].repartidorId = req.body.repartidorId;
+        await pool.query('UPDATE app_state SET delivery=$1, updated_at=NOW() WHERE id=1', [JSON.stringify(list)]);
+        result = list[idx];
+      }
+    } catch(e) { console.error('[delivery:put:estado]', e.message); }
+  }
+
+  const out = result || { id: targetId, estado: nuevoEstado };
+  io.emit('delivery:update', out);
   emitDashboardStats();
-  res.json(envio);
+  res.json(out);
 });
 
 // ─────────────────────────────────────────────
@@ -1118,12 +1148,29 @@ io.on('connection', (socket) => {
   });
 
   // Repartidor updates delivery status
-  socket.on('delivery:status', ({ id, estado }) => {
-    const envio = db.delivery.find(d => String(d.id) === String(id));
-    if (!envio) return;
-    envio.estado = estado;
-    if (estado === 'entregado') envio.entregado_at = new Date().toISOString();
-    io.emit('delivery:update', envio);
+  socket.on('delivery:status', async ({ id, estado }) => {
+    // Update in-memory
+    const inMem = db.delivery.find(d => String(d.id) === String(id));
+    if (inMem) {
+      inMem.estado = estado;
+      if (estado === 'entregado') inMem.entregado_at = new Date().toISOString();
+    }
+    // Persist to PostgreSQL so admin panel stays in sync
+    const pool = getPool();
+    if (pool) {
+      try {
+        const { rows } = await pool.query('SELECT delivery FROM app_state WHERE id = 1');
+        const list = rows[0]?.delivery || [];
+        const idx = list.findIndex(d => String(d.id) === String(id));
+        if (idx >= 0) {
+          list[idx] = { ...list[idx], estado };
+          if (estado === 'entregado') list[idx].entregado_at = new Date().toISOString();
+          await pool.query('UPDATE app_state SET delivery=$1, updated_at=NOW() WHERE id=1', [JSON.stringify(list)]);
+        }
+      } catch(e) { console.error('[ws:delivery:status]', e.message); }
+    }
+    const out = inMem || { id, estado };
+    io.emit('delivery:update', out);
     console.log(`[WS] delivery:status id=${id} → ${estado}`);
   });
 
@@ -1175,6 +1222,8 @@ app.post('/api/state', authMiddleware, async (req, res) => {
       JSON.stringify(caja_moves||[]), JSON.stringify(caja_cierres||[]),
       JSON.stringify(categorias||[])
     ]);
+    // Sync in-memory delivery so repartidor sees current admin state
+    if (Array.isArray(delivery)) db.delivery = delivery;
     res.json({ ok: true });
   } catch(e) { console.error('[state:post]', e.message); res.status(500).json({ error: e.message }); }
 });
