@@ -294,8 +294,26 @@ const db = {
   console.log(`[SEED] Usuarios: ${db.users.length} | Productos: ${db.productos.length} | Mesas: ${db.mesas.length}`);
 })();
 
-// Initialize PostgreSQL after seed block
-initPG();
+// Initialize PostgreSQL and restore persisted state so server IDs match frontend IDs
+async function restoreStateFromPG() {
+  const pool = getPool();
+  if (!pool) return;
+  try {
+    const { rows } = await pool.query('SELECT * FROM app_state WHERE id = 1');
+    const state = rows[0];
+    if (!state) { console.log('[PG] No saved state found — using seed data'); return; }
+    if (Array.isArray(state.mesas)     && state.mesas.length     > 0) db.mesas     = state.mesas;
+    if (Array.isArray(state.delivery)  && state.delivery.length  > 0) db.delivery  = state.delivery;
+    if (Array.isArray(state.productos) && state.productos.length > 0) db.productos = state.productos;
+    if (Array.isArray(state.clientes)  && state.clientes.length  > 0) db.clientes  = state.clientes;
+    if (Array.isArray(state.categorias)&& state.categorias.length> 0) db.categorias= state.categorias;
+    console.log(`[PG] State restored — mesas:${db.mesas.length} delivery:${db.delivery.length} productos:${db.productos.length}`);
+  } catch(e) {
+    console.error('[PG] restoreStateFromPG failed:', e.message);
+  }
+}
+
+initPG().then(() => restoreStateFromPG());
 
 // ─────────────────────────────────────────────
 //  HELPERS
@@ -1159,6 +1177,13 @@ io.on('connection', (socket) => {
 
   // Client broadcasts a mesa change → relay to all other clients
   socket.on('client:mesa:update', (mesa) => {
+    // Keep server in-memory state in sync so PATCH calls work correctly
+    if (mesa && mesa.id) {
+      const idx = db.mesas.findIndex(m => String(m.id) === String(mesa.id));
+      if (idx >= 0) {
+        db.mesas[idx] = { ...db.mesas[idx], ...mesa };
+      }
+    }
     socket.broadcast.emit('mesa:update', mesa);
   });
 
@@ -1246,8 +1271,12 @@ app.post('/api/state', authMiddleware, async (req, res) => {
       JSON.stringify(caja_moves||[]), JSON.stringify(caja_cierres||[]),
       JSON.stringify(categorias||[])
     ]);
-    // Sync in-memory delivery so repartidor sees current admin state
-    if (Array.isArray(delivery)) db.delivery = delivery;
+    // Sync in-memory state so PATCH calls find correct IDs and server stays in sync
+    if (Array.isArray(mesas))      db.mesas      = mesas;
+    if (Array.isArray(delivery))   db.delivery   = delivery;
+    if (Array.isArray(productos))  db.productos  = productos;
+    if (Array.isArray(clientes))   db.clientes   = clientes;
+    if (Array.isArray(categorias)) db.categorias = categorias;
     res.json({ ok: true });
   } catch(e) { console.error('[state:post]', e.message); res.status(500).json({ error: e.message }); }
 });

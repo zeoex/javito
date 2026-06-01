@@ -1613,7 +1613,8 @@ function initApp() {
       if (updatedMesa && updatedMesa.id) {
         const idx = mesasData.findIndex(m => String(m.id) === String(updatedMesa.id));
         if (idx !== -1) {
-          mesasData[idx] = {...mesasData[idx], estado: updatedMesa.estado, mozo: updatedMesa.mozo, tiempo: updatedMesa.tiempo, pedido: updatedMesa.pedido ?? mesasData[idx].pedido};
+          // Merge all fields so admin sees the full picture (pedido, consumo, apertura, mozo, estado)
+          mesasData[idx] = { ...mesasData[idx], ...updatedMesa };
           saveState();
         }
       }
@@ -1724,15 +1725,20 @@ async function loadMesasFromAPI() {
 }
 
 async function syncMesa(m) {
-  // Broadcast to other connected clients via socket (works even after server restart)
+  // Broadcast full mesa state so admin/kitchen/otros see every field
+  const payload = {
+    id: m.id, numero: m.numero, zona: m.zona, capacidad: m.capacidad,
+    estado: m.estado, mozo: m.mozo, mozoid: m.mozoid,
+    apertura: m.apertura, tiempo: m.tiempo,
+    pedido: m.pedido, consumo: m.consumo
+  };
   if (typeof socket !== 'undefined' && socket?.connected) {
-    socket.emit('client:mesa:update', {id:m.id, estado:m.estado, mozo:m.mozo, tiempo:m.tiempo, pedido:m.pedido});
+    socket.emit('client:mesa:update', payload);
   }
-  // Also PATCH backend for kitchen comanda system (best-effort, may 404 after server restart)
   try {
     await apiFetch(`/mesas/${m.id}`, {
       method: 'PATCH',
-      body: JSON.stringify({ estado: m.estado, mozo: m.mozo, tiempo: m.tiempo, pedido: m.pedido, zona: m.zona, capacidad: m.capacidad })
+      body: JSON.stringify(payload)
     });
   } catch(e) {}
 }
