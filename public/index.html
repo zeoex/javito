@@ -118,6 +118,11 @@ tr:hover td{background:#fafafa}
 /* === MESA CARDS (admin/shared) === */
 .mesa-card{border-radius:10px;padding:16px 14px;cursor:pointer;transition:all .2s;border:2px solid transparent;text-align:center;position:relative}
 .mesa-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.12)}
+.mesa-admin-btns{position:absolute;top:4px;right:4px;display:none;gap:3px;z-index:2}
+.mesa-card:hover .mesa-admin-btns{display:flex}
+.mesa-admin-btn{background:rgba(255,255,255,0.9);border:none;border-radius:5px;width:26px;height:26px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:background .15s}
+.mesa-admin-btn.edit:hover{background:#dbeafe}
+.mesa-admin-btn.del:hover{background:#fee2e2}
 .mesa-card.libre{background:#d4edda;border-color:#c3e6cb}
 .mesa-card.ocupada{background:#fff3cd;border-color:#ffeeba}
 .mesa-card.cuenta{background:#f8d7da;border-color:#f5c6cb}
@@ -604,9 +609,12 @@ input.form-control:focus{outline:none;border-color:var(--red)}
           <h2>🪑 Mesas</h2>
           <button class="btn btn-primary btn-sm" id="btnNuevaMesa" onclick="abrirModalNuevaMesa()">+ Nueva Mesa</button>
         </div>
-        <div class="tabs" id="mesasTabs">
-          <div class="tab active" id="tabSalon" onclick="switchTab('salon')">🏠 Salón</div>
-          <div class="tab" id="tabVereda" onclick="switchTab('vereda')">🌿 Vereda</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <div class="tabs" id="mesasTabs" style="margin-bottom:0">
+            <div class="tab active" id="tabSalon" onclick="switchTab('salon')">🏠 Salón</div>
+            <div class="tab" id="tabVereda" onclick="switchTab('vereda')">🌿 Vereda</div>
+          </div>
+          <button class="btn btn-outline btn-sm" id="btnRenumerar" onclick="renumerarVereda()" style="display:none;margin-left:auto" title="Renumera las mesas de vereda comenzando desde el siguiente número al último del salón">🔢 Renumerar Vereda</button>
         </div>
         <div class="mesas-grid" id="mesasGrid"></div>
       </div>
@@ -991,6 +999,24 @@ input.form-control:focus{outline:none;border-color:var(--red)}
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modalNuevaMesa')">Cancelar</button>
       <button class="btn btn-primary" onclick="crearMesa()">Crear Mesa</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalEditarMesa">
+  <div class="modal">
+    <div class="modal-header"><h3>Editar Mesa</h3><button class="modal-close" onclick="closeModal('modalEditarMesa')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="editMesaId"/>
+      <div class="form-group"><label>Número de Mesa</label><input class="form-control" id="editMesaNum" type="number" min="1"/></div>
+      <div class="form-group"><label>Capacidad (personas)</label><input class="form-control" id="editMesaCap" type="number" min="1" max="20"/></div>
+      <div class="form-group"><label>Ubicación</label>
+        <select class="form-control" id="editMesaZona"><option value="salon">Salón</option><option value="vereda">Vereda</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalEditarMesa')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEditarMesa()">Guardar</button>
     </div>
   </div>
 </div>
@@ -1795,6 +1821,7 @@ function getCatsComanda() { return categoriasData.filter(c=>c.comanda).map(c=>c.
 
 // ======= MESAS =======
 function abrirModalNuevaMesa() {
+  // Suggest next global number so salon and vereda don't overlap
   const nextNum = mesasData.length > 0 ? Math.max(...mesasData.map(m=>m.numero||0)) + 1 : 1;
   document.getElementById('nuevaMesaNum').value = nextNum;
   document.getElementById('nuevaMesaCap').value = 4;
@@ -1806,6 +1833,9 @@ function switchTab(tab) {
   currentMesaTab = tab;
   document.querySelectorAll('#mesasTabs .tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(tab==='salon'?'tabSalon':'tabVereda').classList.add('active');
+  const esAdmin = ['admin','supervisor'].includes(currentUser?.rol);
+  const btnR = document.getElementById('btnRenumerar');
+  if (btnR) btnR.style.display = (tab==='vereda' && esAdmin) ? '' : 'none';
   renderMesas();
 }
 
@@ -1848,8 +1878,15 @@ function renderMesas() {
           ${tiempoHTML}
         </div>`;
     }
+    const esAdmin = ['admin','supervisor'].includes(currentUser?.rol);
+    const adminBtns = esAdmin ? `
+      <div class="mesa-admin-btns" onclick="event.stopPropagation()">
+        <button class="mesa-admin-btn edit" onclick="abrirModalEditarMesa('${m.id}')" title="Editar mesa">✏️</button>
+        <button class="mesa-admin-btn del" onclick="eliminarMesa('${m.id}')" title="Eliminar mesa">🗑️</button>
+      </div>` : '';
     return `
-      <div class="mesa-card ${m.estado}" onclick="clickMesa('${m.id}')">
+      <div class="mesa-card ${m.estado}" onclick="clickMesa('${m.id}')" style="position:relative">
+        ${adminBtns}
         <div class="mesa-num">${m.numero}</div>
         <div class="mesa-estado">${estadoLabel}</div>
         <div class="mesa-info">${m.capacidad} personas</div>
@@ -2197,6 +2234,55 @@ async function crearMesa() {
   closeModal('modalNuevaMesa');
   saveState(); renderMesas();
   showToast(`Mesa #${num} creada`,'success');
+}
+
+function abrirModalEditarMesa(id) {
+  const m = mesasData.find(x=>x.id===id);
+  if (!m) return;
+  document.getElementById('editMesaId').value = m.id;
+  document.getElementById('editMesaNum').value = m.numero;
+  document.getElementById('editMesaCap').value = m.capacidad || 4;
+  document.getElementById('editMesaZona').value = m.zona || 'salon';
+  openModal('modalEditarMesa');
+}
+
+async function guardarEditarMesa() {
+  const id = document.getElementById('editMesaId').value;
+  const num = parseInt(document.getElementById('editMesaNum').value);
+  const cap = parseInt(document.getElementById('editMesaCap').value)||4;
+  const zona = document.getElementById('editMesaZona').value;
+  if(!num){ showToast('Número inválido','error'); return; }
+  const m = mesasData.find(x=>x.id===id);
+  if (!m) return;
+  m.numero = num;
+  m.capacidad = cap;
+  m.zona = zona;
+  try { await apiFetch(`/mesas/${id}`, { method:'PATCH', body: JSON.stringify({numero:num, capacidad:cap, zona}) }); } catch(e) {}
+  closeModal('modalEditarMesa');
+  saveState(); renderMesas();
+  showToast(`Mesa #${num} actualizada`,'success');
+}
+
+async function eliminarMesa(id) {
+  const m = mesasData.find(x=>x.id===id);
+  if (!m) return;
+  if (m.estado !== 'libre') { showToast('Solo se pueden eliminar mesas libres','error'); return; }
+  if (!confirm(`¿Eliminar Mesa #${m.numero} (${m.zona})?`)) return;
+  mesasData = mesasData.filter(x=>x.id!==id);
+  try { await apiFetch(`/mesas/${id}`, { method:'DELETE' }); } catch(e) {}
+  saveState(); renderMesas();
+  showToast(`Mesa #${m.numero} eliminada`,'success');
+}
+
+function renumerarVereda() {
+  const salonMesas = mesasData.filter(m=>m.zona==='salon');
+  const veredaMesas = mesasData.filter(m=>m.zona==='vereda').sort((a,b)=>a.numero-b.numero);
+  if (!veredaMesas.length) { showToast('No hay mesas en vereda','error'); return; }
+  const maxSalon = salonMesas.length > 0 ? Math.max(...salonMesas.map(m=>m.numero||0)) : 0;
+  if (!confirm(`Las mesas de vereda se renumerarán desde ${maxSalon+1}. ¿Continuar?`)) return;
+  veredaMesas.forEach((m, i) => { m.numero = maxSalon + 1 + i; });
+  saveState(); renderMesas();
+  showToast(`Vereda renumerada: mesas ${maxSalon+1}–${maxSalon+veredaMesas.length}`,'success');
 }
 
 function buildPrintDoc(titulo, cuerpo) {

@@ -583,11 +583,23 @@ app.post('/api/mesas', authMiddleware, (req, res) => {
   res.status(201).json(mesa);
 });
 
+// Delete a mesa (admin) — only if libre
+app.delete('/api/mesas/:id', authMiddleware, (req, res) => {
+  const idx = db.mesas.findIndex(m => m.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Mesa no encontrada' });
+  const mesa = db.mesas[idx];
+  if (mesa.estado !== 'libre') return res.status(400).json({ error: 'Solo se pueden eliminar mesas libres' });
+  db.mesas.splice(idx, 1);
+  io.emit('mesa:deleted', { id: req.params.id });
+  emitDashboardStats();
+  res.json({ message: 'Mesa eliminada', id: req.params.id });
+});
+
 // Flexible patch — frontend syncs full mesa state
 app.patch('/api/mesas/:id', authMiddleware, (req, res) => {
   const mesa = db.mesas.find(m => m.id === req.params.id);
   if (!mesa) return res.status(404).json({ error: 'Mesa no encontrada' });
-  ['estado','mozo','tiempo','pedido','zona','capacidad','mozoid','apertura','consumo'].forEach(k => {
+  ['numero','estado','mozo','tiempo','pedido','zona','capacidad','mozoid','apertura','consumo'].forEach(k => {
     if (req.body[k] !== undefined) mesa[k] = req.body[k];
   });
   io.emit('mesa:update', mesa);
