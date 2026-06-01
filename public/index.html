@@ -488,8 +488,8 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       </span>
     </div>
     <nav class="sidebar-nav">
-      <div class="nav-item active" data-section="dashboard" data-tooltip="Dashboard" onclick="navTo('dashboard',this);closeSidebar()">
-        <span class="nav-icon">📊</span><span class="nav-text">Dashboard</span>
+      <div class="nav-item active" data-section="dashboard" data-tooltip="Vista Principal" onclick="navTo('dashboard',this);closeSidebar()">
+        <span class="nav-icon">🏠</span><span class="nav-text">Vista Principal</span>
       </div>
       <div class="nav-item" data-section="mesas" data-tooltip="Mesas" onclick="navTo('mesas',this);closeSidebar()">
         <span class="nav-icon">🪑</span><span class="nav-text">Mesas</span> <span class="nav-badge" id="mesasBadge">0</span>
@@ -556,7 +556,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
     </div>
     <div class="topbar" id="mainTopbar">
       <button class="hamburger" onclick="toggleSidebar()" aria-label="Abrir menú">☰</button>
-      <div class="topbar-title" id="topbarTitle">Dashboard</div>
+      <div class="topbar-title" id="topbarTitle">Vista Principal</div>
       <span class="topbar-badge" id="topbarBadge" style="display:none"></span>
       <span class="topbar-time" id="topbarTime"></span>
     </div>
@@ -564,30 +564,33 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 
       <!-- DASHBOARD -->
       <div class="section active" id="sec-dashboard">
-        <div class="stats-grid">
-          <div class="stat-card red"><div class="stat-label">Mesas Ocupadas</div><div class="stat-value" id="st-ocupadas">0</div><div class="stat-sub">de 12 mesas</div></div>
-          <div class="stat-card green"><div class="stat-label">Mesas Libres</div><div class="stat-value" id="st-libres">0</div><div class="stat-sub">disponibles</div></div>
-          <div class="stat-card orange"><div class="stat-label">En Cocina</div><div class="stat-value" id="st-cocina">0</div><div class="stat-sub">comandas activas</div></div>
-          <div class="stat-card blue"><div class="stat-label">En Delivery</div><div class="stat-value" id="st-delivery">0</div><div class="stat-sub">pedidos en curso</div></div>
-          <div class="stat-card teal"><div class="stat-label">Ventas del Día</div><div class="stat-value" id="st-ventas">$0</div><div class="stat-sub">hoy</div></div>
-          <div class="stat-card purple"><div class="stat-label">Tickets Emitidos</div><div class="stat-value" id="st-tickets">0</div><div class="stat-sub">hoy</div></div>
-        </div>
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-header"><h3>📊 Ventas por Hora</h3></div>
-            <div class="card-body">
-              <div class="chart-wrap">
-                <div class="bar-chart" id="hourChart"></div>
-              </div>
-            </div>
+        <!-- Mesas -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header" style="display:flex;align-items:center;gap:10px">
+            <h3 style="flex:1">🪑 Estado de Mesas</h3>
+            <button class="btn btn-outline btn-sm" onclick="navTo('mesas',document.querySelector('[data-section=mesas]'))">Ver todas →</button>
           </div>
-          <div class="card">
-            <div class="card-header"><h3>🪑 Estado de Mesas</h3></div>
-            <div class="card-body">
-              <div class="mesas-grid" id="dashMesas" style="grid-template-columns:repeat(4,1fr);gap:8px"></div>
+          <div class="card-body">
+            <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+              <span id="dash-badge-salon" style="font-size:12px;font-weight:700;color:var(--gray)"></span>
+              <span style="color:var(--border)">|</span>
+              <span id="dash-badge-vereda" style="font-size:12px;font-weight:700;color:var(--gray)"></span>
             </div>
+            <div id="dashMesasSalon" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;margin-bottom:8px"></div>
+            <div id="dashMesasVereda" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px"></div>
           </div>
         </div>
+        <!-- Delivery activo -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header" style="display:flex;align-items:center;gap:10px">
+            <h3 style="flex:1">🛵 Delivery Activo</h3>
+            <button class="btn btn-outline btn-sm" onclick="navTo('delivery',document.querySelector('[data-section=delivery]'))">Ver todos →</button>
+          </div>
+          <div class="card-body" id="dashDelivery">
+            <div style="color:var(--gray);text-align:center;padding:12px 0;font-size:13px">No hay pedidos activos</div>
+          </div>
+        </div>
+        <!-- Actividades -->
         <div class="card">
           <div class="card-header"><h3>🕐 Últimas Actividades</h3></div>
           <div class="card-body" id="actividadesList"></div>
@@ -1500,11 +1503,12 @@ function initApp() {
   loadState();
   loadStateFromAPI().then(() => {
     _populateCatSelects();
-    const activeSection = (document.querySelector('.section.active') || {}).id?.replace('sec-','') || 'dashboard';
-    const loaders = {dashboard:loadDashboard,mesas:renderMesas,delivery:renderDelivery,productos:renderProductos,stock:renderStock,caja:renderCaja,facturacion:loadFacturacion,clientes:renderClientes,reportes:renderReportes,usuarios:renderUsuarios,mozostats:renderMozoStats,config:loadPrintConfigUI};
-    if (loaders[activeSection]) loaders[activeSection]();
+    const saved = (() => { try { return localStorage.getItem('pz_last_section'); } catch(e){} return null; })();
+    const validSections = ['dashboard','mesas','delivery','productos','stock','caja','facturacion','clientes','reportes','usuarios','config'];
+    const target = (saved && validSections.includes(saved)) ? saved : 'dashboard';
+    navTo(target, null);
     renderCaja();
-    loadDashboard();
+    if (target !== 'dashboard') loadDashboard();
   });
   // Mozo: hide sidebar, show custom top nav
   if (currentUser?.rol === 'mozo') {
@@ -1594,12 +1598,14 @@ function updateClock() {
 function navTo(section, el) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   if(el) el.classList.add('active');
+  else document.querySelector(`[data-section="${section}"]`)?.classList.add('active');
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('sec-'+section).classList.add('active');
-  const titles = {dashboard:'Dashboard',mesas:'Mesas',delivery:'Delivery',productos:'Productos',stock:'Stock',caja:'Caja',facturacion:'Facturación',clientes:'Clientes',reportes:'Reportes',usuarios:'Usuarios',config:'Configuración',mozostats:'Mis Estadísticas'};
+  const titles = {dashboard:'Vista Principal',mesas:'Mesas',delivery:'Delivery',productos:'Productos',stock:'Stock',caja:'Caja',facturacion:'Facturación',clientes:'Clientes',reportes:'Reportes',usuarios:'Usuarios',config:'Configuración',mozostats:'Mis Estadísticas'};
   document.getElementById('topbarTitle').textContent = titles[section] || section;
   const loaders = {dashboard:loadDashboard,mesas:renderMesas,delivery:renderDelivery,productos:renderProductos,stock:renderStock,caja:renderCaja,facturacion:loadFacturacion,clientes:renderClientes,reportes:renderReportes,usuarios:renderUsuarios,mozostats:renderMozoStats,config:loadPrintConfigUI};
   if(loaders[section]) loaders[section]();
+  try { localStorage.setItem('pz_last_section', section); } catch(e) {}
 }
 
 function mozoNavTo(section) {
@@ -1658,65 +1664,73 @@ document.addEventListener('click', function(e) {
 // ======= DASHBOARD =======
 function loadDashboard() {
   const ocupadas = mesasData.filter(m=>m.estado!=='libre').length;
-  const libres = mesasData.filter(m=>m.estado==='libre').length;
-  const enDelivery = deliveryData.filter(d=>['nuevo','en_cocina','en_camino'].includes(d.estado)).length;
-  const ventasHoy = facturasData.filter(f=>f.estado==='pagada').reduce((s,f)=>s+f.total,0);
-  document.getElementById('st-ocupadas').textContent = ocupadas;
-  document.getElementById('st-libres').textContent = libres;
-  document.getElementById('st-cocina').textContent = 3;
-  document.getElementById('st-delivery').textContent = enDelivery;
-  document.getElementById('st-ventas').textContent = '$'+ventasHoy.toLocaleString('es-AR');
-  document.getElementById('st-tickets').textContent = facturasData.filter(f=>f.estado==='pagada').length;
-  document.getElementById('mesasBadge').textContent = ocupadas;
-  document.getElementById('deliveryBadge').textContent = enDelivery;
+  const enDelivery = deliveryData.filter(d=>['nuevo','en_cocina','en_camino','listo'].includes(d.estado)).length;
+  document.getElementById('mesasBadge').textContent = ocupadas || '';
+  document.getElementById('deliveryBadge').textContent = enDelivery || '';
   renderDashMesas();
-  renderHourChart();
+  renderDashDelivery();
   renderActividades();
 }
 
-function updateDashboardStats(data) {
-  if(data) {
-    if(data.mesas_ocupadas!==undefined) document.getElementById('st-ocupadas').textContent = data.mesas_ocupadas;
-    if(data.ventas_dia!==undefined) document.getElementById('st-ventas').textContent = '$'+data.ventas_dia.toLocaleString();
-  }
-}
+function updateDashboardStats(data) { if(data) loadDashboard(); }
 
 function renderDashMesas() {
-  const el = document.getElementById('dashMesas');
-  el.innerHTML = mesasData.slice(0,12).map(m => `
-    <div style="border-radius:6px;padding:8px;text-align:center;background:${m.estado==='libre'?'#d4edda':m.estado==='ocupada'?'#fff3cd':'#f8d7da'};cursor:pointer;font-size:11px" onclick="navTo('mesas',document.querySelector('[data-section=mesas]'))">
-      <div style="font-size:18px;font-weight:800;color:var(--blue)">${m.numero}</div>
-      <div style="font-weight:600;color:${m.estado==='libre'?'#155724':m.estado==='ocupada'?'#856404':'#721c24'}">${m.estado.toUpperCase()}</div>
-    </div>`).join('');
+  const chip = m => {
+    const bg = m.estado==='libre'?'#d4edda':m.estado==='ocupada'?'#fff3cd':'#f8d7da';
+    const cl = m.estado==='libre'?'#155724':m.estado==='ocupada'?'#856404':'#721c24';
+    const items = (m.pedido||[]).reduce((s,i)=>s+i.qty,0);
+    return `<div onclick="navTo('mesas',document.querySelector('[data-section=mesas]'))" style="background:${bg};border-radius:8px;padding:8px 4px;text-align:center;cursor:pointer;min-width:64px">
+      <div style="font-size:22px;font-weight:900;color:var(--blue);line-height:1">${m.numero}</div>
+      <div style="font-size:9px;font-weight:800;color:${cl};text-transform:uppercase;margin-top:2px">${m.estado}</div>
+      ${items>0?`<div style="font-size:10px;color:${cl};margin-top:1px">${items} ítem${items!==1?'s':''}</div>`:''}
+    </div>`;
+  };
+  const salon = mesasData.filter(m=>m.zona==='salon');
+  const vereda = mesasData.filter(m=>m.zona==='vereda');
+  const oc = s => s.filter(m=>m.estado!=='libre').length;
+  document.getElementById('dash-badge-salon').textContent = `🏠 Salón — ${oc(salon)}/${salon.length} ocupadas`;
+  document.getElementById('dash-badge-vereda').textContent = `🌿 Vereda — ${oc(vereda)}/${vereda.length} ocupadas`;
+  document.getElementById('dashMesasSalon').innerHTML = salon.map(chip).join('');
+  document.getElementById('dashMesasVereda').innerHTML = vereda.length ? vereda.map(chip).join('') : '';
 }
 
-function renderHourChart() {
-  const hours = [12,13,14,15,16,17,18,19,20,21,22,23];
-  const vals = [2400,3800,5200,4100,6800,8900,12400,15200,18600,14300,9800,5400];
-  const max = Math.max(...vals);
-  document.getElementById('hourChart').innerHTML = hours.map((h,i)=>`
-    <div class="bar-group">
-      <div class="bar-val">$${(vals[i]/1000).toFixed(0)}k</div>
-      <div class="bar" style="height:${Math.round(vals[i]/max*110)+10}px"></div>
-      <div class="bar-label">${h}h</div>
-    </div>`).join('');
+function renderDashDelivery() {
+  const activos = deliveryData.filter(d=>['nuevo','en_cocina','listo','en_camino'].includes(d.estado));
+  const stageLabel = {nuevo:'Nuevo',en_cocina:'En Cocina',listo:'Listo',en_camino:'En Camino'};
+  const stageBg = {nuevo:'#dbeafe',en_cocina:'#fef3c7',listo:'#d1fae5',en_camino:'#e9d5ff'};
+  const stageCl = {nuevo:'#1e40af',en_cocina:'#92400e',listo:'#065f46',en_camino:'#6b21a8'};
+  document.getElementById('dashDelivery').innerHTML = activos.length
+    ? activos.map(o=>{
+        const total = (o.items||[]).reduce((s,i)=>s+i.precio*i.qty,0);
+        return `<div onclick="navTo('delivery',document.querySelector('[data-section=delivery]'))" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer">
+          <span style="background:${stageBg[o.estado]};color:${stageCl[o.estado]};padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap">${stageLabel[o.estado]||o.estado}</span>
+          <span style="font-weight:700;font-size:13px;flex:1">${o.cliente}</span>
+          <span style="font-size:12px;color:var(--gray)">${o.telefono||''}</span>
+          <span style="font-weight:700;font-size:13px">$${total.toLocaleString('es-AR')}</span>
+        </div>`;
+      }).join('')
+    : '<div style="color:var(--gray);text-align:center;padding:12px 0;font-size:13px">No hay pedidos activos</div>';
 }
 
 function renderActividades() {
-  const acts = [
-    {icon:'🛵',text:'Delivery D-003 marcado como en camino',time:'14:52'},
-    {icon:'🪑',text:'Mesa 6 solicitó la cuenta',time:'14:48'},
-    {icon:'🍕',text:'Comanda #005 lista en cocina',time:'14:35'},
-    {icon:'🛵',text:'Nuevo pedido delivery D-002',time:'14:31'},
-    {icon:'🪑',text:'Mesa 2 abierta por Carlos',time:'13:47'},
-    {icon:'💰',text:'Caja abierta — turno iniciado',time:'09:00'},
-    {icon:'🖨️',text:'Comanda #004 impresa',time:'14:20'},
-  ];
-  document.getElementById('actividadesList').innerHTML = acts.map(a=>`
-    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
-      <span style="font-size:20px">${a.icon}</span>
-      <span style="flex:1;font-size:13.5px">${a.text}</span>
-      <span style="font-size:12px;color:var(--gray)">${a.time}</span>
+  const acts = [];
+  const hoy = new Date().toISOString().slice(0,10);
+  // From cajaMoves (last 8, most recent first)
+  const moves = [...cajaMoves].reverse().slice(0,8);
+  moves.forEach(m => {
+    const icon = m.tipo==='ingreso'?'💵':'💸';
+    acts.push({icon, text:`${m.desc||'Movimiento'} — $${Number(m.monto||0).toLocaleString('es-AR')}`, time:m.hora||''});
+  });
+  // From facturas hoy
+  facturasData.filter(f=>f.estado==='pagada'&&(f.fecha||'').startsWith(hoy)).slice(0,4).forEach(f=>{
+    acts.push({icon:'🧾', text:`Factura ${f.numero||''} — Mesa ${f.mesa||''} — $${(f.total||0).toLocaleString('es-AR')}`, time:''});
+  });
+  if(!acts.length) acts.push({icon:'📭',text:'Sin actividades recientes',time:''});
+  document.getElementById('actividadesList').innerHTML = acts.slice(0,10).map(a=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:18px">${a.icon}</span>
+      <span style="flex:1;font-size:13px">${a.text}</span>
+      <span style="font-size:11px;color:var(--gray)">${a.time}</span>
     </div>`).join('');
 }
 
@@ -2129,20 +2143,24 @@ async function crearMesa() {
 }
 
 function buildPrintDoc(titulo, cuerpo) {
-  const w = printConfig.paperWidth || '80mm';
-  const inner = w === '58mm' ? '52mm' : '72mm';
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${titulo}</title>
   <style>
-    @page { size: ${w} auto; margin: 4mm 3mm; }
-    * { box-sizing: border-box; }
-    body { font-family: 'Courier New', Courier, monospace; font-size: 12px; width: ${inner}; margin: 0 auto; color: #000; }
-    h2 { font-size: 14px; text-align: center; margin: 4px 0; }
-    p { margin: 3px 0; }
+    @page { size: 80mm auto; margin: 2mm 3mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Courier New', Courier, monospace; font-size: 11px; width: 74mm; margin: 0 auto; color: #000; }
+    h1 { font-size: 15px; text-align: center; margin: 4px 0 2px; }
+    h2 { font-size: 13px; text-align: center; margin: 3px 0; }
+    p { margin: 2px 0; font-size: 11px; }
     .center { text-align: center; }
+    .right { text-align: right; }
+    .bold { font-weight: bold; }
     .row { display: flex; justify-content: space-between; }
-    .total { font-size: 15px; font-weight: bold; text-align: right; margin-top: 6px; }
-    hr { border: none; border-top: 1px dashed #000; margin: 5px 0; }
-    @media print { button { display: none; } }
+    .row-l { flex: 1; padding-right: 4px; }
+    .row-r { white-space: nowrap; }
+    .total { font-size: 14px; font-weight: bold; text-align: right; margin: 4px 0; }
+    .sep { border: none; border-top: 1px dashed #000; margin: 4px 0; }
+    .big { font-size: 16px; font-weight: bold; text-align: center; margin: 4px 0; }
+    @media print { * { -webkit-print-color-adjust: exact; } }
   </style></head><body>${cuerpo}</body></html>`;
 }
 
@@ -2209,10 +2227,13 @@ async function imprimirComanda(id) {
   const hora = new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
   const lineas = comida.map(i=>{
     const lbl = `${i.nombre}${i.size?' ('+i.size+')':''}`;
-    return `<p><strong>x${i.qty}</strong> &nbsp;${lbl}${i.nota?`<br>&nbsp;&nbsp;↳ <em>${i.nota}</em>`:''}</p>`;
+    return `<p class="bold" style="margin:4px 0;font-size:12px">x${i.qty} &mdash; ${lbl}${i.nota?`<br><span style="font-weight:normal;font-size:10px">&nbsp;&nbsp;Nota: ${i.nota}</span>`:''}</p>`;
   }).join('');
-  const cuerpo = `<h2>🍕 COCINA</h2><p class="center"><strong>Mesa #${m.numero}</strong></p>
-    <p class="center">${m.mozo||''} &bull; ${hora}</p><hr>${lineas}<hr>`;
+  const cuerpo = `<h1>COCINA</h1><hr class="sep">
+    <p class="center bold" style="font-size:14px">MESA ${m.numero}</p>
+    <p class="center">${m.mozo||''}</p>
+    <p class="center">${hora}</p>
+    <hr class="sep">${lineas}<hr class="sep">`;
   const html = buildPrintDoc(`Comanda – Mesa ${m.numero}`, cuerpo);
   try {
     await apiFetch('/print', {method:'POST', body:JSON.stringify({type:'comanda',html,mesaNumero:m.numero})});
@@ -2226,14 +2247,18 @@ async function imprimirCuenta(id) {
   const total = items.reduce((s,i)=>s+i.precio*i.qty,0);
   const lineas = items.map(i=>{
     const lbl = i.nombre+(i.size?' ('+i.size+')':'');
-    return `<p class="row"><span>${i.qty}x ${lbl}</span><span>$${(i.precio*i.qty).toLocaleString('es-AR')}</span></p>`;
+    return `<div class="row" style="margin:3px 0"><span class="row-l">${i.qty}x ${lbl}</span><span class="row-r">$${(i.precio*i.qty).toLocaleString('es-AR')}</span></div>`;
   }).join('');
-  const cuerpo = `<h2>🍕 PIZZERÍA PRO</h2>
-    <p class="center">Mesa #${m.numero}${m.mozo?' — '+m.mozo:''}</p>
-    <p class="center">${new Date().toLocaleString('es-AR')}</p><hr>
-    ${lineas||'<p>Sin ítems</p>'}<hr>
-    <p class="total">TOTAL: $${total.toLocaleString('es-AR')}</p><hr>
-    <p class="center">¡Gracias por su visita!</p>`;
+  const cuerpo = `<h1>PIZZERÍA PRO</h1>
+    <hr class="sep">
+    <p class="center bold">Mesa #${m.numero}${m.mozo?' — '+m.mozo:''}</p>
+    <p class="center">${new Date().toLocaleString('es-AR')}</p>
+    <hr class="sep">
+    ${lineas||'<p>Sin ítems</p>'}
+    <hr class="sep">
+    <div class="row total"><span>TOTAL</span><span>$${total.toLocaleString('es-AR')}</span></div>
+    <hr class="sep">
+    <p class="center" style="margin-top:4px">Gracias por su visita</p>`;
   const html = buildPrintDoc(`Cuenta – Mesa ${m.numero}`, cuerpo);
   try {
     await apiFetch('/print', {method:'POST', body:JSON.stringify({type:'cuenta',html,mesaNumero:m.numero})});
@@ -2915,38 +2940,32 @@ function _printCierreTpl(data) {
     totalVentas, retiros, saldoFinal, declaradoEfectivo, declaradoPostnet, declaradoTransfer,
     diferenciaEfectivo, diferenciaPostnet, diferenciaTransfer, controlado} = data;
   const hasDec = declaradoEfectivo != null;
-  const difFmt = v => v==null?'—':((v>=0?'+':'-')+'$'+Math.abs(v).toLocaleString());
-  const win = window.open('','_blank','width=420,height=800');
-  win.document.write(`<html><head><title>Cierre de Caja</title>
-    <style>body{font-family:monospace;padding:20px;font-size:13px;max-width:300px;margin:0 auto}
-    h2,p.c{text-align:center;margin:3px 0}.row{display:flex;justify-content:space-between;margin:2px 0}
-    hr{border:1px dashed #000;margin:6px 0}.bold{font-weight:bold}.big{font-size:15px;font-weight:900}
-    .sign{margin-top:32px;border-top:1px solid #000;padding-top:8px;text-align:center;font-size:12px}
-    table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:2px 4px}
-    th{text-align:right;color:#666}td:first-child,th:first-child{text-align:left}</style>
-    </head><body>
-    <h2>🍕 PIZZERÍA PRO</h2><p class="c">CIERRE DE CAJA</p>
-    <p class="c" style="font-size:11px">${fecha} — ${hora} hs | Apertura: ${horaApertura||'--'}</p>
-    <hr>
+  const difFmt = v => v==null?'---':((v>=0?'+':'')+`$${Math.abs(v).toLocaleString()}`);
+  const fila = (lbl,sis,dec,dif) => `
+    <div class="row" style="margin:2px 0"><span>${lbl}</span><span>$${(sis||0).toLocaleString()}</span></div>
+    ${hasDec?`<div class="row" style="margin:1px 0;font-size:10px;color:#555"><span>&nbsp;&nbsp;Decl.</span><span>$${(dec||0).toLocaleString()}</span></div>
+    <div class="row" style="margin:1px 0;font-size:10px;font-weight:bold"><span>&nbsp;&nbsp;Dif.</span><span>${difFmt(dif)}</span></div>`:''}`;
+  const cuerpo = `
+    <h1>PIZZERIA PRO</h1>
+    <p class="center">CIERRE DE CAJA</p>
+    <hr class="sep">
+    <p class="center">${fecha} ${hora} hs</p>
+    <p class="center">Apertura: ${horaApertura||'--'}</p>
+    <hr class="sep">
     <p class="bold">VENTAS DEL SISTEMA</p>
-    <div class="row"><span>Efectivo</span><span>$${(ventasEfectivo||0).toLocaleString()}</span></div>
-    <div class="row"><span>Posnet</span><span>$${(ventasTarjeta||0).toLocaleString()}</span></div>
-    <div class="row"><span>Transferencias</span><span>$${(ventasTransfer||0).toLocaleString()}</span></div>
-    <hr><div class="row bold"><span>TOTAL VENTAS</span><span>$${(totalVentas||0).toLocaleString()}</span></div>
-    ${hasDec?`<hr>
-    <p class="bold">DECLARACIÓN / DIFERENCIA</p>
-    <table><thead><tr><th>Tipo</th><th>Sistema</th><th>Declarado</th><th>Dif.</th></tr></thead><tbody>
-    <tr><td>Efectivo</td><td>$${(ventasEfectivo||0).toLocaleString()}</td><td>$${(declaradoEfectivo||0).toLocaleString()}</td><td>${difFmt(diferenciaEfectivo)}</td></tr>
-    <tr><td>Posnet</td><td>$${(ventasTarjeta||0).toLocaleString()}</td><td>$${(declaradoPostnet||0).toLocaleString()}</td><td>${difFmt(diferenciaPostnet)}</td></tr>
-    <tr><td>Transfer.</td><td>$${(ventasTransfer||0).toLocaleString()}</td><td>$${(declaradoTransfer||0).toLocaleString()}</td><td>${difFmt(diferenciaTransfer)}</td></tr>
-    </tbody></table>`:''}
-    <hr>
-    <div class="row bold"><span>Retiros del turno</span><span>-$${(retiros||0).toLocaleString()}</span></div>
-    <div class="row big"><span>SALDO EN CAJA</span><span>$${(saldoFinal||0).toLocaleString()}</span></div>
-    <hr>
-    <div class="sign">${controlado?'☑':'☐'} CONTROLADO POR ENCARGADO<br><br>Firma: _________________________</div>
-    </body></html>`);
-  win.document.close(); win.print();
+    ${fila('Efectivo',ventasEfectivo,declaradoEfectivo,diferenciaEfectivo)}
+    ${fila('Posnet',ventasTarjeta,declaradoPostnet,diferenciaPostnet)}
+    ${fila('Transfer.',ventasTransfer,declaradoTransfer,diferenciaTransfer)}
+    <hr class="sep">
+    <div class="row bold"><span>TOTAL VENTAS</span><span>$${(totalVentas||0).toLocaleString()}</span></div>
+    <div class="row"><span>Retiros</span><span>-$${(retiros||0).toLocaleString()}</span></div>
+    <div class="row"><span>Inicial</span><span>$${(saldoInicial||0).toLocaleString()}</span></div>
+    <hr class="sep">
+    <div class="row big"><span>SALDO CAJA</span><span>$${(saldoFinal||0).toLocaleString()}</span></div>
+    <hr class="sep">
+    <p class="center" style="margin-top:6px">${controlado?'[X]':'[ ]'} CONTROLADO POR ENCARGADO</p>
+    <p class="center" style="margin-top:20px">Firma: ____________________</p>`;
+  _printLocal(buildPrintDoc('Cierre de Caja', cuerpo));
 }
 
 function imprimirCierreCaja() {
