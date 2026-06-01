@@ -200,6 +200,7 @@ async function loadMenu() {
           items: groups[cat.id].map(p => ({
             id: p.id,
             emoji: p.emoji || '🍽️',
+            foto: p.foto || null,
             nombre: p.nombre,
             desc: p.descripcion || '',
             cat: cat.id,
@@ -216,6 +217,7 @@ async function loadMenu() {
           items: items.map(p => ({
             id: p.id,
             emoji: p.emoji || '🍽️',
+            foto: p.foto || null,
             nombre: p.nombre,
             desc: p.descripcion || '',
             cat: catId,
@@ -251,7 +253,7 @@ function renderItems() {
       <div class="cat-title">${s.label}</div>
       ${s.items.map(i => `
         <div class="item-row" onclick="openAddModal(${i.id},'${s.cat}')">
-          <span class="item-emoji">${i.emoji}</span>
+          ${i.foto ? `<img src="${i.foto}" style="width:56px;height:56px;border-radius:10px;object-fit:cover;flex-shrink:0">` : `<span class="item-emoji">${i.emoji}</span>`}
           <div class="item-body">
             <div class="item-name">${i.nombre}</div>
             <div class="item-desc">${i.desc}</div>

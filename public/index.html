@@ -1006,7 +1006,26 @@ input.form-control:focus{outline:none;border-color:var(--red)}
         </div>
       </div>
       <div class="form-group"><label>Descripción</label><input class="form-control" id="prodDesc" placeholder="Descripción breve..."/></div>
-      <div class="form-group"><label>Emoji</label><input class="form-control" id="prodEmoji" placeholder="🍕" value="🍕" style="width:100px"/></div>
+      <div class="form-row" style="align-items:flex-start;gap:16px">
+        <div class="form-group" style="flex:0 0 auto">
+          <label>Emoji</label>
+          <input class="form-control" id="prodEmoji" placeholder="🍕" value="🍕" style="width:80px" oninput="const fe=document.getElementById('prodFotoEmoji');if(fe.style.display!=='none')fe.textContent=this.value||'🍕'"/>
+        </div>
+        <div class="form-group" style="flex:1">
+          <label>Foto del producto <span style="color:var(--gray);font-size:11px;font-weight:400">(cuadrada, sugerido 400×400px · JPG/PNG/WebP)</span></label>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
+            <div id="prodFotoPreview" style="width:72px;height:72px;border-radius:10px;border:1.5px dashed var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;flex-shrink:0;cursor:pointer" onclick="document.getElementById('prodFotoInput').click()" title="Clic para subir foto">
+              <span id="prodFotoEmoji">🍕</span>
+              <img id="prodFotoImg" style="width:100%;height:100%;object-fit:cover;display:none" src="" alt=""/>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <input type="file" id="prodFotoInput" accept="image/*" style="display:none" onchange="handleProdFoto(this)"/>
+              <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('prodFotoInput').click()">📷 Subir foto</button>
+              <button type="button" class="btn btn-outline btn-sm" id="prodFotoRemoveBtn" style="display:none" onclick="clearProdFoto()">🗑️ Quitar foto</button>
+            </div>
+          </div>
+        </div>
+      </div>
       <div id="prodPrecioVariantes">
         <div class="form-row cols-3">
           <div class="form-group"><label>Precio Chica</label><input class="form-control" id="prodPChica" type="number" placeholder="800"/></div>
@@ -2521,6 +2540,48 @@ function deleteCategoria(id) {
   showToast('Categoría eliminada');
 }
 
+/* ── IMAGE COMPRESSION ─────────────────────────────────────── */
+function compressImage(file, maxW, maxH, quality) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        if (w > h) { if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; } }
+        else        { if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; } }
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleProdFoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const b64 = await compressImage(file, 400, 400, 0.75);
+  document.getElementById('prodFotoImg').src = b64;
+  document.getElementById('prodFotoImg').style.display = 'block';
+  document.getElementById('prodFotoEmoji').style.display = 'none';
+  document.getElementById('prodFotoRemoveBtn').style.display = '';
+  document.getElementById('prodFotoPreview').style.border = '1.5px solid var(--primary)';
+  input.value = '';
+}
+
+function clearProdFoto() {
+  document.getElementById('prodFotoImg').src = '';
+  document.getElementById('prodFotoImg').style.display = 'none';
+  document.getElementById('prodFotoEmoji').style.display = '';
+  document.getElementById('prodFotoRemoveBtn').style.display = 'none';
+  document.getElementById('prodFotoPreview').style.border = '1.5px dashed var(--border)';
+}
+
 function _resetModalProducto() {
   editingProdId = null;
   document.getElementById('modalProdTitle').textContent = 'Nuevo Producto';
@@ -2533,6 +2594,7 @@ function _resetModalProducto() {
   document.getElementById('prodPrecio').value='';
   document.getElementById('prodEnCartaQr').checked=true;
   document.getElementById('prodEnMenuOnline').checked=true;
+  clearProdFoto();
   _populateCatSelects();
   toggleProdPrecios();
 }
@@ -2546,7 +2608,14 @@ function renderProductos() {
   });
   document.getElementById('productosTbody').innerHTML = data.map(p=>`
     <tr>
-      <td>${p.emoji} <strong>${p.nombre}</strong>${p.descripcion?`<div style="font-size:11px;color:var(--gray)">${p.descripcion}</div>`:''}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:10px">
+          ${p.foto
+            ? `<img src="${p.foto}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;flex-shrink:0">`
+            : `<span style="font-size:26px;line-height:1;flex-shrink:0">${p.emoji}</span>`}
+          <div><strong>${p.nombre}</strong>${p.descripcion?`<div style="font-size:11px;color:var(--gray)">${p.descripcion}</div>`:''}</div>
+        </div>
+      </td>
       <td><span class="tag">${p.categoria}</span></td>
       <td>${p.precio_chica?'$'+p.precio_chica.toLocaleString():'-'}</td>
       <td>${p.precio_mediana?'$'+p.precio_mediana.toLocaleString():p.precio?'$'+p.precio.toLocaleString():'-'}</td>
@@ -2583,6 +2652,16 @@ function editProducto(id) {
   else if(p.precio){ document.getElementById('prodPrecio').value=p.precio; }
   document.getElementById('prodEnCartaQr').checked = p.en_carta_qr !== false;
   document.getElementById('prodEnMenuOnline').checked = p.en_menu_online !== false;
+  clearProdFoto();
+  if (p.foto) {
+    document.getElementById('prodFotoImg').src = p.foto;
+    document.getElementById('prodFotoImg').style.display = 'block';
+    document.getElementById('prodFotoEmoji').style.display = 'none';
+    document.getElementById('prodFotoRemoveBtn').style.display = '';
+    document.getElementById('prodFotoPreview').style.border = '1.5px solid var(--primary)';
+  } else {
+    document.getElementById('prodFotoEmoji').textContent = p.emoji || '🍕';
+  }
   openModal('modalProducto');
 }
 
@@ -2590,7 +2669,9 @@ function guardarProducto() {
   const nombre = document.getElementById('prodNombre').value;
   const cat = document.getElementById('prodCat').value;
   if(!nombre){ showToast('Ingresá el nombre del producto','error'); return; }
-  const base = { nombre, categoria:cat, emoji:document.getElementById('prodEmoji').value||'🍕', descripcion:document.getElementById('prodDesc').value, activo:true, en_carta_qr:document.getElementById('prodEnCartaQr').checked, en_menu_online:document.getElementById('prodEnMenuOnline').checked };
+  const fotoEl = document.getElementById('prodFotoImg');
+  const fotoVal = (fotoEl.style.display !== 'none' && fotoEl.src && fotoEl.src.startsWith('data:')) ? fotoEl.src : null;
+  const base = { nombre, categoria:cat, emoji:document.getElementById('prodEmoji').value||'🍕', descripcion:document.getElementById('prodDesc').value, activo:true, en_carta_qr:document.getElementById('prodEnCartaQr').checked, en_menu_online:document.getElementById('prodEnMenuOnline').checked, foto:fotoVal };
   if(cat==='pizzas'){
     base.precio_chica=parseInt(document.getElementById('prodPChica').value)||0;
     base.precio_mediana=parseInt(document.getElementById('prodPMed').value)||0;
