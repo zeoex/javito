@@ -11,21 +11,43 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 /* ── HERO ── */
 .hero{
   position:relative;
-  height:220px;
-  background:linear-gradient(145deg,#1a1a2e 0%,#6b1414 55%,#c0392b 100%);
+  height:320px;
+  background:#1a1a2e;
   overflow:hidden;
   display:flex;
   flex-direction:column;
   justify-content:flex-end;
   padding:20px 20px 24px;
 }
-.hero::before{
-  content:'';
+/* ── CAROUSEL SLIDES ── */
+.hero-slides{position:absolute;inset:0;z-index:0}
+.hero-slide{
   position:absolute;inset:0;
-  background:radial-gradient(ellipse at 70% 20%,rgba(231,76,60,.35) 0%,transparent 65%),
-             radial-gradient(ellipse at 15% 80%,rgba(192,57,43,.25) 0%,transparent 55%);
+  background-size:cover;
+  background-position:center;
+  opacity:0;
+  transition:opacity 1.2s ease;
+}
+.hero-slide.active{opacity:1}
+/* ── GRADIENT OVERLAY (ensures text legibility) ── */
+.hero-overlay{
+  position:absolute;inset:0;z-index:1;
+  background:
+    linear-gradient(to top, rgba(0,0,0,.82) 0%, rgba(0,0,0,.45) 45%, rgba(0,0,0,.15) 100%),
+    linear-gradient(to right, rgba(0,0,0,.3) 0%, transparent 60%);
   pointer-events:none;
 }
+/* ── CAROUSEL DOTS ── */
+.hero-dots{
+  position:relative;z-index:3;
+  display:flex;gap:6px;align-self:center;
+  margin-top:14px;
+}
+.hero-dot{
+  width:7px;height:7px;border-radius:50%;border:none;cursor:pointer;padding:0;
+  background:rgba(255,255,255,.4);transition:all .3s;
+}
+.hero-dot.active{background:#fff;width:20px;border-radius:4px}
 .hero-back{
   position:absolute;top:16px;left:16px;
   display:inline-flex;align-items:center;gap:5px;
@@ -34,21 +56,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
   border:1px solid rgba(255,255,255,.2);
   color:#fff;font-size:13px;font-weight:500;text-decoration:none;
-  transition:background .15s;z-index:2;
+  transition:background .15s;z-index:3;
 }
 .hero-back:hover{background:rgba(255,255,255,.22)}
-.hero-identity{display:flex;align-items:flex-end;gap:14px;position:relative;z-index:2}
+.hero-identity{display:flex;align-items:flex-end;gap:14px;position:relative;z-index:3}
 .hero-logo-wrap{
   width:72px;height:72px;flex-shrink:0;
   background:#fff;border-radius:16px;
-  box-shadow:0 4px 20px rgba(0,0,0,.35);
+  box-shadow:0 4px 20px rgba(0,0,0,.5);
   display:flex;align-items:center;justify-content:center;overflow:hidden;
 }
 .hero-logo-wrap img{width:100%;height:100%;object-fit:cover;display:none}
 .hero-logo-wrap .hero-emoji-inner{font-size:36px;line-height:1}
 .hero-text{flex:1;min-width:0}
-.hero-text h1{font-size:24px;font-weight:800;color:#fff;letter-spacing:-.3px;line-height:1.15;margin-bottom:4px}
-.hero-text p{font-size:13px;color:rgba(255,255,255,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hero-text h1{
+  font-size:28px;font-weight:900;color:#fff;
+  letter-spacing:-.5px;line-height:1.1;margin-bottom:5px;
+  text-shadow:0 2px 12px rgba(0,0,0,.5);
+}
+.hero-text p{font-size:13px;color:rgba(255,255,255,.8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 4px rgba(0,0,0,.4)}
 
 /* ── CATEGORY NAV ── */
 .cat-nav-wrap{
@@ -153,9 +179,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 
 /* ── DESKTOP ── */
 @media(min-width:600px){
-  .hero{height:280px;padding:28px 32px 32px}
+  .hero{height:400px;padding:28px 32px 28px}
   .hero-back{top:24px;left:24px}
-  .hero-text h1{font-size:30px}
+  .hero-text h1{font-size:36px}
+  .hero-logo-wrap{width:84px;height:84px}
+  .hero-logo-wrap .hero-emoji-inner{font-size:42px}
   .content{padding:24px 24px 60px}
   .card-media{width:110px}
 }
@@ -164,7 +192,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 <body>
 
 <div class="hero">
+  <!-- Carousel background -->
+  <div class="hero-slides" id="heroSlides">
+    <div class="hero-slide" style="background-image:url('/img/food1.jpg')"></div>
+    <div class="hero-slide" style="background-image:url('/img/food2.jpg')"></div>
+    <div class="hero-slide" style="background-image:url('/img/food3.jpg')"></div>
+    <div class="hero-slide" style="background-image:url('/img/food4.jpg')"></div>
+    <div class="hero-slide" style="background-image:url('/img/food5.jpg')"></div>
+  </div>
+  <!-- Gradient overlay -->
+  <div class="hero-overlay"></div>
+  <!-- Back button -->
   <a href="/portal.html" class="hero-back">← Portal</a>
+  <!-- Restaurant identity -->
   <div class="hero-identity">
     <div class="hero-logo-wrap">
       <img id="heroLogo" src="" alt="logo"/>
@@ -175,6 +215,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
       <p id="heroSub"></p>
     </div>
   </div>
+  <!-- Carousel dots -->
+  <div class="hero-dots" id="heroDots"></div>
 </div>
 
 <div class="cat-nav-wrap">
@@ -190,6 +232,32 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 </div>
 
 <script>
+/* ── CAROUSEL ── */
+(function initCarousel() {
+  const slides = document.querySelectorAll('.hero-slide');
+  const dotsWrap = document.getElementById('heroDots');
+  let cur = 0;
+
+  slides[0].classList.add('active');
+  slides.forEach((_, i) => {
+    const d = document.createElement('button');
+    d.className = 'hero-dot' + (i === 0 ? ' active' : '');
+    d.setAttribute('aria-label', 'Foto ' + (i + 1));
+    d.onclick = () => go(i);
+    dotsWrap.appendChild(d);
+  });
+
+  function go(n) {
+    slides[cur].classList.remove('active');
+    dotsWrap.children[cur].classList.remove('active');
+    cur = n;
+    slides[cur].classList.add('active');
+    dotsWrap.children[cur].classList.add('active');
+  }
+
+  setInterval(() => go((cur + 1) % slides.length), 4500);
+})();
+
 let MENU = [];
 let observer = null;
 let scrolling = false;
