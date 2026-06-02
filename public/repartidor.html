@@ -985,6 +985,67 @@
   .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
   .empty-state p { font-size: 14px; font-weight: 500; color: var(--text-2); }
 
+  /* ── HISTORY — day groups & comments ── */
+  .day-group { margin-bottom: 6px; }
+  .day-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px 6px;
+    font-size: 11px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--text-3);
+  }
+  .day-header-line { flex: 1; height: 1px; background: var(--border); }
+  .day-badge {
+    background: #f3f4f6; color: #6b7280;
+    font-size: 10px; font-weight: 700;
+    padding: 2px 8px; border-radius: 20px;
+  }
+  .history-item {
+    background: #ffffff; border: 1px solid #e5e7eb;
+    border-radius: 14px; padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 0;
+    transition: border-color .2s;
+    margin: 0 14px 8px;
+  }
+  .history-item-top { display: flex; align-items: center; gap: 12px; }
+  .history-item:hover { border-color: var(--border-active); }
+  .hist-comment-text {
+    font-size: 12px; color: var(--text-2);
+    background: #f8f9fb; border-radius: 8px;
+    padding: 6px 10px; margin-top: 8px;
+    border-left: 3px solid var(--accent-light);
+    line-height: 1.4;
+  }
+  .hist-comment-row {
+    display: none; flex-direction: column; gap: 6px;
+    margin-top: 8px;
+  }
+  .hist-comment-row.open { display: flex; }
+  .hist-comment-input {
+    width: 100%; border: 1px solid #d1d5db; border-radius: 8px;
+    padding: 8px 10px; font-size: 13px; font-family: inherit;
+    resize: none; outline: none; color: var(--text);
+    background: #fff; line-height: 1.4;
+  }
+  .hist-comment-input:focus { border-color: var(--accent-light); }
+  .hist-comment-actions { display: flex; gap: 6px; justify-content: flex-end; }
+  .hist-btn-save {
+    background: var(--accent-light); color: #fff; border: none;
+    border-radius: 8px; padding: 6px 14px;
+    font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+  .hist-btn-cancel {
+    background: #f3f4f6; color: #6b7280; border: none;
+    border-radius: 8px; padding: 6px 12px;
+    font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .hist-add-comment {
+    display: inline-flex; align-items: center; gap: 4px;
+    margin-top: 6px; font-size: 11px; font-weight: 600;
+    color: var(--text-3); background: none; border: none;
+    cursor: pointer; padding: 0; font-family: inherit;
+  }
+  .hist-add-comment:hover { color: var(--accent-light); }
+
   /* ══════════════════════════════════════
      PROFILE TAB
   ══════════════════════════════════════ */
@@ -1404,22 +1465,6 @@
     <!-- ── TAB: Mis Pedidos ── -->
     <div class="tab-pane active" id="tab-pedidos">
 
-      <!-- Stats row at top of orders -->
-      <div class="stats-row">
-        <div class="stat-pill">
-          <div class="stat-num" id="stat-kms">0</div>
-          <div class="stat-lbl">Km hoy</div>
-        </div>
-        <div class="stat-pill">
-          <div class="stat-num" id="stat-entregas">5</div>
-          <div class="stat-lbl">Entregas</div>
-        </div>
-        <div class="stat-pill">
-          <div class="stat-num" id="stat-tiempo">—</div>
-          <div class="stat-lbl">Tiempo avg</div>
-        </div>
-      </div>
-
       <div id="section-orders">
         <div class="section-header">
           <span class="section-title">Pedidos activos</span>
@@ -1436,27 +1481,10 @@
     <!-- ── TAB: Estadísticas / Historial ── -->
     <div class="tab-pane" id="tab-estadisticas">
 
-      <div class="stats-big-grid">
-        <div class="stat-big-card card-entregas">
-          <span class="stat-big-icon">📦</span>
-          <div class="stat-big-value" id="stat-km">5</div>
-          <div class="stat-big-label">Entregas hoy</div>
-        </div>
-        <div class="stat-big-card card-km">
-          <span class="stat-big-icon">🛣️</span>
-          <div class="stat-big-value">32</div>
-          <div class="stat-big-label">Km recorridos</div>
-        </div>
-        <div class="stat-big-card card-propinas">
-          <span class="stat-big-icon">💰</span>
-          <div class="stat-big-value" id="stat-propinas">$450</div>
-          <div class="stat-big-label">Propinas del día</div>
-        </div>
-      </div>
-
       <div id="section-history">
-        <div class="section-header">
-          <span class="section-title">Historial de hoy</span>
+        <div class="section-header" style="padding: 16px 14px 8px">
+          <span class="section-title">Historial de repartos</span>
+          <span class="section-count" id="hist-total-count"></span>
         </div>
         <div class="history-list" id="history-list">
           <!-- rendered by JS -->
@@ -1511,7 +1539,7 @@
     </button>
     <button class="nav-item" id="nav-estadisticas" onclick="switchTab('estadisticas')">
       <span class="nav-icon">📊</span>
-      <span class="nav-label">Stats</span>
+      <span class="nav-label">Estadísticas</span>
     </button>
     <button class="nav-item" id="nav-perfil" onclick="switchTab('perfil')">
       <span class="nav-icon">👤</span>
@@ -1897,9 +1925,8 @@ function marcarEntregado(id) {
   p.estado = 'entregado';
   p.hora_entrega = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 
-  // Update stats
-  const current = parseInt(document.getElementById('stat-entregas').textContent) || 0;
-  document.getElementById('stat-entregas').textContent = current + 1;
+  // Save to history
+  saveToHistory(p);
 
   renderOrders();
   renderHistory();
@@ -1909,30 +1936,110 @@ function marcarEntregado(id) {
 }
 
 /* ── HISTORY ─────────────────────────────────────── */
+let repComments = (() => { try { return JSON.parse(localStorage.getItem('restito_rep_comments') || '{}'); } catch(e) { return {}; } })();
+let repHistory  = (() => { try { return JSON.parse(localStorage.getItem('restito_rep_history')  || '[]'); } catch(e) { return [];  } })();
+
+function saveToHistory(p) {
+  const today = new Date().toLocaleDateString('es-AR');
+  const exists = repHistory.find(h => String(h.id) === String(p.id));
+  if (exists) return;
+  repHistory.unshift({
+    id: p.id, numero: p.numero,
+    cliente: p.cliente?.nombre || '—',
+    direccion: p.direccion || '—',
+    total: p.total || 0,
+    metodo_pago: p.metodo_pago || '',
+    hora: p.hora_entrega || p.hora || new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}),
+    fecha: today
+  });
+  if (repHistory.length > 300) repHistory = repHistory.slice(0, 300);
+  localStorage.setItem('restito_rep_history', JSON.stringify(repHistory));
+}
+
+function toggleCommentInput(id) {
+  const row = document.getElementById('comment-row-' + id);
+  if (!row) return;
+  row.classList.toggle('open');
+  if (row.classList.contains('open')) {
+    const ta = document.getElementById('comment-ta-' + id);
+    ta.value = repComments[id] || '';
+    ta.focus();
+  }
+}
+
+function saveComment(id) {
+  const ta = document.getElementById('comment-ta-' + id);
+  const text = (ta?.value || '').trim();
+  if (text) repComments[id] = text; else delete repComments[id];
+  localStorage.setItem('restito_rep_comments', JSON.stringify(repComments));
+  document.getElementById('comment-row-' + id)?.classList.remove('open');
+  renderHistory();
+}
+
 function renderHistory() {
   const list = document.getElementById('history-list');
-  const delivered = pedidos.filter(p => p.estado === 'entregado');
 
-  if (delivered.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>Aún no hay entregas completadas hoy.</p></div>`;
+  // Merge session delivered orders into history store
+  pedidos.filter(p => p.estado === 'entregado').forEach(p => saveToHistory(p));
+
+  const all = repHistory;
+  const cntEl = document.getElementById('hist-total-count');
+  if (cntEl) cntEl.textContent = all.length ? all.length + ' entregas' : '';
+
+  if (all.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>Aún no hay entregas registradas.</p></div>`;
     return;
   }
 
+  // Group by date
+  const byDate = {};
+  all.forEach(e => {
+    if (!byDate[e.fecha]) byDate[e.fecha] = [];
+    byDate[e.fecha].push(e);
+  });
+
   list.innerHTML = '';
-  delivered.slice(0, 10).forEach(p => {
-    const item = document.createElement('div');
-    item.className = 'history-item';
-    const hora = p.hora_entrega || p.hora;
-    item.innerHTML = `
-      <div class="history-check">✓</div>
-      <div class="history-info">
-        <div class="history-order">Pedido #${escHtml(p.numero)}</div>
-        <div class="history-client">👤 ${escHtml(p.cliente.nombre)}</div>
-        <div class="history-time">📍 ${escHtml(p.direccion)}</div>
-        <div class="history-time">🕐 Entregado: ${escHtml(hora)}</div>
-      </div>
-      <div class="history-total">$${Number(p.total).toLocaleString('es-AR')}</div>`;
-    list.appendChild(item);
+  const today = new Date().toLocaleDateString('es-AR');
+  const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('es-AR');
+
+  Object.keys(byDate).forEach(fecha => {
+    const group = document.createElement('div');
+    group.className = 'day-group';
+
+    const label = fecha === today ? 'Hoy' : fecha === yesterday ? 'Ayer' : fecha;
+    const n = byDate[fecha].length;
+    group.innerHTML = `<div class="day-header"><span>${label}</span><span class="day-badge">${n} entrega${n!==1?'s':''}</span><span class="day-header-line"></span></div>`;
+
+    byDate[fecha].forEach(e => {
+      const comment = repComments[String(e.id)] || '';
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      item.innerHTML = `
+        <div class="history-item-top">
+          <div class="history-check">✓</div>
+          <div class="history-info">
+            <div class="history-order">Pedido #${escHtml(e.numero)}</div>
+            <div class="history-client">👤 ${escHtml(e.cliente)}</div>
+            <div class="history-time">📍 ${escHtml(e.direccion)}</div>
+            <div class="history-time">🕐 ${escHtml(e.hora)}${e.metodo_pago ? '  ·  💳 ' + escHtml(e.metodo_pago) : ''}</div>
+          </div>
+          <div class="history-total">$${Number(e.total).toLocaleString('es-AR')}</div>
+        </div>
+        ${comment ? `<div class="hist-comment-text">💬 ${escHtml(comment)}</div>` : ''}
+        <button class="hist-add-comment" onclick="toggleCommentInput('${escHtml(String(e.id))}')">
+          ✏️ ${comment ? 'Editar comentario' : 'Agregar comentario'}
+        </button>
+        <div class="hist-comment-row" id="comment-row-${escHtml(String(e.id))}">
+          <textarea class="hist-comment-input" id="comment-ta-${escHtml(String(e.id))}" rows="2" placeholder="Ej: Cliente no estaba, dejé con portero..."></textarea>
+          <div class="hist-comment-actions">
+            <button class="hist-btn-cancel" onclick="toggleCommentInput('${escHtml(String(e.id))}')">Cancelar</button>
+            <button class="hist-btn-save" onclick="saveComment('${escHtml(String(e.id))}')">Guardar</button>
+          </div>
+        </div>`;
+      group.appendChild(item);
+    });
+
+    list.appendChild(group);
   });
 }
 
