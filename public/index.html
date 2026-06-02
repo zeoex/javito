@@ -1518,13 +1518,17 @@ input:checked+.slider:before{transform:translateX(20px)}
 
 <script>
 const API = '/api';
-// Migrate old auth keys on first load
-if (!localStorage.getItem('restito_token') && localStorage.getItem('pizzeria_token')) {
+// Path-based session isolation: /mozo and /admin have independent tokens
+const _IS_MOZO_PATH = window.location.pathname === '/mozo' || window.location.pathname.startsWith('/mozo/');
+const _TOKEN_KEY = _IS_MOZO_PATH ? 'restito_mozo_token' : 'restito_token';
+const _USER_KEY  = _IS_MOZO_PATH ? 'restito_mozo_user'  : 'restito_user';
+// Migrate old auth keys (admin path only)
+if (!_IS_MOZO_PATH && !localStorage.getItem('restito_token') && localStorage.getItem('pizzeria_token')) {
   localStorage.setItem('restito_token', localStorage.getItem('pizzeria_token'));
   localStorage.setItem('restito_user', localStorage.getItem('pizzeria_user') || 'null');
 }
-let token = localStorage.getItem('restito_token');
-let currentUser = (() => { try { return JSON.parse(localStorage.getItem('restito_user') || 'null'); } catch(e) { return null; } })();
+let token = localStorage.getItem(_TOKEN_KEY);
+let currentUser = (() => { try { return JSON.parse(localStorage.getItem(_USER_KEY) || 'null'); } catch(e) { return null; } })();
 let socket = null;
 let currentMesaTab = 'salon';
 let printConfig = (() => {
@@ -1776,6 +1780,7 @@ async function doLogin() {
   const email = document.getElementById('loginEmail').value.trim();
   const pass = document.getElementById('loginPass').value.trim();
   const errEl = document.getElementById('loginError');
+  errEl.textContent = 'Email o contraseña incorrectos';
   errEl.style.display = 'none';
   try {
     const res = await fetch('/api/auth/login', {
@@ -1786,24 +1791,15 @@ async function doLogin() {
       const data = await res.json();
       token = data.token;
       currentUser = data.usuario || data.user;
-      localStorage.setItem('restito_token', token);
-      localStorage.setItem('restito_user', JSON.stringify(currentUser));
     } else {
-      // Demo fallback
       const demoMap = {
         'admin@restito.com':{ id:1, nombre:'Admin Principal', email, rol:'admin' },
         'carlos@restito.com':{ id:2, nombre:'Carlos Mozo', email, rol:'mozo' },
       };
       const demoUser = demoMap[email];
       if (demoUser && (pass === 'admin123' || pass === 'mozo123')) {
-        token = 'demo-token';
-        currentUser = demoUser;
-        localStorage.setItem('restito_token', token);
-        localStorage.setItem('restito_user', JSON.stringify(currentUser));
-      } else {
-        errEl.style.display = 'block';
-        return;
-      }
+        token = 'demo-token'; currentUser = demoUser;
+      } else { errEl.style.display = 'block'; return; }
     }
   } catch(e) {
     const demoMap = {
@@ -1812,12 +1808,22 @@ async function doLogin() {
     };
     const demoUser = demoMap[email];
     if (demoUser && (pass === 'admin123' || pass === 'mozo123')) {
-      token = 'demo-token';
-      currentUser = demoUser;
-      localStorage.setItem('restito_token', token);
-      localStorage.setItem('restito_user', JSON.stringify(currentUser));
+      token = 'demo-token'; currentUser = demoUser;
     } else { errEl.style.display = 'block'; return; }
   }
+  // Validate role matches the module
+  const rolValido = _IS_MOZO_PATH ? currentUser.rol === 'mozo'
+                                  : currentUser.rol !== 'mozo';
+  if (!rolValido) {
+    const msg = _IS_MOZO_PATH
+      ? 'Este módulo es solo para mozos'
+      : 'Los mozos deben ingresar por el módulo Mozo';
+    errEl.textContent = msg; errEl.style.display = 'block';
+    token = null; currentUser = null;
+    return;
+  }
+  localStorage.setItem(_TOKEN_KEY, token);
+  localStorage.setItem(_USER_KEY, JSON.stringify(currentUser));
   initApp();
 }
 
@@ -1827,8 +1833,8 @@ loadBizConfig();
 
 function doLogout() {
   token = null; currentUser = null;
-  localStorage.removeItem('restito_token');
-  localStorage.removeItem('restito_user');
+  localStorage.removeItem(_TOKEN_KEY);
+  localStorage.removeItem(_USER_KEY);
   if (socket) socket.disconnect();
   document.getElementById('app').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
@@ -2006,7 +2012,17 @@ function initApp() {
 })();
 
 if (token && currentUser) {
-  initApp();
+  const rolOk = _IS_MOZO_PATH ? currentUser.rol === 'mozo'
+                               : currentUser.rol !== 'mozo';
+  if (rolOk) {
+    initApp();
+  } else {
+    // Saved session is for the wrong module — clear it and show login
+    token = null; currentUser = null;
+    localStorage.removeItem(_TOKEN_KEY);
+    localStorage.removeItem(_USER_KEY);
+    document.getElementById('loginScreen').style.display = 'flex';
+  }
 } else {
   document.getElementById('loginScreen').style.display = 'flex';
 }
