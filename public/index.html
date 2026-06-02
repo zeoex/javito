@@ -728,12 +728,9 @@ input.form-control:focus{outline:none;border-color:var(--red)}
           <h2>🪑 Mesas</h2>
           <button class="btn btn-primary btn-sm" id="btnNuevaMesa" onclick="abrirModalNuevaMesa()">+ Nueva Mesa</button>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <div class="tabs" id="mesasTabs" style="margin-bottom:0">
-            <div class="tab active" id="tabSalon" onclick="switchTab('salon')">🏠 Salón</div>
-            <div class="tab" id="tabVereda" onclick="switchTab('vereda')">🌿 Vereda</div>
-          </div>
-          <button class="btn btn-outline btn-sm" id="btnRenumerar" onclick="renumerarVereda()" style="display:none;margin-left:auto" title="Renumera las mesas de vereda comenzando desde el siguiente número al último del salón">🔢 Renumerar Vereda</button>
+        <div class="tabs" id="mesasTabs">
+          <div class="tab active" id="tabSalon" onclick="switchTab('salon')">🏠 Salón</div>
+          <div class="tab" id="tabVereda" onclick="switchTab('vereda')">🌿 Vereda</div>
         </div>
         <div class="mesas-grid" id="mesasGrid"></div>
       </div>
@@ -1732,12 +1729,16 @@ function initApp() {
       if (updatedMesa && updatedMesa.id) {
         const idx = mesasData.findIndex(m => String(m.id) === String(updatedMesa.id));
         if (idx !== -1) {
-          // Merge all fields so admin sees the full picture (pedido, consumo, apertura, mozo, estado)
           mesasData[idx] = { ...mesasData[idx], ...updatedMesa };
-          saveState();
+        } else {
+          // ID no encontrado localmente — agregar y refrescar todo desde servidor
+          mesasData.push(updatedMesa);
+          loadMesasFromAPI();
+          return;
         }
       }
-      if(document.getElementById('sec-mesas').classList.contains('active')) renderMesas();
+      if (document.getElementById('sec-mesas').classList.contains('active')) renderMesas();
+      if (document.getElementById('sec-dashboard').classList.contains('active')) loadDashboard();
     });
     socket.on('delivery:update', (updated) => {
       if (updated && updated.id) {
@@ -1806,15 +1807,21 @@ function initApp() {
     });
     socket.on('connect', () => {
       updatePrinterHubStatus(true);
-      // Re-fetch queue on reconnect so missed jobs show up
+      // On reconnect, refresh everything missed while disconnected
       loadPrintQueue();
       loadLlamados();
+      // Reload mesas from server so IDs are always in sync
+      loadMesasFromAPI();
     });
     socket.on('disconnect', () => updatePrinterHubStatus(false));
   } catch(e){}
   // Load pending print jobs and llamados on login
   loadPrintQueue();
   loadLlamados();
+  // Auto-refresh mesas every 15s as safety net (socket can miss events)
+  setInterval(() => {
+    if (document.getElementById('sec-mesas')?.classList.contains('active')) loadMesasFromAPI();
+  }, 15000);
   // Load first section: mozo goes straight to mesas
   if (currentUser?.rol === 'mozo') {
     mozoNavTo('mesas');
@@ -1862,7 +1869,7 @@ function navTo(section, el) {
   document.getElementById('sec-'+section).classList.add('active');
   const titles = {dashboard:'Vista Principal',mesas:'Mesas',delivery:'Delivery',productos:'Productos',stock:'Stock',caja:'Caja',facturacion:'Facturación',clientes:'Clientes',reportes:'Reportes',usuarios:'Usuarios',config:'Configuración',mozostats:'Mis Estadísticas'};
   document.getElementById('topbarTitle').textContent = titles[section] || section;
-  const loaders = {dashboard:loadDashboard,mesas:renderMesas,delivery:renderDelivery,productos:renderProductos,stock:renderStock,caja:renderCaja,facturacion:loadFacturacion,clientes:renderClientes,reportes:renderReportes,usuarios:renderUsuarios,mozostats:renderMozoStats,config:loadPrintConfigUI};
+  const loaders = {dashboard:loadDashboard,mesas:loadMesasFromAPI,delivery:renderDelivery,productos:renderProductos,stock:renderStock,caja:renderCaja,facturacion:loadFacturacion,clientes:renderClientes,reportes:renderReportes,usuarios:renderUsuarios,mozostats:renderMozoStats,config:loadPrintConfigUI};
   if(loaders[section]) loaders[section]();
   try { localStorage.setItem('pz_last_section', section); } catch(e) {}
 }
@@ -1880,21 +1887,23 @@ function cambiarZonaMesa(id, zona) {
 async function loadMesasFromAPI() {
   try {
     const res = await apiFetch('/mesas');
-    if (!res.ok) return;
-    const data = await res.json();
-    mesasData = data.map(m => ({
-      id: m.id,
-      numero: m.numero,
-      capacidad: m.capacidad || 4,
-      estado: m.estado || 'libre',
-      zona: (m.zona || 'salon').toLowerCase(),
-      mozo: m.mozo || null,
-      tiempo: m.tiempo || null,
-      pedido: Array.isArray(m.pedido) ? m.pedido : [],
-    }));
-    saveState();
-    renderMesas();
+    if (!res.ok) { renderMesas(); return; }
+    const serverMesas = await res.json();
+    if (!serverMesas.length) { renderMesas(); return; }
+    // Merge: server is source of truth for operational fields (estado/mozo/pedido/tiempo/consumo)
+    serverMesas.forEach(sm => {
+      const idx = mesasData.findIndex(m => String(m.id) === String(sm.id));
+      if (idx >= 0) {
+        mesasData[idx] = { ...mesasData[idx], ...sm };
+      } else {
+        mesasData.push(sm);
+      }
+    });
+    // Remove local mesas the server no longer has
+    const serverIds = new Set(serverMesas.map(m => String(m.id)));
+    mesasData = mesasData.filter(m => serverIds.has(String(m.id)));
   } catch(e) {}
+  renderMesas();
 }
 
 async function syncMesa(m) {
@@ -2014,9 +2023,6 @@ function switchTab(tab) {
   currentMesaTab = tab;
   document.querySelectorAll('#mesasTabs .tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(tab==='salon'?'tabSalon':'tabVereda').classList.add('active');
-  const esAdmin = ['admin','supervisor'].includes(currentUser?.rol);
-  const btnR = document.getElementById('btnRenumerar');
-  if (btnR) btnR.style.display = (tab==='vereda' && esAdmin) ? '' : 'none';
   renderMesas();
 }
 
