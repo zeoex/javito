@@ -1493,7 +1493,14 @@ const DEMO_CATEGORIAS = [
 ];
 let categoriasData = [...DEMO_CATEGORIAS];
 
+// IDs válidos son UUIDs (36 chars con guiones) o strings largas — no números de demo
+function _hasValidMesaIds() {
+  if (!mesasData.length) return true;
+  return mesasData.every(m => typeof m.id === 'string' && m.id.length > 10 && m.id.includes('-'));
+}
+
 function saveState() {
+  const savedAt = Date.now();
   try {
     localStorage.setItem('pz_mesas', JSON.stringify(mesasData));
     localStorage.setItem('pz_delivery', JSON.stringify(deliveryData));
@@ -1507,9 +1514,10 @@ function saveState() {
     localStorage.setItem('pz_caja_moves', JSON.stringify(cajaMoves));
     localStorage.setItem('pz_caja_cierres', JSON.stringify(cajaCierres));
     localStorage.setItem('pz_categorias', JSON.stringify(categoriasData));
+    localStorage.setItem('pz_saved_at', savedAt.toString());
   } catch(e) {}
-  // Sync to PostgreSQL (fire and forget)
-  if (typeof token !== 'undefined' && token) {
+  // Solo persistir en PG si los IDs son reales (no los numéricos del demo)
+  if (typeof token !== 'undefined' && token && _hasValidMesaIds()) {
     apiFetch('/state', {
       method: 'POST',
       body: JSON.stringify({
@@ -1565,32 +1573,51 @@ async function loadStateFromAPI() {
     if (!res.ok) return;
     const data = await res.json();
     if (!data) return;
+
+    // Comparar timestamps: solo usar PG si es más reciente que el localStorage local.
+    // Esto evita que un POST /api/state lento (aún en vuelo al refrescar) pise datos correctos.
+    const pgTime   = data.updated_at ? new Date(data.updated_at).getTime() : 0;
+    const localTime = parseInt(localStorage.getItem('pz_saved_at') || '0');
+    const pgIsNewer = pgTime > localTime;
+
+    if (!pgIsNewer && localTime > 0) {
+      // localStorage es más reciente — PG puede tener datos viejos, no pisar
+      console.log('[state] localStorage más reciente que PG, se mantiene local');
+      return;
+    }
+
     const arr = (v, def=[]) => Array.isArray(v) ? v : def;
-    if (arr(data.mesas).length > 0) mesasData = data.mesas;
-    if (arr(data.delivery).length > 0) deliveryData = data.delivery;
-    if (arr(data.facturas).length > 0) facturasData = data.facturas;
-    if (arr(data.clientes).length > 0) clientesData = data.clientes;
-    if (arr(data.usuarios).length > 0) usuariosData = data.usuarios;
-    if (arr(data.productos).length > 0) productosData = data.productos;
-    if (arr(data.mozo_historial).length > 0) mozoHistorial = data.mozo_historial;
+    // Validar que PG no tenga IDs de demo (numéricos) antes de aceptarlos
+    const pgMesas = arr(data.mesas);
+    const pgIdsValidos = pgMesas.length === 0 || pgMesas.every(m => typeof m.id === 'string' && m.id.length > 10 && m.id.includes('-'));
+    if (pgMesas.length > 0 && pgIdsValidos) mesasData = pgMesas;
+
+    if (arr(data.delivery).length > 0)       deliveryData  = data.delivery;
+    if (arr(data.facturas).length > 0)        facturasData  = data.facturas;
+    if (arr(data.clientes).length > 0)        clientesData  = data.clientes;
+    if (arr(data.usuarios).length > 0)        usuariosData  = data.usuarios;
+    if (arr(data.productos).length > 0)       productosData = data.productos;
+    if (arr(data.mozo_historial).length > 0)  mozoHistorial = data.mozo_historial;
     if (data.caja_abierta !== null && data.caja_abierta !== undefined) cajaAbierta = data.caja_abierta === true;
-    if (data.caja_inicial) cajaInicial = parseInt(data.caja_inicial) || 5000;
-    if (arr(data.caja_moves).length > 0) cajaMoves = data.caja_moves.map(m=>({...m, desc:m.desc||'', monto:Number(m.monto)||0}));
-    if (arr(data.caja_cierres).length > 0) cajaCierres = data.caja_cierres;
-    if (arr(data.categorias).length > 0) categoriasData = data.categorias;
-    // Also update localStorage cache
+    if (data.caja_inicial)                    cajaInicial   = parseInt(data.caja_inicial) || 5000;
+    if (arr(data.caja_moves).length > 0)      cajaMoves     = data.caja_moves.map(m=>({...m, desc:m.desc||'', monto:Number(m.monto)||0}));
+    if (arr(data.caja_cierres).length > 0)    cajaCierres   = data.caja_cierres;
+    if (arr(data.categorias).length > 0)      categoriasData= data.categorias;
+
+    // Actualizar localStorage con los datos de PG (y registrar su timestamp)
     try {
-      localStorage.setItem('pz_mesas', JSON.stringify(mesasData));
-      localStorage.setItem('pz_delivery', JSON.stringify(deliveryData));
-      localStorage.setItem('pz_facturas', JSON.stringify(facturasData));
+      localStorage.setItem('pz_mesas',       JSON.stringify(mesasData));
+      localStorage.setItem('pz_delivery',     JSON.stringify(deliveryData));
+      localStorage.setItem('pz_facturas',     JSON.stringify(facturasData));
       localStorage.setItem('pz_caja_abierta', JSON.stringify(cajaAbierta));
       localStorage.setItem('pz_caja_inicial', JSON.stringify(cajaInicial));
-      localStorage.setItem('pz_caja_moves', JSON.stringify(cajaMoves));
+      localStorage.setItem('pz_caja_moves',   JSON.stringify(cajaMoves));
       localStorage.setItem('pz_caja_cierres', JSON.stringify(cajaCierres));
+      localStorage.setItem('pz_saved_at',     pgTime.toString());
     } catch(e) {}
-    console.log('[state] Loaded from DB — mesas:', mesasData.length, '| cajaAbierta:', cajaAbierta);
+    console.log('[state] Cargado desde PG — mesas:', mesasData.length, '| pgTime:', new Date(pgTime).toISOString());
   } catch(e) {
-    console.log('[state] DB not available, using localStorage');
+    console.log('[state] PG no disponible, usando localStorage');
   }
 }
 
@@ -1731,9 +1758,10 @@ function initApp() {
         if (idx !== -1) {
           mesasData[idx] = { ...mesasData[idx], ...updatedMesa };
         } else {
-          // Mesa no encontrada localmente — agregarla desde el payload del evento
           mesasData.push(updatedMesa);
         }
+        // Persistir en localStorage inmediatamente para que no se pierda en el próximo saveState
+        try { localStorage.setItem('pz_mesas', JSON.stringify(mesasData)); } catch(e) {}
       }
       if (document.getElementById('sec-mesas').classList.contains('active')) renderMesas();
       if (document.getElementById('sec-dashboard').classList.contains('active')) loadDashboard();
@@ -3882,7 +3910,7 @@ function openModalProducto() {
   openModal('modalProducto');
 }
 // Override button to reset form
-document.querySelector('[onclick="openModal(\'modalProducto\')"]').setAttribute('onclick','openModalProducto()');
+document.querySelector('[onclick="openModal(\'modalProducto\')"]')?.setAttribute('onclick','openModalProducto()');
 
 // ======= SIDEBAR TOGGLE =======
 function toggleSidebar() {
