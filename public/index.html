@@ -322,21 +322,21 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#e9ecef;color:#495057}
 
 /* ===== MOZO TOP NAV ===== */
-.mozo-topnav{display:none;height:64px;background:linear-gradient(135deg,#1d3557,#2d5a8e);align-items:center;padding:0 20px;gap:12px;flex-shrink:0;z-index:50;box-shadow:0 2px 12px rgba(0,0,0,0.25)}
-.mozo-topnav .mtn-logo{font-size:22px;font-weight:900;color:#fff;letter-spacing:-0.5px;flex:1;display:flex;align-items:center;gap:8px}
-.mozo-topnav .mtn-logo span{font-size:24px}
+.mozo-topnav{display:none;height:64px;background:#fff;border-bottom:1.5px solid #e5e7eb;align-items:center;padding:0 20px;gap:12px;flex-shrink:0;z-index:50;box-shadow:0 1px 6px rgba(0,0,0,0.07)}
+.mozo-topnav .mtn-logo{font-size:20px;font-weight:900;color:#111827;letter-spacing:-0.5px;flex:1;display:flex;align-items:center;gap:8px}
+.mozo-topnav .mtn-logo span{font-size:22px}
 .mozo-topnav-btns{display:flex;gap:8px;align-items:center}
-.mtn-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.1);color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap}
-.mtn-btn:hover{background:rgba(255,255,255,0.22);border-color:rgba(255,255,255,0.5)}
-.mtn-btn.active{background:rgba(230,57,70,0.8);border-color:var(--red)}
-.mtn-btn-logout{border-color:rgba(239,68,68,0.5);background:rgba(239,68,68,0.15)}
-.mtn-btn-logout:hover{background:rgba(239,68,68,0.35)}
-.mtn-avatar{width:38px;height:38px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0;border:2px solid rgba(255,255,255,0.3);cursor:pointer;letter-spacing:0.5px;transition:opacity .15s}
+.mtn-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;border:1.5px solid #e5e7eb;background:#f9fafb;color:#374151;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap}
+.mtn-btn:hover{background:#f3f4f6;border-color:#d1d5db}
+.mtn-btn.active{background:#1d3557;color:#fff;border-color:#1d3557;box-shadow:0 2px 8px rgba(29,53,87,0.25)}
+.mtn-btn-logout{border-color:#fecaca;background:#fef2f2;color:#dc2626}
+.mtn-btn-logout:hover{background:#fee2e2;border-color:#fca5a5}
+.mtn-avatar{width:38px;height:38px;border-radius:50%;background:#1d3557;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0;border:2px solid #e5e7eb;cursor:pointer;letter-spacing:0.5px;transition:opacity .15s}
 .mtn-avatar:hover{opacity:.85}
 .mtn-avatar-wrap{position:relative;flex-shrink:0}
-.mtn-avatar-menu{position:absolute;right:0;top:46px;background:#fff;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,0.22);padding:6px;min-width:160px;display:none;z-index:200}
+.mtn-avatar-menu{position:absolute;right:0;top:46px;background:#fff;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,0.16);border:1px solid #e5e7eb;padding:6px;min-width:160px;display:none;z-index:200}
 .mtn-avatar-menu.open{display:block}
-.mtn-avatar-menu button{width:100%;padding:11px 14px;border:none;background:none;text-align:left;font-family:inherit;font-size:14px;font-weight:600;color:#dc3545;cursor:pointer;border-radius:8px}
+.mtn-avatar-menu button{width:100%;padding:11px 14px;border:none;background:none;text-align:left;font-family:inherit;font-size:14px;font-weight:600;color:#dc2626;cursor:pointer;border-radius:8px}
 .mtn-avatar-menu button:hover{background:#fef2f2}
 .mozo-topnav.visible{display:flex}
 
@@ -527,11 +527,15 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 .spk-size-btn.grande:hover{background:linear-gradient(135deg,#15803d,#166534)}
 .spk-size-btn .spk-price{font-size:13px;opacity:.85}
 
-/* ── HOME CIRCULAR BUTTONS ──────────────────────── */
+/* ── HOME ICON BUTTONS ──────────────────────── */
+@keyframes haFloat {
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
 .home-quick {
   background: #fff;
   border-radius: 20px;
-  box-shadow: 0 2px 14px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 14px rgba(0,0,0,0.07);
   padding: 20px 16px 18px;
   margin-bottom: 16px;
 }
@@ -562,26 +566,31 @@ input.form-control:focus{outline:none;border-color:var(--red)}
   padding: 6px 4px 8px;
   font-family: inherit;
   border-radius: 16px;
-  transition: background .15s;
   -webkit-tap-highlight-color: transparent;
 }
-.ha-btn:hover { background: rgba(0,0,0,0.03); }
 .ha-circle {
-  width: 68px;
-  height: 68px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
+  font-size: 30px;
   position: relative;
-  transition: transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s;
+  transition: transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .2s;
 }
-.ha-btn:hover .ha-circle { transform: translateY(-4px) scale(1.06); }
-.ha-btn:active .ha-circle { transform: scale(0.87); transition-duration: .08s; }
+.ha-btn:hover .ha-circle {
+  animation: haFloat 1.6s ease-in-out infinite;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.18) !important;
+}
+.ha-btn:active .ha-circle {
+  animation: none;
+  transform: scale(0.86);
+  transition-duration: .08s;
+}
 .ha-badge {
   position: absolute;
-  top: 0; right: 0;
+  top: -2px; right: -2px;
   background: #ef4444;
   color: #fff;
   font-size: 10px;
@@ -594,18 +603,18 @@ input.form-control:focus{outline:none;border-color:var(--red)}
   border: 2.5px solid #fff;
   padding: 0 4px;
   line-height: 1;
-  box-shadow: 0 2px 6px rgba(239,68,68,0.6);
+  box-shadow: 0 2px 6px rgba(239,68,68,0.55);
 }
 .ha-label {
   font-size: 11.5px;
   font-weight: 700;
   color: #374151;
   text-align: center;
-  letter-spacing: .15px;
+  letter-spacing: .1px;
   line-height: 1.2;
 }
 @media (max-width: 340px) {
-  .ha-circle { width: 58px; height: 58px; font-size: 24px; }
+  .ha-circle { width: 56px; height: 56px; font-size: 26px; }
   .ha-label { font-size: 10px; }
 }
 </style>
@@ -705,11 +714,11 @@ input.form-control:focus{outline:none;border-color:var(--red)}
   <div class="main" id="mainContent">
     <!-- Mozo-only top navigation bar -->
     <div class="mozo-topnav" id="mozoTopnav">
+      <div class="mtn-logo"><span>🍴</span> ResTito</div>
       <div class="mozo-topnav-btns">
         <button class="mtn-btn active" id="mtnBtnMesas" onclick="mozoNavTo('mesas')">🪑 <span class="mtn-label">Mesas</span></button>
-        <button class="mtn-btn" id="mtnBtnStats" onclick="mozoNavTo('mozostats')">📊 <span class="mtn-label">Estadísticas</span></button>
+        <button class="mtn-btn" id="mtnBtnStats" onclick="mozoNavTo('mozostats')">📊 <span class="mtn-label">Stats</span></button>
       </div>
-      <div style="flex:1"></div>
       <div class="mtn-avatar-wrap" id="mozoAvatarWrap">
         <div class="mtn-avatar" id="mozoAvatar" title="" onclick="toggleMozoMenu()">CM</div>
         <div class="mtn-avatar-menu" id="mozoAvatarMenu">
@@ -777,39 +786,39 @@ input.form-control:focus{outline:none;border-color:var(--red)}
           <div class="home-quick-label">Acceso rápido</div>
           <div class="home-actions">
             <button class="ha-btn" onclick="navTo('mesas',document.querySelector('[data-section=mesas]'))">
-              <div class="ha-circle" style="background:linear-gradient(145deg,#667eea,#764ba2);box-shadow:0 8px 22px rgba(102,126,234,0.45)">
+              <div class="ha-circle" style="background:#ede9fe;box-shadow:0 6px 18px rgba(124,58,237,0.22)">
                 🪑
                 <span class="ha-badge" id="hab-mesas" style="display:none">0</span>
               </div>
               <span class="ha-label">Mesas</span>
             </button>
             <button class="ha-btn" onclick="navTo('delivery',document.querySelector('[data-section=delivery]'))">
-              <div class="ha-circle" style="background:linear-gradient(145deg,#f7971e,#ffd200);box-shadow:0 8px 22px rgba(247,151,30,0.45)">
+              <div class="ha-circle" style="background:#fef3c7;box-shadow:0 6px 18px rgba(245,158,11,0.25)">
                 🛵
                 <span class="ha-badge" id="hab-delivery" style="display:none">0</span>
               </div>
               <span class="ha-label">Delivery</span>
             </button>
             <button class="ha-btn" onclick="navTo('productos',document.querySelector('[data-section=productos]'))">
-              <div class="ha-circle" style="background:linear-gradient(145deg,#11998e,#38ef7d);box-shadow:0 8px 22px rgba(17,153,142,0.42)">
+              <div class="ha-circle" style="background:#d1fae5;box-shadow:0 6px 18px rgba(16,185,129,0.22)">
                 🍕
               </div>
               <span class="ha-label">Productos</span>
             </button>
             <button class="ha-btn" onclick="navTo('caja',document.querySelector('[data-section=caja]'))">
-              <div class="ha-circle" style="background:linear-gradient(145deg,#f953c6,#b91d73);box-shadow:0 8px 22px rgba(249,83,198,0.42)">
+              <div class="ha-circle" style="background:#fce7f3;box-shadow:0 6px 18px rgba(236,72,153,0.22)">
                 💰
               </div>
               <span class="ha-label">Caja</span>
             </button>
             <button class="ha-btn" onclick="navTo('clientes',document.querySelector('[data-section=clientes]'))">
-              <div class="ha-circle" style="background:linear-gradient(145deg,#4776e6,#8e54e9);box-shadow:0 8px 22px rgba(71,118,230,0.42)">
+              <div class="ha-circle" style="background:#dbeafe;box-shadow:0 6px 18px rgba(59,130,246,0.22)">
                 👥
               </div>
               <span class="ha-label">Clientes</span>
             </button>
             <button class="ha-btn" onclick="navTo('reportes',document.querySelector('[data-section=reportes]'))">
-              <div class="ha-circle" style="background:linear-gradient(145deg,#00c6ff,#0072ff);box-shadow:0 8px 22px rgba(0,114,255,0.42)">
+              <div class="ha-circle" style="background:#e0f2fe;box-shadow:0 6px 18px rgba(14,165,233,0.22)">
                 📊
               </div>
               <span class="ha-label">Reportes</span>
