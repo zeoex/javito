@@ -19,12 +19,29 @@
 :root{--red:#e63946;--blue:#1d3557;--light:#f8f9fa;--white:#fff;--gray:#6c757d;--border:#dee2e6;--success:#28a745;--warning:#fd7e14;--danger:#dc3545;--info:#17a2b8;--mz-bg:#0d1b2a;--mz-surface:#112233;--mz-border:rgba(255,255,255,0.08);--mz-libre:#16a34a;--mz-libre-glow:rgba(22,163,74,0.4);--mz-ocupada:#d97706;--mz-ocupada-glow:rgba(217,119,6,0.4);--mz-cuenta:#dc2626;--mz-cuenta-glow:rgba(220,38,38,0.4);--tap:44px}
 body{font-family:'Inter',sans-serif;background:var(--light);color:#212529;overflow-x:hidden}
 /* === LOGIN === */
-#loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,#0d1b2a 0%,#1d3557 60%,#2a4a7f 100%);display:flex;align-items:center;justify-content:center;z-index:9999}
-.login-card{background:#fff;border-radius:16px;padding:48px 40px;width:100%;max-width:420px;box-shadow:0 24px 64px rgba(0,0,0,0.4)}
-.login-logo{text-align:center;margin-bottom:32px}
-.login-logo .emoji{font-size:56px;display:block;margin-bottom:8px}
-.login-logo h1{font-size:28px;font-weight:800;color:var(--blue);letter-spacing:-0.5px}
-.login-logo p{color:var(--gray);font-size:14px;margin-top:4px}
+:root{--login-accent:#7c3aed;--login-accent-l:#a78bfa}
+#loginScreen{position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 50% -10%,color-mix(in srgb,var(--login-accent) 10%,transparent) 0%,transparent 65%),linear-gradient(180deg,#faf9ff 0%,#fdfcff 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:32px 24px;padding-top:calc(32px + env(safe-area-inset-top,0px));padding-bottom:calc(32px + env(safe-area-inset-bottom,0px));overflow-y:auto}
+#loginScreen::before{content:'';position:fixed;inset:0;background-image:linear-gradient(color-mix(in srgb,var(--login-accent) 4%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--login-accent) 4%,transparent) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:-1}
+.login-logo-wrap{position:relative;margin-bottom:20px;display:flex;align-items:center;justify-content:center}
+.login-logo-glow{position:absolute;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--login-accent) 35%,transparent) 0%,transparent 70%);animation:lgPulse 2.5s ease-in-out infinite}
+@keyframes lgPulse{0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(1.2);opacity:1}}
+.login-logo-emoji{font-size:64px;position:relative;z-index:1;animation:lgFloat 3s ease-in-out infinite;filter:drop-shadow(0 4px 12px color-mix(in srgb,var(--login-accent) 30%,transparent))}
+@keyframes lgFloat{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-10px) rotate(2deg)}}
+.login-brand{text-align:center;margin-bottom:32px}
+.login-module-label{font-size:12px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:var(--login-accent);margin-bottom:6px}
+.login-app-name{font-size:32px;font-weight:900;color:#111827;letter-spacing:-1.5px;line-height:1}
+.login-app-name span{color:var(--login-accent)}
+.login-card{background:#fff;border:1px solid #e5e7eb;border-radius:24px;padding:32px 28px;width:100%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,.10),0 2px 8px color-mix(in srgb,var(--login-accent) 6%,transparent)}
+.login-input-group{margin-bottom:18px}
+.login-input-group label{display:block;color:#6b7280;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px}
+.login-input-wrap{position:relative;display:flex;align-items:center}
+.login-input-icon{position:absolute;left:14px;font-size:16px;opacity:.4;pointer-events:none;z-index:1}
+.login-card input[type=email],.login-card input[type=password],.login-card input[type=text]{width:100%;background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:12px;color:#111827;font-family:inherit;font-size:16px;font-weight:500;padding:14px 16px 14px 44px;outline:none;transition:border-color .2s,background .2s,box-shadow .2s}
+.login-card input[type=email]:focus,.login-card input[type=password]:focus,.login-card input[type=text]:focus{border-color:color-mix(in srgb,var(--login-accent) 50%,transparent);background:#fff;box-shadow:0 0 0 3px color-mix(in srgb,var(--login-accent) 10%,transparent)}
+.login-card input::placeholder{color:#9ca3af}
+.btn-login{width:100%;background:linear-gradient(135deg,var(--login-accent) 0%,color-mix(in srgb,var(--login-accent) 75%,#000) 100%);color:#fff;border:none;border-radius:14px;font-family:inherit;font-size:16px;font-weight:700;padding:16px;cursor:pointer;transition:transform .15s,box-shadow .2s;min-height:52px;letter-spacing:.5px;box-shadow:0 4px 20px color-mix(in srgb,var(--login-accent) 40%,transparent),0 0 0 1px rgba(255,255,255,.1) inset;margin-top:8px}
+.btn-login:hover{box-shadow:0 6px 28px color-mix(in srgb,var(--login-accent) 55%,transparent),0 0 0 1px rgba(255,255,255,.15) inset;transform:translateY(-1px)}
+.btn-login:active{transform:scale(.97)}
 .form-group{margin-bottom:18px}
 .form-group label{display:block;font-size:13px;font-weight:600;color:#495057;margin-bottom:6px}
 .form-group input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;font-family:'Inter',sans-serif;transition:border-color .2s}
@@ -45,9 +62,8 @@ body{font-family:'Inter',sans-serif;background:var(--light);color:#212529;overfl
 .btn-sm{padding:7px 12px;font-size:13px}
 .btn-block{width:100%;margin-top:8px}
 .btn-lg{padding:14px 24px;font-size:16px}
-.login-demo{margin-top:20px;padding:14px;background:#f8f9fa;border-radius:8px;font-size:12.5px;color:#6c757d;text-align:center}
-.login-demo strong{color:#495057}
-.login-error{color:var(--danger);font-size:13px;text-align:center;margin-top:10px;display:none}
+.login-demo{color:#9ca3af;font-size:11px;text-align:center;margin-top:14px;line-height:1.5}
+.login-error{color:var(--login-accent,#7c3aed);font-size:13px;font-weight:500;text-align:center;margin-top:14px;min-height:18px;display:none}
 /* === LAYOUT === */
 #app{display:none;height:100vh;overflow:hidden}
 .sidebar{position:fixed;top:0;left:0;width:240px;height:100vh;background:var(--blue);display:flex;flex-direction:column;z-index:100}
@@ -623,28 +639,40 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 
 <!-- LOGIN -->
 <div id="loginScreen" style="display:none">
+
+  <div class="login-logo-wrap">
+    <div class="login-logo-glow"></div>
+    <span class="login-logo-emoji" id="loginEmoji">🛡️</span>
+  </div>
+
+  <div class="login-brand">
+    <div class="login-module-label" id="loginTitle">Módulo Administración</div>
+    <div class="login-app-name">Res<span>Tito</span></div>
+  </div>
+
   <div class="login-card">
-    <div class="login-logo">
-      <div id="loginLogoWrap" style="margin-bottom:4px"></div>
-      <span class="emoji" id="loginEmoji">🍴</span>
-      <h1 id="loginTitle">ResTito</h1>
-      <p id="loginSubtitle">Sistema de gestión integral</p>
-    </div>
-    <div class="form-group">
+    <div class="login-input-group">
       <label>Email</label>
-      <input type="email" id="loginEmail" class="form-control" placeholder="Email"/>
+      <div class="login-input-wrap">
+        <span class="login-input-icon">📧</span>
+        <input type="email" id="loginEmail" placeholder="Email" autocomplete="username"/>
+      </div>
     </div>
-    <div class="form-group">
+    <div class="login-input-group">
       <label>Contraseña</label>
-      <input type="password" id="loginPass" class="form-control" placeholder="••••••••"/>
+      <div class="login-input-wrap">
+        <span class="login-input-icon">🔒</span>
+        <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password"/>
+      </div>
     </div>
-    <button class="btn btn-primary btn-block btn-lg" onclick="doLogin()">Ingresar</button>
-    <div class="login-error" id="loginError">Email o contraseña incorrectos</div>
+    <button class="btn-login" onclick="doLogin()">Ingresar</button>
+    <div class="login-error" id="loginError"></div>
     <div class="login-demo" id="loginDemo"></div>
     <div style="margin-top:16px;text-align:center">
-      <a href="/" style="font-size:12px;color:var(--gray)">← Portal principal</a>
+      <a href="/" style="font-size:12px;color:#9ca3af">← Portal principal</a>
     </div>
   </div>
+
 </div>
 
 <!-- APP -->
@@ -1992,19 +2020,18 @@ function initApp() {
 (function setupLoginBranding() {
   const path = window.location.pathname;
   const roles = {
-    '/mozo':       { emoji:'🧑‍🍳', title:'Panel de Mozo', subtitle:'Acceso exclusivo para mozos', email:'carlos@restito.com', pass:'mozo123', hint:'Mozo: carlos@restito.com / mozo123' },
-    '/admin':      { emoji:'🍴', title:'ResTito', subtitle:'Panel de Administración', email:'admin@restito.com', pass:'admin123', hint:'Admin: admin@restito.com / admin123' },
-    '/cocina':     { emoji:'👨‍🍳', title:'Pantalla de Cocina', subtitle:'Acceso para cocina', email:'', pass:'', hint:'' },
-    '/repartidor': { emoji:'🛵', title:'App de Repartidor', subtitle:'Acceso para repartidores', email:'', pass:'', hint:'' },
+    '/mozo':  { emoji:'🧑‍🍳', title:'Módulo Mozo',           email:'carlos@restito.com', pass:'mozo123',  hint:'Mozo: carlos@restito.com / mozo123', accent:'#059669', accentL:'#34d399' },
+    '/admin': { emoji:'🛡️',   title:'Módulo Administración', email:'admin@restito.com',  pass:'admin123', hint:'Admin: admin@restito.com / admin123',  accent:'#7c3aed', accentL:'#a78bfa' },
   };
-  const cfg = roles[path] || { emoji:'🍴', title:'ResTito', subtitle:'Sistema de gestión integral', email:'admin@restito.com', pass:'admin123', hint:'Admin: admin@restito.com / admin123 · Mozo: carlos@restito.com / mozo123' };
-  document.getElementById('loginEmoji').textContent = cfg.emoji;
-  document.getElementById('loginTitle').textContent = cfg.title;
-  document.getElementById('loginSubtitle').textContent = cfg.subtitle;
-  document.getElementById('loginEmail').value = cfg.email;
-  document.getElementById('loginPass').value = cfg.pass;
-  document.getElementById('loginEmail').placeholder = cfg.email || 'Email';
-  document.getElementById('loginDemo').textContent = cfg.hint;
+  const cfg = roles[path] || { emoji:'🛡️', title:'Módulo Administración', email:'admin@restito.com', pass:'admin123', hint:'Admin: admin@restito.com / admin123', accent:'#7c3aed', accentL:'#a78bfa' };
+  document.getElementById('loginEmoji').textContent   = cfg.emoji;
+  document.getElementById('loginTitle').textContent   = cfg.title;
+  document.getElementById('loginEmail').value         = cfg.email;
+  document.getElementById('loginPass').value          = cfg.pass;
+  document.getElementById('loginEmail').placeholder   = cfg.email || 'Email';
+  document.getElementById('loginDemo').textContent    = cfg.hint;
+  document.documentElement.style.setProperty('--login-accent',  cfg.accent);
+  document.documentElement.style.setProperty('--login-accent-l', cfg.accentL);
 })();
 
 if (token && currentUser) {
