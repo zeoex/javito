@@ -1830,11 +1830,10 @@ loadBizConfig();
 
 function doLogout() {
   token = null; currentUser = null;
-  localStorage.removeItem(_TOKEN_KEY);
-  localStorage.removeItem(_USER_KEY);
+  ['restito_token','restito_user','restito_mozo_token','restito_mozo_user',
+   'pizzeria_token','pizzeria_user'].forEach(function(k){ localStorage.removeItem(k); });
   if (socket) socket.disconnect();
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('loginScreen').style.display = 'flex';
+  window.location.href = '/';
 }
 
 function apiFetch(url, opts={}) {
