@@ -382,7 +382,7 @@
   <!-- TILES -->
   <main class="grid">
 
-    <a href="/admin" class="tile admin">
+    <a href="/admin" class="tile admin" onclick="['restito_token','restito_user','pizzeria_token','pizzeria_user'].forEach(function(k){localStorage.removeItem(k);})">
       <div class="tile-icon">🛡️</div>
       <div class="tile-body">
         <span class="tile-label">Administración</span>
@@ -391,7 +391,7 @@
       <span class="tile-arrow">→</span>
     </a>
 
-    <a href="/mozo" class="tile mozo">
+    <a href="/mozo" class="tile mozo" onclick="['restito_mozo_token','restito_mozo_user'].forEach(function(k){localStorage.removeItem(k);})">
       <div class="tile-icon">🤵</div>
       <div class="tile-body">
         <span class="tile-label">Panel Mozo</span>
