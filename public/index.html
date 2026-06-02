@@ -1811,14 +1811,11 @@ async function doLogin() {
       token = 'demo-token'; currentUser = demoUser;
     } else { errEl.style.display = 'block'; return; }
   }
-  // Validate role matches the module
-  const rolValido = _IS_MOZO_PATH ? currentUser.rol === 'mozo'
-                                  : currentUser.rol !== 'mozo';
+  // Validate role: /mozo only accepts mozo role; /admin accepts all roles
+  const rolValido = !_IS_MOZO_PATH || currentUser.rol === 'mozo';
   if (!rolValido) {
-    const msg = _IS_MOZO_PATH
-      ? 'Este módulo es solo para mozos'
-      : 'Los mozos deben ingresar por el módulo Mozo';
-    errEl.textContent = msg; errEl.style.display = 'block';
+    errEl.textContent = 'Este módulo es solo para mozos';
+    errEl.style.display = 'block';
     token = null; currentUser = null;
     return;
   }
@@ -2012,8 +2009,7 @@ function initApp() {
 })();
 
 if (token && currentUser) {
-  const rolOk = _IS_MOZO_PATH ? currentUser.rol === 'mozo'
-                               : currentUser.rol !== 'mozo';
+  const rolOk = !_IS_MOZO_PATH || currentUser.rol === 'mozo';
   if (rolOk) {
     initApp();
   } else {
