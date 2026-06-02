@@ -4,81 +4,416 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>ResTito – Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet"/>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',system-ui,sans-serif;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
-.header{text-align:center;margin-bottom:48px}
-.header-emoji{font-size:72px;display:block;margin-bottom:16px;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.4))}
-.header h1{font-size:36px;font-weight:900;color:#fff;letter-spacing:-1px;margin-bottom:8px}
-.header p{color:rgba(255,255,255,0.6);font-size:16px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;max-width:800px;width:100%}
-.tile{background:rgba(255,255,255,0.08);backdrop-filter:blur(10px);border:1.5px solid rgba(255,255,255,0.12);border-radius:20px;padding:32px 20px;text-align:center;cursor:pointer;text-decoration:none;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:12px}
-.tile:hover{background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.3);transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,0.3)}
-.tile-emoji{font-size:48px;line-height:1}
-.tile-label{color:#fff;font-size:15px;font-weight:700;letter-spacing:0.3px}
-.tile-sub{color:rgba(255,255,255,0.5);font-size:12px}
-.tile.admin{border-color:rgba(239,68,68,0.4)}
-.tile.admin:hover{border-color:rgba(239,68,68,0.7);box-shadow:0 12px 32px rgba(239,68,68,0.2)}
-.tile.mozo{border-color:rgba(251,191,36,0.4)}
-.tile.mozo:hover{border-color:rgba(251,191,36,0.7);box-shadow:0 12px 32px rgba(251,191,36,0.2)}
-.tile.cocina{border-color:rgba(249,115,22,0.4)}
-.tile.cocina:hover{border-color:rgba(249,115,22,0.7);box-shadow:0 12px 32px rgba(249,115,22,0.2)}
-.tile.repartidor{border-color:rgba(34,197,94,0.4)}
-.tile.repartidor:hover{border-color:rgba(34,197,94,0.7);box-shadow:0 12px 32px rgba(34,197,94,0.2)}
-.tile.carta{border-color:rgba(99,102,241,0.4)}
-.tile.carta:hover{border-color:rgba(99,102,241,0.7);box-shadow:0 12px 32px rgba(99,102,241,0.2)}
-.tile.menu{border-color:rgba(20,184,166,0.4)}
-.tile.menu:hover{border-color:rgba(20,184,166,0.7);box-shadow:0 12px 32px rgba(20,184,166,0.2)}
-.footer{margin-top:48px;color:rgba(255,255,255,0.3);font-size:12px;text-align:center}
-@media(max-width:500px){
-  .header h1{font-size:28px}
-  .header-emoji{font-size:56px}
-  .grid{grid-template-columns:repeat(2,1fr);gap:12px}
-  .tile{padding:24px 12px}
-  .tile-emoji{font-size:36px}
-}
+  :root {
+    --bg:           #06060f;
+    --bg-2:         #0c0c1a;
+    --surface:      rgba(255,255,255,0.05);
+    --surface-h:    rgba(255,255,255,0.09);
+    --border:       rgba(255,255,255,0.08);
+    --border-a:     rgba(255,255,255,0.18);
+    --text:         #f0f0ff;
+    --text-2:       #9090bb;
+
+    --c-admin:      #7c3aed;
+    --c-admin-l:    #a78bfa;
+    --c-mozo:       #059669;
+    --c-mozo-l:     #34d399;
+    --c-cocina:     #ea580c;
+    --c-cocina-l:   #fb923c;
+    --c-rep:        #dc2626;
+    --c-rep-l:      #f87171;
+    --c-carta:      #0284c7;
+    --c-carta-l:    #38bdf8;
+    --c-menu:       #0d9488;
+    --c-menu-l:     #2dd4bf;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    font-size: 16px;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(26,5,51,0.85) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 20%, rgba(0,20,58,0.75) 0%, transparent 55%),
+      radial-gradient(ellipse at 60% 85%, rgba(5,30,20,0.5) 0%, transparent 45%),
+      var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  /* Animated mesh layer */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 60px,
+        rgba(255,255,255,0.012) 60px,
+        rgba(255,255,255,0.012) 61px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 60px,
+        rgba(255,255,255,0.012) 60px,
+        rgba(255,255,255,0.012) 61px
+      );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    top: -40%;
+    left: -20%;
+    width: 70vw;
+    height: 70vw;
+    background: radial-gradient(circle, rgba(124,58,237,0.06) 0%, transparent 65%);
+    border-radius: 50%;
+    animation: drift 18s ease-in-out infinite alternate;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  @keyframes drift {
+    0%   { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(12vw, 8vh) scale(1.08); }
+  }
+
+  /* ───── WRAPPER ───── */
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  /* ───── HEADER ───── */
+  .brand {
+    text-align: center;
+    margin-bottom: 52px;
+    animation: fadeUp 0.5s ease-out both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .brand-logo {
+    display: inline-block;
+    font-size: 80px;
+    line-height: 1;
+    margin-bottom: 20px;
+    filter:
+      drop-shadow(0 0 20px rgba(167,139,250,0.5))
+      drop-shadow(0 0 48px rgba(124,58,237,0.3));
+    animation: logoPulse 4s ease-in-out infinite;
+  }
+
+  @keyframes logoPulse {
+    0%, 100% { filter: drop-shadow(0 0 20px rgba(167,139,250,0.5)) drop-shadow(0 0 48px rgba(124,58,237,0.3)); }
+    50%       { filter: drop-shadow(0 0 28px rgba(167,139,250,0.75)) drop-shadow(0 0 60px rgba(124,58,237,0.45)); }
+  }
+
+  .brand-name {
+    font-size: 52px;
+    font-weight: 900;
+    letter-spacing: -2px;
+    line-height: 1;
+    background: linear-gradient(130deg, #a78bfa 0%, #818cf8 40%, #38bdf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 10px;
+  }
+
+  .brand-sub {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-2);
+    letter-spacing: 0.5px;
+  }
+
+  .brand-divider {
+    width: 220px;
+    height: 1px;
+    margin: 22px auto 0;
+    background: linear-gradient(90deg, transparent, rgba(167,139,250,0.35) 30%, rgba(56,189,248,0.35) 70%, transparent);
+  }
+
+  /* ───── GRID ───── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    width: 100%;
+  }
+
+  /* ───── TILE ───── */
+  .tile {
+    --accent:   #7c3aed;
+    --accent-l: #a78bfa;
+
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 28px 24px;
+    border-radius: 20px;
+    background: var(--surface);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    text-decoration: none;
+    cursor: pointer;
+    overflow: hidden;
+    transition:
+      transform 200ms ease-out,
+      box-shadow 200ms ease-out,
+      background 200ms ease-out,
+      border-color 200ms ease-out;
+    animation: fadeUp 0.5s ease-out both;
+  }
+
+  /* staggered animation delay per tile */
+  .tile:nth-child(1) { animation-delay: 0.08s; }
+  .tile:nth-child(2) { animation-delay: 0.14s; }
+  .tile:nth-child(3) { animation-delay: 0.20s; }
+  .tile:nth-child(4) { animation-delay: 0.26s; }
+  .tile:nth-child(5) { animation-delay: 0.32s; }
+  .tile:nth-child(6) { animation-delay: 0.38s; }
+
+  /* inner glow blob */
+  .tile::before {
+    content: '';
+    position: absolute;
+    top: -30px;
+    right: -30px;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: radial-gradient(circle, color-mix(in srgb, var(--accent) 18%, transparent) 0%, transparent 70%);
+    transition: opacity 200ms ease-out, transform 200ms ease-out;
+    opacity: 0.7;
+  }
+
+  .tile:hover {
+    transform: translateY(-6px);
+    background: var(--surface-h);
+    border-color: var(--accent-l);
+    border-left-color: var(--accent-l);
+    box-shadow:
+      0 16px 40px rgba(0,0,0,0.4),
+      0 0 0 1px color-mix(in srgb, var(--accent-l) 25%, transparent),
+      0 0 32px color-mix(in srgb, var(--accent) 20%, transparent);
+  }
+
+  .tile:hover::before {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+
+  .tile-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    flex-shrink: 0;
+    transition: background 200ms ease-out;
+  }
+
+  .tile:hover .tile-icon {
+    background: color-mix(in srgb, var(--accent) 24%, transparent);
+  }
+
+  .tile-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .tile-label {
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.1px;
+    line-height: 1.2;
+  }
+
+  .tile-sub {
+    color: var(--text-2);
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .tile-arrow {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    color: var(--accent-l);
+    opacity: 0;
+    font-size: 18px;
+    transform: translateX(-6px);
+    transition: opacity 200ms ease-out, transform 200ms ease-out;
+  }
+
+  .tile:hover .tile-arrow {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  /* ── Role accent overrides ── */
+  .tile.admin    { --accent: var(--c-admin);  --accent-l: var(--c-admin-l); }
+  .tile.mozo     { --accent: var(--c-mozo);   --accent-l: var(--c-mozo-l); }
+  .tile.cocina   { --accent: var(--c-cocina); --accent-l: var(--c-cocina-l); }
+  .tile.rep      { --accent: var(--c-rep);    --accent-l: var(--c-rep-l); }
+  .tile.carta    { --accent: var(--c-carta);  --accent-l: var(--c-carta-l); }
+  .tile.menuqr   { --accent: var(--c-menu);   --accent-l: var(--c-menu-l); }
+
+  /* ───── FOOTER ───── */
+  .footer {
+    margin-top: 48px;
+    color: rgba(144,144,187,0.45);
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+    letter-spacing: 0.3px;
+    animation: fadeUp 0.5s ease-out 0.5s both;
+  }
+
+  .footer span {
+    color: rgba(167,139,250,0.4);
+  }
+
+  /* ───── RESPONSIVE ───── */
+  @media (max-width: 700px) {
+    .brand-name { font-size: 40px; }
+    .brand-logo { font-size: 64px; }
+    .grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+    .tile { padding: 22px 18px; }
+    .tile-icon { width: 44px; height: 44px; font-size: 22px; }
+  }
+
+  @media (max-width: 420px) {
+    .brand-name { font-size: 34px; letter-spacing: -1.5px; }
+    .brand-logo { font-size: 52px; }
+    .tile { padding: 18px 14px; gap: 10px; }
+    .tile-label { font-size: 13px; }
+    .tile-sub   { font-size: 11px; }
+  }
 </style>
 </head>
 <body>
-<div class="header">
-  <span class="header-emoji">🍕</span>
-  <h1>ResTito</h1>
-  <p>Seleccioná tu acceso</p>
-</div>
+<div class="wrapper">
 
-<div class="grid">
-  <a href="/admin" class="tile admin">
-    <span class="tile-emoji">🛡️</span>
-    <span class="tile-label">Administración</span>
-    <span class="tile-sub">Panel completo</span>
-  </a>
-  <a href="/mozo" class="tile mozo">
-    <span class="tile-emoji">🤵</span>
-    <span class="tile-label">Mozo</span>
-    <span class="tile-sub">Mesas y pedidos</span>
-  </a>
-  <a href="/cocina.html" class="tile cocina">
-    <span class="tile-emoji">👨‍🍳</span>
-    <span class="tile-label">Cocina</span>
-    <span class="tile-sub">Pantalla de comandas</span>
-  </a>
-  <a href="/repartidor.html" class="tile repartidor">
-    <span class="tile-emoji">🛵</span>
-    <span class="tile-label">Repartidor</span>
-    <span class="tile-sub">App de delivery</span>
-  </a>
-  <a href="/carta.html" class="tile carta">
-    <span class="tile-emoji">📋</span>
-    <span class="tile-label">Menú Online</span>
-    <span class="tile-sub">Pedí online desde casa</span>
-  </a>
-  <a href="/menu.html" class="tile menu">
-    <span class="tile-emoji">📲</span>
-    <span class="tile-label">Carta QR</span>
-    <span class="tile-sub">Escanear en el local</span>
-  </a>
-</div>
+  <!-- BRAND -->
+  <header class="brand">
+    <span class="brand-logo">🍕</span>
+    <h1 class="brand-name">ResTito</h1>
+    <p class="brand-sub">Sistema de Gestión&nbsp;&middot;&nbsp;2026</p>
+    <div class="brand-divider"></div>
+  </header>
 
-<div class="footer">ResTito &copy; 2026</div>
+  <!-- TILES -->
+  <main class="grid">
+
+    <a href="/admin" class="tile admin">
+      <div class="tile-icon">🛡️</div>
+      <div class="tile-body">
+        <span class="tile-label">Administración</span>
+        <span class="tile-sub">Panel completo</span>
+      </div>
+      <span class="tile-arrow">→</span>
+    </a>
+
+    <a href="/mozo" class="tile mozo">
+      <div class="tile-icon">🤵</div>
+      <div class="tile-body">
+        <span class="tile-label">Panel Mozo</span>
+        <span class="tile-sub">Mesas y pedidos</span>
+      </div>
+      <span class="tile-arrow">→</span>
+    </a>
+
+    <a href="/cocina.html" class="tile cocina">
+      <div class="tile-icon">👨‍🍳</div>
+      <div class="tile-body">
+        <span class="tile-label">Cocina</span>
+        <span class="tile-sub">Display de comandas</span>
+      </div>
+      <span class="tile-arrow">→</span>
+    </a>
+
+    <a href="/repartidor.html" class="tile rep">
+      <div class="tile-icon">🛵</div>
+      <div class="tile-body">
+        <span class="tile-label">Repartidor</span>
+        <span class="tile-sub">App de delivery</span>
+      </div>
+      <span class="tile-arrow">→</span>
+    </a>
+
+    <a href="/carta.html" class="tile carta">
+      <div class="tile-icon">📋</div>
+      <div class="tile-body">
+        <span class="tile-label">Menú Online</span>
+        <span class="tile-sub">Pedidos desde casa</span>
+      </div>
+      <span class="tile-arrow">→</span>
+    </a>
+
+    <a href="/menu.html" class="tile menuqr">
+      <div class="tile-icon">📲</div>
+      <div class="tile-body">
+        <span class="tile-label">Carta QR</span>
+        <span class="tile-sub">Escaner en el local</span>
+      </div>
+      <span class="tile-arrow">→</span>
+    </a>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    ResTito &copy; 2026 &nbsp;&middot;&nbsp; <span>v3.0</span>
+  </footer>
+
+</div>
 </body>
 </html>
