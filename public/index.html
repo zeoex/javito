@@ -1731,10 +1731,8 @@ function initApp() {
         if (idx !== -1) {
           mesasData[idx] = { ...mesasData[idx], ...updatedMesa };
         } else {
-          // ID no encontrado localmente — agregar y refrescar todo desde servidor
+          // Mesa no encontrada localmente — agregarla desde el payload del evento
           mesasData.push(updatedMesa);
-          loadMesasFromAPI();
-          return;
         }
       }
       if (document.getElementById('sec-mesas').classList.contains('active')) renderMesas();
@@ -1807,21 +1805,14 @@ function initApp() {
     });
     socket.on('connect', () => {
       updatePrinterHubStatus(true);
-      // On reconnect, refresh everything missed while disconnected
       loadPrintQueue();
       loadLlamados();
-      // Reload mesas from server so IDs are always in sync
-      loadMesasFromAPI();
     });
     socket.on('disconnect', () => updatePrinterHubStatus(false));
   } catch(e){}
   // Load pending print jobs and llamados on login
   loadPrintQueue();
   loadLlamados();
-  // Auto-refresh mesas every 15s as safety net (socket can miss events)
-  setInterval(() => {
-    if (document.getElementById('sec-mesas')?.classList.contains('active')) loadMesasFromAPI();
-  }, 15000);
   // Load first section: mozo goes straight to mesas
   if (currentUser?.rol === 'mozo') {
     mozoNavTo('mesas');
@@ -1869,7 +1860,7 @@ function navTo(section, el) {
   document.getElementById('sec-'+section).classList.add('active');
   const titles = {dashboard:'Vista Principal',mesas:'Mesas',delivery:'Delivery',productos:'Productos',stock:'Stock',caja:'Caja',facturacion:'Facturación',clientes:'Clientes',reportes:'Reportes',usuarios:'Usuarios',config:'Configuración',mozostats:'Mis Estadísticas'};
   document.getElementById('topbarTitle').textContent = titles[section] || section;
-  const loaders = {dashboard:loadDashboard,mesas:loadMesasFromAPI,delivery:renderDelivery,productos:renderProductos,stock:renderStock,caja:renderCaja,facturacion:loadFacturacion,clientes:renderClientes,reportes:renderReportes,usuarios:renderUsuarios,mozostats:renderMozoStats,config:loadPrintConfigUI};
+  const loaders = {dashboard:loadDashboard,mesas:renderMesas,delivery:renderDelivery,productos:renderProductos,stock:renderStock,caja:renderCaja,facturacion:loadFacturacion,clientes:renderClientes,reportes:renderReportes,usuarios:renderUsuarios,mozostats:renderMozoStats,config:loadPrintConfigUI};
   if(loaders[section]) loaders[section]();
   try { localStorage.setItem('pz_last_section', section); } catch(e) {}
 }
