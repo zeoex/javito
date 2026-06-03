@@ -2056,6 +2056,12 @@ function initApp() {
         // Persistir en localStorage inmediatamente para que no se pierda en el próximo saveState
         try { localStorage.setItem('pz_mesas', JSON.stringify(mesasData)); } catch(e) {}
       }
+      // Always update nav badges so admin sees the count change from any section
+      const _ocu = mesasData.filter(m => m.estado !== 'libre').length;
+      const _mb = document.getElementById('mesasBadge');
+      if (_mb) _mb.textContent = _ocu || '';
+      const _hm = document.getElementById('hab-mesas');
+      if (_hm) { _hm.textContent = _ocu; _hm.style.display = _ocu > 0 ? 'flex' : 'none'; }
       if (document.getElementById('sec-mesas').classList.contains('active')) renderMesas();
       if (document.getElementById('sec-dashboard').classList.contains('active')) loadDashboard();
     });
@@ -2132,12 +2138,38 @@ function initApp() {
       updateLldBadge();
       if (document.getElementById('lldDrawer')?.classList.contains('open')) renderLldList();
     });
-    socket.on('connect', () => {
+    socket.on('connect', async () => {
       updatePrinterHubStatus(true);
       loadPrintQueue();
       loadLlamados();
+      // Re-sync state after reconnect to catch any missed events
+      try {
+        await loadStateFromAPI();
+        const activeEl = document.querySelector('.section.active');
+        if (activeEl) {
+          const sec = activeEl.id.replace('sec-','');
+          const loaders = {dashboard:loadDashboard,mesas:renderMesas,delivery:renderDelivery,caja:renderCaja};
+          if (loaders[sec]) loaders[sec]();
+        }
+      } catch(e) {}
     });
     socket.on('disconnect', () => updatePrinterHubStatus(false));
+    // Server signals that state was saved by another client → pull if stale
+    socket.on('state:changed', async ({ updated_at }) => {
+      try {
+        const pgTime = updated_at ? new Date(updated_at).getTime() : 0;
+        const localTime = parseInt(localStorage.getItem('pz_saved_at') || '0');
+        if (pgTime > localTime) {
+          await loadStateFromAPI();
+          const activeEl = document.querySelector('.section.active');
+          if (activeEl) {
+            const sec = activeEl.id.replace('sec-','');
+            const loaders = {dashboard:loadDashboard,mesas:renderMesas,delivery:renderDelivery,caja:renderCaja,facturacion:loadFacturacion};
+            if (loaders[sec]) loaders[sec]();
+          }
+        }
+      } catch(e) {}
+    });
   } catch(e){}
   // Load pending print jobs and llamados on login
   loadPrintQueue();

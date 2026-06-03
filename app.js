@@ -1366,6 +1366,9 @@ app.post('/api/state', authMiddleware, async (req, res) => {
     if (Array.isArray(productos))  db.productos  = productos;
     if (Array.isArray(clientes))   db.clientes   = clientes;
     if (Array.isArray(categorias)) db.categorias = categorias;
+    // Notify all connected clients so they can pull fresh state if needed
+    const savedAt = new Date().toISOString();
+    io.emit('state:changed', { updated_at: savedAt });
     res.json({ ok: true });
   } catch(e) { console.error('[state:post]', e.message); res.status(500).json({ error: e.message }); }
 });
