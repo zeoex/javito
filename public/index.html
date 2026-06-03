@@ -1537,6 +1537,38 @@ input.form-control:focus{outline:none;border-color:var(--red)}
   </div>
 </div>
 
+<div class="modal-overlay" id="modalComprobanteX" onclick="if(event.target===this)closeModal('modalComprobanteX')">
+  <div class="modal" style="max-width:400px;padding:0;overflow:hidden">
+    <div class="modal-header" style="background:linear-gradient(135deg,#1d3557,#2d5a8e);border-radius:14px 14px 0 0">
+      <h3 style="color:#fff;font-weight:800">🧾 Comprobante X</h3>
+      <button class="modal-close" style="color:rgba(255,255,255,.7)" onclick="closeModal('modalComprobanteX')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:0;background:#f5f5f0">
+      <!-- receipt paper -->
+      <div id="comprobanteXTicket" style="
+        background:#fff;
+        margin:16px;
+        border-radius:4px;
+        padding:20px 18px;
+        font-family:'Courier New',Courier,monospace;
+        font-size:13px;
+        box-shadow:0 2px 12px rgba(0,0,0,.12);
+        position:relative;
+      ">
+        <!-- torn top edge -->
+        <div style="position:absolute;top:-1px;left:0;right:0;height:10px;background:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 200 10%22><path d=%22M0 5 Q5 0 10 5 Q15 10 20 5 Q25 0 30 5 Q35 10 40 5 Q45 0 50 5 Q55 10 60 5 Q65 0 70 5 Q75 10 80 5 Q85 0 90 5 Q95 10 100 5 Q105 0 110 5 Q115 10 120 5 Q125 0 130 5 Q135 10 140 5 Q145 0 150 5 Q155 10 160 5 Q165 0 170 5 Q175 10 180 5 Q185 0 190 5 Q195 10 200 5 L200 0 L0 0 Z%22 fill=%22%23f5f5f0%22/%3E</svg>') repeat-x top/200px 10px"></div>
+        <div id="comprobanteXContent"></div>
+        <!-- torn bottom edge -->
+        <div style="position:absolute;bottom:-1px;left:0;right:0;height:10px;background:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 200 10%22><path d=%22M0 5 Q5 10 10 5 Q15 0 20 5 Q25 10 30 5 Q35 0 40 5 Q45 10 50 5 Q55 0 60 5 Q65 10 70 5 Q75 0 80 5 Q85 10 90 5 Q95 0 100 5 Q105 10 110 5 Q115 0 120 5 Q125 10 130 5 Q135 0 140 5 Q145 10 150 5 Q155 0 160 5 Q165 10 170 5 Q175 0 180 5 Q185 10 190 5 Q195 0 200 5 L200 10 L0 10 Z%22 fill=%22%23f5f5f0%22/%3E</svg>') repeat-x bottom/200px 10px"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalComprobanteX')">Cerrar</button>
+      <button class="btn btn-primary" id="btnImprimirComprobanteX" onclick="reimprimirComprobanteX(_comprobanteXId)">🖨️ Imprimir</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <style>
@@ -1762,6 +1794,61 @@ function _buildComprobanteHtml(f) {
   <div class="sep"></div>
   ${biz.recibo?`<div class="center" style="margin-top:4px;font-size:11px">${biz.recibo}</div>`:''}
   </body></html>`;
+}
+
+let _comprobanteXId = null;
+
+function verComprobanteX(id) {
+  const f = facturasData.find(x => String(x.id) === String(id));
+  if (!f) return;
+  _comprobanteXId = id;
+  const biz = getBizConfig();
+  const items = Array.isArray(f.detalle) && f.detalle.length ? f.detalle : [];
+  const pagoIcon = {efectivo:'💵',tarjeta:'💳',transferencia:'📲'};
+  const pagoLabel = {efectivo:'Efectivo',tarjeta:'Tarjeta',transferencia:'Transferencia'};
+  const sep = `<div style="border-top:1px dashed #bbb;margin:10px 0"></div>`;
+
+  const logoHtml = biz.logo
+    ? `<div style="text-align:center;margin-bottom:6px"><img src="${biz.logo}" style="max-height:52px;max-width:140px;object-fit:contain"></div>`
+    : '';
+
+  const itemsHtml = items.length
+    ? items.map(i => `
+        <div style="display:flex;justify-content:space-between;margin:3px 0;font-size:12px">
+          <span>${i.qty}× ${i.nombre}${i.size ? ` <span style="color:#888">(${i.size})</span>` : ''}${i.nota ? `<br><span style="color:#888;font-size:11px;padding-left:10px">↳ ${i.nota}</span>` : ''}</span>
+          <span style="white-space:nowrap;margin-left:8px;font-weight:600">$${(i.precio*i.qty).toLocaleString('es-AR')}</span>
+        </div>`).join('')
+    : `<div style="color:#aaa;text-align:center;font-size:12px;padding:6px 0">Sin detalle de ítems</div>`;
+
+  document.getElementById('comprobanteXContent').innerHTML = `
+    ${logoHtml}
+    <div style="text-align:center;font-size:16px;font-weight:900;letter-spacing:1px">${biz.nombre||'ResTito'}</div>
+    ${biz.dir ? `<div style="text-align:center;font-size:11px;color:#666">${biz.dir}</div>` : ''}
+    ${biz.tel ? `<div style="text-align:center;font-size:11px;color:#666">Tel: ${biz.tel}</div>` : ''}
+    <div style="text-align:center;font-size:11px;font-weight:700;letter-spacing:2px;margin-top:4px;color:#444">COMPROBANTE X</div>
+    ${sep}
+    <div style="display:flex;justify-content:space-between;font-size:12px">
+      <span style="color:#666">Nro.</span><strong>${f.numero}</strong>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:2px">
+      <span style="color:#666">Fecha</span><span>${f.fecha}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:2px">
+      <span style="color:#666">Origen</span><span>${f.origen}</span>
+    </div>
+    ${f.mozo ? `<div style="display:flex;justify-content:space-between;font-size:12px;margin-top:2px"><span style="color:#666">Mozo</span><span>${f.mozo}</span></div>` : ''}
+    ${sep}
+    ${itemsHtml}
+    ${sep}
+    <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:900">
+      <span>TOTAL</span><span>$${f.total.toLocaleString('es-AR')}</span>
+    </div>
+    <div style="text-align:center;margin-top:6px;font-size:12px">
+      <span style="background:#f0f0f0;padding:3px 12px;border-radius:12px">${pagoIcon[f.pago]||''} ${pagoLabel[f.pago]||f.pago}</span>
+    </div>
+    ${biz.recibo ? `${sep}<div style="text-align:center;font-size:11px;color:#888;font-style:italic">${biz.recibo}</div>` : ''}
+  `;
+  openModal('modalComprobanteX');
 }
 
 async function reimprimirComprobanteX(id) {
@@ -3890,7 +3977,7 @@ function loadFacturacion() {
   document.getElementById('factAvg').textContent = '$' + (count ? Math.round(total / count) : 0).toLocaleString('es-AR');
   const pagoIcon = {efectivo:'💵',tarjeta:'💳',transferencia:'📲'};
   document.getElementById('factTbody').innerHTML = filtered.map(f => `
-    <tr>
+    <tr style="cursor:pointer" onclick="verComprobanteX('${f.id}')" title="Ver comprobante">
       <td><strong>${f.numero}</strong></td>
       <td style="font-size:12px;white-space:nowrap">${f.fecha}</td>
       <td>${f.origen}${f.mozo ? `<br><span style="font-size:11px;color:var(--gray)">${f.mozo}</span>` : ''}</td>
@@ -3898,7 +3985,7 @@ function loadFacturacion() {
       <td><strong>$${f.total.toLocaleString('es-AR')}</strong></td>
       <td><span class="tag">${pagoIcon[f.pago]||''} ${f.pago}</span></td>
       <td><span class="badge ${f.estado==='pagada'?'badge-success':'badge-danger'}">${f.estado}</span></td>
-      <td><button class="btn btn-outline btn-sm" title="Reimprimir comprobante X" onclick="reimprimirComprobanteX('${f.id}')">🖨️</button></td>
+      <td><button class="btn btn-outline btn-sm" title="Imprimir comprobante X" onclick="event.stopPropagation();reimprimirComprobanteX('${f.id}')">🖨️</button></td>
     </tr>`).join('');
 }
 
