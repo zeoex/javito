@@ -1418,6 +1418,54 @@ setInterval(() => {
 }, 30 * 60 * 1000);
 
 // ─────────────────────────────────────────────
+//  RESET – limpia transacciones para prueba
+// ─────────────────────────────────────────────
+app.post('/api/reset-demo', async (req, res) => {
+  if (req.query.key !== 'restito2024reset') return res.status(403).json({ error: 'forbidden' });
+
+  // Reset mesas: mantener estructura pero limpiar estado/pedidos
+  db.mesas = db.mesas.map(m => ({
+    id: m.id, numero: m.numero, zona: m.zona, capacidad: m.capacidad,
+    estado: 'libre', mozoid: null, mozo: null,
+    apertura: null, tiempo: null, consumo: 0, pedido: [], pedidos: []
+  }));
+
+  // Limpiar todo lo transaccional en memoria
+  db.delivery   = [];
+  db.pedidos    = [];
+  db.comandas   = [];
+  db.facturas   = [];
+  db.caja       = [];
+  db.printJobs  = [];
+  db.llamados   = [];
+  // Limpiar historial de clientes pero mantener datos de contacto
+  db.clientes   = db.clientes.map(c => ({ ...c, historial: [] }));
+
+  // Persistir en PostgreSQL
+  const pool = getPool();
+  if (pool) {
+    try {
+      await pool.query(`
+        UPDATE app_state SET
+          mesas=$1, delivery='[]'::jsonb, facturas='[]'::jsonb,
+          mozo_historial='[]'::jsonb, caja_moves='[]'::jsonb, caja_cierres='[]'::jsonb,
+          caja_abierta=true, caja_inicial=0, updated_at=NOW()
+        WHERE id=1
+      `, [JSON.stringify(db.mesas)]);
+    } catch(e) {
+      console.error('[RESET] DB error:', e.message);
+    }
+  }
+
+  // Notificar a todos los clientes conectados
+  db.mesas.forEach(m => io.emit('mesa:update', m));
+  io.emit('delivery:list', []);
+  emitDashboardStats();
+
+  res.json({ ok: true, mesas: db.mesas.length, mensaje: 'Sistema limpio y listo para prueba' });
+});
+
+// ─────────────────────────────────────────────
 //  CATCH-ALL – SPA fallback
 // ─────────────────────────────────────────────
 // Catch-all: index.html for unmatched routes (SPA fallback)
