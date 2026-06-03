@@ -400,6 +400,7 @@ function authMiddleware(req, res, next) {
 app.use('/api', (req, res, next) => {
   if (req.path.startsWith('/auth')) return next();
   if (req.path === '/state' && req.method === 'GET') return next();
+  if (req.path === '/reset-demo' && req.method === 'POST') return next();
   // Repartidor accesses these without admin JWT (has its own auth)
   if (req.path === '/delivery/activos' && req.method === 'GET') return next();
   if (/^\/delivery\/[^/]+\/estado$/.test(req.path) && req.method === 'PUT') return next();
