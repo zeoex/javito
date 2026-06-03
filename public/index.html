@@ -1685,6 +1685,101 @@ function epCuenta(mesa, items) {
   return _ep(mesa, lines, biz.nombre||'ResTito', biz.recibo||'Gracias por su visita');
 }
 
+function epComprobanteX(f) {
+  const E='\x1B', G='\x1D', NL='\n';
+  const biz = getBizConfig();
+  const cols = printConfig.paperWidth==='58mm' ? 32 : 42;
+  const SEP = '-'.repeat(cols);
+  const pagoLabel = {efectivo:'EFECTIVO',tarjeta:'TARJETA',transferencia:'TRANSFERENCIA'}[f.pago] || (f.pago||'').toUpperCase();
+  let s = E+'@';
+  // Header: biz name
+  s += E+'a\x01'+E+'E\x01'+G+'!\x10'+(biz.nombre||'ResTito')+NL+G+'!\x00'+E+'E\x00';
+  if (biz.dir) s += E+'a\x01'+biz.dir+NL;
+  if (biz.tel) s += E+'a\x01'+'Tel: '+biz.tel+NL;
+  s += E+'a\x01'+'COMPROBANTE X'+NL;
+  s += SEP+NL;
+  s += E+'a\x00';
+  s += 'Nro: '+f.numero+NL;
+  s += 'Fecha: '+f.fecha+NL;
+  s += 'Origen: '+f.origen+NL;
+  if (f.mozo) s += 'Atendido por: '+f.mozo+NL;
+  s += SEP+NL;
+  // Items
+  const items = Array.isArray(f.detalle) && f.detalle.length ? f.detalle : [];
+  items.forEach(i => {
+    const lbl = i.qty+'x '+i.nombre+(i.size?' ('+i.size+')':'');
+    const pr = '$'+(i.precio*i.qty).toLocaleString('es-AR');
+    s += lbl+' '.repeat(Math.max(1,cols-lbl.length-pr.length))+pr+NL;
+    if (i.nota) s += '   '+i.nota+NL;
+  });
+  s += SEP+NL;
+  const ts = '$'+f.total.toLocaleString('es-AR');
+  s += E+'E\x01'+'TOTAL'+' '.repeat(Math.max(1,cols-5-ts.length))+ts+E+'E\x00'+NL;
+  s += 'Forma de pago: '+pagoLabel+NL;
+  s += SEP+NL;
+  if (biz.recibo) s += E+'a\x01'+biz.recibo+NL;
+  s += NL+NL+NL+G+'V\x42\x00';
+  return [{type:'raw',format:'plain',data:s,options:{language:'ESCPOS'}}];
+}
+
+function _buildComprobanteHtml(f) {
+  const biz = getBizConfig();
+  const items = Array.isArray(f.detalle) && f.detalle.length ? f.detalle : [];
+  const pagoLabel = {efectivo:'💵 Efectivo',tarjeta:'💳 Tarjeta',transferencia:'📲 Transferencia'}[f.pago] || f.pago;
+  const logoHtml = biz.logo ? `<div style="text-align:center;margin-bottom:4px"><img src="${biz.logo}" style="max-height:60px;max-width:160px;object-fit:contain"></div>` : '';
+  const itemRows = items.length
+    ? items.map(i=>`<div class="row"><span>${i.qty}x ${i.nombre}${i.size?' ('+i.size+')':''}${i.nota?'<br><small style="color:#888">'+i.nota+'</small>':''}</span><span>$${(i.precio*i.qty).toLocaleString('es-AR')}</span></div>`).join('')
+    : `<div style="color:#999;text-align:center;font-style:italic">Sin detalle de ítems</div>`;
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Comprobante ${f.numero}</title>
+  <style>
+    @page{size:80mm auto;margin:2mm 3mm}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Courier New',monospace;font-size:11px;width:74mm;margin:0 auto;color:#000}
+    h1{font-size:15px;text-align:center;margin:4px 0 2px}
+    h2{font-size:12px;text-align:center;margin:2px 0}
+    .sep{border-top:1px dashed #000;margin:5px 0}
+    .row{display:flex;justify-content:space-between;margin:2px 0}
+    .row span:last-child{white-space:nowrap;margin-left:4px}
+    .total{font-weight:bold;font-size:13px;border-top:1px solid #000;padding-top:3px;margin-top:3px}
+    .center{text-align:center}
+    .meta{font-size:10px;color:#444;margin:1px 0}
+  </style></head><body>
+  ${logoHtml}
+  <h1>${biz.nombre||'ResTito'}</h1>
+  ${biz.dir?`<div class="center meta">${biz.dir}</div>`:''}
+  ${biz.tel?`<div class="center meta">Tel: ${biz.tel}</div>`:''}
+  <h2>COMPROBANTE X</h2>
+  <div class="sep"></div>
+  <div class="meta">Nro: <strong>${f.numero}</strong></div>
+  <div class="meta">Fecha: ${f.fecha}</div>
+  <div class="meta">Origen: ${f.origen}</div>
+  ${f.mozo?`<div class="meta">Atendido por: ${f.mozo}</div>`:''}
+  <div class="sep"></div>
+  ${itemRows}
+  <div class="sep"></div>
+  <div class="row total"><span>TOTAL</span><span>$${f.total.toLocaleString('es-AR')}</span></div>
+  <div class="meta">Pago: ${pagoLabel}</div>
+  <div class="sep"></div>
+  ${biz.recibo?`<div class="center" style="margin-top:4px;font-size:11px">${biz.recibo}</div>`:''}
+  </body></html>`;
+}
+
+async function reimprimirComprobanteX(id) {
+  const f = facturasData.find(x => String(x.id) === String(id));
+  if (!f) { showToast('Comprobante no encontrado','error'); return; }
+  if (QzTray.isOn()) {
+    const ok = await QzTray.send(epComprobanteX(f));
+    if (ok) { showToast('🖨️ Comprobante impreso','success'); return; }
+  }
+  const html = _buildComprobanteHtml(f);
+  const w = window.open('', '_blank', 'width=1,height=1,top=-9999,left=-9999');
+  if (!w) { showToast('Bloqueado por el navegador — permitir popups','error'); return; }
+  w.document.write(html);
+  w.document.close();
+  w.addEventListener('afterprint', () => { try { w.close(); } catch(e){} });
+  setTimeout(() => { try { w.focus(); w.print(); } catch(e){} }, 400);
+}
+
 let editingProdId = null;
 let editingClienteId = null;
 
@@ -2760,7 +2855,7 @@ function cerrarMesa(id, metodoPago = 'efectivo') {
   const registro = {mozo, mesa: m.numero, fecha: new Date().toISOString(), items: itemsCount, total: total||0, pago: metodoPago};
   mozoHistorial.unshift(registro);
   m.estado='libre'; m.mozo=null; m.tiempo=null; m.pedido=[];
-  const f = {id:facturasData.length+1,numero:`F-${String(facturasData.length+1).padStart(4,'0')}`,fecha:new Date().toISOString().slice(0,16).replace('T',' '),origen:`Mesa ${m.numero}`,items:itemsCount,total:total||0,pago:metodoPago,estado:'pagada'};
+  const f = {id:facturasData.length+1,numero:`F-${String(facturasData.length+1).padStart(4,'0')}`,fecha:new Date().toISOString().slice(0,16).replace('T',' '),origen:`Mesa ${m.numero}`,mesaNum:m.numero,mozo:mozo,items:itemsCount,detalle:(m.pedido||[]).map(i=>({...i})),total:total||0,pago:metodoPago,estado:'pagada'};
   facturasData.unshift(f);
   if (total > 0) cajaMoves.push({..._cajaNow(),tipo:'ingreso',desc:`Venta Mesa #${m.numero} — ${metodoPago}`,monto:total,pago:metodoPago});
   _mesaCobroMode = false;
@@ -3535,7 +3630,7 @@ function cerrarMesasYCerrarCaja() {
     const itemsCount = (m.pedido||[]).reduce((s,i)=>s+i.qty,0);
     const mozo = m.mozo || currentUser?.nombre || '-';
     mozoHistorial.unshift({mozo, mesa:m.numero, fecha:new Date().toISOString(), items:itemsCount, total:total||0, pago:'efectivo'});
-    const f = {id:facturasData.length+1, numero:`F-${String(facturasData.length+1).padStart(4,'0')}`, fecha:new Date().toISOString().slice(0,16).replace('T',' '), origen:`Mesa ${m.numero}`, items:itemsCount, total:total||0, pago:'efectivo', estado:'pagada'};
+    const f = {id:facturasData.length+1, numero:`F-${String(facturasData.length+1).padStart(4,'0')}`, fecha:new Date().toISOString().slice(0,16).replace('T',' '), origen:`Mesa ${m.numero}`, mesaNum:m.numero, mozo:mozo, items:itemsCount, detalle:(m.pedido||[]).map(i=>({...i})), total:total||0, pago:'efectivo', estado:'pagada'};
     facturasData.unshift(f);
     if (total > 0) cajaMoves.push({..._cajaNow(),tipo:'ingreso',desc:`Venta Mesa #${m.numero} — efectivo (cierre)`,monto:total,pago:'efectivo'});
     m.estado='libre'; m.mozo=null; m.tiempo=null; m.pedido=[];
@@ -3779,21 +3874,31 @@ function guardarRetiroCaja() {
 
 // ======= FACTURACIÓN =======
 function loadFacturacion() {
-  const total = facturasData.filter(f=>f.estado==='pagada').reduce((s,f)=>s+f.total,0);
-  const count = facturasData.filter(f=>f.estado==='pagada').length;
-  document.getElementById('factTotal').textContent='$'+total.toLocaleString();
-  document.getElementById('factCount').textContent=count;
-  document.getElementById('factAvg').textContent='$'+(count?Math.round(total/count):0).toLocaleString();
-  document.getElementById('factTbody').innerHTML = facturasData.map(f=>`
+  const desde = document.getElementById('factFechaDesde')?.value || '';
+  const hasta = document.getElementById('factFechaHasta')?.value || '';
+  const filtered = facturasData.filter(f => {
+    const fecha = (f.fecha || '').slice(0, 10);
+    if (desde && fecha < desde) return false;
+    if (hasta && fecha > hasta) return false;
+    return true;
+  });
+  const pagadas = filtered.filter(f => f.estado === 'pagada');
+  const total = pagadas.reduce((s, f) => s + f.total, 0);
+  const count = pagadas.length;
+  document.getElementById('factTotal').textContent = '$' + total.toLocaleString('es-AR');
+  document.getElementById('factCount').textContent = count;
+  document.getElementById('factAvg').textContent = '$' + (count ? Math.round(total / count) : 0).toLocaleString('es-AR');
+  const pagoIcon = {efectivo:'💵',tarjeta:'💳',transferencia:'📲'};
+  document.getElementById('factTbody').innerHTML = filtered.map(f => `
     <tr>
       <td><strong>${f.numero}</strong></td>
-      <td style="font-size:12px">${f.fecha}</td>
-      <td>${f.origen}</td>
-      <td>${f.items}</td>
-      <td><strong>$${f.total.toLocaleString()}</strong></td>
-      <td><span class="tag">${f.pago}</span></td>
+      <td style="font-size:12px;white-space:nowrap">${f.fecha}</td>
+      <td>${f.origen}${f.mozo ? `<br><span style="font-size:11px;color:var(--gray)">${f.mozo}</span>` : ''}</td>
+      <td style="text-align:center">${f.items}</td>
+      <td><strong>$${f.total.toLocaleString('es-AR')}</strong></td>
+      <td><span class="tag">${pagoIcon[f.pago]||''} ${f.pago}</span></td>
       <td><span class="badge ${f.estado==='pagada'?'badge-success':'badge-danger'}">${f.estado}</span></td>
-      <td><button class="btn btn-outline btn-sm" onclick="window.print()">🖨️</button></td>
+      <td><button class="btn btn-outline btn-sm" title="Reimprimir comprobante X" onclick="reimprimirComprobanteX('${f.id}')">🖨️</button></td>
     </tr>`).join('');
 }
 
