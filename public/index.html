@@ -14,6 +14,7 @@
 <link rel="apple-touch-icon" href="/icon-mozo.svg"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <script src="/socket.io/socket.io.js"></script>
+<script src="https://cdn.qz.io/qz-tray/qz-tray.js" crossorigin="anonymous"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--red:#e63946;--blue:#1d3557;--light:#f8f9fa;--white:#fff;--gray:#6c757d;--border:#dee2e6;--success:#28a745;--warning:#fd7e14;--danger:#dc3545;--info:#17a2b8;--mz-bg:#0d1b2a;--mz-surface:#112233;--mz-border:rgba(255,255,255,0.08);--mz-libre:#16a34a;--mz-libre-glow:rgba(22,163,74,0.4);--mz-ocupada:#d97706;--mz-ocupada-glow:rgba(217,119,6,0.4);--mz-cuenta:#dc2626;--mz-cuenta-glow:rgba(220,38,38,0.4);--tap:44px}
@@ -1158,29 +1159,33 @@ input.form-control:focus{outline:none;border-color:var(--red)}
                 </div>
               </div>
 
-              <!-- Auto-imprimir -->
-              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:14px">
-                <div>
-                  <strong style="font-size:13px">Auto-imprimir</strong>
-                  <div style="font-size:12px;color:var(--gray)">Imprime automáticamente al recibir el trabajo. Si está apagado, aparece un botón de confirmación.</div>
+              <!-- QZ Tray -->
+              <div style="padding:12px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:14px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                  <div>
+                    <strong style="font-size:13px">QZ Tray — Impresión directa ESC/POS</strong>
+                    <div style="font-size:12px;color:var(--gray)">Manda comandas y cuentas directo a la impresora sin diálogo de browser. Sin loops, sin papel infinito.</div>
+                  </div>
+                  <span id="qzStatusBadge" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:#f8d7da;color:#721c24;white-space:nowrap;margin-left:10px;flex-shrink:0">○ QZ Desconectado</span>
                 </div>
-                <label class="switch" style="flex-shrink:0;margin-left:12px">
-                  <input type="checkbox" id="cfgAutoPrint" checked onchange="savePrintConfig()">
-                  <span class="slider"></span>
-                </label>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+                  <button class="btn btn-primary btn-sm" onclick="QzTray.connect()">🔌 Conectar QZ</button>
+                  <select id="qzPrinterSelect" class="form-control" style="width:auto;min-width:180px;font-size:13px" onchange="QzTray.setPrinter(this.value)">
+                    <option value="">-- Elegir impresora --</option>
+                  </select>
+                  <button class="btn btn-outline btn-sm" onclick="qzLoadPrinters()">🔄 Actualizar</button>
+                </div>
+                <details>
+                  <summary style="font-size:12px;font-weight:600;cursor:pointer;color:var(--gray);padding:4px 0">📋 Cómo instalar y configurar QZ Tray</summary>
+                  <ol style="font-size:12px;color:var(--gray);margin:8px 0 0 16px;line-height:1.9">
+                    <li>Descargá <strong>QZ Tray</strong> en <strong>qz.io/download</strong> e instalalo</li>
+                    <li>En la barra del sistema, clic derecho en QZ Tray → <strong>Advanced → Properties</strong></li>
+                    <li>Añadí la línea: <code>wss.require-auth=false</code> y guardá</li>
+                    <li>Reiniciá QZ Tray, luego hacé clic en <strong>"Conectar QZ"</strong></li>
+                    <li>Elegí tu impresora térmica en el desplegable</li>
+                  </ol>
+                </details>
               </div>
-
-              <!-- Instrucciones Chrome -->
-              <details style="margin-bottom:14px">
-                <summary style="font-size:13px;font-weight:600;cursor:pointer;padding:4px 0">📋 Cómo configurar Chrome para impresión automática</summary>
-                <ol style="font-size:12px;color:var(--gray);margin:10px 0 0 16px;line-height:1.8">
-                  <li>Abrí Chrome en esta PC y andá a <strong>chrome://settings/printers</strong></li>
-                  <li>Asegurate de que tu comandera (ej: <em>Epson TM-T20</em>, <em>Star TSP</em>) esté instalada</li>
-                  <li>Al aparecer el diálogo de impresión, seleccioná tu comandera y marcá <strong>"Guardar como predeterminada"</strong></li>
-                  <li>Desactivá <strong>"Encabezados y pies de página"</strong> en Más opciones</li>
-                  <li>Opcionalmente instalá la extensión <strong>Auto Print</strong> de Chrome para saltar el diálogo</li>
-                </ol>
-              </details>
 
               <!-- Botones -->
               <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -1560,9 +1565,126 @@ let currentUser = (() => { try { return JSON.parse(localStorage.getItem(_USER_KE
 let socket = null;
 let currentMesaTab = 'salon';
 let printConfig = (() => {
-  try { return {...{autoPrint:true,paperWidth:'80mm'}, ...JSON.parse(localStorage.getItem('pz_print_cfg')||'{}')}; }
-  catch(e) { return {autoPrint:true,paperWidth:'80mm'}; }
+  try { return {...{paperWidth:'80mm',qzPrinter:''}, ...JSON.parse(localStorage.getItem('pz_print_cfg')||'{}')}; }
+  catch(e) { return {paperWidth:'80mm',qzPrinter:''}; }
 })();
+
+// ═══════════════════════════════════════════════════════
+// QZ TRAY — direct ESC/POS printing
+// ═══════════════════════════════════════════════════════
+const QzTray = {
+  _ok: false,
+
+  async connect() {
+    if (typeof qz === 'undefined') { this._badge('none'); return false; }
+    try {
+      qz.security.setCertificatePromise(r => r(''));
+      qz.security.setSignaturePromise(() => r => r(''));
+      if (!qz.websocket.isActive()) await qz.websocket.connect({ retries: 2, delay: 1 });
+      this._ok = true;
+      if (!printConfig.qzPrinter) {
+        try { printConfig.qzPrinter = await qz.printers.getDefault(); } catch(e) {}
+      }
+      this._badge('ok');
+      showToast('🖨️ QZ Tray conectado — ' + (printConfig.qzPrinter||'(sin impresora)'), 'success');
+      qzLoadPrinters();
+      return true;
+    } catch(e) {
+      this._ok = false; this._badge('off');
+      return false;
+    }
+  },
+
+  isOn() {
+    try { return this._ok && typeof qz !== 'undefined' && qz.websocket.isActive(); }
+    catch(e) { return false; }
+  },
+
+  setPrinter(name) {
+    printConfig.qzPrinter = name;
+    localStorage.setItem('pz_print_cfg', JSON.stringify(printConfig));
+  },
+
+  async getPrinters() {
+    if (!this.isOn()) return [];
+    try { return await qz.printers.find(); } catch(e) { return []; }
+  },
+
+  async send(data) {
+    if (!this.isOn()) return false;
+    try {
+      await qz.print(qz.configs.create(printConfig.qzPrinter || ''), data);
+      return true;
+    } catch(e) {
+      showToast('❌ QZ: ' + e.message, 'error');
+      return false;
+    }
+  },
+
+  _badge(s) {
+    const el = document.getElementById('qzStatusBadge');
+    if (!el) return;
+    const map = {
+      ok:   ['● QZ Conectado',     '#d4edda', '#155724'],
+      off:  ['○ QZ Desconectado',  '#f8d7da', '#721c24'],
+      none: ['⚠ Instalar QZ Tray', '#fff3cd', '#856404'],
+    };
+    const m = map[s] || map.off;
+    el.textContent = m[0]; el.style.background = m[1]; el.style.color = m[2];
+  }
+};
+
+async function qzLoadPrinters() {
+  const printers = await QzTray.getPrinters();
+  const sel = document.getElementById('qzPrinterSelect');
+  if (!sel || !printers.length) return;
+  const cur = printConfig.qzPrinter;
+  sel.innerHTML = '<option value="">-- Elegir impresora --</option>' +
+    printers.map(p => `<option value="${p}"${p===cur?' selected':''}>${p}</option>`).join('');
+}
+
+// ── ESC/POS builders ──────────────────────────────────
+function _ep(mesa, lines, header, footer) {
+  const E='\x1B', G='\x1D', NL='\n';
+  const cols = printConfig.paperWidth==='58mm' ? 32 : 42;
+  const SEP = '-'.repeat(cols);
+  let s = E+'@';
+  s += E+'a\x01'+E+'E\x01'+G+'!\x10'+header+NL+G+'!\x00'+E+'E\x00';
+  s += SEP+NL;
+  s += E+'a\x01'+G+'!\x11'+E+'E\x01'+'MESA '+mesa.numero+NL+G+'!\x00'+E+'E\x00';
+  if (mesa.mozo) s += E+'a\x01'+mesa.mozo+NL;
+  s += E+'a\x01'+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})+NL;
+  s += SEP+NL+E+'a\x00';
+  lines.forEach(l => { s += l+NL; });
+  s += SEP+NL;
+  if (footer) s += E+'a\x01'+footer+NL;
+  s += NL+NL+NL+G+'V\x42\x00';
+  return [{type:'raw',format:'plain',data:s,options:{language:'ESCPOS'}}];
+}
+
+function epComanda(mesa, items) {
+  const E='\x1B';
+  return _ep(mesa, items.map(i => {
+    const l = 'x'+i.qty+'  '+i.nombre+(i.size?' ('+i.size+')':'');
+    return E+'E\x01'+l+E+'E\x00'+(i.nota?'\n   Nota: '+i.nota:'');
+  }), 'COCINA', null);
+}
+
+function epCuenta(mesa, items) {
+  const E='\x1B', biz=getBizConfig();
+  const cols = printConfig.paperWidth==='58mm' ? 32 : 42;
+  const total = items.reduce((s,i)=>s+i.precio*i.qty,0);
+  const lines = items.map(i=>{
+    const lbl = i.qty+'x '+i.nombre+(i.size?' ('+i.size+')':'');
+    const pr = '$'+(i.precio*i.qty).toLocaleString('es-AR');
+    return lbl+' '.repeat(Math.max(1,cols-lbl.length-pr.length))+pr;
+  });
+  const ts = '$'+total.toLocaleString('es-AR');
+  lines.push('-'.repeat(cols));
+  lines.push(E+'E\x01'+'TOTAL'+' '.repeat(Math.max(1,cols-5-ts.length))+ts+E+'E\x00');
+  return _ep(mesa, lines, biz.nombre||'ResTito', biz.recibo||'Gracias por su visita');
+}
+
 let editingProdId = null;
 let editingClienteId = null;
 
@@ -1912,6 +2034,10 @@ function initApp() {
     av.textContent = initials || 'M';
     av.title = nombre;
   }
+  // QZ Tray auto-connect (only for roles that print)
+  if (['admin','cajero','supervisor'].includes(currentUser?.rol)) {
+    setTimeout(() => QzTray.connect().catch(()=>{}), 1500);
+  }
   // Clock
   updateClock();
   setInterval(updateClock, 1000);
@@ -1954,8 +2080,16 @@ function initApp() {
         printQueue.push(job);
         updatePqBadge();
       }
-      autoPrint(job.html);
-      if (printConfig.autoPrint) showToast(`🖨️ Imprimiendo ${job.type==='cuenta'?'cuenta':job.type==='test'?'prueba':'comanda'} Mesa #${job.mesaNumero}`, 'success');
+      if (QzTray.isOn() && job.items && job.mesa) {
+        const escData = job.type==='cuenta' ? epCuenta(job.mesa,job.items) : epComanda(job.mesa,job.items);
+        QzTray.send(escData).then(ok => {
+          if (!ok) autoPrint(job.html);
+          else showToast('🖨️ Impreso: '+(job.label||'trabajo'),'success');
+        });
+      } else {
+        autoPrint(job.html);
+        showToast(`🖨️ ${job.type==='cuenta'?'Cuenta':'Comanda'} Mesa #${job.mesaNumero}`,'success');
+      }
     });
     socket.on('print:queue:update', (queue) => {
       const rol = currentUser?.rol;
@@ -2698,21 +2832,13 @@ function buildPrintDoc(titulo, cuerpo) {
 }
 
 function autoPrint(html) {
-  if (!printConfig.autoPrint) {
-    // Manual mode: show sticky notification with print button
-    showPrintNotification(html);
-    return;
-  }
-  let fr = document.getElementById('_printFrame');
-  if (!fr) {
-    fr = document.createElement('iframe');
-    fr.id = '_printFrame';
-    fr.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:0';
-    document.body.appendChild(fr);
-  }
-  const doc = fr.contentDocument || fr.contentWindow.document;
-  doc.open(); doc.write(html); doc.close();
-  setTimeout(() => { try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch(e){} }, 300);
+  // window.open + afterprint close — no iframe loop
+  const w = window.open('', '_blank', 'width=1,height=1,top=-9999,left=-9999');
+  if (!w) { showPrintNotification(html); return; }
+  w.document.write(html);
+  w.document.close();
+  w.addEventListener('afterprint', () => { try { w.close(); } catch(e) {} });
+  setTimeout(() => { try { w.focus(); w.print(); } catch(e) {} }, 400);
 }
 
 function showPrintNotification(html) {
@@ -2757,6 +2883,12 @@ async function imprimirComanda(id) {
   const m = mesasData.find(x=>String(x.id)===String(id));
   const comida = (m.pedido||[]).filter(i=>getCatsComanda().includes(i.categoria));
   if(!comida.length){ showToast('No hay comidas para imprimir','error'); return; }
+  // QZ Tray: direct ESC/POS
+  if (QzTray.isOn()) {
+    const ok = await QzTray.send(epComanda(m, comida));
+    if (ok) { showToast('🖨️ Comanda impresa','success'); return; }
+  }
+  // Fallback: HTML via server → autoPrint
   const hora = new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
   const lineas = comida.map(i=>{
     const lbl = `${i.nombre}${i.size?' ('+i.size+')':''}`;
@@ -2769,14 +2901,20 @@ async function imprimirComanda(id) {
     <hr class="sep">${lineas}<hr class="sep">`;
   const html = buildPrintDoc(`Comanda – Mesa ${m.numero}`, cuerpo);
   try {
-    await apiFetch('/print', {method:'POST', body:JSON.stringify({type:'comanda',html,mesaNumero:m.numero,label:`Comanda — Mesa #${m.numero}`})});
+    await apiFetch('/print', {method:'POST', body:JSON.stringify({type:'comanda',html,items:comida,mesa:{numero:m.numero,mozo:m.mozo},mesaNumero:m.numero,label:`Comanda — Mesa #${m.numero}`})});
     showToast('🖨️ Comanda enviada a imprimir','success');
-  } catch(e) { _printLocal(html); }
+  } catch(e) { autoPrint(html); }
 }
 
 async function imprimirCuenta(id) {
   const m = mesasData.find(x=>String(x.id)===String(id));
   const items = m.pedido||[];
+  // QZ Tray: direct ESC/POS
+  if (QzTray.isOn()) {
+    const ok = await QzTray.send(epCuenta(m, items));
+    if (ok) { showToast('🖨️ Cuenta impresa','success'); return; }
+  }
+  // Fallback: HTML via server → autoPrint
   const total = items.reduce((s,i)=>s+i.precio*i.qty,0);
   const lineas = items.map(i=>{
     const lbl = i.nombre+(i.size?' ('+i.size+')':'');
@@ -2795,9 +2933,9 @@ async function imprimirCuenta(id) {
     <p class="center" style="margin-top:4px">Gracias por su visita</p>`;
   const html = buildPrintDoc(`Cuenta – Mesa ${m.numero}`, cuerpo);
   try {
-    await apiFetch('/print', {method:'POST', body:JSON.stringify({type:'cuenta',html,mesaNumero:m.numero,label:`Cuenta — Mesa #${m.numero}`})});
+    await apiFetch('/print', {method:'POST', body:JSON.stringify({type:'cuenta',html,items,mesa:{numero:m.numero,mozo:m.mozo},mesaNumero:m.numero,label:`Cuenta — Mesa #${m.numero}`})});
     showToast('🖨️ Cuenta enviada a imprimir','success');
-  } catch(e) { _printLocal(html); }
+  } catch(e) { autoPrint(html); }
 }
 
 // ======= DELIVERY =======
@@ -4019,20 +4157,29 @@ function saveConfig() {
 }
 
 function savePrintConfig() {
-  printConfig.autoPrint = document.getElementById('cfgAutoPrint')?.checked ?? true;
   printConfig.paperWidth = document.querySelector('input[name="cfgPaperWidth"]:checked')?.value || '80mm';
   localStorage.setItem('pz_print_cfg', JSON.stringify(printConfig));
   showToast('Configuración de comandera guardada','success');
 }
 
 function loadPrintConfigUI() {
-  const ap = document.getElementById('cfgAutoPrint');
   const p80 = document.getElementById('cfgPaper80');
   const p58 = document.getElementById('cfgPaper58');
-  if (ap)  ap.checked = printConfig.autoPrint;
   if (p80) p80.checked = printConfig.paperWidth === '80mm';
   if (p58) p58.checked = printConfig.paperWidth === '58mm';
   updatePrinterHubStatus(socket?.connected);
+  // Restore saved printer in dropdown
+  if (printConfig.qzPrinter) {
+    const sel = document.getElementById('qzPrinterSelect');
+    if (sel && !sel.querySelector(`option[value="${printConfig.qzPrinter}"]`)) {
+      const opt = document.createElement('option');
+      opt.value = opt.textContent = printConfig.qzPrinter;
+      opt.selected = true;
+      sel.insertBefore(opt, sel.options[1]||null);
+    } else if (sel) { sel.value = printConfig.qzPrinter; }
+  }
+  // Update QZ status badge
+  QzTray._badge(QzTray.isOn() ? 'ok' : 'off');
   loadBizConfig();
 }
 
@@ -4401,7 +4548,11 @@ function renderPqList() {
 async function printQueueJob(id) {
   const job = printQueue.find(j => j.id === id);
   if (!job) return;
-  autoPrint_direct(job.html);
+  if (QzTray.isOn() && job.items && job.mesa) {
+    await QzTray.send(job.type==='cuenta' ? epCuenta(job.mesa,job.items) : epComanda(job.mesa,job.items));
+  } else {
+    autoPrint_direct(job.html);
+  }
   try { await apiFetch(`/print/${id}`, { method:'PATCH', body: JSON.stringify({ status:'printed' }) }); } catch(e) {}
   printQueue = printQueue.filter(j => j.id !== id);
   updatePqBadge();
@@ -4419,14 +4570,18 @@ async function printAllQueue() {
   const now = Date.now();
   const active = printQueue.filter(j => new Date(j.expiresAt).getTime() > now);
   for (const job of active) {
-    autoPrint_direct(job.html);
-    await new Promise(r => setTimeout(r, 600));
+    if (QzTray.isOn() && job.items && job.mesa) {
+      await QzTray.send(job.type==='cuenta' ? epCuenta(job.mesa,job.items) : epComanda(job.mesa,job.items));
+    } else {
+      autoPrint_direct(job.html);
+    }
+    await new Promise(r => setTimeout(r, 500));
     try { await apiFetch(`/print/${job.id}`, { method:'PATCH', body: JSON.stringify({ status:'printed' }) }); } catch(e) {}
   }
   printQueue = [];
   updatePqBadge();
   renderPqList();
-  showToast(`${active.length} trabajo${active.length!==1?'s':''} enviado${active.length!==1?'s':''} a imprimir`, 'success');
+  showToast(`${active.length} trabajo${active.length!==1?'s':''} enviado${active.length!==1?'s':''}`, 'success');
 }
 
 // ======= PWA SERVICE WORKER =======

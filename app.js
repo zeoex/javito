@@ -630,17 +630,19 @@ app.patch('/api/mesas/:id', authMiddleware, (req, res) => {
 //  PRINT ROUTES
 // ─────────────────────────────────────────────
 app.post('/api/print', authMiddleware, (req, res) => {
-  const { type, html, mesaNumero, label } = req.body;
+  const { type, html, mesaNumero, label, items, mesa } = req.body;
   if (!html) return res.status(400).json({ error: 'html requerido' });
   const job = {
     id: uuidv4(),
     type: type || 'comanda',
     html,
+    items: items || null,
+    mesa: mesa || null,
     mesaNumero,
     label: label || null,
     status: 'pending',
     createdAt: new Date().toISOString(),
-    expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString() // 1 hora
+    expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString()
   };
   db.printJobs.push(job);
   if (db.printJobs.length > 200) db.printJobs.shift();
