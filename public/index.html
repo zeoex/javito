@@ -2993,14 +2993,15 @@ function liberarMesaVacia(id) {
 
 function cerrarMesa(id, metodoPago = 'efectivo') {
   const m = mesasData.find(x=>String(x.id)===String(id));
-  const total = (m.pedido||[]).reduce((s,i)=>s+i.precio*i.qty,0);
-  const itemsCount = (m.pedido||[]).reduce((s,i)=>s+i.qty,0);
+  const detalleSnapshot = (m.pedido||[]).map(i=>({...i}));
+  const total = detalleSnapshot.reduce((s,i)=>s+i.precio*i.qty,0);
+  const itemsCount = detalleSnapshot.reduce((s,i)=>s+i.qty,0);
   const mozo = (currentUser?.rol==='mozo' ? currentUser?.nombre : null) || m.mozo || currentUser?.nombre || '-';
   const metodoLabel = {efectivo:'💵 Efectivo',tarjeta:'💳 Tarjeta',transferencia:'📲 Transferencia'}[metodoPago] || metodoPago;
   const registro = {mozo, mesa: m.numero, fecha: new Date().toISOString(), items: itemsCount, total: total||0, pago: metodoPago};
   mozoHistorial.unshift(registro);
   m.estado='libre'; m.mozo=null; m.tiempo=null; m.pedido=[];
-  const f = {id:facturasData.length+1,numero:`F-${String(facturasData.length+1).padStart(4,'0')}`,fecha:new Date().toISOString().slice(0,16).replace('T',' '),origen:`Mesa ${m.numero}`,mesaNum:m.numero,mozo:mozo,items:itemsCount,detalle:(m.pedido||[]).map(i=>({...i})),total:total||0,pago:metodoPago,estado:'pagada'};
+  const f = {id:facturasData.length+1,numero:`F-${String(facturasData.length+1).padStart(4,'0')}`,fecha:new Date().toISOString().slice(0,16).replace('T',' '),origen:`Mesa ${m.numero}`,mesaNum:m.numero,mozo:mozo,items:itemsCount,detalle:detalleSnapshot,total:total||0,pago:metodoPago,estado:'pagada'};
   facturasData.unshift(f);
   if (total > 0) cajaMoves.push({..._cajaNow(),tipo:'ingreso',desc:`Venta Mesa #${m.numero} — ${metodoPago}`,monto:total,pago:metodoPago});
   _mesaCobroMode = false;
