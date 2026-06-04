@@ -1623,21 +1623,38 @@ const QzTray = {
   _ok: false,
 
   async connect() {
-    if (typeof qz === 'undefined') { this._badge('none'); return false; }
+    if (typeof qz === 'undefined') {
+      this._badge('none');
+      showToast('⚠️ Librería QZ no cargada — revisá la conexión a internet y recargá la página', 'error');
+      return false;
+    }
+    showToast('🔄 Conectando con QZ Tray…', '');
     try {
-      qz.security.setCertificatePromise(r => r(''));
-      qz.security.setSignaturePromise(() => r => r(''));
-      if (!qz.websocket.isActive()) await qz.websocket.connect({ retries: 2, delay: 1 });
+      qz.security.setCertificatePromise((resolve) => resolve(''));
+      qz.security.setSignaturePromise((msg) => (resolve) => resolve(''));
+      if (!qz.websocket.isActive()) {
+        await qz.websocket.connect({ retries: 3, delay: 1 });
+      }
       this._ok = true;
       if (!printConfig.qzPrinter) {
         try { printConfig.qzPrinter = await qz.printers.getDefault(); } catch(e) {}
       }
       this._badge('ok');
-      showToast('🖨️ QZ Tray conectado — ' + (printConfig.qzPrinter||'(sin impresora)'), 'success');
+      showToast('🖨️ QZ Tray conectado — ' + (printConfig.qzPrinter || '(sin impresora seleccionada)'), 'success');
       qzLoadPrinters();
       return true;
     } catch(e) {
-      this._ok = false; this._badge('off');
+      this._ok = false;
+      this._badge('off');
+      const msg = e && e.message ? e.message : String(e);
+      if (msg.toLowerCase().includes('unable to establish') || msg.toLowerCase().includes('websocket') || msg.toLowerCase().includes('refused')) {
+        showToast('❌ QZ Tray no está corriendo en este equipo — abrilo desde el menú Inicio', 'error');
+      } else if (msg.toLowerCase().includes('certificate') || msg.toLowerCase().includes('signature') || msg.toLowerCase().includes('auth')) {
+        showToast('❌ Error de autenticación QZ — verificá que wss.require-auth=false esté en el archivo de propiedades', 'error');
+      } else {
+        showToast('❌ QZ error: ' + msg, 'error');
+      }
+      console.error('[QZ]', e);
       return false;
     }
   },
