@@ -5,13 +5,23 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>ResTito – Sistema POS</title>
 <!-- PWA -->
-<link rel="manifest" href="/manifest-mozo.json"/>
-<meta name="theme-color" content="#1d3557"/>
+<link rel="manifest" href="/manifest-mozo.json" id="pwaManifest"/>
+<meta name="theme-color" content="#1d3557" id="pwaTheme"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="ResTito"/>
-<link rel="apple-touch-icon" href="/icon-mozo.svg"/>
+<link rel="apple-touch-icon" href="/icon-mozo.svg" id="pwaIcon"/>
+<script>
+(function(){
+  const isAdmin = window.location.pathname.startsWith('/admin');
+  if (isAdmin) {
+    document.getElementById('pwaManifest').href = '/manifest-admin.json';
+    document.getElementById('pwaTheme').content   = '#7c3aed';
+    document.getElementById('pwaIcon').href        = '/icon-admin.svg';
+  }
+})();
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <script src="/socket.io/socket.io.js"></script>
 <script src="/qz-tray.js"></script>
@@ -4994,14 +5004,21 @@ function loadBizConfig() {
   // Logo in sidebar
   const se = document.getElementById('sidebarEmoji');
   if (biz.logo && se) {
-    se.innerHTML = `<img src="${biz.logo}" alt="logo" style="max-height:40px;max-width:80px;object-fit:contain;border-radius:4px">`;
+    se.innerHTML = `<img src="${biz.logo}" alt="logo" style="max-height:40px;max-width:80px;object-fit:contain;border-radius:6px">`;
     se.style.fontSize = '0';
     se.classList.remove('s-emoji-animated');
   } else if (se) {
-    const roleIcon = {admin:'🛡️', mozo:'🤵', cajero:'💰', cocina:'👨‍🍳'}[window._currentUserRol] || '🍴';
-    se.innerHTML = roleIcon;
-    se.style.fontSize = '';
-    se.classList.add('s-emoji-animated');
+    const roleSvg = {admin:'/icon-admin.svg', mozo:'/icon-mozo.svg'}[window._currentUserRol];
+    if (roleSvg) {
+      se.innerHTML = `<img src="${roleSvg}" alt="icon" style="height:42px;width:42px;object-fit:contain;border-radius:10px">`;
+      se.style.fontSize = '0';
+      se.classList.remove('s-emoji-animated');
+    } else {
+      const roleIcon = {cajero:'💰', cocina:'👨‍🍳'}[window._currentUserRol] || '🍴';
+      se.innerHTML = roleIcon;
+      se.style.fontSize = '';
+      se.classList.add('s-emoji-animated');
+    }
   }
   // Login screen: ALWAYS show the animated role icon — never replace with biz logo
   // The business logo goes in the sidebar and receipts only, not the login
