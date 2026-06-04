@@ -1758,10 +1758,15 @@ function epCuenta(mesa, items) {
   const E='\x1B', biz=getBizConfig();
   const cols = printConfig.paperWidth==='58mm' ? 32 : 42;
   const total = items.reduce((s,i)=>s+i.precio*i.qty,0);
-  const lines = items.map(i=>{
-    const lbl = i.qty+'x '+i.nombre+(i.size?' ('+i.size+')':'');
-    const pr = '$'+(i.precio*i.qty).toLocaleString('es-AR');
-    return lbl+' '.repeat(Math.max(1,cols-lbl.length-pr.length))+pr;
+  const lines = items.flatMap(i=>{
+    const desc = i.qty+'x '+i.nombre+(i.size?' ('+i.size+')':'');
+    const prUni = '$'+i.precio.toLocaleString('es-AR');
+    const prTot = '$'+(i.precio*i.qty).toLocaleString('es-AR');
+    const prLine = prUni+'  '+prTot;
+    return [
+      desc,
+      ' '.repeat(Math.max(0, cols - prLine.length)) + prLine
+    ];
   });
   const ts = '$'+total.toLocaleString('es-AR');
   lines.push('-'.repeat(cols));
@@ -1791,9 +1796,12 @@ function epComprobanteX(f) {
   // Items
   const items = Array.isArray(f.detalle) && f.detalle.length ? f.detalle : [];
   items.forEach(i => {
-    const lbl = i.qty+'x '+i.nombre+(i.size?' ('+i.size+')':'');
-    const pr = '$'+(i.precio*i.qty).toLocaleString('es-AR');
-    s += lbl+' '.repeat(Math.max(1,cols-lbl.length-pr.length))+pr+NL;
+    const desc = i.qty+'x '+i.nombre+(i.size?' ('+i.size+')':'');
+    const prUni = '$'+i.precio.toLocaleString('es-AR');
+    const prTot = '$'+(i.precio*i.qty).toLocaleString('es-AR');
+    const prLine = prUni+'  '+prTot;
+    s += desc+NL;
+    s += ' '.repeat(Math.max(0, cols - prLine.length))+prLine+NL;
     if (i.nota) s += '   '+i.nota+NL;
   });
   s += SEP+NL;
@@ -1812,7 +1820,7 @@ function _buildComprobanteHtml(f) {
   const pagoLabel = {efectivo:'💵 Efectivo',tarjeta:'💳 Tarjeta',transferencia:'📲 Transferencia'}[f.pago] || f.pago;
   const logoHtml = biz.logo ? `<div style="text-align:center;margin-bottom:4px"><img src="${biz.logo}" style="max-height:60px;max-width:160px;object-fit:contain"></div>` : '';
   const itemRows = items.length
-    ? items.map(i=>`<div class="row"><span>${i.qty}x ${i.nombre}${i.size?' ('+i.size+')':''}${i.nota?'<br><small style="color:#888">'+i.nota+'</small>':''}</span><span>$${(i.precio*i.qty).toLocaleString('es-AR')}</span></div>`).join('')
+    ? items.map(i=>`<div style="margin:3px 0"><div>${i.qty}x ${i.nombre}${i.size?' ('+i.size+')':''}</div>${i.nota?`<div style="color:#888;font-size:10px;padding-left:8px">↳ ${i.nota}</div>`:''}<div style="text-align:right;font-size:10px;color:#555">$${i.precio.toLocaleString('es-AR')} c/u &nbsp;→&nbsp; <strong style="color:#000">$${(i.precio*i.qty).toLocaleString('es-AR')}</strong></div></div>`).join('')
     : `<div style="color:#999;text-align:center;font-style:italic">Sin detalle de ítems</div>`;
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Comprobante ${f.numero}</title>
   <style>
@@ -1866,9 +1874,12 @@ function verComprobanteX(id) {
 
   const itemsHtml = items.length
     ? items.map(i => `
-        <div style="display:flex;justify-content:space-between;margin:3px 0;font-size:12px">
-          <span>${i.qty}× ${i.nombre}${i.size ? ` <span style="color:#888">(${i.size})</span>` : ''}${i.nota ? `<br><span style="color:#888;font-size:11px;padding-left:10px">↳ ${i.nota}</span>` : ''}</span>
-          <span style="white-space:nowrap;margin-left:8px;font-weight:600">$${(i.precio*i.qty).toLocaleString('es-AR')}</span>
+        <div style="margin:5px 0">
+          <div style="font-size:12px">${i.qty}× ${i.nombre}${i.size ? ` <span style="color:#888;font-size:11px">(${i.size})</span>` : ''}</div>
+          ${i.nota ? `<div style="color:#aaa;font-size:10px;padding-left:10px">↳ ${i.nota}</div>` : ''}
+          <div style="text-align:right;font-size:11px;color:#888;margin-top:2px">
+            $${i.precio.toLocaleString('es-AR')} c/u &nbsp;→&nbsp; <strong style="color:#1d3557">$${(i.precio*i.qty).toLocaleString('es-AR')}</strong>
+          </div>
         </div>`).join('')
     : `<div style="color:#aaa;text-align:center;font-size:12px;padding:6px 0">Sin detalle de ítems</div>`;
 
@@ -3218,7 +3229,7 @@ async function imprimirCuenta(id) {
   const total = items.reduce((s,i)=>s+i.precio*i.qty,0);
   const lineas = items.map(i=>{
     const lbl = i.nombre+(i.size?' ('+i.size+')':'');
-    return `<div class="row" style="margin:3px 0"><span class="row-l">${i.qty}x ${lbl}</span><span class="row-r">$${(i.precio*i.qty).toLocaleString('es-AR')}</span></div>`;
+    return `<div style="margin:4px 0"><div>${i.qty}x ${lbl}</div><div style="text-align:right;font-size:10px;color:#555">$${i.precio.toLocaleString('es-AR')} c/u → <strong>$${(i.precio*i.qty).toLocaleString('es-AR')}</strong></div></div>`;
   }).join('');
   const bizName = getBizConfig().nombre;
   const cuerpo = `<h1>${bizName}</h1>
