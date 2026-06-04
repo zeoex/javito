@@ -92,10 +92,7 @@ body{font-family:'Inter',sans-serif;background:var(--light);color:#212529;overfl
 .nav-item{display:flex;align-items:center;gap:12px;padding:11px 20px;color:rgba(255,255,255,0.7);font-size:14px;font-weight:500;cursor:pointer;transition:all .15s;border-left:3px solid transparent}
 .nav-item:hover{background:rgba(255,255,255,0.07);color:#fff}
 .nav-item.active{background:rgba(230,57,70,0.2);color:#fff;border-left-color:var(--red)}
-.nav-item .nav-icon{width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.nav-icon svg,.sec-icon svg,.ha-icon svg{stroke:currentColor;fill:none;stroke-linecap:round;stroke-linejoin:round}
-.sec-icon{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;margin-right:5px;line-height:0}
-.ha-circle svg{display:block}
+.nav-item .nav-icon{font-size:18px;width:22px;text-align:center}
 .nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px}
 .sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,0.1)}
 .user-info{display:flex;align-items:center;gap:10px;margin-bottom:12px}
@@ -705,16 +702,16 @@ input.form-control:focus{outline:none;border-color:var(--red)}
     </div>
     <nav class="sidebar-nav">
       <div class="nav-item active" data-section="dashboard" data-tooltip="Vista Principal" onclick="navTo('dashboard',this);closeSidebar()">
-        <span class="nav-icon" data-icon="home"></span><span class="nav-text">Vista Principal</span>
+        <span class="nav-icon">🏠</span><span class="nav-text">Vista Principal</span>
       </div>
       <div class="nav-item" data-section="mesas" data-tooltip="Mesas" onclick="navTo('mesas',this);closeSidebar()">
-        <span class="nav-icon" data-icon="mesas"></span><span class="nav-text">Mesas</span> <span class="nav-badge" id="mesasBadge">0</span>
+        <span class="nav-icon">🪑</span><span class="nav-text">Mesas</span> <span class="nav-badge" id="mesasBadge">0</span>
       </div>
       <div class="nav-item" data-section="delivery" data-tooltip="Delivery" onclick="navTo('delivery',this);closeSidebar()">
-        <span class="nav-icon" data-icon="delivery"></span><span class="nav-text">Delivery</span> <span class="nav-badge" id="deliveryBadge">0</span>
+        <span class="nav-icon">🛵</span><span class="nav-text">Delivery</span> <span class="nav-badge" id="deliveryBadge">0</span>
       </div>
       <div class="nav-item" data-section="productos" data-tooltip="Productos" onclick="navTo('productos',this);closeSidebar()">
-        <span class="nav-icon" data-icon="productos"></span><span class="nav-text">Productos</span>
+        <span class="nav-icon">🍕</span><span class="nav-text">Productos</span>
       </div>
       <!-- STOCK DISABLED
       <div class="nav-item" data-section="stock" data-tooltip="Stock" onclick="navTo('stock',this);closeSidebar()">
@@ -722,25 +719,25 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       </div>
       END STOCK DISABLED -->
       <div class="nav-item" data-section="caja" data-tooltip="Caja" onclick="navTo('caja',this);closeSidebar()">
-        <span class="nav-icon" data-icon="caja"></span><span class="nav-text">Caja</span>
+        <span class="nav-icon">💰</span><span class="nav-text">Caja</span>
       </div>
       <div class="nav-item" data-section="facturacion" data-tooltip="Facturación" onclick="navTo('facturacion',this);closeSidebar()">
-        <span class="nav-icon" data-icon="facturacion"></span><span class="nav-text">Facturación</span>
+        <span class="nav-icon">🧾</span><span class="nav-text">Facturación</span>
       </div>
       <div class="nav-item" data-section="clientes" data-tooltip="Clientes" onclick="navTo('clientes',this);closeSidebar()">
-        <span class="nav-icon" data-icon="clientes"></span><span class="nav-text">Clientes</span>
+        <span class="nav-icon">👥</span><span class="nav-text">Clientes</span>
       </div>
       <div class="nav-item" data-section="reportes" data-tooltip="Reportes" onclick="navTo('reportes',this);closeSidebar()">
-        <span class="nav-icon" data-icon="reportes"></span><span class="nav-text">Reportes</span>
+        <span class="nav-icon">📈</span><span class="nav-text">Reportes</span>
       </div>
       <div class="nav-item" data-section="usuarios" data-tooltip="Usuarios" onclick="navTo('usuarios',this);closeSidebar()" id="navUsuarios">
-        <span class="nav-icon" data-icon="usuarios"></span><span class="nav-text">Usuarios</span>
+        <span class="nav-icon">👤</span><span class="nav-text">Usuarios</span>
       </div>
       <div class="nav-item" data-section="mozostats" data-tooltip="Mis Estadísticas" onclick="navTo('mozostats',this);closeSidebar()" id="navMozoStats" style="display:none">
-        <span class="nav-icon" data-icon="mozostats"></span><span class="nav-text">Mis Estadísticas</span>
+        <span class="nav-icon">📊</span><span class="nav-text">Mis Estadísticas</span>
       </div>
       <div class="nav-item" data-section="config" data-tooltip="Configuración" onclick="navTo('config',this);closeSidebar()">
-        <span class="nav-icon" data-icon="config"></span><span class="nav-text">Configuración</span>
+        <span class="nav-icon">⚙️</span><span class="nav-text">Configuración</span>
       </div>
     </nav>
     <div class="sidebar-footer">
@@ -751,7 +748,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
           <div class="user-role" id="userRole">Administrador</div>
         </div>
       </div>
-      <button class="btn btn-outline btn-sm btn-block" onclick="doLogout()"><span data-icon="logout" data-icon-size="14" style="display:inline-flex;vertical-align:middle;margin-right:5px"></span>Cerrar sesión</button>
+      <button class="btn btn-outline btn-sm btn-block" onclick="doLogout()">🔴 Cerrar sesión</button>
       <div style="text-align:center;font-size:10px;color:rgba(255,255,255,0.35);margin-top:10px;letter-spacing:.5px">ResTito By ZeODev</div>
     </div>
   </div>
@@ -759,10 +756,10 @@ input.form-control:focus{outline:none;border-color:var(--red)}
   <div class="main" id="mainContent">
     <!-- Mozo-only top navigation bar -->
     <div class="mozo-topnav" id="mozoTopnav">
-      <div class="mtn-logo"><span data-icon="utensils" data-icon-size="15" style="display:inline-flex;vertical-align:middle;margin-right:4px;opacity:.8"></span>ResTito</div>
+      <div class="mtn-logo"><span>🍴</span> ResTito</div>
       <div class="mozo-topnav-btns">
-        <button class="mtn-btn active" id="mtnBtnMesas" onclick="mozoNavTo('mesas')"><span data-icon="mesas" data-icon-size="15" style="display:inline-flex;vertical-align:middle;margin-right:3px"></span><span class="mtn-label">Mesas</span></button>
-        <button class="mtn-btn" id="mtnBtnStats" onclick="mozoNavTo('mozostats')"><span data-icon="mozostats" data-icon-size="15" style="display:inline-flex;vertical-align:middle;margin-right:3px"></span><span class="mtn-label">Stats</span></button>
+        <button class="mtn-btn active" id="mtnBtnMesas" onclick="mozoNavTo('mesas')">🪑 <span class="mtn-label">Mesas</span></button>
+        <button class="mtn-btn" id="mtnBtnStats" onclick="mozoNavTo('mozostats')">📊 <span class="mtn-label">Stats</span></button>
       </div>
       <div class="mtn-avatar-wrap" id="mozoAvatarWrap">
         <div class="mtn-avatar" id="mozoAvatar" title="" onclick="toggleMozoMenu()">CM</div>
@@ -772,15 +769,15 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       </div>
     </div>
     <div class="topbar" id="mainTopbar">
-      <button class="hamburger" onclick="toggleSidebar()" aria-label="Abrir menú"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <button class="hamburger" onclick="toggleSidebar()" aria-label="Abrir menú">☰</button>
       <div class="topbar-title" id="topbarTitle">Vista Principal</div>
       <span class="topbar-badge" id="topbarBadge" style="display:none"></span>
       <button class="lld-btn" id="lldBtn" onclick="toggleLlamador()" title="Llamador de pedidos">
-        <span data-icon="bell" data-icon-size="18" style="display:flex"></span>
+        🔔
         <span class="lld-badge" id="lldBadge">0</span>
       </button>
       <button class="pq-btn" id="pqBtn" onclick="togglePrintQueue()" title="Cola de impresión">
-        <span data-icon="printer" data-icon-size="18" style="display:flex"></span>
+        🖨️
         <span class="pq-badge" id="pqBadge">0</span>
       </button>
       <span class="topbar-time" id="topbarTime"></span>
@@ -790,14 +787,14 @@ input.form-control:focus{outline:none;border-color:var(--red)}
     <div class="pq-overlay" id="lldOverlay" onclick="closeLlamador()" style="z-index:8099"></div>
     <div class="lld-drawer" id="lldDrawer">
       <div class="lld-header">
-        <span data-icon="bell" data-icon-size="22" style="display:flex;color:rgba(255,255,255,.85)"></span>
+        <span style="font-size:22px">🔔</span>
         <h3>Llamador de Pedidos</h3>
         <button class="modal-close" onclick="closeLlamador()" style="color:rgba(255,255,255,.7)">✕</button>
       </div>
       <div class="lld-tabs">
         <div class="lld-tab active" id="lldTabTodos"   onclick="switchLldTab('todos')">Todos</div>
-        <div class="lld-tab"        id="lldTabMesas"   onclick="switchLldTab('mesa')"><span data-icon="mesas" data-icon-size="13" style="display:inline-flex;vertical-align:middle;margin-right:3px"></span>Mesas</div>
-        <div class="lld-tab"        id="lldTabDelivery" onclick="switchLldTab('delivery')"><span data-icon="delivery" data-icon-size="13" style="display:inline-flex;vertical-align:middle;margin-right:3px"></span>Delivery</div>
+        <div class="lld-tab"        id="lldTabMesas"   onclick="switchLldTab('mesa')">🪑 Mesas</div>
+        <div class="lld-tab"        id="lldTabDelivery" onclick="switchLldTab('delivery')">🛵 Delivery</div>
       </div>
       <div class="lld-list" id="lldList"></div>
       <div style="padding:12px 16px;border-top:1px solid var(--border);flex-shrink:0">
@@ -831,34 +828,40 @@ input.form-control:focus{outline:none;border-color:var(--red)}
           <div class="home-quick-label">Acceso rápido</div>
           <div class="home-actions">
             <button class="ha-btn" onclick="navTo('mesas',document.querySelector('[data-section=mesas]'))">
-              <div class="ha-circle" data-icon="mesas" data-icon-size="30" style="color:#7c3aed;background:#ede9fe;box-shadow:0 6px 18px rgba(124,58,237,0.22)">
+              <div class="ha-circle" style="background:#ede9fe;box-shadow:0 6px 18px rgba(124,58,237,0.22)">
+                🪑
                 <span class="ha-badge" id="hab-mesas" style="display:none">0</span>
               </div>
               <span class="ha-label">Mesas</span>
             </button>
             <button class="ha-btn" onclick="navTo('delivery',document.querySelector('[data-section=delivery]'))">
-              <div class="ha-circle" data-icon="delivery" data-icon-size="30" style="color:#d97706;background:#fef3c7;box-shadow:0 6px 18px rgba(245,158,11,0.25)">
+              <div class="ha-circle" style="background:#fef3c7;box-shadow:0 6px 18px rgba(245,158,11,0.25)">
+                🛵
                 <span class="ha-badge" id="hab-delivery" style="display:none">0</span>
               </div>
               <span class="ha-label">Delivery</span>
             </button>
             <button class="ha-btn" onclick="navTo('productos',document.querySelector('[data-section=productos]'))">
-              <div class="ha-circle" data-icon="productos" data-icon-size="30" style="color:#059669;background:#d1fae5;box-shadow:0 6px 18px rgba(16,185,129,0.22)">
+              <div class="ha-circle" style="background:#d1fae5;box-shadow:0 6px 18px rgba(16,185,129,0.22)">
+                🍕
               </div>
               <span class="ha-label">Productos</span>
             </button>
             <button class="ha-btn" onclick="navTo('caja',document.querySelector('[data-section=caja]'))">
-              <div class="ha-circle" data-icon="caja" data-icon-size="30" style="color:#db2777;background:#fce7f3;box-shadow:0 6px 18px rgba(236,72,153,0.22)">
+              <div class="ha-circle" style="background:#fce7f3;box-shadow:0 6px 18px rgba(236,72,153,0.22)">
+                💰
               </div>
               <span class="ha-label">Caja</span>
             </button>
             <button class="ha-btn" onclick="navTo('clientes',document.querySelector('[data-section=clientes]'))">
-              <div class="ha-circle" data-icon="clientes" data-icon-size="30" style="color:#2563eb;background:#dbeafe;box-shadow:0 6px 18px rgba(59,130,246,0.22)">
+              <div class="ha-circle" style="background:#dbeafe;box-shadow:0 6px 18px rgba(59,130,246,0.22)">
+                👥
               </div>
               <span class="ha-label">Clientes</span>
             </button>
             <button class="ha-btn" onclick="navTo('reportes',document.querySelector('[data-section=reportes]'))">
-              <div class="ha-circle" data-icon="reportes" data-icon-size="30" style="color:#0284c7;background:#e0f2fe;box-shadow:0 6px 18px rgba(14,165,233,0.22)">
+              <div class="ha-circle" style="background:#e0f2fe;box-shadow:0 6px 18px rgba(14,165,233,0.22)">
+                📊
               </div>
               <span class="ha-label">Reportes</span>
             </button>
@@ -900,12 +903,12 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <!-- MESAS -->
       <div class="section" id="sec-mesas">
         <div class="section-header">
-          <h2><span class="sec-icon" data-icon="mesas" data-icon-size="22"></span>Mesas</h2>
+          <h2>🪑 Mesas</h2>
           <button class="btn btn-primary btn-sm" id="btnNuevaMesa" onclick="abrirModalNuevaMesa()">+ Nueva Mesa</button>
         </div>
         <div class="tabs" id="mesasTabs">
-          <div class="tab active" id="tabSalon" onclick="switchTab('salon')"><span data-icon="home" data-icon-size="13" style="display:inline-flex;vertical-align:middle;margin-right:3px"></span>Salón</div>
-          <div class="tab" id="tabVereda" onclick="switchTab('vereda')"><span data-icon="leaf" data-icon-size="13" style="display:inline-flex;vertical-align:middle;margin-right:3px"></span>Vereda</div>
+          <div class="tab active" id="tabSalon" onclick="switchTab('salon')">🏠 Salón</div>
+          <div class="tab" id="tabVereda" onclick="switchTab('vereda')">🌿 Vereda</div>
         </div>
         <div class="mesas-grid" id="mesasGrid"></div>
       </div>
@@ -913,7 +916,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <!-- DELIVERY -->
       <div class="section" id="sec-delivery">
         <div class="section-header">
-          <h2><span class="sec-icon" data-icon="delivery" data-icon-size="22"></span>Delivery</h2>
+          <h2>🛵 Delivery</h2>
           <button class="btn btn-primary btn-sm" onclick="abrirModalNuevoDelivery()">+ Nuevo Pedido</button>
         </div>
         <div class="delivery-pipeline" id="deliveryPipeline"></div>
@@ -922,7 +925,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <!-- PRODUCTOS -->
       <div class="section" id="sec-productos">
         <div class="section-header">
-          <h2><span class="sec-icon" data-icon="productos" data-icon-size="22"></span>Productos</h2>
+          <h2>🍕 Productos</h2>
           <div style="display:flex;gap:6px;align-items:center;flex:1;margin:0 12px">
             <button class="btn btn-sm" id="prodTabBtnLista" style="background:var(--blue);color:#fff;border:none" onclick="switchProdTab('lista')">Lista</button>
             <button class="btn btn-outline btn-sm" id="prodTabBtnCats" onclick="switchProdTab('categorias')">Categorías</button>
@@ -977,7 +980,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 
       <!-- CAJA -->
       <div class="section" id="sec-caja">
-        <div class="section-header"><h2><span class="sec-icon" data-icon="caja" data-icon-size="22"></span>Caja</h2><button class="btn btn-outline btn-sm" onclick="abrirCierresHistorial()">📋 Cierres anteriores</button></div>
+        <div class="section-header"><h2>💰 Caja</h2><button class="btn btn-outline btn-sm" onclick="abrirCierresHistorial()">📋 Cierres anteriores</button></div>
         <div class="grid-2">
           <div class="card">
             <div class="card-header"><h3>Estado de Caja</h3></div>
@@ -1020,7 +1023,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 
       <!-- FACTURACIÓN -->
       <div class="section" id="sec-facturacion">
-        <div class="section-header"><h2><span class="sec-icon" data-icon="facturacion" data-icon-size="22"></span>Facturación</h2></div>
+        <div class="section-header"><h2>🧾 Facturación</h2></div>
         <div class="filter-bar">
           <input type="date" class="form-control" style="width:auto" id="factFechaDesde"/>
           <input type="date" class="form-control" style="width:auto" id="factFechaHasta"/>
@@ -1042,7 +1045,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <!-- CLIENTES -->
       <div class="section" id="sec-clientes">
         <div class="section-header">
-          <h2><span class="sec-icon" data-icon="clientes" data-icon-size="22"></span>Clientes</h2>
+          <h2>👥 Clientes</h2>
           <button class="btn btn-primary btn-sm" onclick="document.getElementById('cliEditId').value='';document.getElementById('modalClienteTitle').textContent='Nuevo Cliente';document.getElementById('cliNombre').value='';document.getElementById('cliTel').value='';document.getElementById('cliEmail').value='';document.getElementById('cliDir').value='';openModal('modalCliente')">+ Nuevo Cliente</button>
         </div>
         <div class="filter-bar">
@@ -1058,7 +1061,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 
       <!-- REPORTES -->
       <div class="section" id="sec-reportes">
-        <div class="section-header"><h2><span class="sec-icon" data-icon="reportes" data-icon-size="22"></span>Reportes</h2></div>
+        <div class="section-header"><h2>📈 Reportes</h2></div>
         <div class="filter-bar">
           <div class="tabs" style="margin-bottom:0">
             <div class="tab active" onclick="setReporteRange('hoy',this)">Hoy</div>
@@ -1097,7 +1100,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <!-- USUARIOS -->
       <div class="section" id="sec-usuarios">
         <div class="section-header">
-          <h2><span class="sec-icon" data-icon="usuarios" data-icon-size="22"></span>Usuarios</h2>
+          <h2>👤 Usuarios</h2>
           <button class="btn btn-primary btn-sm" onclick="_resetModalUsuario();openModal('modalUsuario')">+ Nuevo Usuario</button>
         </div>
         <div class="card">
@@ -1110,7 +1113,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 
       <!-- CONFIG -->
       <div class="section" id="sec-config">
-        <div class="section-header"><h2><span class="sec-icon" data-icon="config" data-icon-size="22"></span>Configuración</h2></div>
+        <div class="section-header"><h2>⚙️ Configuración</h2></div>
         <div class="grid-2">
           <div class="card">
             <div class="card-header"><h3>🏢 Datos del Negocio</h3></div>
@@ -1279,7 +1282,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 
       <!-- MOZO STATS -->
       <div class="section" id="sec-mozostats">
-        <div class="section-header"><h2><span class="sec-icon" data-icon="mozostats" data-icon-size="22"></span>Mis Estadísticas</h2></div>
+        <div class="section-header"><h2>📊 Mis Estadísticas</h2></div>
 
         <!-- Hero counter -->
         <div style="background:#fff;border-radius:16px;padding:20px 24px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.07);display:flex;align-items:center;gap:16px">
@@ -5532,41 +5535,6 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   });
 }
-
-// ======= ICON SYSTEM (Cocina Precisa) =======
-(function(){
-  const _p = {
-    home:        '<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
-    mesas:       '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>',
-    delivery:    '<rect x="1" y="3" width="15" height="13" rx="1"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>',
-    productos:   '<path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>',
-    caja:        '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/>',
-    facturacion: '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>',
-    clientes:    '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>',
-    reportes:    '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
-    usuarios:    '<path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>',
-    mozostats:   '<path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/>',
-    config:      '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>',
-    bell:        '<path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>',
-    printer:     '<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',
-    logout:      '<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
-    utensils:    '<path d="M3 2v7c0 1.1.9 2 2 2s2-.9 2-2V2"/><path d="M7 2v20"/><path d="M3 15h4"/><path d="M21 15V2c-2.5 0-5 2-5 5v6c0 1.1.9 2 2 2s2-.9 2-2V7"/><path d="M21 15v7"/>',
-    leaf:        '<path d="M11 20A7 7 0 015.8 9.7c1.8-2 3.9-2.8 5.2-2.5C13.6 5 18 4 21 7c-2 3.9-5.4 7.1-10 13z"/><path d="M2 21c2-4 6-8 10-13"/>',
-  };
-  function _mkSvg(name, sz) {
-    if (!_p[name]) return '';
-    return `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${_p[name]}</svg>`;
-  }
-  document.querySelectorAll('[data-icon]').forEach(el => {
-    const name = el.getAttribute('data-icon');
-    const sz = parseInt(el.getAttribute('data-icon-size') || '0') || 20;
-    if (!_p[name]) return;
-    const children = Array.from(el.children).map(c => c.outerHTML).join('');
-    el.innerHTML = _mkSvg(name, sz) + children;
-  });
-  window._mkSvg = _mkSvg;
-  window._icoPaths = _p;
-})();
 </script>
 </body>
 </html>
