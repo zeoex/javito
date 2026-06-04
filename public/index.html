@@ -1199,6 +1199,13 @@ input.form-control:focus{outline:none;border-color:var(--red)}
                     <div style="margin-top:8px;padding:8px 10px;background:#d1ecf1;border-radius:6px;color:#0c5460;font-size:11px">
                       💡 <strong>Si el cartel "anonymous request" sigue apareciendo</strong> aunque hayas guardado las propiedades: clic derecho en QZ Tray → <em>Site Manager</em> → botón <strong>+</strong> → ingresá la URL del sistema → marcá <em>Allow</em> → guardá. Eso lo recuerda de forma permanente.
                     </div>
+                    <div style="margin-top:8px;padding:8px 10px;background:#d4edda;border-radius:6px;color:#155724;font-size:11px">
+                      ✅ <strong>Para que QZ Tray acepte el certificado sin volver a preguntar:</strong><br>
+                      1. Descargá el certificado: <a href="/api/qz/certificate.crt" download="restito-qz.crt" style="color:#155724;font-weight:700">📥 Descargar restito-qz.crt</a><br>
+                      2. Copiá el archivo descargado a esta carpeta:
+                      <div style="margin:3px 0;background:#1e1e1e;color:#d4d4d4;padding:5px 10px;border-radius:5px;font-family:monospace;font-size:11px">C:\Program Files\QZ Tray\certs\</div>
+                      3. Reiniciá QZ Tray — ya no aparecerá más el cartel de autorización.
+                    </div>
                     <div style="margin-top:6px;padding:6px 10px;background:#fff3cd;border-radius:6px;color:#856404;font-size:11px">
                       ⚠️ El menú <em>Advanced → Properties</em> que aparece en otras guías <strong>no existe en Windows</strong>. Editá el archivo directamente como se indica arriba.
                     </div>
@@ -2270,7 +2277,7 @@ function initApp() {
   setInterval(updateClock, 1000);
   // Socket
   try {
-    socket = io();
+    socket = io({ transports: ['polling', 'websocket'] });
     socket.on('dashboard:stats', updateDashboardStats);
     socket.on('mesa:update', (updatedMesa) => {
       if (updatedMesa && updatedMesa.id) {
@@ -3154,6 +3161,12 @@ async function imprimirComanda(id) {
   if (QzTray.isOn()) {
     printedLocal = await QzTray.send(epComanda(m, comida));
   }
+
+  // Crear comanda digital en cocina (aparece en pantalla de cocina)
+  apiFetch('/cocina/comanda', {
+    method: 'POST',
+    body: JSON.stringify({ mesa: {numero: m.numero, id: m.id}, mozo: m.mozo || currentUser?.nombre, items: comida })
+  }).catch(() => {});
 
   // SIEMPRE enviar al servidor para que admin/cocina reciba el print:job
   const hora = new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});

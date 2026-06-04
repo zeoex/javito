@@ -728,7 +728,7 @@ setInterval(() => {
 function initSocket() {
   try {
     if (typeof io === 'undefined') return;
-    socket = io({ transports: ['websocket', 'polling'] });
+    socket = io({ transports: ['polling', 'websocket'] });
 
     socket.on('connect', () => {
       const badge = document.getElementById('conn-badge');

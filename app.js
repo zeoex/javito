@@ -87,7 +87,11 @@ const JWT_EXPIRY = '8h';
 const app    = express();
 const server = http.createServer(app);
 const io     = new Server(server, {
-  cors: { origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'] }
+  cors: { origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'] },
+  transports: ['polling', 'websocket'],
+  allowUpgrades: true,
+  pingTimeout: 60000,
+  pingInterval: 25000
 });
 
 // ─────────────────────────────────────────────
@@ -525,7 +529,7 @@ app.post('/api/mesas/:id/pedido', (req, res) => {
   db.comandas.push(comanda);
 
   io.emit('mesa:update', mesa);
-  io.emit('cocina:comanda', comanda);
+  io.emit('comanda:nueva', comanda);
   emitDashboardStats();
   res.json({ mesa, item, comanda });
 });
@@ -804,7 +808,7 @@ app.post('/api/pedidos', (req, res) => {
   db.comandas.push(comanda);
 
   io.emit('pedido:nuevo',   pedido);
-  io.emit('cocina:comanda', comanda);
+  io.emit('comanda:nueva', comanda);
   emitDashboardStats();
   res.status(201).json({ pedido, comanda });
 });
@@ -976,6 +980,34 @@ app.put('/api/delivery/:id/estado', async (req, res) => {
 // ─────────────────────────────────────────────
 //  COCINA ROUTES
 // ─────────────────────────────────────────────
+// Mozo creates a kitchen comanda from imprimirComanda()
+app.post('/api/cocina/comanda', authMiddleware, (req, res) => {
+  const { mesa, mozo, items } = req.body;
+  if (!mesa || !items || !items.length) return res.status(400).json({ error: 'mesa e items requeridos' });
+  const comanda = {
+    id:        uuidv4(),
+    pedidoId:  null,
+    numero:    db.comandas.length + 1,
+    mesa:      mesa.numero || mesa,
+    mozo:      mozo || '',
+    items:     items.map(i => ({
+      id:          i.productoId || uuidv4(),
+      nombre:      i.nombre,
+      variante:    i.size || 'unica',
+      cantidad:    i.qty || 1,
+      precio:      i.precio || 0,
+      extras:      [],
+      observacion: i.nota || ''
+    })),
+    estado:    'pendiente',
+    createdAt: new Date().toISOString()
+  };
+  db.comandas.push(comanda);
+  if (db.comandas.length > 500) db.comandas.shift();
+  io.emit('comanda:nueva', comanda);
+  res.json(comanda);
+});
+
 app.get('/api/cocina/comandas', (req, res) => {
   const { estado } = req.query;
   let lista = db.comandas;
@@ -1350,6 +1382,12 @@ setInterval(() => {
 // ─────────────────────────────────────────────
 app.get('/api/qz/certificate', (_req, res) => {
   res.type('text/plain').send(_qzCert || '');
+});
+
+// Download cert as .crt file for QZ Tray trusted store
+app.get('/api/qz/certificate.crt', (_req, res) => {
+  res.setHeader('Content-Disposition', 'attachment; filename="restito-qz.crt"');
+  res.type('application/x-x509-ca-cert').send(_qzCert || '');
 });
 
 app.post('/api/qz/sign', (req, res) => {
