@@ -28,6 +28,8 @@ body{font-family:'Inter',sans-serif;background:var(--light);color:#212529;overfl
 @keyframes lgPulse{0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(1.2);opacity:1}}
 .login-logo-emoji{font-size:64px;position:relative;z-index:1;animation:lgFloat 3s ease-in-out infinite;filter:drop-shadow(0 4px 12px color-mix(in srgb,var(--login-accent) 30%,transparent))}
 @keyframes lgFloat{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-10px) rotate(2deg)}}
+@keyframes sFloat{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-5px) rotate(3deg)}}
+.s-emoji-animated{animation:sFloat 3s ease-in-out infinite;display:inline-block}
 .login-brand{text-align:center;margin-bottom:32px}
 .login-module-label{font-size:12px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:var(--login-accent);margin-bottom:6px}
 .login-app-name{font-size:32px;font-weight:900;color:#111827;letter-spacing:-1.5px;line-height:1}
@@ -2258,6 +2260,7 @@ function apiFetch(url, opts={}) {
 function initApp() {
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
+  window._currentUserRol = currentUser?.rol || 'admin';
   loadBizConfig();
   // User UI
   const av = document.getElementById('userAvatar');
@@ -4703,9 +4706,12 @@ function loadBizConfig() {
   if (biz.logo && se) {
     se.innerHTML = `<img src="${biz.logo}" alt="logo" style="max-height:40px;max-width:80px;object-fit:contain;border-radius:4px">`;
     se.style.fontSize = '0';
+    se.classList.remove('s-emoji-animated');
   } else if (se) {
-    se.innerHTML = '🍴';
+    const roleIcon = {admin:'🛡️', mozo:'🧑‍🍳', cajero:'💰', cocina:'👨‍🍳'}[window._currentUserRol] || '🍴';
+    se.innerHTML = roleIcon;
     se.style.fontSize = '';
+    se.classList.add('s-emoji-animated');
   }
   // Logo in login screen
   const ll = document.getElementById('loginLogoWrap');
@@ -4713,8 +4719,8 @@ function loadBizConfig() {
   if (biz.logo && ll) {
     ll.innerHTML = `<img src="${biz.logo}" alt="logo" style="max-height:80px;max-width:200px;object-fit:contain;border-radius:6px;margin-bottom:8px">`;
     if (le) le.style.display = 'none';
-  } else if (ll) {
-    ll.innerHTML = '';
+  } else {
+    // No logo: show animated emoji — DO NOT wipe the wrap (setupLoginBranding already set it)
     if (le) le.style.display = '';
   }
   // Config form fields
