@@ -641,7 +641,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 <!-- LOGIN -->
 <div id="loginScreen" style="display:none">
 
-  <div class="login-logo-wrap">
+  <div class="login-logo-wrap" id="loginLogoWrap">
     <div class="login-logo-glow"></div>
     <span class="login-logo-emoji" id="loginEmoji">🛡️</span>
   </div>
@@ -2430,11 +2430,17 @@ function initApp() {
 (function setupLoginBranding() {
   const path = window.location.pathname;
   const roles = {
-    '/mozo':  { emoji:'🧑‍🍳', title:'Módulo Mozo',           email:'carlos@restito.com', pass:'mozo123',  hint:'Mozo: carlos@restito.com / mozo123', accent:'#059669', accentL:'#34d399' },
+    '/mozo':  { icon:'/icon-mozo.svg', title:'Módulo Mozo',           email:'carlos@restito.com', pass:'mozo123',  hint:'Mozo: carlos@restito.com / mozo123', accent:'#059669', accentL:'#34d399' },
     '/admin': { emoji:'🛡️',   title:'Módulo Administración', email:'admin@restito.com',  pass:'admin123', hint:'Admin: admin@restito.com / admin123',  accent:'#7c3aed', accentL:'#a78bfa' },
   };
   const cfg = roles[path] || { emoji:'🛡️', title:'Módulo Administración', email:'admin@restito.com', pass:'admin123', hint:'Admin: admin@restito.com / admin123', accent:'#7c3aed', accentL:'#a78bfa' };
-  document.getElementById('loginEmoji').textContent   = cfg.emoji;
+  const le = document.getElementById('loginEmoji');
+  const ll = document.getElementById('loginLogoWrap');
+  if (cfg.icon && ll && le) {
+    ll.innerHTML = `<div class="login-logo-glow"></div><img src="${cfg.icon}" alt="ícono" style="width:80px;height:80px;object-fit:contain;position:relative;z-index:1;filter:drop-shadow(0 4px 12px rgba(0,0,0,.3))">`;
+  } else if (le) {
+    le.textContent = cfg.emoji || '🛡️';
+  }
   document.getElementById('loginTitle').textContent   = cfg.title;
   document.getElementById('loginEmail').value         = cfg.email;
   document.getElementById('loginPass').value          = cfg.pass;
