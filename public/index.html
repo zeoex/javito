@@ -1222,6 +1222,16 @@ input.form-control:focus{outline:none;border-color:var(--red)}
           </div>
         </div>
         <div class="card">
+          <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
+            <h3>💳 Medios de Pago</h3>
+            <button class="btn btn-primary btn-sm" onclick="addMedioPago()">+ Agregar</button>
+          </div>
+          <div class="card-body">
+            <p style="font-size:12px;color:var(--gray);margin-bottom:10px">Configurá los métodos de pago disponibles. El recargo se aplica automáticamente al cobrar.</p>
+            <div id="mediosPagoList"></div>
+          </div>
+        </div>
+        <div class="card">
           <div class="card-header"><h3>🍕 Cocina & Delivery</h3></div>
           <div class="card-body">
             <div class="grid-3">
@@ -1436,11 +1446,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
           </select>
         </div>
         <div class="form-group"><label>Método de pago</label>
-          <select class="form-control" id="dlvPago">
-            <option value="efectivo">Efectivo</option>
-            <option value="tarjeta">Tarjeta</option>
-            <option value="transferencia">Transferencia</option>
-          </select>
+          <select class="form-control" id="dlvPago"></select>
         </div>
       </div>
       <div class="form-group"><label>Items del pedido</label>
@@ -2884,7 +2890,15 @@ function renderMesaFooter(id) {
   // Confirmation screen: "¿Liberar mesa?"
   if (_mesaCobroConfirm) {
     const metodo = _mesaCobroConfirm;
-    const metodoLabel = {efectivo:'💵 Efectivo',tarjeta:'💳 Tarjeta',transferencia:'📲 Transferencia'}[metodo] || metodo;
+    const mp = getMediosPago().find(x=>x.id===metodo);
+    const metodoLabel = mp ? `${mp.icono||''} ${mp.nombre}` : metodo;
+    const totalBase = (m.pedido||[]).reduce((s,i)=>s+i.precio*i.qty,0);
+    const recargo = mp?.recargo || 0;
+    const totalFinal = recargo > 0 ? Math.round(totalBase * (1 + recargo/100)) : totalBase;
+    const recargoLine = recargo > 0
+      ? `<div style="width:100%;text-align:center;font-size:12px;color:#e67e22;margin-bottom:2px">Recargo ${recargo}%: +$${(totalFinal-totalBase).toLocaleString('es-AR')}</div>
+         <div style="width:100%;text-align:center;font-size:15px;font-weight:900;color:#1d3557;margin-bottom:4px">TOTAL $${totalFinal.toLocaleString('es-AR')}</div>`
+      : `<div style="width:100%;text-align:center;font-size:12px;font-weight:700;color:#1d3557;margin-bottom:4px">Total $${totalFinal.toLocaleString('es-AR')}</div>`;
     footer.innerHTML =
       `<div style="width:100%;text-align:center;font-size:14px;font-weight:700;padding:4px 0">
          ¿Liberar mesa #${m.numero}?
@@ -2892,18 +2906,24 @@ function renderMesaFooter(id) {
        <div style="width:100%;text-align:center;font-size:12px;color:var(--gray);margin-bottom:4px">
          Pago: ${metodoLabel}
        </div>
-       <button class="btn btn-danger" style="flex:1" onclick="cerrarMesa(${sid},'${metodo}')">✅ Sí, liberar</button>
+       ${recargoLine}
+       <button class="btn btn-danger" style="flex:1" onclick="cerrarMesa(${sid},'${metodo}',${totalFinal})">✅ Sí, liberar</button>
        <button class="btn btn-outline" style="flex:1" onclick="_mesaCobroConfirm=null;renderMesaFooter(${sid})">✗ No, volver</button>`;
     return;
   }
 
   // Cobro mode: show payment method selector
   if (_mesaCobroMode) {
+    const total = (m.pedido||[]).reduce((s,i)=>s+i.precio*i.qty,0);
+    const medios = getMediosPago();
+    const medBtns = medios.map(mp => {
+      const totalFinal = mp.recargo > 0 ? Math.round(total * (1 + mp.recargo/100)) : total;
+      const label = `${mp.icono||''} ${mp.nombre}${mp.recargo>0?` +${mp.recargo}%`:''}`;
+      return `<button class="btn btn-primary btn-sm" style="flex:1;min-width:90px" onclick="_mesaCobroConfirm='${mp.id}';renderMesaFooter(${sid})">${label}</button>`;
+    }).join('');
     footer.innerHTML =
-      `<div style="width:100%;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray);margin-bottom:2px">¿Cómo paga?</div>
-       <button class="btn btn-success" style="flex:1" onclick="_mesaCobroConfirm='efectivo';renderMesaFooter(${sid})">💵 Efectivo</button>
-       <button class="btn btn-primary" style="flex:1;background:var(--blue);border-color:var(--blue)" onclick="_mesaCobroConfirm='tarjeta';renderMesaFooter(${sid})">💳 Posnet</button>
-       <button class="btn btn-secondary" style="flex:1;background:#6c757d;border-color:#6c757d;color:#fff" onclick="_mesaCobroConfirm='transferencia';renderMesaFooter(${sid})">📲 Transfer.</button>
+      `<div style="width:100%;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray);margin-bottom:4px">¿Cómo paga?</div>
+       <div style="width:100%;display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">${medBtns}</div>
        <button class="btn btn-outline" style="width:100%" onclick="_mesaCobroMode=false;renderMesaFooter(${sid})">← Volver</button>`;
     return;
   }
@@ -3025,13 +3045,15 @@ function liberarMesaVacia(id) {
   loadDashboard();
 }
 
-function cerrarMesa(id, metodoPago = 'efectivo') {
+function cerrarMesa(id, metodoPago = 'efectivo', totalOverride = null) {
   const m = mesasData.find(x=>String(x.id)===String(id));
   const detalleSnapshot = (m.pedido||[]).map(i=>({...i}));
-  const total = detalleSnapshot.reduce((s,i)=>s+i.precio*i.qty,0);
+  const totalBase = detalleSnapshot.reduce((s,i)=>s+i.precio*i.qty,0);
+  const total = totalOverride !== null ? totalOverride : totalBase;
   const itemsCount = detalleSnapshot.reduce((s,i)=>s+i.qty,0);
   const mozo = (currentUser?.rol==='mozo' ? currentUser?.nombre : null) || m.mozo || currentUser?.nombre || '-';
-  const metodoLabel = {efectivo:'💵 Efectivo',tarjeta:'💳 Tarjeta',transferencia:'📲 Transferencia'}[metodoPago] || metodoPago;
+  const mp = getMediosPago().find(x=>x.id===metodoPago);
+  const metodoLabel = mp ? `${mp.icono||''} ${mp.nombre}` : metodoPago;
   const registro = {mozo, mesa: m.numero, fecha: new Date().toISOString(), items: itemsCount, total: total||0, pago: metodoPago};
   mozoHistorial.unshift(registro);
   m.estado='libre'; m.mozo=null; m.tiempo=null; m.pedido=[];
@@ -3288,13 +3310,18 @@ function renderDeliveryCard(o,stage) {
     en_camino:`<button class="btn btn-secondary btn-sm" onclick="advanceDelivery(${o.id})">✅ Entregado</button>`,
     entregado:'',
   }[stage]||'';
+  const cancelBtn = stage === 'nuevo'
+    ? `<button class="btn btn-danger btn-sm" onclick="cancelarDelivery(${o.id})" title="Cancelar pedido">✕ Cancelar</button>`
+    : '';
+  const mp = getMediosPago().find(m => m.id === o.metodo_pago);
+  const mpLabel = mp ? `${mp.icono||''} ${mp.nombre}${mp.recargo>0?` (+${mp.recargo}%)`:''}` : o.metodo_pago;
   return `<div class="delivery-card">
     <div class="delivery-card-num">${o.numero}</div>
     <div class="delivery-card-client">👤 ${o.cliente.nombre}</div>
     <div class="delivery-card-items">${o.items.map(i=>`${i.qty}x ${i.nombre}`).join(', ')}</div>
     <div style="font-size:11px;color:var(--gray)">📍 ${o.direccion}</div>
-    <div class="delivery-card-total">💰 $${o.total.toLocaleString()} · ${o.metodo_pago}</div>
-    <div class="delivery-card-actions">${nextBtn}<button class="btn btn-outline btn-sm" onclick="imprimirDelivery(${o.id})" title="Imprimir">🖨️</button></div>
+    <div class="delivery-card-total">💰 $${o.total.toLocaleString()} · ${mpLabel}</div>
+    <div class="delivery-card-actions">${nextBtn}<button class="btn btn-outline btn-sm" onclick="imprimirDelivery(${o.id})" title="Imprimir">🖨️</button>${cancelBtn}</div>
   </div>`;
 }
 
@@ -3313,6 +3340,18 @@ function advanceDelivery(id) {
   renderDelivery();
   loadDashboard();
   showToast(`Pedido ${o.numero} → ${o.estado}`);
+}
+
+function cancelarDelivery(id) {
+  const o = deliveryData.find(x=>String(x.id)===String(id));
+  if (!o) return;
+  if (o.estado !== 'nuevo') { showToast('Solo se pueden cancelar pedidos en estado Nuevo','error'); return; }
+  if (!confirm(`¿Cancelar el pedido ${o.numero} de ${o.cliente.nombre}?`)) return;
+  deliveryData = deliveryData.filter(x=>String(x.id)!==String(id));
+  saveState();
+  renderDelivery();
+  loadDashboard();
+  showToast(`Pedido ${o.numero} cancelado`,'success');
 }
 
 function dlvClienteSearch(q) {
@@ -3503,6 +3542,12 @@ function abrirModalNuevoDelivery() {
   document.getElementById('dlvDir').value = '';
   document.getElementById('dlvClienteSugg').style.display = 'none';
   document.getElementById('dlvItems').innerHTML = '';
+  // Populate payment methods dynamically
+  const pagoSel = document.getElementById('dlvPago');
+  const medios = getMediosPago();
+  pagoSel.innerHTML = medios.map(m =>
+    `<option value="${m.id}">${m.icono||''} ${m.nombre}${m.recargo>0?` (+${m.recargo}%)`:''}${m.recargo>0?' — aplica recargo':''}</option>`
+  ).join('');
   addDlvItem();
   openModal('modalNuevoDelivery');
 }
@@ -4575,6 +4620,69 @@ function renderMozoStats() {
   }
 }
 
+// ======= MEDIOS DE PAGO =======
+const _MEDIOS_DEFAULT = [
+  {id:'efectivo',     nombre:'Efectivo',       icono:'💵', recargo:0},
+  {id:'tarjeta',      nombre:'Tarjeta/Posnet',  icono:'💳', recargo:0},
+  {id:'transferencia',nombre:'Transferencia',   icono:'📲', recargo:0},
+];
+
+function getMediosPago() {
+  try {
+    const biz = getBizConfig();
+    if (Array.isArray(biz.mediosPago) && biz.mediosPago.length) return biz.mediosPago;
+  } catch(e){}
+  return _MEDIOS_DEFAULT.map(m=>({...m}));
+}
+
+function renderMediosPagoConfig() {
+  const list = document.getElementById('mediosPagoList');
+  if (!list) return;
+  const medios = getMediosPago();
+  if (!medios.length) { list.innerHTML = '<p style="font-size:13px;color:var(--gray)">Sin métodos configurados.</p>'; return; }
+  list.innerHTML = medios.map((m,i) => `
+    <div style="display:grid;grid-template-columns:36px 1fr auto auto auto auto;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid #f3f4f6">
+      <input class="form-control" value="${m.icono||''}" style="font-size:18px;text-align:center;padding:4px;width:36px" maxlength="4" id="mpIco${i}" title="Emoji o símbolo"/>
+      <input class="form-control" value="${m.nombre}" id="mpNom${i}" placeholder="Nombre"/>
+      <div style="display:flex;align-items:center;gap:4px;white-space:nowrap">
+        <label style="font-size:12px;color:var(--gray)">Recargo</label>
+        <input class="form-control" type="number" value="${m.recargo||0}" min="0" max="99" step="0.5" id="mpRec${i}" style="width:64px"/>
+        <span style="font-size:12px;color:var(--gray)">%</span>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="saveMedioPago(${i})">💾</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteMedioPago(${i})">🗑️</button>
+    </div>`).join('');
+}
+
+function saveMedioPago(i) {
+  const medios = getMediosPago();
+  medios[i].icono   = document.getElementById(`mpIco${i}`)?.value.trim() || '';
+  medios[i].nombre  = document.getElementById(`mpNom${i}`)?.value.trim() || medios[i].nombre;
+  medios[i].recargo = parseFloat(document.getElementById(`mpRec${i}`)?.value) || 0;
+  _saveMediosPago(medios);
+}
+
+function deleteMedioPago(i) {
+  const medios = getMediosPago();
+  medios.splice(i, 1);
+  _saveMediosPago(medios);
+}
+
+function addMedioPago() {
+  const medios = getMediosPago();
+  medios.push({id:'nuevo_'+(Date.now()), nombre:'Nuevo método', icono:'💰', recargo:0});
+  _saveMediosPago(medios);
+}
+
+function _saveMediosPago(medios) {
+  const biz = getBizConfig();
+  biz.mediosPago = medios;
+  localStorage.setItem('pz_biz_cfg', JSON.stringify(biz));
+  saveState();
+  renderMediosPagoConfig();
+  showToast('Medios de pago guardados','success');
+}
+
 // ======= CONFIG =======
 // ======= BIZ CONFIG + LOGO =======
 function getBizConfig() {
@@ -4616,6 +4724,8 @@ function loadBizConfig() {
   const r = document.getElementById('cfgRecibo'); if (r) r.value = biz.recibo||'';
   // Logo preview in config
   _renderLogoPreview(biz.logo);
+  // Payment methods list in config
+  renderMediosPagoConfig();
 }
 
 function _renderLogoPreview(logoB64) {
