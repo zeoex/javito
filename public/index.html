@@ -1413,11 +1413,20 @@ input.form-control:focus{outline:none;border-color:var(--red)}
   <div class="modal modal-lg">
     <div class="modal-header"><h3>Nuevo Pedido Delivery</h3><button class="modal-close" onclick="closeModal('modalNuevoDelivery')">✕</button></div>
     <div class="modal-body">
-      <div class="form-row">
-        <div class="form-group"><label>Nombre del cliente</label><input class="form-control" id="dlvCliente" placeholder="Juan García"/></div>
-        <div class="form-group"><label>Teléfono</label><input class="form-control" id="dlvTel" placeholder="11-4567-8901"/></div>
+      <div class="form-group" style="position:relative">
+        <label>Cliente</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div style="position:relative;flex:1">
+            <input class="form-control" id="dlvCliente" placeholder="Buscar cliente..." autocomplete="off" oninput="dlvClienteSearch(this.value)" onfocus="dlvClienteSearch(this.value)"/>
+            <div id="dlvClienteSugg" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #ddd;border-radius:6px;z-index:999;max-height:180px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.12)"></div>
+          </div>
+          <button class="btn btn-outline btn-sm" title="Agregar nuevo cliente" onclick="dlvNuevoCliente()" style="white-space:nowrap;flex-shrink:0">+ Nuevo</button>
+        </div>
       </div>
-      <div class="form-group"><label>Dirección</label><input class="form-control" id="dlvDir" placeholder="Av. Corrientes 1234, 3°B"/></div>
+      <div class="form-row">
+        <div class="form-group"><label>Teléfono</label><input class="form-control" id="dlvTel" placeholder="11-4567-8901"/></div>
+        <div class="form-group"><label>Dirección</label><input class="form-control" id="dlvDir" placeholder="Av. Corrientes 1234, 3°B"/></div>
+      </div>
       <div class="form-row">
         <div class="form-group"><label>Repartidor</label>
           <select class="form-control" id="dlvRepartidor">
@@ -3302,6 +3311,47 @@ function advanceDelivery(id) {
   showToast(`Pedido ${o.numero} → ${o.estado}`);
 }
 
+function dlvClienteSearch(q) {
+  const sugg = document.getElementById('dlvClienteSugg');
+  const term = q.trim().toLowerCase();
+  if (!term) { sugg.style.display = 'none'; return; }
+  const matches = clientesData.filter(c => c.nombre.toLowerCase().includes(term) || (c.telefono||'').includes(term)).slice(0, 6);
+  if (!matches.length) { sugg.style.display = 'none'; return; }
+  sugg.innerHTML = matches.map(c =>
+    `<div onclick="dlvSelectCliente(${c.id})" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:13px" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background=''">
+      <strong>${c.nombre}</strong><br><span style="color:#666">${c.telefono||''} · ${c.email||''}</span>
+    </div>`
+  ).join('');
+  sugg.style.display = 'block';
+}
+
+function dlvSelectCliente(id) {
+  const c = clientesData.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('dlvCliente').value = c.nombre;
+  document.getElementById('dlvCliente').dataset.clienteId = c.id;
+  document.getElementById('dlvTel').value = c.telefono || '';
+  document.getElementById('dlvDir').value = c.ultimaDireccion || '';
+  document.getElementById('dlvClienteSugg').style.display = 'none';
+}
+
+function dlvNuevoCliente() {
+  document.getElementById('dlvCliente').value = '';
+  document.getElementById('dlvCliente').dataset.clienteId = '';
+  document.getElementById('dlvTel').value = '';
+  document.getElementById('dlvDir').value = '';
+  document.getElementById('dlvClienteSugg').style.display = 'none';
+  document.getElementById('dlvCliente').focus();
+  showToast('Ingresá los datos del nuevo cliente', 'info');
+}
+
+document.addEventListener('click', e => {
+  const sugg = document.getElementById('dlvClienteSugg');
+  if (sugg && !sugg.contains(e.target) && e.target.id !== 'dlvCliente') {
+    sugg.style.display = 'none';
+  }
+});
+
 function crearDelivery() {
   if (!cajaAbierta) {
     closeModal('modalNuevoDelivery');
@@ -3310,10 +3360,22 @@ function crearDelivery() {
     openModal('modalAbrirCaja');
     return;
   }
-  const cliente = document.getElementById('dlvCliente').value;
+  const clienteInput = document.getElementById('dlvCliente');
+  const cliente = clienteInput.value;
   const tel = document.getElementById('dlvTel').value;
   const dir = document.getElementById('dlvDir').value;
   if(!cliente||!dir){ showToast('Completá los datos del cliente','error'); return; }
+  // Save new client to clientesData if not already existing
+  const clienteIdStr = clienteInput.dataset.clienteId;
+  const clienteId = clienteIdStr ? parseInt(clienteIdStr) : null;
+  if (!clienteId || !clientesData.find(c => c.id === clienteId)) {
+    const newCId = (clientesData.reduce((m,c)=>Math.max(m,c.id),0)||0)+1;
+    clientesData.push({id:newCId,nombre:cliente,telefono:tel,email:'',pedidos:1,total_gastado:0,ultimo:new Date().toISOString().slice(0,10),ultimaDireccion:dir});
+    clienteInput.dataset.clienteId = newCId;
+  } else {
+    const cx = clientesData.find(c => c.id === clienteId);
+    if (cx) cx.ultimaDireccion = dir;
+  }
   const newId = deliveryData.length+1;
   deliveryData.unshift({
     id:newId, numero:`D-${String(newId).padStart(3,'0')}`, estado:'nuevo',
@@ -3332,22 +3394,65 @@ function crearDelivery() {
   showToast(`Delivery ${deliveryData[0].numero} creado`,'success');
 }
 
-function imprimirDelivery(id) {
+function epComandaDelivery(o) {
+  const E='\x1B', G='\x1D', NL='\n';
+  const biz = getBizConfig();
+  const cols = printConfig.paperWidth==='58mm' ? 32 : 42;
+  const SEP = '-'.repeat(cols);
+  let s = E+'@';
+  s += E+'a\x01'+E+'E\x01'+G+'!\x10'+(biz.nombre||'ResTito')+NL+G+'!\x00'+E+'E\x00';
+  s += SEP+NL;
+  s += E+'a\x01'+G+'!\x11'+E+'E\x01'+'DELIVERY '+o.numero+NL+G+'!\x00'+E+'E\x00';
+  s += E+'a\x01'+new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+NL;
+  s += SEP+NL+E+'a\x00';
+  s += 'Cliente: '+(o.cliente.nombre||'')+NL;
+  if (o.cliente.telefono) s += 'Tel: '+o.cliente.telefono+NL;
+  s += 'Dir: '+o.direccion+NL;
+  s += SEP+NL;
+  o.items.forEach(i => {
+    const desc = i.qty+'x '+i.nombre+(i.size?' ('+i.size+')':'');
+    s += E+'E\x01'+desc+E+'E\x00'+NL;
+    if (i.precio) {
+      const prUni = '$'+i.precio.toLocaleString('es-AR');
+      const prTot = '$'+(i.precio*i.qty).toLocaleString('es-AR');
+      const prLine = prUni+'  '+prTot;
+      s += ' '.repeat(Math.max(0, cols - prLine.length))+prLine+NL;
+    }
+    if (i.nota) s += '   Nota: '+i.nota+NL;
+  });
+  s += SEP+NL;
+  const ts = '$'+o.total.toLocaleString('es-AR');
+  s += E+'E\x01'+'TOTAL'+' '.repeat(Math.max(1,cols-5-ts.length))+ts+E+'E\x00'+NL;
+  s += 'Pago: '+(o.metodo_pago||'')+NL;
+  s += SEP+NL;
+  if (o.repartidor) s += 'Repartidor: '+o.repartidor+NL;
+  s += NL+NL+NL+G+'V\x42\x00';
+  return [{type:'raw',format:'plain',data:s,options:{language:'ESCPOS'}}];
+}
+
+async function imprimirDelivery(id) {
   const o = deliveryData.find(x=>String(x.id)===String(id));
+  if (!o) return;
+  if (QzTray.isOn()) {
+    const ok = await QzTray.send(epComandaDelivery(o));
+    if (ok) { showToast('🖨️ Comanda delivery impresa','success'); return; }
+  }
+  // HTML fallback
+  const biz = getBizConfig();
   const win = window.open('', '_blank', 'width=400,height=600');
   win.document.write(`
     <html><head><title>Pedido ${o.numero}</title>
-    <style>body{font-family:monospace;padding:20px;font-size:14px}h2{text-align:center}hr{border:1px dashed #000}.total{font-size:18px;font-weight:bold}</style></head>
+    <style>body{font-family:monospace;padding:20px;font-size:14px}h2{text-align:center}hr{border:1px dashed #000}.total{font-size:18px;font-weight:bold}.pr{text-align:right;font-size:12px;color:#555}</style></head>
     <body>
-      <h2>${getBizConfig().nombre}</h2>
+      <h2>${biz.nombre}</h2>
       <p style="text-align:center">DELIVERY ${o.numero}</p>
       <p style="text-align:center">${new Date().toLocaleString('es-AR')}</p>
       <hr>
       <p><b>Cliente:</b> ${o.cliente.nombre}</p>
-      <p><b>Tel:</b> ${o.cliente.telefono}</p>
+      <p><b>Tel:</b> ${o.cliente.telefono||''}</p>
       <p><b>Dir:</b> ${o.direccion}</p>
       <hr>
-      ${o.items.map(i=>`<p>${i.nombre} x${i.qty} ......... $${(i.precio*i.qty).toLocaleString()}</p>`).join('')}
+      ${o.items.map(i=>`<div><b>${i.qty}x ${i.nombre}</b></div>${i.precio?`<div class="pr">$${i.precio.toLocaleString()} c/u &nbsp;→&nbsp; $${(i.precio*i.qty).toLocaleString()}</div>`:''}`).join('')}
       <hr>
       <p class="total">TOTAL: $${o.total.toLocaleString()}</p>
       <p><b>Pago:</b> ${o.metodo_pago}</p>

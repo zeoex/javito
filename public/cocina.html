@@ -735,6 +735,17 @@ function initSocket() {
       badge.className = 'conn-badge conn-online';
       document.getElementById('conn-text').textContent = 'EN VIVO';
       showToast('Conectado al servidor en vivo', 'green');
+      fetch('/api/cocina/comandas')
+        .then(r => r.json())
+        .then(data => {
+          if (Array.isArray(data) && data.length) {
+            comandas = data.map(c => ({...c, createdAt: new Date(c.createdAt)}));
+            renderAll(null);
+          } else if (Array.isArray(data) && data.length === 0) {
+            comandas = [];
+            renderAll(null);
+          }
+        }).catch(() => {});
     });
 
     socket.on('disconnect', () => {
