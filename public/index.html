@@ -1234,6 +1234,18 @@ input.form-control:focus{outline:none;border-color:var(--red)}
           </div>
         </div>
         <div class="card">
+          <div class="card-header"><h3>💰 Propinas</h3></div>
+          <div class="card-body">
+            <p style="font-size:12px;color:var(--gray);margin-bottom:10px">Si configurás un porcentaje mayor a 0, se mostrará como sugerencia en el ticket de cierre de mesa y en el comprobante X.</p>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <label style="font-size:13px;font-weight:600;white-space:nowrap">% de propina sugerida</label>
+              <input class="form-control" type="number" id="propinaPct" min="0" max="50" step="0.5" style="width:80px" placeholder="0"/>
+              <button class="btn btn-primary btn-sm" onclick="savePropina()">💾 Guardar</button>
+            </div>
+            <p style="font-size:11px;color:var(--gray);margin-top:6px">Con 0% no aparece nada en el ticket.</p>
+          </div>
+        </div>
+        <div class="card">
           <div class="card-header"><h3>🍕 Cocina & Delivery</h3></div>
           <div class="card-body">
             <div class="grid-3">
@@ -1786,9 +1798,22 @@ function epCuenta(mesa, items) {
       left + ' '.repeat(gap) + right
     ];
   });
-  const ts = '$'+total.toLocaleString('es-AR');
   lines.push('-'.repeat(cols));
-  lines.push(E+'E\x01'+'TOTAL'+' '.repeat(Math.max(1,cols-5-ts.length))+ts+E+'E\x00');
+  const ts = '$'+total.toLocaleString('es-AR');
+  const propinaPct = getPropinaPct();
+  if (propinaPct > 0) {
+    const totalConPropina = Math.round(total * (1 + propinaPct/100));
+    const cpStr   = '$'+totalConPropina.toLocaleString('es-AR');
+    const stLabel = 'SUBTOTAL';
+    const cpLabel = `Con Propina ${propinaPct}%`;
+    const sinLabel= 'TOTAL sin Propina';
+    lines.push(E+'E\x01'+stLabel+' '.repeat(Math.max(1,cols-stLabel.length-ts.length))+ts+E+'E\x00');
+    lines.push(cpLabel+' '.repeat(Math.max(1,cols-cpLabel.length-cpStr.length))+cpStr);
+    lines.push('');
+    lines.push(sinLabel+' '.repeat(Math.max(1,cols-sinLabel.length-ts.length))+ts);
+  } else {
+    lines.push(E+'E\x01'+'TOTAL'+' '.repeat(Math.max(1,cols-5-ts.length))+ts+E+'E\x00');
+  }
   return _ep(mesa, lines, biz.nombre||'ResTito', biz.recibo||'Gracias por su visita');
 }
 
@@ -1824,7 +1849,20 @@ function epComprobanteX(f) {
   });
   s += SEP+NL;
   const ts = '$'+f.total.toLocaleString('es-AR');
-  s += E+'E\x01'+'TOTAL'+' '.repeat(Math.max(1,cols-5-ts.length))+ts+E+'E\x00'+NL;
+  const propinaPctX = getPropinaPct();
+  if (propinaPctX > 0) {
+    const totalConPropina = Math.round(f.total * (1 + propinaPctX/100));
+    const cpStr    = '$'+totalConPropina.toLocaleString('es-AR');
+    const stLabel  = 'SUBTOTAL';
+    const cpLabel  = `Con Propina ${propinaPctX}%`;
+    const sinLabel = 'TOTAL sin Propina';
+    s += E+'E\x01'+stLabel+' '.repeat(Math.max(1,cols-stLabel.length-ts.length))+ts+E+'E\x00'+NL;
+    s += cpLabel+' '.repeat(Math.max(1,cols-cpLabel.length-cpStr.length))+cpStr+NL;
+    s += NL;
+    s += sinLabel+' '.repeat(Math.max(1,cols-sinLabel.length-ts.length))+ts+NL;
+  } else {
+    s += E+'E\x01'+'TOTAL'+' '.repeat(Math.max(1,cols-5-ts.length))+ts+E+'E\x00'+NL;
+  }
   s += 'Forma de pago: '+pagoLabel+NL;
   s += SEP+NL;
   if (biz.recibo) s += E+'a\x01'+biz.recibo+NL;
@@ -1867,7 +1905,17 @@ function _buildComprobanteHtml(f) {
   <div class="sep"></div>
   ${itemRows}
   <div class="sep"></div>
-  <div class="row total"><span>TOTAL</span><span>$${f.total.toLocaleString('es-AR')}</span></div>
+  ${(() => {
+    const pct = getPropinaPct();
+    if (pct > 0) {
+      const conP = Math.round(f.total * (1 + pct/100));
+      return `<div class="row total"><span>SUBTOTAL</span><span>$${f.total.toLocaleString('es-AR')}</span></div>
+  <div class="row" style="color:#e67e22;font-weight:700"><span>Con Propina ${pct}%</span><span>$${conP.toLocaleString('es-AR')}</span></div>
+  <div style="height:4px"></div>
+  <div class="row" style="font-size:10px;color:#555"><span>TOTAL sin Propina</span><span>$${f.total.toLocaleString('es-AR')}</span></div>`;
+    }
+    return `<div class="row total"><span>TOTAL</span><span>$${f.total.toLocaleString('es-AR')}</span></div>`;
+  })()}
   <div class="meta">Pago: ${pagoLabel}</div>
   <div class="sep"></div>
   ${biz.recibo?`<div class="center" style="margin-top:4px;font-size:11px">${biz.recibo}</div>`:''}
@@ -1921,9 +1969,25 @@ function verComprobanteX(id) {
     ${sep}
     ${itemsHtml}
     ${sep}
-    <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:900">
-      <span>TOTAL</span><span>$${f.total.toLocaleString('es-AR')}</span>
+    ${(() => {
+      const pct = getPropinaPct();
+      if (pct > 0) {
+        const conP = Math.round(f.total * (1 + pct/100));
+        return `<div style="display:flex;justify-content:space-between;font-size:15px;font-weight:900">
+      <span>SUBTOTAL</span><span>$${f.total.toLocaleString('es-AR')}</span>
     </div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:#e67e22;margin-top:4px">
+      <span>Con Propina ${pct}%</span><span>$${conP.toLocaleString('es-AR')}</span>
+    </div>
+    <div style="height:6px"></div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:#555">
+      <span>TOTAL sin Propina</span><span>$${f.total.toLocaleString('es-AR')}</span>
+    </div>`;
+      }
+      return `<div style="display:flex;justify-content:space-between;font-size:16px;font-weight:900">
+      <span>TOTAL</span><span>$${f.total.toLocaleString('es-AR')}</span>
+    </div>`;
+    })()}
     <div style="text-align:center;margin-top:6px;font-size:12px">
       <span style="background:#f0f0f0;padding:3px 12px;border-radius:12px">${pagoIcon[f.pago]||''} ${pagoLabel[f.pago]||f.pago}</span>
     </div>
@@ -4715,6 +4779,19 @@ function _saveMediosPago(medios) {
   showToast('Medios de pago guardados','success');
 }
 
+function getPropinaPct() {
+  try { return parseFloat(getBizConfig().propinaPct) || 0; } catch(e){ return 0; }
+}
+
+function savePropina() {
+  const pct = parseFloat(document.getElementById('propinaPct')?.value) || 0;
+  const biz = getBizConfig();
+  biz.propinaPct = pct;
+  localStorage.setItem('pz_biz_cfg', JSON.stringify(biz));
+  saveState();
+  showToast('Propina guardada','success');
+}
+
 // ======= CONFIG =======
 // ======= BIZ CONFIG + LOGO =======
 function getBizConfig() {
@@ -4755,6 +4832,9 @@ function loadBizConfig() {
   _renderLogoPreview(biz.logo);
   // Payment methods list in config
   renderMediosPagoConfig();
+  // Propina
+  const pp = document.getElementById('propinaPct');
+  if (pp) pp.value = biz.propinaPct || 0;
 }
 
 function _renderLogoPreview(logoB64) {
