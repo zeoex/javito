@@ -1448,12 +1448,13 @@ input.form-control:focus{outline:none;border-color:var(--red)}
           </select>
         </div>
         <div class="form-group"><label>Método de pago</label>
-          <select class="form-control" id="dlvPago"></select>
+          <select class="form-control" id="dlvPago" onchange="dlvActualizarTotal()"></select>
         </div>
       </div>
       <div class="form-group"><label>Items del pedido</label>
         <div id="dlvItems"></div>
         <button class="btn btn-outline btn-sm mt-1" onclick="addDlvItem()">+ Agregar ítem</button>
+        <div id="dlvLiveTotal" style="display:none;margin-top:10px;background:#f8f9fa;border-radius:8px;padding:10px 12px;font-size:13px"></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -3441,12 +3442,16 @@ function crearDelivery() {
     total += precio * qty;
   });
   if (!items.length) { showToast('Agregá al menos un producto','error'); return; }
+  const mpId = document.getElementById('dlvPago').value;
+  const mp = getMediosPago().find(m => m.id === mpId);
+  const recargo = mp?.recargo || 0;
+  const totalFinal = recargo > 0 ? Math.round(total * (1 + recargo/100)) : total;
   const newId = deliveryData.length+1;
   deliveryData.unshift({
     id:newId, numero:`D-${String(newId).padStart(3,'0')}`, estado:'nuevo',
     cliente:{nombre:cliente,telefono:tel}, direccion:dir,
-    items, total,
-    metodo_pago: document.getElementById('dlvPago').value,
+    items, total: totalFinal,
+    metodo_pago: mpId,
     repartidor: document.getElementById('dlvRepartidor').value||null,
     hora: new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})
   });
@@ -3545,6 +3550,8 @@ function abrirModalNuevoDelivery() {
   document.getElementById('dlvDir').value = '';
   document.getElementById('dlvClienteSugg').style.display = 'none';
   document.getElementById('dlvItems').innerHTML = '';
+  const lt = document.getElementById('dlvLiveTotal');
+  if (lt) lt.style.display = 'none';
   // Populate payment methods dynamically
   const pagoSel = document.getElementById('dlvPago');
   const medios = getMediosPago();
@@ -3567,46 +3574,70 @@ function addDlvItem() {
   const container = document.getElementById('dlvItems');
   const row = document.createElement('div');
   row.className = 'dlv-item-row';
-  row.style.cssText = 'display:grid;grid-template-columns:1fr auto auto auto;gap:6px;margin-top:8px;align-items:center';
-  const firstProd = productosData[0] || {};
-  const hasSizes = !!(firstProd.precio_chica);
+  row.style.cssText = 'display:flex;gap:5px;margin-top:6px;align-items:center;flex-wrap:wrap';
   const prodOptions = productosData.map(p=>`<option value="${p.id}">${p.emoji||''} ${p.nombre}</option>`).join('');
-
-  function buildSizeSelect(prod) {
-    if (!prod || !prod.precio_chica) return '<span class="dlv-size-placeholder"></span>';
-    return `<select class="form-control dlv-size-sel" style="width:96px" onchange="dlvUpdatePrecio(this)">
-      <option value="chica">Chica $${prod.precio_chica.toLocaleString('es-AR')}</option>
-      <option value="mediana" selected>Mediana $${prod.precio_mediana.toLocaleString('es-AR')}</option>
-      <option value="grande">Grande $${prod.precio_grande.toLocaleString('es-AR')}</option>
-    </select>`;
-  }
-
+  const firstProd = productosData[0];
+  const sizeHtml = firstProd?.precio_chica
+    ? `<select class="form-control dlv-size-sel" style="width:100px;font-size:12px" onchange="dlvActualizarTotal()">
+        <option value="chica">Chica $${firstProd.precio_chica.toLocaleString('es-AR')}</option>
+        <option value="mediana" selected>Mediana $${firstProd.precio_mediana.toLocaleString('es-AR')}</option>
+        <option value="grande">Grande $${firstProd.precio_grande.toLocaleString('es-AR')}</option>
+      </select>`
+    : `<span class="dlv-size-wrap-inner" style="font-size:12px;color:#555;white-space:nowrap;padding:0 4px">$${(firstProd?.precio||0).toLocaleString('es-AR')}</span>`;
   row.innerHTML = `
-    <div>
-      <select class="form-control dlv-prod-sel" onchange="dlvCambioProducto(this)">
-        ${prodOptions}
-      </select>
-      <input class="form-control dlv-nota" placeholder="Nota (opcional)" style="margin-top:4px;font-size:12px"/>
-    </div>
-    <div class="dlv-size-wrap">${buildSizeSelect(productosData[0])}</div>
-    <input class="form-control dlv-qty" type="number" value="1" min="1" style="width:60px"/>
-    <button class="btn btn-danger btn-sm" onclick="this.closest('.dlv-item-row').remove()" style="flex-shrink:0">✕</button>`;
+    <select class="form-control dlv-prod-sel" style="flex:2;min-width:130px;font-size:13px" onchange="dlvCambioProducto(this)">${prodOptions}</select>
+    <div class="dlv-size-wrap" style="flex-shrink:0">${sizeHtml}</div>
+    <input class="form-control dlv-qty" type="number" value="1" min="1" style="width:52px;font-size:13px" oninput="dlvActualizarTotal()"/>
+    <input class="form-control dlv-nota" placeholder="Nota" style="width:80px;font-size:11px;padding:6px 8px" title="Nota del ítem"/>
+    <button class="btn btn-danger btn-sm" onclick="this.closest('.dlv-item-row').remove();dlvActualizarTotal()" style="flex-shrink:0;padding:6px 8px">✕</button>`;
   container.appendChild(row);
+  dlvActualizarTotal();
 }
 
 function dlvCambioProducto(sel) {
   const row = sel.closest('.dlv-item-row');
   const prod = productosData.find(p => p.id === parseInt(sel.value));
   const wrap = row.querySelector('.dlv-size-wrap');
-  if (prod && prod.precio_chica) {
-    wrap.innerHTML = `<select class="form-control dlv-size-sel" style="width:96px">
+  if (prod?.precio_chica) {
+    wrap.innerHTML = `<select class="form-control dlv-size-sel" style="width:100px;font-size:12px" onchange="dlvActualizarTotal()">
       <option value="chica">Chica $${prod.precio_chica.toLocaleString('es-AR')}</option>
       <option value="mediana" selected>Mediana $${prod.precio_mediana.toLocaleString('es-AR')}</option>
       <option value="grande">Grande $${prod.precio_grande.toLocaleString('es-AR')}</option>
     </select>`;
   } else {
-    wrap.innerHTML = prod ? `<span style="font-size:12px;color:#555;white-space:nowrap">$${(prod.precio||0).toLocaleString('es-AR')}</span>` : '';
+    wrap.innerHTML = `<span class="dlv-size-wrap-inner" style="font-size:12px;color:#555;white-space:nowrap;padding:0 4px">$${(prod?.precio||0).toLocaleString('es-AR')}</span>`;
   }
+  dlvActualizarTotal();
+}
+
+function dlvActualizarTotal() {
+  const rows = document.querySelectorAll('#dlvItems .dlv-item-row');
+  let subtotal = 0;
+  rows.forEach(row => {
+    const prodId = parseInt(row.querySelector('.dlv-prod-sel')?.value);
+    const qty    = parseInt(row.querySelector('.dlv-qty')?.value) || 1;
+    const size   = row.querySelector('.dlv-size-sel')?.value || null;
+    const prod   = productosData.find(p => p.id === prodId);
+    if (!prod) return;
+    let precio = prod.precio || 0;
+    if (size === 'chica')   precio = prod.precio_chica   || prod.precio || 0;
+    if (size === 'mediana') precio = prod.precio_mediana || prod.precio || 0;
+    if (size === 'grande')  precio = prod.precio_grande  || prod.precio || 0;
+    subtotal += precio * qty;
+  });
+  const el = document.getElementById('dlvLiveTotal');
+  if (!el) return;
+  if (!subtotal) { el.style.display = 'none'; return; }
+  const mpId  = document.getElementById('dlvPago')?.value;
+  const mp    = getMediosPago().find(m => m.id === mpId);
+  const rec   = mp?.recargo || 0;
+  const total = rec > 0 ? Math.round(subtotal * (1 + rec/100)) : subtotal;
+  el.style.display = '';
+  el.innerHTML = rec > 0
+    ? `<div style="display:flex;justify-content:space-between;color:#555;margin-bottom:2px"><span>Subtotal</span><span>$${subtotal.toLocaleString('es-AR')}</span></div>
+       <div style="display:flex;justify-content:space-between;color:#e67e22;margin-bottom:4px"><span>Recargo ${rec}% (${mp.nombre})</span><span>+$${(total-subtotal).toLocaleString('es-AR')}</span></div>
+       <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:900;color:#1d3557;border-top:1px solid #dee2e6;padding-top:6px"><span>TOTAL</span><span>$${total.toLocaleString('es-AR')}</span></div>`
+    : `<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;color:#1d3557"><span>Total</span><span>$${total.toLocaleString('es-AR')}</span></div>`;
 }
 
 // ======= PRODUCTOS =======
