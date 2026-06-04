@@ -7,11 +7,28 @@
 const express    = require('express');
 const http       = require('http');
 const path       = require('path');
+const fs         = require('fs');
 const cors       = require('cors');
 const bcrypt     = require('bcryptjs');
 const jwt        = require('jsonwebtoken');
+const crypto     = require('crypto');
 const { Server } = require('socket.io');
 const { v4: uuidv4 } = require('uuid');
+
+// ─────────────────────────────────────────────
+//  QZ TRAY — certificate + signing
+// ─────────────────────────────────────────────
+const QZ_CERT_PATH = path.join(__dirname, 'qz-cert.pem');
+const QZ_KEY_PATH  = path.join(__dirname, 'qz-key.pem');
+let _qzCert = null;
+let _qzKey  = null;
+try {
+  if (fs.existsSync(QZ_CERT_PATH) && fs.existsSync(QZ_KEY_PATH)) {
+    _qzCert = fs.readFileSync(QZ_CERT_PATH, 'utf8');
+    _qzKey  = fs.readFileSync(QZ_KEY_PATH,  'utf8');
+    console.log('[QZ] Certificate loaded');
+  }
+} catch(e) { console.warn('[QZ] No certificate found — anonymous mode'); }
 
 // ─────────────────────────────────────────────
 //  POSTGRESQL
@@ -400,6 +417,7 @@ function authMiddleware(req, res, next) {
 app.use('/api', (req, res, next) => {
   if (req.path.startsWith('/auth')) return next();
   if (req.path === '/state' && req.method === 'GET') return next();
+  if (req.path.startsWith('/qz/')) return next();
   // Repartidor accesses these without admin JWT (has its own auth)
   if (req.path === '/delivery/activos' && req.method === 'GET') return next();
   if (/^\/delivery\/[^/]+\/estado$/.test(req.path) && req.method === 'PUT') return next();
@@ -1325,6 +1343,25 @@ setInterval(() => {
     emitDashboardStats();
   }
 }, 10000);
+
+// ─────────────────────────────────────────────
+//  QZ TRAY SIGNING ROUTES (no auth needed — public)
+// ─────────────────────────────────────────────
+app.get('/api/qz/certificate', (_req, res) => {
+  res.type('text/plain').send(_qzCert || '');
+});
+
+app.post('/api/qz/sign', (req, res) => {
+  const { request } = req.body || {};
+  if (!request || !_qzKey) return res.json({ signature: '' });
+  try {
+    const sign = crypto.createSign('SHA512');
+    sign.update(request);
+    res.json({ signature: sign.sign(_qzKey, 'base64') });
+  } catch(e) {
+    res.json({ signature: '' });
+  }
+});
 
 // ─────────────────────────────────────────────
 //  STATE PERSISTENCE ROUTES

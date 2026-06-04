@@ -1629,13 +1629,22 @@ const QzTray = {
   async connect() {
     if (typeof qz === 'undefined') {
       this._badge('none');
-      showToast('⚠️ Librería QZ no cargada — revisá la conexión a internet y recargá la página', 'error');
+      showToast('⚠️ Librería QZ no cargada — recargá la página con Ctrl+Shift+R', 'error');
       return false;
     }
     showToast('🔄 Conectando con QZ Tray…', '');
     try {
-      qz.security.setCertificatePromise((resolve) => resolve(''));
-      qz.security.setSignaturePromise((msg) => (resolve) => resolve(''));
+      // Use server-signed certificate so QZ Tray remembers the trust decision
+      qz.security.setCertificatePromise((resolve, reject) => {
+        fetch('/api/qz/certificate').then(r => r.text()).then(resolve).catch(reject);
+      });
+      qz.security.setSignaturePromise((toSign) => (resolve, reject) => {
+        fetch('/api/qz/sign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ request: toSign })
+        }).then(r => r.json()).then(d => resolve(d.signature)).catch(reject);
+      });
       if (!qz.websocket.isActive()) {
         await qz.websocket.connect({ retries: 3, delay: 1 });
       }
