@@ -904,7 +904,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <div class="section" id="sec-delivery">
         <div class="section-header">
           <h2>🛵 Delivery</h2>
-          <button class="btn btn-primary btn-sm" onclick="openModal('modalNuevoDelivery')">+ Nuevo Pedido</button>
+          <button class="btn btn-primary btn-sm" onclick="abrirModalNuevoDelivery()">+ Nuevo Pedido</button>
         </div>
         <div class="delivery-pipeline" id="deliveryPipeline"></div>
       </div>
@@ -1443,9 +1443,9 @@ input.form-control:focus{outline:none;border-color:var(--red)}
           </select>
         </div>
       </div>
-      <div class="form-group"><label>Items</label>
-        <div id="dlvItems"><div class="text-muted" style="font-size:13px">Use los botones para agregar productos</div></div>
-        <button class="btn btn-outline btn-sm mt-1" onclick="addDlvItem()">+ Agregar Item</button>
+      <div class="form-group"><label>Items del pedido</label>
+        <div id="dlvItems"></div>
+        <button class="btn btn-outline btn-sm mt-1" onclick="addDlvItem()">+ Agregar ítem</button>
       </div>
     </div>
     <div class="modal-footer">
@@ -3335,7 +3335,7 @@ function dlvSelectCliente(id) {
   document.getElementById('dlvCliente').value = c.nombre;
   document.getElementById('dlvCliente').dataset.clienteId = c.id;
   document.getElementById('dlvTel').value = c.telefono || '';
-  document.getElementById('dlvDir').value = c.ultimaDireccion || '';
+  document.getElementById('dlvDir').value = c.ultimaDireccion || c.direccion || '';
   document.getElementById('dlvClienteSugg').style.display = 'none';
 }
 
@@ -3359,7 +3359,7 @@ document.addEventListener('click', e => {
 function crearDelivery() {
   if (!cajaAbierta) {
     closeModal('modalNuevoDelivery');
-    _pendingCajaAction = () => openModal('modalNuevoDelivery');
+    _pendingCajaAction = () => abrirModalNuevoDelivery();
     document.getElementById('cajaAbrirMonto').value = '5000';
     openModal('modalAbrirCaja');
     return;
@@ -3380,11 +3380,30 @@ function crearDelivery() {
     const cx = clientesData.find(c => c.id === clienteId);
     if (cx) cx.ultimaDireccion = dir;
   }
+  // Read items from the form rows
+  const itemRows = document.querySelectorAll('#dlvItems .dlv-item-row');
+  const items = [];
+  let total = 0;
+  itemRows.forEach(row => {
+    const prodId = parseInt(row.querySelector('.dlv-prod-sel')?.value);
+    const qty    = parseInt(row.querySelector('.dlv-qty')?.value) || 1;
+    const size   = row.querySelector('.dlv-size-sel')?.value || null;
+    const nota   = row.querySelector('.dlv-nota')?.value.trim() || '';
+    const prod   = productosData.find(p => p.id === prodId);
+    if (!prod) return;
+    let precio = prod.precio || 0;
+    if (size === 'chica')   precio = prod.precio_chica   || prod.precio || 0;
+    if (size === 'mediana') precio = prod.precio_mediana || prod.precio || 0;
+    if (size === 'grande')  precio = prod.precio_grande  || prod.precio || 0;
+    items.push({ nombre: prod.nombre, qty, precio, size: size||null, nota });
+    total += precio * qty;
+  });
+  if (!items.length) { showToast('Agregá al menos un producto','error'); return; }
   const newId = deliveryData.length+1;
   deliveryData.unshift({
     id:newId, numero:`D-${String(newId).padStart(3,'0')}`, estado:'nuevo',
     cliente:{nombre:cliente,telefono:tel}, direccion:dir,
-    items:[{nombre:'A confirmar',qty:1,precio:0}], total:0,
+    items, total,
     metodo_pago: document.getElementById('dlvPago').value,
     repartidor: document.getElementById('dlvRepartidor').value||null,
     hora: new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})
@@ -3477,14 +3496,69 @@ function _buildDeliveryHtml(o, biz) {
     </body></html>`;
 }
 
+function abrirModalNuevoDelivery() {
+  document.getElementById('dlvCliente').value = '';
+  document.getElementById('dlvCliente').dataset.clienteId = '';
+  document.getElementById('dlvTel').value = '';
+  document.getElementById('dlvDir').value = '';
+  document.getElementById('dlvClienteSugg').style.display = 'none';
+  document.getElementById('dlvItems').innerHTML = '';
+  addDlvItem();
+  openModal('modalNuevoDelivery');
+}
+
+function _dlvPrecioLabel(prod, size) {
+  if (!prod) return '';
+  if (size === 'chica')   return '$'+(prod.precio_chica   || prod.precio || 0).toLocaleString('es-AR');
+  if (size === 'mediana') return '$'+(prod.precio_mediana || prod.precio || 0).toLocaleString('es-AR');
+  if (size === 'grande')  return '$'+(prod.precio_grande  || prod.precio || 0).toLocaleString('es-AR');
+  return '$'+(prod.precio || 0).toLocaleString('es-AR');
+}
+
 function addDlvItem() {
   const container = document.getElementById('dlvItems');
-  const d = document.createElement('div');
-  d.style.cssText = 'display:flex;gap:8px;margin-top:8px;align-items:center';
-  d.innerHTML = `<select class="form-control" style="flex:2">${productosData.map(p=>`<option value="${p.id}">${p.emoji} ${p.nombre}</option>`).join('')}</select>
-    <input class="form-control" type="number" value="1" min="1" style="width:70px"/>
-    <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✕</button>`;
-  container.appendChild(d);
+  const row = document.createElement('div');
+  row.className = 'dlv-item-row';
+  row.style.cssText = 'display:grid;grid-template-columns:1fr auto auto auto;gap:6px;margin-top:8px;align-items:center';
+  const firstProd = productosData[0] || {};
+  const hasSizes = !!(firstProd.precio_chica);
+  const prodOptions = productosData.map(p=>`<option value="${p.id}">${p.emoji||''} ${p.nombre}</option>`).join('');
+
+  function buildSizeSelect(prod) {
+    if (!prod || !prod.precio_chica) return '<span class="dlv-size-placeholder"></span>';
+    return `<select class="form-control dlv-size-sel" style="width:96px" onchange="dlvUpdatePrecio(this)">
+      <option value="chica">Chica $${prod.precio_chica.toLocaleString('es-AR')}</option>
+      <option value="mediana" selected>Mediana $${prod.precio_mediana.toLocaleString('es-AR')}</option>
+      <option value="grande">Grande $${prod.precio_grande.toLocaleString('es-AR')}</option>
+    </select>`;
+  }
+
+  row.innerHTML = `
+    <div>
+      <select class="form-control dlv-prod-sel" onchange="dlvCambioProducto(this)">
+        ${prodOptions}
+      </select>
+      <input class="form-control dlv-nota" placeholder="Nota (opcional)" style="margin-top:4px;font-size:12px"/>
+    </div>
+    <div class="dlv-size-wrap">${buildSizeSelect(productosData[0])}</div>
+    <input class="form-control dlv-qty" type="number" value="1" min="1" style="width:60px"/>
+    <button class="btn btn-danger btn-sm" onclick="this.closest('.dlv-item-row').remove()" style="flex-shrink:0">✕</button>`;
+  container.appendChild(row);
+}
+
+function dlvCambioProducto(sel) {
+  const row = sel.closest('.dlv-item-row');
+  const prod = productosData.find(p => p.id === parseInt(sel.value));
+  const wrap = row.querySelector('.dlv-size-wrap');
+  if (prod && prod.precio_chica) {
+    wrap.innerHTML = `<select class="form-control dlv-size-sel" style="width:96px">
+      <option value="chica">Chica $${prod.precio_chica.toLocaleString('es-AR')}</option>
+      <option value="mediana" selected>Mediana $${prod.precio_mediana.toLocaleString('es-AR')}</option>
+      <option value="grande">Grande $${prod.precio_grande.toLocaleString('es-AR')}</option>
+    </select>`;
+  } else {
+    wrap.innerHTML = prod ? `<span style="font-size:12px;color:#555;white-space:nowrap">$${(prod.precio||0).toLocaleString('es-AR')}</span>` : '';
+  }
 }
 
 // ======= PRODUCTOS =======
