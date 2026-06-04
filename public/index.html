@@ -15,6 +15,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <script src="/socket.io/socket.io.js"></script>
 <script src="/qz-tray.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--red:#e63946;--blue:#1d3557;--light:#f8f9fa;--white:#fff;--gray:#6c757d;--border:#dee2e6;--success:#28a745;--warning:#fd7e14;--danger:#dc3545;--info:#17a2b8;--mz-bg:#0d1b2a;--mz-surface:#112233;--mz-border:rgba(255,255,255,0.08);--mz-libre:#16a34a;--mz-libre-glow:rgba(22,163,74,0.4);--mz-ocupada:#d97706;--mz-ocupada-glow:rgba(217,119,6,0.4);--mz-cuenta:#dc2626;--mz-cuenta-glow:rgba(220,38,38,0.4);--tap:44px}
@@ -1243,6 +1244,17 @@ input.form-control:focus{outline:none;border-color:var(--red)}
               <button class="btn btn-primary btn-sm" onclick="savePropina()">💾 Guardar</button>
             </div>
             <p style="font-size:11px;color:var(--gray);margin-top:6px">Con 0% no aparece nada en el ticket.</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>📲 QR de la Carta</h3></div>
+          <div class="card-body">
+            <p style="font-size:12px;color:var(--gray);margin-bottom:12px">Imprimí el código QR para que tus clientes accedan a la carta digital desde su celular. El QR se genera con el logo del negocio si está configurado.</p>
+            <div id="qrCartaPreview" style="display:flex;justify-content:center;align-items:center;min-height:80px;margin-bottom:12px"></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-outline btn-sm" onclick="generarQRCarta()">👁️ Previsualizar</button>
+              <button class="btn btn-primary btn-sm" onclick="imprimirQRCarta()">🖨️ Imprimir QR</button>
+            </div>
           </div>
         </div>
         <div class="card">
@@ -4790,6 +4802,202 @@ function savePropina() {
   localStorage.setItem('pz_biz_cfg', JSON.stringify(biz));
   saveState();
   showToast('Propina guardada','success');
+}
+
+// ======= QR CARTA =======
+function _loadQRLib(cb) {
+  if (typeof QRCode !== 'undefined') { cb(); return; }
+  const s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+  s.onload = cb;
+  s.onerror = () => showToast('No se pudo cargar la librería QR — verificá la conexión','error');
+  document.head.appendChild(s);
+}
+
+function _buildQRCanvas(url, sizePx, logoSrc, onDone) {
+  // Render QR into hidden offscreen div → extract canvas → overlay logo → callback(dataUrl)
+  const tmp = document.createElement('div');
+  tmp.style.cssText = 'position:fixed;left:-9999px;top:-9999px;visibility:hidden';
+  document.body.appendChild(tmp);
+
+  new QRCode(tmp, {
+    text: url,
+    width: sizePx,
+    height: sizePx,
+    colorDark: '#000000',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.H   // nivel H permite cubrir ~30% con logo
+  });
+
+  const finish = () => {
+    const canvas = tmp.querySelector('canvas');
+    if (!canvas) { document.body.removeChild(tmp); onDone(null); return; }
+
+    const overlay = () => {
+      const dataUrl = canvas.toDataURL('image/png');
+      document.body.removeChild(tmp);
+      onDone(dataUrl);
+    };
+
+    if (logoSrc) {
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const s = Math.round(sizePx * 0.22);
+        const x = (sizePx - s) / 2, y = (sizePx - s) / 2;
+        const pad = 4;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(x - pad, y - pad, s + pad * 2, s + pad * 2);
+        ctx.drawImage(img, x, y, s, s);
+        overlay();
+      };
+      img.onerror = overlay;
+      img.src = logoSrc;
+    } else {
+      overlay();
+    }
+  };
+
+  // qrcodejs renderiza de forma síncrona en canvas pero con un microtask delay
+  setTimeout(finish, 120);
+}
+
+function generarQRCarta() {
+  const wrap = document.getElementById('qrCartaPreview');
+  if (!wrap) return;
+  wrap.innerHTML = '<span style="font-size:12px;color:var(--gray)">Generando...</span>';
+
+  _loadQRLib(() => {
+    const biz = getBizConfig();
+    const url = window.location.origin + '/carta';
+    _buildQRCanvas(url, 160, biz.logo || null, (dataUrl) => {
+      if (!dataUrl) { wrap.innerHTML = '<span style="font-size:12px;color:red">Error al generar QR</span>'; return; }
+      wrap.innerHTML = `
+        <div style="text-align:center">
+          <img src="${dataUrl}" style="width:160px;height:160px;border:1px solid #e5e7eb;border-radius:6px;display:block">
+          <div style="font-size:10px;color:var(--gray);margin-top:4px">${url}</div>
+        </div>`;
+    });
+  });
+}
+
+function imprimirQRCarta() {
+  _loadQRLib(() => {
+    const biz = getBizConfig();
+    const url = window.location.origin + '/carta';
+    showToast('Generando QR...','info');
+
+    _buildQRCanvas(url, 512, biz.logo || null, (dataUrl) => {
+      if (!dataUrl) { showToast('Error al generar QR','error'); return; }
+
+      const logoHtml = biz.logo
+        ? `<img src="${biz.logo}" class="biz-logo" alt="logo">`
+        : '';
+
+      const html = `<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="utf-8">
+<title>QR Carta — ${biz.nombre || 'ResTito'}</title>
+<style>
+  @page { size: 80mm auto; margin: 6mm 4mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Arial', sans-serif;
+    background: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  .card {
+    width: 72mm;
+    padding: 5mm 4mm 6mm;
+    border: 1px solid #d1d5db;
+    border-radius: 4mm;
+    text-align: center;
+  }
+  .biz-logo {
+    max-height: 12mm;
+    max-width: 40mm;
+    object-fit: contain;
+    margin-bottom: 3mm;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .biz-name {
+    font-size: 13px;
+    font-weight: 800;
+    color: #111827;
+    margin-bottom: 4mm;
+    letter-spacing: 0.3px;
+  }
+  .qr-frame {
+    width: 50mm;
+    height: 50mm;
+    margin: 0 auto 4mm;
+    border: 1px solid #e5e7eb;
+    border-radius: 2mm;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .qr-frame img { width: 100%; height: 100%; display: block; }
+  .scan-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 2mm;
+  }
+  .scan-sub {
+    font-size: 8px;
+    color: #6b7280;
+    margin-bottom: 2mm;
+  }
+  .url-chip {
+    display: inline-block;
+    background: #f3f4f6;
+    border-radius: 10mm;
+    padding: 1mm 3mm;
+    font-size: 7px;
+    color: #6b7280;
+    word-break: break-all;
+  }
+  .divider {
+    border: none;
+    border-top: 1px dashed #d1d5db;
+    margin: 3mm 0;
+  }
+  @media print {
+    body { margin: 0; padding: 0; }
+    .card { border: 1px solid #ccc; }
+  }
+</style>
+</head><body>
+<div class="card">
+  ${logoHtml}
+  <div class="biz-name">${biz.nombre || 'ResTito'}</div>
+  <div class="qr-frame">
+    <img src="${dataUrl}" alt="QR Carta">
+  </div>
+  <div class="scan-label">📱 Escaneá nuestra carta</div>
+  <div class="scan-sub">Mirá el menú completo desde tu celular</div>
+  <hr class="divider">
+  <span class="url-chip">${url}</span>
+</div>
+</body></html>`;
+
+      const w = window.open('', '_blank', 'width=360,height=480,top=100,left=200');
+      if (!w) { showToast('Bloqueado por el navegador — permitir popups', 'error'); return; }
+      w.document.write(html);
+      w.document.close();
+      w.addEventListener('afterprint', () => { try { w.close(); } catch(e){} });
+      setTimeout(() => { try { w.focus(); w.print(); } catch(e){} }, 400);
+    });
+  });
 }
 
 // ======= CONFIG =======
