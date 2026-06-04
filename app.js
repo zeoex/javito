@@ -67,9 +67,11 @@ async function initPG() {
         caja_moves JSONB DEFAULT '[]',
         caja_cierres JSONB DEFAULT '[]',
         categorias JSONB DEFAULT '[]',
+        biz_cfg JSONB DEFAULT '{}',
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
-      ALTER TABLE app_state ADD COLUMN IF NOT EXISTS categorias JSONB DEFAULT '[]'
+      ALTER TABLE app_state ADD COLUMN IF NOT EXISTS categorias JSONB DEFAULT '[]';
+      ALTER TABLE app_state ADD COLUMN IF NOT EXISTS biz_cfg JSONB DEFAULT '{}'
     `);
     console.log('[PG] app_state table ready');
   } catch(e) {
@@ -1423,22 +1425,22 @@ app.post('/api/state', authMiddleware, async (req, res) => {
     const pool = getPool();
     if (!pool) return res.json({ ok: true, skipped: true });
     const { mesas, delivery, facturas, clientes, usuarios, productos, mozo_historial,
-            caja_abierta, caja_inicial, caja_moves, caja_cierres, categorias } = req.body;
+            caja_abierta, caja_inicial, caja_moves, caja_cierres, categorias, biz_cfg } = req.body;
     await pool.query(`
       INSERT INTO app_state (id, mesas, delivery, facturas, clientes, usuarios, productos, mozo_historial,
-        caja_abierta, caja_inicial, caja_moves, caja_cierres, categorias, updated_at)
-      VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
+        caja_abierta, caja_inicial, caja_moves, caja_cierres, categorias, biz_cfg, updated_at)
+      VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
       ON CONFLICT (id) DO UPDATE SET
         mesas=$1, delivery=$2, facturas=$3, clientes=$4, usuarios=$5, productos=$6,
         mozo_historial=$7, caja_abierta=$8, caja_inicial=$9,
-        caja_moves=$10, caja_cierres=$11, categorias=$12, updated_at=NOW()
+        caja_moves=$10, caja_cierres=$11, categorias=$12, biz_cfg=$13, updated_at=NOW()
     `, [
       JSON.stringify(mesas||[]), JSON.stringify(delivery||[]), JSON.stringify(facturas||[]),
       JSON.stringify(clientes||[]), JSON.stringify(usuarios||[]), JSON.stringify(productos||[]),
       JSON.stringify(mozo_historial||[]),
       caja_abierta ?? true, caja_inicial ?? 5000,
       JSON.stringify(caja_moves||[]), JSON.stringify(caja_cierres||[]),
-      JSON.stringify(categorias||[])
+      JSON.stringify(categorias||[]), JSON.stringify(biz_cfg||{})
     ]);
     // Sync in-memory state so PATCH calls find correct IDs and server stays in sync
     if (Array.isArray(mesas))      db.mesas      = mesas;

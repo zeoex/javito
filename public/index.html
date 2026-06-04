@@ -2057,7 +2057,8 @@ function saveState() {
         caja_inicial: cajaInicial,
         caja_moves: cajaMoves,
         caja_cierres: cajaCierres,
-        categorias: categoriasData
+        categorias: categoriasData,
+        biz_cfg: getBizConfig()
       })
     }).catch(() => {});
   }
@@ -2128,6 +2129,9 @@ async function loadStateFromAPI() {
     if (arr(data.caja_moves).length > 0)      cajaMoves     = data.caja_moves.map(m=>({...m, desc:m.desc||'', monto:Number(m.monto)||0}));
     if (arr(data.caja_cierres).length > 0)    cajaCierres   = data.caja_cierres;
     if (arr(data.categorias).length > 0)      categoriasData= data.categorias;
+    if (data.biz_cfg && typeof data.biz_cfg === 'object' && data.biz_cfg.nombre) {
+      localStorage.setItem('pz_biz_cfg', JSON.stringify(data.biz_cfg));
+    }
 
     // Actualizar localStorage con los datos de PG (y registrar su timestamp)
     try {
@@ -4453,6 +4457,7 @@ function saveConfig() {
   biz.recibo  = document.getElementById('cfgRecibo')?.value?.trim() || '¡Gracias por su visita!';
   localStorage.setItem('pz_biz_cfg', JSON.stringify(biz));
   loadBizConfig();
+  saveState();
   showToast('Configuración guardada','success');
 }
 
