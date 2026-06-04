@@ -4655,18 +4655,16 @@ function renderMozoStats() {
 }
 
 // ======= MEDIOS DE PAGO =======
-const _MEDIOS_DEFAULT = [
-  {id:'efectivo',     nombre:'Efectivo',       icono:'💵', recargo:0},
-  {id:'tarjeta',      nombre:'Tarjeta/Posnet',  icono:'💳', recargo:0},
-  {id:'transferencia',nombre:'Transferencia',   icono:'📲', recargo:0},
-];
-
 function getMediosPago() {
   try {
     const biz = getBizConfig();
     if (Array.isArray(biz.mediosPago) && biz.mediosPago.length) return biz.mediosPago;
   } catch(e){}
-  return _MEDIOS_DEFAULT.map(m=>({...m}));
+  return [
+    {id:'efectivo',     nombre:'Efectivo',       icono:'💵', recargo:0},
+    {id:'tarjeta',      nombre:'Tarjeta/Posnet',  icono:'💳', recargo:0},
+    {id:'transferencia',nombre:'Transferencia',   icono:'📲', recargo:0},
+  ];
 }
 
 function renderMediosPagoConfig() {
