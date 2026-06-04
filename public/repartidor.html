@@ -118,11 +118,13 @@
   }
 
   .login-logo {
-    font-size: 64px;
+    width: 96px;
+    height: 96px;
     position: relative;
     z-index: 1;
     animation: floatBike 3s ease-in-out infinite;
-    filter: drop-shadow(0 4px 12px rgba(220,38,38,0.3));
+    filter: drop-shadow(0 6px 18px rgba(220,38,38,0.45));
+    border-radius: 24px;
   }
 
   @keyframes floatBike {
@@ -1365,7 +1367,7 @@
 
   <div class="login-logo-wrap">
     <div class="login-logo-glow"></div>
-    <div class="login-logo">🛵</div>
+    <img class="login-logo" src="/icon-repartidor.svg" alt="Repartidor"/>
   </div>
 
   <div class="login-brand">
@@ -1501,7 +1503,7 @@
           <div class="profile-avatar" id="profile-avatar">C</div>
           <div>
             <div class="profile-name" id="profile-name">Conductor</div>
-            <div class="profile-meta">🛵 Repartidor activo</div>
+            <div class="profile-meta">Repartidor activo</div>
             <div class="profile-meta" id="profile-phone">📞 11-0000-0000</div>
           </div>
         </div>
