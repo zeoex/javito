@@ -1176,14 +1176,29 @@ input.form-control:focus{outline:none;border-color:var(--red)}
                   <button class="btn btn-outline btn-sm" onclick="qzLoadPrinters()">🔄 Actualizar</button>
                 </div>
                 <details>
-                  <summary style="font-size:12px;font-weight:600;cursor:pointer;color:var(--gray);padding:4px 0">📋 Cómo instalar y configurar QZ Tray</summary>
-                  <ol style="font-size:12px;color:var(--gray);margin:8px 0 0 16px;line-height:1.9">
-                    <li>Descargá <strong>QZ Tray</strong> en <strong>qz.io/download</strong> e instalalo</li>
-                    <li>En la barra del sistema, clic derecho en QZ Tray → <strong>Advanced → Properties</strong></li>
-                    <li>Añadí la línea: <code>wss.require-auth=false</code> y guardá</li>
-                    <li>Reiniciá QZ Tray, luego hacé clic en <strong>"Conectar QZ"</strong></li>
-                    <li>Elegí tu impresora térmica en el desplegable</li>
-                  </ol>
+                  <summary style="font-size:12px;font-weight:600;cursor:pointer;color:var(--gray);padding:4px 0">📋 Cómo instalar y configurar QZ Tray (Windows 10/11)</summary>
+                  <div style="font-size:12px;color:var(--gray);margin:8px 0 0 0;line-height:1.8">
+                    <ol style="margin:0 0 0 16px">
+                      <li>Descargá <strong>QZ Tray</strong> en <strong>qz.io/download</strong> e instalalo normalmente</li>
+                      <li>
+                        <strong>Cerrá QZ Tray completamente</strong> — clic derecho en el ícono de la bandeja del sistema → <em>Stop</em> o <em>Exit</em>
+                      </li>
+                      <li>
+                        Presioná <kbd style="background:#eee;border:1px solid #ccc;border-radius:3px;padding:1px 5px">Win + R</kbd>, pegá esta ruta y presioná Enter:
+                        <div style="margin:4px 0;background:#1e1e1e;color:#d4d4d4;padding:6px 10px;border-radius:6px;font-family:monospace;font-size:11px;letter-spacing:.3px">%USERPROFILE%\qz-tray.properties</div>
+                        Si dice que no existe, escribí esa ruta en el Bloc de Notas y guardá el archivo ahí antes de continuar.
+                      </li>
+                      <li>
+                        Agregá al final del archivo esta línea exacta y guardá:
+                        <div style="margin:4px 0;background:#1e1e1e;color:#9cdcfe;padding:6px 10px;border-radius:6px;font-family:monospace;font-size:12px">wss.require-auth=false</div>
+                      </li>
+                      <li>Reiniciá QZ Tray desde el menú Inicio o el acceso directo</li>
+                      <li>Volvé acá y hacé clic en <strong>"Conectar QZ"</strong>, luego elegí tu impresora térmica en el desplegable</li>
+                    </ol>
+                    <div style="margin-top:8px;padding:6px 10px;background:#fff3cd;border-radius:6px;color:#856404;font-size:11px">
+                      ⚠️ <strong>Nota:</strong> El menú <em>Advanced → Properties</em> que aparece en otras guías <strong>no existe en Windows</strong>. El método correcto es editar el archivo directamente como se indica arriba.
+                    </div>
+                  </div>
                 </details>
               </div>
 
