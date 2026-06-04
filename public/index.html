@@ -4870,7 +4870,7 @@ function generarQRCarta() {
 
   _loadQRLib(() => {
     const biz = getBizConfig();
-    const url = window.location.origin + '/carta';
+    const url = window.location.origin + '/menu';
     _buildQRCanvas(url, 160, biz.logo || null, (dataUrl) => {
       if (!dataUrl) { wrap.innerHTML = '<span style="font-size:12px;color:red">Error al generar QR</span>'; return; }
       wrap.innerHTML = `
@@ -4896,7 +4896,7 @@ function descargarPDFQRCarta() {
   _loadQRLib(() => {
     _loadJsPDF(() => {
       const biz = getBizConfig();
-      const url = window.location.origin + '/carta';
+      const url = window.location.origin + '/menu';
       const nombre = biz.nombre || 'ResTito';
 
       _buildQRCanvas(url, 512, biz.logo || null, (qrDataUrl) => {
