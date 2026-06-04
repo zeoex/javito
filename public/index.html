@@ -2313,6 +2313,12 @@ function initApp() {
         printQueue.push(job);
         updatePqBadge();
       }
+      // Si el mozo ya imprimió con su QZ Tray, sólo notificar — no reimprimir
+      if (job.printedByClient) {
+        const typeLabel = job.type === 'cuenta' ? 'Cuenta' : 'Comanda';
+        showToast(`📋 ${typeLabel} Mesa #${job.mesaNumero} — impresa en mesa`, 'success');
+        return;
+      }
       if (QzTray.isOn() && job.items && job.mesa) {
         const escData = job.type==='cuenta' ? epCuenta(job.mesa,job.items) : epComanda(job.mesa,job.items);
         QzTray.send(escData).then(ok => {
@@ -3142,12 +3148,14 @@ async function imprimirComanda(id) {
   const m = mesasData.find(x=>String(x.id)===String(id));
   const comida = (m.pedido||[]).filter(i=>getCatsComanda().includes(i.categoria));
   if(!comida.length){ showToast('No hay comidas para imprimir','error'); return; }
-  // QZ Tray: direct ESC/POS
+
+  // Intentar imprimir localmente con QZ Tray (si disponible)
+  let printedLocal = false;
   if (QzTray.isOn()) {
-    const ok = await QzTray.send(epComanda(m, comida));
-    if (ok) { showToast('🖨️ Comanda impresa','success'); return; }
+    printedLocal = await QzTray.send(epComanda(m, comida));
   }
-  // Fallback: HTML via server → autoPrint
+
+  // SIEMPRE enviar al servidor para que admin/cocina reciba el print:job
   const hora = new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
   const lineas = comida.map(i=>{
     const lbl = `${i.nombre}${i.size?' ('+i.size+')':''}`;
@@ -3160,9 +3168,18 @@ async function imprimirComanda(id) {
     <hr class="sep">${lineas}<hr class="sep">`;
   const html = buildPrintDoc(`Comanda – Mesa ${m.numero}`, cuerpo);
   try {
-    await apiFetch('/print', {method:'POST', body:JSON.stringify({type:'comanda',html,items:comida,mesa:{numero:m.numero,mozo:m.mozo},mesaNumero:m.numero,label:`Comanda — Mesa #${m.numero}`})});
-    showToast('🖨️ Comanda enviada a imprimir','success');
-  } catch(e) { autoPrint(html); }
+    await apiFetch('/print', {method:'POST', body:JSON.stringify({
+      type:'comanda', html, items:comida,
+      mesa:{numero:m.numero,mozo:m.mozo},
+      mesaNumero:m.numero,
+      label:`Comanda — Mesa #${m.numero}`,
+      printedByClient: printedLocal   // admin no re-imprime si el mozo ya lo hizo
+    })});
+    showToast(printedLocal ? '🖨️ Comanda impresa y enviada a admin' : '🖨️ Comanda enviada a cocina','success');
+  } catch(e) {
+    if (!printedLocal) autoPrint(html);
+    showToast('🖨️ Comanda enviada','success');
+  }
 }
 
 async function imprimirCuenta(id) {
