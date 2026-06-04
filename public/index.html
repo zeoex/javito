@@ -37,7 +37,7 @@ body{font-family:'Inter',sans-serif;background:var(--light);color:#212529;overfl
 .login-logo-wrap{position:relative;margin-bottom:20px;display:flex;align-items:center;justify-content:center}
 .login-logo-glow{position:absolute;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--login-accent) 35%,transparent) 0%,transparent 70%);animation:lgPulse 2.5s ease-in-out infinite}
 @keyframes lgPulse{0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(1.2);opacity:1}}
-.login-logo-emoji{font-size:64px;position:relative;z-index:1;animation:lgFloat 3s ease-in-out infinite;filter:drop-shadow(0 4px 12px color-mix(in srgb,var(--login-accent) 30%,transparent))}
+.login-logo-emoji{font-size:64px;position:relative;z-index:1;animation:lgFloat 3s ease-in-out infinite;filter:drop-shadow(0 4px 16px color-mix(in srgb,var(--login-accent) 45%,transparent));display:flex;align-items:center;justify-content:center}
 @keyframes lgFloat{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-10px) rotate(2deg)}}
 @keyframes sFloat{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-5px) rotate(3deg)}}
 .s-emoji-animated{animation:sFloat 3s ease-in-out infinite;display:inline-block}
@@ -2555,12 +2555,15 @@ function initApp() {
 (function setupLoginBranding() {
   const path = window.location.pathname;
   const roles = {
-    '/mozo':  { emoji:'🤵', title:'Módulo Mozo',           email:'carlos@restito.com', pass:'mozo123',  hint:'Mozo: carlos@restito.com / mozo123', accent:'#059669', accentL:'#34d399' },
-    '/admin': { emoji:'🛡️',   title:'Módulo Administración', email:'admin@restito.com',  pass:'admin123', hint:'Admin: admin@restito.com / admin123',  accent:'#7c3aed', accentL:'#a78bfa' },
+    '/mozo':  { iconSrc:'/icon-mozo.svg',  title:'Módulo Mozo',           email:'carlos@restito.com', pass:'mozo123',  hint:'Mozo: carlos@restito.com / mozo123', accent:'#059669', accentL:'#34d399' },
+    '/admin': { iconSrc:'/icon-admin.svg', title:'Módulo Administración', email:'admin@restito.com',  pass:'admin123', hint:'Admin: admin@restito.com / admin123',  accent:'#7c3aed', accentL:'#a78bfa' },
   };
-  const cfg = roles[path] || { emoji:'🛡️', title:'Módulo Administración', email:'admin@restito.com', pass:'admin123', hint:'Admin: admin@restito.com / admin123', accent:'#7c3aed', accentL:'#a78bfa' };
+  const cfg = roles[path] || { iconSrc:'/icon-admin.svg', title:'Módulo Administración', email:'admin@restito.com', pass:'admin123', hint:'Admin: admin@restito.com / admin123', accent:'#7c3aed', accentL:'#a78bfa' };
   const le = document.getElementById('loginEmoji');
-  if (le) le.textContent = cfg.emoji || '🛡️';
+  if (le) {
+    le.innerHTML = `<img src="${cfg.iconSrc}" alt="icon" style="width:88px;height:88px;object-fit:contain;border-radius:20px;display:block">`;
+    le.style.fontSize = '0';
+  }
   document.getElementById('loginTitle').textContent   = cfg.title;
   document.getElementById('loginEmail').value         = cfg.email;
   document.getElementById('loginPass').value          = cfg.pass;
