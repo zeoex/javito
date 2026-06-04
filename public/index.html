@@ -4742,16 +4742,10 @@ function loadBizConfig() {
     se.style.fontSize = '';
     se.classList.add('s-emoji-animated');
   }
-  // Logo in login screen
-  const ll = document.getElementById('loginLogoWrap');
+  // Login screen: ALWAYS show the animated role icon — never replace with biz logo
+  // The business logo goes in the sidebar and receipts only, not the login
   const le = document.getElementById('loginEmoji');
-  if (biz.logo && ll) {
-    ll.innerHTML = `<img src="${biz.logo}" alt="logo" style="max-height:80px;max-width:200px;object-fit:contain;border-radius:6px;margin-bottom:8px">`;
-    if (le) le.style.display = 'none';
-  } else {
-    // No logo: show animated emoji — DO NOT wipe the wrap (setupLoginBranding already set it)
-    if (le) le.style.display = '';
-  }
+  if (le) le.style.display = '';
   // Config form fields
   const n = document.getElementById('cfgNombre'); if (n) n.value = biz.nombre;
   const d = document.getElementById('cfgDir');    if (d) d.value = biz.dir||'';
