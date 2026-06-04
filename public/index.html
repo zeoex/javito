@@ -2469,7 +2469,7 @@ function initApp() {
 (function setupLoginBranding() {
   const path = window.location.pathname;
   const roles = {
-    '/mozo':  { emoji:'🧑‍🍳', title:'Módulo Mozo',           email:'carlos@restito.com', pass:'mozo123',  hint:'Mozo: carlos@restito.com / mozo123', accent:'#059669', accentL:'#34d399' },
+    '/mozo':  { emoji:'🤵', title:'Módulo Mozo',           email:'carlos@restito.com', pass:'mozo123',  hint:'Mozo: carlos@restito.com / mozo123', accent:'#059669', accentL:'#34d399' },
     '/admin': { emoji:'🛡️',   title:'Módulo Administración', email:'admin@restito.com',  pass:'admin123', hint:'Admin: admin@restito.com / admin123',  accent:'#7c3aed', accentL:'#a78bfa' },
   };
   const cfg = roles[path] || { emoji:'🛡️', title:'Módulo Administración', email:'admin@restito.com', pass:'admin123', hint:'Admin: admin@restito.com / admin123', accent:'#7c3aed', accentL:'#a78bfa' };
@@ -4737,7 +4737,7 @@ function loadBizConfig() {
     se.style.fontSize = '0';
     se.classList.remove('s-emoji-animated');
   } else if (se) {
-    const roleIcon = {admin:'🛡️', mozo:'🧑‍🍳', cajero:'💰', cocina:'👨‍🍳'}[window._currentUserRol] || '🍴';
+    const roleIcon = {admin:'🛡️', mozo:'🤵', cajero:'💰', cocina:'👨‍🍳'}[window._currentUserRol] || '🍴';
     se.innerHTML = roleIcon;
     se.style.fontSize = '';
     se.classList.add('s-emoji-animated');
