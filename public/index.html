@@ -1184,30 +1184,30 @@ input.form-control:focus{outline:none;border-color:var(--red)}
                         <strong>Cerrá QZ Tray completamente</strong> — clic derecho en el ícono de la bandeja del sistema → <em>Stop</em> o <em>Exit</em>
                       </li>
                       <li>
-                        Abrí el <strong>Explorador de archivos</strong> y navegá a esta carpeta:
-                        <div style="margin:4px 0;background:#1e1e1e;color:#d4d4d4;padding:6px 10px;border-radius:6px;font-family:monospace;font-size:11px;letter-spacing:.3px">C:\Program Files\QZ Tray\</div>
-                        Buscá el archivo <strong>qz-tray.properties</strong> y abrilo con el <strong>Bloc de Notas como Administrador</strong>: buscá "Bloc de notas" en el menú Inicio → clic derecho → <em>Ejecutar como administrador</em> → Archivo → Abrir → navegá a esa carpeta.
+                        <strong>Si te aparece el cartel "anonymous request":</strong>
+                        <div style="margin:6px 0;padding:8px 12px;background:#d4edda;border-radius:6px;color:#155724;font-size:11px;line-height:1.9">
+                          <strong>✅ Solución permanente — Site Manager:</strong><br>
+                          1. Clic derecho en QZ Tray (ícono en la barra del sistema) → <strong>Site Manager</strong><br>
+                          2. Hacé clic en el botón <strong>+</strong><br>
+                          3. En "Site URL" ingresá: <code style="background:#c3e6cb;padding:1px 5px;border-radius:3px">https://restito-production.up.railway.app</code><br>
+                          4. Marcá <strong>Allow</strong> → <strong>Save</strong><br>
+                          5. Listo — no volverá a pedir autorización
+                        </div>
                       </li>
                       <li>
-                        Agregá estas <strong>dos líneas</strong> al final del archivo y guardá:
+                        <strong>Alternativa:</strong> editá el archivo de configuración manualmente.<br>
+                        Abrí el <strong>Explorador de archivos</strong> → <span style="font-family:monospace;font-size:11px">C:\Program Files\QZ Tray\</span> → abrí <strong>qz-tray.properties</strong> con el <strong>Bloc de Notas como Administrador</strong> y agregá al final:
                         <div style="margin:4px 0;background:#1e1e1e;color:#9cdcfe;padding:8px 10px;border-radius:6px;font-family:monospace;font-size:12px;line-height:1.8">wss.require-auth=false<br>security.prompt.disabled=true</div>
-                        <span style="color:#155724;font-size:11px">✅ <code>wss.require-auth=false</code> permite la conexión · <code>security.prompt.disabled=true</code> elimina el cartel de autorización</span>
+                        <span style="color:#155724;font-size:11px">✅ Guardá el archivo y reiniciá QZ Tray.</span>
                       </li>
                       <li>Reiniciá QZ Tray desde el menú Inicio o el acceso directo</li>
                       <li>Volvé acá y hacé clic en <strong>"Conectar QZ"</strong>, luego elegí tu impresora térmica en el desplegable</li>
                     </ol>
                     <div style="margin-top:8px;padding:8px 10px;background:#d1ecf1;border-radius:6px;color:#0c5460;font-size:11px">
-                      💡 <strong>Si el cartel "anonymous request" sigue apareciendo</strong> aunque hayas guardado las propiedades: clic derecho en QZ Tray → <em>Site Manager</em> → botón <strong>+</strong> → ingresá la URL del sistema → marcá <em>Allow</em> → guardá. Eso lo recuerda de forma permanente.
-                    </div>
-                    <div style="margin-top:8px;padding:8px 10px;background:#d4edda;border-radius:6px;color:#155724;font-size:11px">
-                      ✅ <strong>Para que QZ Tray acepte el certificado sin volver a preguntar:</strong><br>
-                      1. Descargá el certificado: <a href="/api/qz/certificate.crt" download="restito-qz.crt" style="color:#155724;font-weight:700">📥 Descargar restito-qz.crt</a><br>
-                      2. Copiá el archivo descargado a esta carpeta:
-                      <div style="margin:3px 0;background:#1e1e1e;color:#d4d4d4;padding:5px 10px;border-radius:5px;font-family:monospace;font-size:11px">C:\Program Files\QZ Tray\certs\</div>
-                      3. Reiniciá QZ Tray — ya no aparecerá más el cartel de autorización.
+                      💡 <strong>Certificado (opcional):</strong> si QZ Tray sigue mostrando advertencias de certificado, descargá <a href="/api/qz/certificate.crt" download="restito-qz.crt" style="color:#0c5460;font-weight:700">📥 restito-qz.crt</a> y copialo a <span style="font-family:monospace;font-size:11px">C:\Program Files\QZ Tray\certs\</span>. Reiniciá QZ Tray.
                     </div>
                     <div style="margin-top:6px;padding:6px 10px;background:#fff3cd;border-radius:6px;color:#856404;font-size:11px">
-                      ⚠️ El menú <em>Advanced → Properties</em> que aparece en otras guías <strong>no existe en Windows</strong>. Editá el archivo directamente como se indica arriba.
+                      ⚠️ El menú <em>Advanced → Properties</em> que aparece en otras guías <strong>no existe en Windows</strong>. Usá el Site Manager o editá el archivo directamente como se indica arriba.
                     </div>
                   </div>
                 </details>

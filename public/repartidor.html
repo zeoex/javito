@@ -1689,9 +1689,9 @@ async function bootApp() {
 /* ── SOCKET ──────────────────────────────────────── */
 function initSocket() {
   try {
-    socket = io();
+    socket = io({ transports: ['polling', 'websocket'] });
 
-    socket.on('connect', () => {
+    socket.on('connect', async () => {
       console.log('[socket] conectado', socket.id);
       socket.emit('join:room', 'delivery');
       // Update conn badge
@@ -1699,6 +1699,14 @@ function initSocket() {
       const text  = document.getElementById('conn-text');
       if (badge) { badge.className = 'conn-online'; }
       if (text)  { text.textContent = 'ONLINE'; }
+      // Reload delivery list to sync any changes missed during disconnect
+      try {
+        const res = await fetch('/api/delivery/activos');
+        if (res.ok) {
+          const fresh = await res.json();
+          if (Array.isArray(fresh)) { pedidos = fresh; renderOrders(); }
+        }
+      } catch(e) {}
     });
 
     socket.on('disconnect', () => {
