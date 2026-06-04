@@ -239,6 +239,7 @@ const db = {
     { id: uuidv4(), nombre: 'Administrador',  email: 'admin@restito.com',      password: hash('admin123'),    rol: 'admin',      activo: true, createdAt: new Date().toISOString() },
     { id: uuidv4(), nombre: 'Supervisor',     email: 'supervisor@restito.com', password: hash('super123'),    rol: 'supervisor', activo: true, createdAt: new Date().toISOString() },
     { id: uuidv4(), nombre: 'Cajero 01',      email: 'cajero01@restito.com',   password: hash('cajero123'),   rol: 'cajero',     activo: true, createdAt: new Date().toISOString() },
+    { id: uuidv4(), nombre: 'Carlos Mozo',    email: 'carlos@restito.com',     password: hash('mozo123'),     rol: 'mozo',       activo: true, createdAt: new Date().toISOString() },
     { id: uuidv4(), nombre: 'Mozo Martín',    email: 'mozo01@restito.com',     password: hash('mozo123'),     rol: 'mozo',       activo: true, createdAt: new Date().toISOString() },
     { id: uuidv4(), nombre: 'Mozo Laura',     email: 'mozo02@restito.com',     password: hash('mozo456'),     rol: 'mozo',       activo: true, createdAt: new Date().toISOString() },
     { id: uuidv4(), nombre: 'Cocinero Pedro', email: 'cocinero@restito.com',   password: hash('cocina123'),   rol: 'cocinero',   activo: true, createdAt: new Date().toISOString() },
@@ -1394,7 +1395,7 @@ app.post('/api/qz/sign', (req, res) => {
   const { request } = req.body || {};
   if (!request || !_qzKey) return res.json({ signature: '' });
   try {
-    const sign = crypto.createSign('SHA512');
+    const sign = crypto.createSign('SHA256');
     sign.update(request);
     res.json({ signature: sign.sign(_qzKey, 'base64') });
   } catch(e) {
