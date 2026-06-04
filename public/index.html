@@ -14,7 +14,7 @@
 <link rel="apple-touch-icon" href="/icon-mozo.svg"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <script src="/socket.io/socket.io.js"></script>
-<script src="https://cdn.qz.io/qz-tray/qz-tray.js" crossorigin="anonymous"></script>
+<script src="/qz-tray.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--red:#e63946;--blue:#1d3557;--light:#f8f9fa;--white:#fff;--gray:#6c757d;--border:#dee2e6;--success:#28a745;--warning:#fd7e14;--danger:#dc3545;--info:#17a2b8;--mz-bg:#0d1b2a;--mz-surface:#112233;--mz-border:rgba(255,255,255,0.08);--mz-libre:#16a34a;--mz-libre-glow:rgba(22,163,74,0.4);--mz-ocupada:#d97706;--mz-ocupada-glow:rgba(217,119,6,0.4);--mz-cuenta:#dc2626;--mz-cuenta-glow:rgba(220,38,38,0.4);--tap:44px}
@@ -1184,9 +1184,10 @@ input.form-control:focus{outline:none;border-color:var(--red)}
                         <strong>Cerrá QZ Tray completamente</strong> — clic derecho en el ícono de la bandeja del sistema → <em>Stop</em> o <em>Exit</em>
                       </li>
                       <li>
-                        Presioná <kbd style="background:#eee;border:1px solid #ccc;border-radius:3px;padding:1px 5px">Win + R</kbd>, pegá esta ruta y presioná Enter:
-                        <div style="margin:4px 0;background:#1e1e1e;color:#d4d4d4;padding:6px 10px;border-radius:6px;font-family:monospace;font-size:11px;letter-spacing:.3px">%USERPROFILE%\qz-tray.properties</div>
-                        Si dice que no existe, escribí esa ruta en el Bloc de Notas y guardá el archivo ahí antes de continuar.
+                        Abrí el <strong>Explorador de archivos</strong> y navegá a esta carpeta:
+                        <div style="margin:4px 0;background:#1e1e1e;color:#d4d4d4;padding:6px 10px;border-radius:6px;font-family:monospace;font-size:11px;letter-spacing:.3px">C:\Program Files\QZ Tray\</div>
+                        Buscá el archivo <strong>qz-tray.properties</strong> dentro de esa carpeta y abrilo con el <strong>Bloc de Notas</strong> (clic derecho → Abrir con → Bloc de notas).<br>
+                        <span style="color:#856404">⚠️ Si el Bloc de Notas no deja guardar por permisos, abrilo como Administrador: buscá "Bloc de notas" en el menú Inicio, clic derecho → <em>Ejecutar como administrador</em>, luego abrí el archivo desde ahí.</span>
                       </li>
                       <li>
                         Agregá al final del archivo esta línea exacta y guardá:
