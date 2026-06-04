@@ -1175,7 +1175,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
                   </select>
                   <button class="btn btn-outline btn-sm" onclick="qzLoadPrinters()">🔄 Actualizar</button>
                 </div>
-                <details>
+                <details open>
                   <summary style="font-size:12px;font-weight:600;cursor:pointer;color:var(--gray);padding:4px 0">📋 Cómo instalar y configurar QZ Tray (Windows 10/11)</summary>
                   <div style="font-size:12px;color:var(--gray);margin:8px 0 0 0;line-height:1.8">
                     <ol style="margin:0 0 0 16px">
@@ -1186,18 +1186,21 @@ input.form-control:focus{outline:none;border-color:var(--red)}
                       <li>
                         Abrí el <strong>Explorador de archivos</strong> y navegá a esta carpeta:
                         <div style="margin:4px 0;background:#1e1e1e;color:#d4d4d4;padding:6px 10px;border-radius:6px;font-family:monospace;font-size:11px;letter-spacing:.3px">C:\Program Files\QZ Tray\</div>
-                        Buscá el archivo <strong>qz-tray.properties</strong> dentro de esa carpeta y abrilo con el <strong>Bloc de Notas</strong> (clic derecho → Abrir con → Bloc de notas).<br>
-                        <span style="color:#856404">⚠️ Si el Bloc de Notas no deja guardar por permisos, abrilo como Administrador: buscá "Bloc de notas" en el menú Inicio, clic derecho → <em>Ejecutar como administrador</em>, luego abrí el archivo desde ahí.</span>
+                        Buscá el archivo <strong>qz-tray.properties</strong> y abrilo con el <strong>Bloc de Notas como Administrador</strong>: buscá "Bloc de notas" en el menú Inicio → clic derecho → <em>Ejecutar como administrador</em> → Archivo → Abrir → navegá a esa carpeta.
                       </li>
                       <li>
-                        Agregá al final del archivo esta línea exacta y guardá:
-                        <div style="margin:4px 0;background:#1e1e1e;color:#9cdcfe;padding:6px 10px;border-radius:6px;font-family:monospace;font-size:12px">wss.require-auth=false</div>
+                        Agregá estas <strong>dos líneas</strong> al final del archivo y guardá:
+                        <div style="margin:4px 0;background:#1e1e1e;color:#9cdcfe;padding:8px 10px;border-radius:6px;font-family:monospace;font-size:12px;line-height:1.8">wss.require-auth=false<br>security.prompt.disabled=true</div>
+                        <span style="color:#155724;font-size:11px">✅ <code>wss.require-auth=false</code> permite la conexión · <code>security.prompt.disabled=true</code> elimina el cartel de autorización</span>
                       </li>
                       <li>Reiniciá QZ Tray desde el menú Inicio o el acceso directo</li>
                       <li>Volvé acá y hacé clic en <strong>"Conectar QZ"</strong>, luego elegí tu impresora térmica en el desplegable</li>
                     </ol>
-                    <div style="margin-top:8px;padding:6px 10px;background:#fff3cd;border-radius:6px;color:#856404;font-size:11px">
-                      ⚠️ <strong>Nota:</strong> El menú <em>Advanced → Properties</em> que aparece en otras guías <strong>no existe en Windows</strong>. El método correcto es editar el archivo directamente como se indica arriba.
+                    <div style="margin-top:8px;padding:8px 10px;background:#d1ecf1;border-radius:6px;color:#0c5460;font-size:11px">
+                      💡 <strong>Si el cartel "anonymous request" sigue apareciendo</strong> aunque hayas guardado las propiedades: clic derecho en QZ Tray → <em>Site Manager</em> → botón <strong>+</strong> → ingresá la URL del sistema → marcá <em>Allow</em> → guardá. Eso lo recuerda de forma permanente.
+                    </div>
+                    <div style="margin-top:6px;padding:6px 10px;background:#fff3cd;border-radius:6px;color:#856404;font-size:11px">
+                      ⚠️ El menú <em>Advanced → Properties</em> que aparece en otras guías <strong>no existe en Windows</strong>. Editá el archivo directamente como se indica arriba.
                     </div>
                   </div>
                 </details>
