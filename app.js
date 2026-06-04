@@ -1395,7 +1395,7 @@ app.post('/api/qz/sign', (req, res) => {
   const { request } = req.body || {};
   if (!request || !_qzKey) return res.json({ signature: '' });
   try {
-    const sign = crypto.createSign('SHA256');
+    const sign = crypto.createSign('SHA1');
     sign.update(request);
     res.json({ signature: sign.sign(_qzKey, 'base64') });
   } catch(e) {
