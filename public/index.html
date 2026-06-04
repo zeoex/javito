@@ -2350,15 +2350,24 @@ function initApp() {
         showToast(`📋 ${typeLabel} Mesa #${job.mesaNumero} — impresa en mesa`, 'success');
         return;
       }
-      if (QzTray.isOn() && job.items && job.mesa) {
-        const escData = job.type==='cuenta' ? epCuenta(job.mesa,job.items) : epComanda(job.mesa,job.items);
-        QzTray.send(escData).then(ok => {
-          if (!ok) autoPrint(job.html);
-          else showToast('🖨️ Impreso: '+(job.label||'trabajo'),'success');
-        });
-      } else {
+      if (QzTray.isOn()) {
+        let escData = null;
+        if (job.type === 'delivery' && job.delivery) {
+          escData = epComandaDelivery(job.delivery);
+        } else if (job.items && job.mesa) {
+          escData = job.type==='cuenta' ? epCuenta(job.mesa,job.items) : epComanda(job.mesa,job.items);
+        }
+        if (escData) {
+          QzTray.send(escData).then(ok => {
+            if (!ok) autoPrint(job.html);
+            else showToast('🖨️ Impreso: '+(job.label||'trabajo'),'success');
+          });
+          return;
+        }
+      }
+      if (job.html) {
         autoPrint(job.html);
-        showToast(`🖨️ ${job.type==='cuenta'?'Cuenta':'Comanda'} Mesa #${job.mesaNumero}`,'success');
+        showToast(`🖨️ ${job.label || (job.type==='cuenta'?'Cuenta':'Comanda')}`,'success');
       }
     });
     socket.on('print:queue:update', (queue) => {
@@ -2450,17 +2459,12 @@ function initApp() {
 (function setupLoginBranding() {
   const path = window.location.pathname;
   const roles = {
-    '/mozo':  { icon:'/icon-mozo.svg', title:'Módulo Mozo',           email:'carlos@restito.com', pass:'mozo123',  hint:'Mozo: carlos@restito.com / mozo123', accent:'#059669', accentL:'#34d399' },
+    '/mozo':  { emoji:'🧑‍🍳', title:'Módulo Mozo',           email:'carlos@restito.com', pass:'mozo123',  hint:'Mozo: carlos@restito.com / mozo123', accent:'#059669', accentL:'#34d399' },
     '/admin': { emoji:'🛡️',   title:'Módulo Administración', email:'admin@restito.com',  pass:'admin123', hint:'Admin: admin@restito.com / admin123',  accent:'#7c3aed', accentL:'#a78bfa' },
   };
   const cfg = roles[path] || { emoji:'🛡️', title:'Módulo Administración', email:'admin@restito.com', pass:'admin123', hint:'Admin: admin@restito.com / admin123', accent:'#7c3aed', accentL:'#a78bfa' };
   const le = document.getElementById('loginEmoji');
-  const ll = document.getElementById('loginLogoWrap');
-  if (cfg.icon && ll && le) {
-    ll.innerHTML = `<div class="login-logo-glow"></div><img src="${cfg.icon}" alt="ícono" style="width:80px;height:80px;object-fit:contain;position:relative;z-index:1;filter:drop-shadow(0 4px 12px rgba(0,0,0,.3))">`;
-  } else if (le) {
-    le.textContent = cfg.emoji || '🛡️';
-  }
+  if (le) le.textContent = cfg.emoji || '🛡️';
   document.getElementById('loginTitle').textContent   = cfg.title;
   document.getElementById('loginEmail').value         = cfg.email;
   document.getElementById('loginPass').value          = cfg.pass;
@@ -3433,15 +3437,29 @@ function epComandaDelivery(o) {
 async function imprimirDelivery(id) {
   const o = deliveryData.find(x=>String(x.id)===String(id));
   if (!o) return;
+  // 1. Try local QZ Tray — direct ESC/POS, no dialog
   if (QzTray.isOn()) {
     const ok = await QzTray.send(epComandaDelivery(o));
-    if (ok) { showToast('🖨️ Comanda delivery impresa','success'); return; }
+    if (ok) { showToast('🖨️ Impreso correctamente','success'); return; }
   }
-  // HTML fallback
+  // 2. Route via print hub (any device with QZ Tray picks it up)
   const biz = getBizConfig();
-  const win = window.open('', '_blank', 'width=400,height=600');
-  win.document.write(`
-    <html><head><title>Pedido ${o.numero}</title>
+  const htmlFallback = _buildDeliveryHtml(o, biz);
+  try {
+    await fetch('/api/print', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ type:'delivery', delivery:o, html:htmlFallback, label:`Delivery ${o.numero}` })
+    });
+    showToast('🖨️ Enviado a impresora','success');
+  } catch(e) {
+    autoPrint(htmlFallback);
+  }
+}
+
+function _buildDeliveryHtml(o, biz) {
+  biz = biz || getBizConfig();
+  return `<html><head><title>Pedido ${o.numero}</title>
     <style>body{font-family:monospace;padding:20px;font-size:14px}h2{text-align:center}hr{border:1px dashed #000}.total{font-size:18px;font-weight:bold}.pr{text-align:right;font-size:12px;color:#555}</style></head>
     <body>
       <h2>${biz.nombre}</h2>
@@ -3452,16 +3470,11 @@ async function imprimirDelivery(id) {
       <p><b>Tel:</b> ${o.cliente.telefono||''}</p>
       <p><b>Dir:</b> ${o.direccion}</p>
       <hr>
-      ${o.items.map(i=>`<div><b>${i.qty}x ${i.nombre}</b></div>${i.precio?`<div class="pr">$${i.precio.toLocaleString()} c/u &nbsp;→&nbsp; $${(i.precio*i.qty).toLocaleString()}</div>`:''}`).join('')}
+      ${o.items.map(i=>`<div><b>${i.qty}x ${i.nombre}</b></div>${i.precio?`<div class="pr">$${i.precio.toLocaleString()} c/u &rarr; $${(i.precio*i.qty).toLocaleString()}</div>`:''}`).join('')}
       <hr>
       <p class="total">TOTAL: $${o.total.toLocaleString()}</p>
       <p><b>Pago:</b> ${o.metodo_pago}</p>
-      <hr>
-      <p style="text-align:center">¡Gracias por su pedido!</p>
-    </body></html>
-  `);
-  win.document.close();
-  win.print();
+    </body></html>`;
 }
 
 function addDlvItem() {
