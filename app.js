@@ -426,6 +426,9 @@ app.use('/api', (req, res, next) => {
   // Repartidor accesses these without admin JWT (has its own auth)
   if (req.path === '/delivery/activos' && req.method === 'GET') return next();
   if (/^\/delivery\/[^/]+\/estado$/.test(req.path) && req.method === 'PUT') return next();
+  // Mozo sends comandas and print jobs — no auth required (internal intranet actions)
+  if (req.path === '/cocina/comanda' && req.method === 'POST') return next();
+  if (req.path === '/print' && req.method === 'POST') return next();
   authMiddleware(req, res, next);
 });
 
@@ -652,7 +655,7 @@ app.patch('/api/mesas/:id', authMiddleware, (req, res) => {
 // ─────────────────────────────────────────────
 //  PRINT ROUTES
 // ─────────────────────────────────────────────
-app.post('/api/print', authMiddleware, (req, res) => {
+app.post('/api/print', (req, res) => {
   const { type, html, mesaNumero, label, items, mesa, printedByClient } = req.body;
   if (!html && !printedByClient) return res.status(400).json({ error: 'html requerido' });
   const job = {
@@ -982,7 +985,7 @@ app.put('/api/delivery/:id/estado', async (req, res) => {
 //  COCINA ROUTES
 // ─────────────────────────────────────────────
 // Mozo creates a kitchen comanda from imprimirComanda()
-app.post('/api/cocina/comanda', authMiddleware, (req, res) => {
+app.post('/api/cocina/comanda', (req, res) => {
   const { mesa, mozo, items } = req.body;
   if (!mesa || !items || !items.length) return res.status(400).json({ error: 'mesa e items requeridos' });
   const comanda = {
