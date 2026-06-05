@@ -852,7 +852,17 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 
       <!-- DASHBOARD -->
       <div class="section active" id="sec-dashboard">
-        <!-- Quick Access Circular Buttons -->
+        <!-- Backup alert — visible when 7+ days without backup, no close button -->
+        <div id="dashBackupAlert" style="display:none;background:linear-gradient(135deg,#92400e,#b45309);border-radius:14px;padding:16px 18px;margin-bottom:20px;color:#fff;display:none">
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+            <div style="font-size:28px;flex-shrink:0">💾</div>
+            <div style="flex:1;min-width:200px">
+              <div id="dashBackupAlertMsg" style="font-size:14px;font-weight:700;margin-bottom:3px">Realizá una copia de seguridad</div>
+              <div style="font-size:12px;opacity:.85">Los datos del sistema están en riesgo si no tenés un backup reciente guardado fuera del servidor.</div>
+            </div>
+            <button onclick="descargarBackup()" style="background:#fff;color:#92400e;border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap;font-family:inherit;flex-shrink:0">💾 Hacer backup ahora</button>
+          </div>
+        </div>
         <div class="home-quick">
           <div class="home-quick-label">Acceso rápido</div>
           <div class="home-actions">
@@ -1183,6 +1193,26 @@ input.form-control:focus{outline:none;border-color:var(--red)}
               <p style="font-size:13px;color:var(--gray);margin-bottom:14px">Los cambios en mesas, delivery, clientes y demás se guardan automáticamente en este navegador.</p>
               <button class="btn btn-danger" onclick="confirmarResetDemo()">🗑️ Restablecer datos demo</button>
               <p style="font-size:11px;color:var(--gray);margin-top:16px;margin-bottom:0">ResTito By ZeODev</p>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header" style="display:flex;align-items:center;gap:8px">
+              <h3 style="flex:1">💾 Copias de seguridad</h3>
+              <span id="cfgBackupStatus" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:#d4edda;color:#155724">✓ Al día</span>
+            </div>
+            <div class="card-body">
+              <p style="font-size:13px;color:var(--gray);margin-bottom:4px">Exportá todos los datos del sistema a un archivo JSON. Guardalo en un lugar seguro fuera del servidor (PC, Drive, pendrive).</p>
+              <div id="cfgLastBackupInfo" style="font-size:12px;color:var(--gray);margin-bottom:14px"></div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                <button class="btn btn-primary" onclick="descargarBackup()">💾 Descargar backup</button>
+                <label class="btn btn-outline" style="cursor:pointer;margin:0">
+                  📂 Restaurar desde archivo
+                  <input type="file" accept=".json" style="display:none" onchange="restaurarBackup(this)">
+                </label>
+              </div>
+              <div style="margin-top:12px;padding:10px 12px;background:#fef3c7;border-radius:8px;font-size:12px;color:#92400e">
+                ⚠️ Recordatorio automático semanal en el dashboard si no hay backup reciente.
+              </div>
             </div>
           </div>
           <div class="card" id="cardComanderas">
@@ -2943,6 +2973,24 @@ function loadDashboard() {
   renderDashMesas();
   renderDashDelivery();
   renderActividades();
+  _renderBackupAlert();
+}
+
+function _renderBackupAlert() {
+  const alert = document.getElementById('dashBackupAlert');
+  if (!alert) return;
+  const lastBackup = parseInt(localStorage.getItem('pz_last_backup') || '0');
+  const daysSince = lastBackup ? Math.floor((Date.now() - lastBackup) / 86400000) : null;
+  const needsBackup = !lastBackup || daysSince >= 7;
+  if (needsBackup) {
+    const msg = !lastBackup
+      ? '⚠️ Nunca hiciste una copia de seguridad. ¡Hacela ahora!'
+      : `⚠️ Última copia hace ${daysSince} día${daysSince !== 1 ? 's' : ''} — se recomienda hacerla semanalmente.`;
+    document.getElementById('dashBackupAlertMsg').textContent = msg;
+    alert.style.display = 'block';
+  } else {
+    alert.style.display = 'none';
+  }
 }
 
 function updateDashboardStats(data) { if(data) loadDashboard(); }
@@ -5057,6 +5105,105 @@ function verMesaHistorial(idx) {
   openModal('modalMesaDetalle');
 }
 
+// ======= COPIAS DE SEGURIDAD =======
+function descargarBackup() {
+  const backup = {
+    version: '1.0.0',
+    app: 'ResTito',
+    fecha: new Date().toISOString(),
+    data: {
+      mesas: mesasData,
+      delivery: deliveryData,
+      facturas: facturasData,
+      clientes: clientesData,
+      usuarios: usuariosData,
+      productos: productosData,
+      mozo_historial: mozoHistorial,
+      caja_abierta: cajaAbierta,
+      caja_inicial: cajaInicial,
+      caja_moves: cajaMoves,
+      caja_cierres: cajaCierres,
+      categorias: categoriasData,
+      biz_cfg: getBizConfig()
+    }
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `restito-backup-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  localStorage.setItem('pz_last_backup', Date.now().toString());
+  _updateBackupConfigStatus();
+  _renderBackupAlert();
+  showToast('✅ Backup descargado correctamente', 'success');
+}
+
+function restaurarBackup(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (!confirm(`¿Restaurar desde "${file.name}"? Esto sobreescribirá todos los datos actuales.`)) {
+    input.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const backup = JSON.parse(e.target.result);
+      if (!backup?.data) throw new Error('Formato de backup inválido');
+      const d = backup.data;
+      if (Array.isArray(d.mesas))          mesasData     = d.mesas;
+      if (Array.isArray(d.delivery))       deliveryData  = d.delivery;
+      if (Array.isArray(d.facturas))       facturasData  = d.facturas;
+      if (Array.isArray(d.clientes))       clientesData  = d.clientes;
+      if (Array.isArray(d.usuarios))       usuariosData  = d.usuarios;
+      if (Array.isArray(d.productos))      productosData = d.productos;
+      if (Array.isArray(d.mozo_historial)) mozoHistorial = d.mozo_historial;
+      if (Array.isArray(d.categorias))     categoriasData= d.categorias;
+      if (d.caja_abierta !== undefined)    cajaAbierta   = d.caja_abierta === true;
+      if (d.caja_inicial)                  cajaInicial   = parseInt(d.caja_inicial) || 5000;
+      if (Array.isArray(d.caja_moves))     cajaMoves     = d.caja_moves;
+      if (Array.isArray(d.caja_cierres))   cajaCierres   = d.caja_cierres;
+      if (d.biz_cfg && typeof d.biz_cfg === 'object') {
+        localStorage.setItem('pz_biz_cfg', JSON.stringify(d.biz_cfg));
+      }
+      saveState();
+      showToast(`✅ Backup del ${backup.fecha?.slice(0,10) || 'archivo'} restaurado`, 'success');
+      loadDashboard();
+      renderMesas();
+    } catch(err) {
+      showToast('Error al leer el archivo: ' + err.message, 'error');
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function _updateBackupConfigStatus() {
+  const badge = document.getElementById('cfgBackupStatus');
+  const info  = document.getElementById('cfgLastBackupInfo');
+  if (!badge || !info) return;
+  const lastBackup = parseInt(localStorage.getItem('pz_last_backup') || '0');
+  const daysSince  = lastBackup ? Math.floor((Date.now() - lastBackup) / 86400000) : null;
+  if (!lastBackup) {
+    badge.style.background = '#fee2e2'; badge.style.color = '#dc2626';
+    badge.textContent = '⚠️ Sin backup';
+    info.textContent = 'Nunca se realizó una copia de seguridad.';
+  } else if (daysSince >= 7) {
+    badge.style.background = '#fef3c7'; badge.style.color = '#d97706';
+    badge.textContent = `⚠️ Hace ${daysSince}d`;
+    info.textContent = `Última copia: hace ${daysSince} días — se recomienda hacerla semanalmente.`;
+  } else {
+    badge.style.background = '#d4edda'; badge.style.color = '#155724';
+    badge.textContent = '✓ Al día';
+    const fecha = new Date(lastBackup).toLocaleDateString('es-AR', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+    info.textContent = `Última copia: ${fecha}`;
+  }
+}
+
 // ======= MEDIOS DE PAGO =======
 function getMediosPago() {
   try {
@@ -5426,6 +5573,7 @@ function loadPrintConfigUI() {
   if (p80) p80.checked = printConfig.paperWidth === '80mm';
   if (p58) p58.checked = printConfig.paperWidth === '58mm';
   updatePrinterHubStatus(socket?.connected);
+  _updateBackupConfigStatus();
   // Restore saved printer in dropdown
   if (printConfig.qzPrinter) {
     const sel = document.getElementById('qzPrinterSelect');
