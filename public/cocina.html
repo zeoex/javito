@@ -407,49 +407,8 @@ body{
 <div class="toast-container" id="toasts"></div>
 
 <script>
-/* ── DEMO DATA ──────────────────────────────────────────────────────────────── */
-const COMANDAS_DEMO = [
-  {
-    id:1, numero:'001', tipo:'mesa', mesa:2, mozo:'Carlos',
-    items:[
-      {nombre:'Pizza Muzarella', variante:'Grande', qty:1},
-      {nombre:'Coca-Cola 500ml', qty:2}
-    ],
-    estado:'pendiente',
-    createdAt: new Date(Date.now() - 5*60000)
-  },
-  {
-    id:2, numero:'002', tipo:'delivery', cliente:'Juan García',
-    items:[
-      {nombre:'Pizza Napolitana', variante:'Mediana', qty:2},
-      {nombre:'Empanada de Carne', qty:4}
-    ],
-    estado:'preparacion',
-    createdAt: new Date(Date.now() - 12*60000)
-  },
-  {
-    id:3, numero:'003', tipo:'mesa', mesa:4, mozo:'Ana',
-    items:[
-      {nombre:'Pizza 4 Quesos', variante:'Chica', qty:1},
-      {nombre:'Cerveza 1L', qty:2},
-      {nombre:'Tiramisu', qty:2}
-    ],
-    estado:'pendiente',
-    createdAt: new Date(Date.now() - 3*60000)
-  },
-  {
-    id:4, numero:'004', tipo:'delivery', cliente:'María López',
-    items:[
-      {nombre:'Pizza Fugazzeta', variante:'Grande', qty:1},
-      {nombre:'Agua Mineral', qty:3}
-    ],
-    estado:'listo',
-    createdAt: new Date(Date.now() - 18*60000)
-  }
-];
-
 /* ── STATE ──────────────────────────────────────────────────────────────────── */
-let comandas = COMANDAS_DEMO.map(c => ({...c, createdAt: new Date(c.createdAt)}));
+let comandas = [];
 let dragId = null;
 let nextId = 10;
 let nextNumero = 5;
@@ -514,14 +473,18 @@ function renderComanda(c) {
     ? `<span class="comanda-mozo">Mozo: <strong>${c.mozo}</strong></span>`
     : `<span class="comanda-mozo">Cliente: <strong>${c.cliente}</strong></span>`;
 
-  const itemsHtml = c.items.map(item => `
+  const itemsHtml = c.items.map(item => {
+    const qty = item.qty ?? item.cantidad ?? 1;
+    const variante = item.variante && item.variante !== 'unica' ? item.variante : null;
+    const nota = item.nota || item.obs || item.observacion || '';
+    return `
     <div class="item-row">
-      <span class="item-qty">${item.qty}&times;</span>
+      <span class="item-qty">${qty}&times;</span>
       <span class="item-name">${item.nombre}</span>
-      ${item.variante ? `<span class="item-variante">${item.variante}</span>` : ''}
+      ${variante ? `<span class="item-variante">${variante}</span>` : ''}
     </div>
-    ${item.obs ? `<div class="item-obs">&#9733; ${item.obs}</div>` : ''}
-  `).join('');
+    ${nota ? `<div class="item-obs">&#9733; ${nota}</div>` : ''}
+  `;}).join('');
 
   let btnHtml = '';
   if (c.estado === 'pendiente') {
@@ -705,6 +668,24 @@ function showToast(msg, color) {
   setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 3000);
 }
 
+/* ── POLLING FALLBACK (every 45s) — catches missed socket events ────────────── */
+setInterval(() => {
+  if (!socket || !socket.connected) return;
+  fetch('/api/cocina/comandas')
+    .then(r => r.json())
+    .then(data => {
+      if (!Array.isArray(data)) return;
+      // Merge: keep local pendiente/preparacion comandas not yet in server response
+      const serverIds = new Set(data.map(c => String(c.id)));
+      const localOnly = comandas.filter(c => !serverIds.has(String(c.id)));
+      comandas = [
+        ...data.map(c => ({...c, createdAt: new Date(c.createdAt)})),
+        ...localOnly
+      ];
+      renderAll(null);
+    }).catch(() => {});
+}, 45000);
+
 /* ── AUTO-REFRESH TIMERS (30s) ──────────────────────────────────────────────── */
 setInterval(() => {
   comandas.forEach(c => {
@@ -735,14 +716,12 @@ function initSocket() {
       badge.className = 'conn-badge conn-online';
       document.getElementById('conn-text').textContent = 'EN VIVO';
       showToast('Conectado al servidor en vivo', 'green');
+      // Re-fetch on (re)connect to catch any missed events
       fetch('/api/cocina/comandas')
         .then(r => r.json())
         .then(data => {
-          if (Array.isArray(data) && data.length) {
+          if (Array.isArray(data)) {
             comandas = data.map(c => ({...c, createdAt: new Date(c.createdAt)}));
-            renderAll(null);
-          } else if (Array.isArray(data) && data.length === 0) {
-            comandas = [];
             renderAll(null);
           }
         }).catch(() => {});
@@ -764,14 +743,23 @@ function initSocket() {
     });
 
     socket.on('comanda:update', ({ id, estado }) => {
-      const c = comandas.find(x => x.id === id);
+      const c = comandas.find(x => String(x.id) === String(id));
       if (!c) return;
       if (estado === 'entregado') {
-        comandas = comandas.filter(x => x.id !== id);
+        comandas = comandas.filter(x => String(x.id) !== String(id));
       } else {
         c.estado = estado;
       }
       renderAll(null);
+    });
+
+    // Kitchen comanda was updated in-place (item qty changed or item added to same table)
+    socket.on('comanda:replace', (comanda) => {
+      const idx = comandas.findIndex(c => String(c.id) === String(comanda.id));
+      if (idx >= 0) {
+        comandas[idx] = {...comanda, createdAt: new Date(comanda.createdAt)};
+        renderAll(null);
+      }
     });
 
   } catch(e) {
@@ -780,7 +768,15 @@ function initSocket() {
 }
 
 /* ── INIT ───────────────────────────────────────────────────────────────────── */
-renderAll(null);
+// Fetch from API immediately (no socket needed)
+fetch('/api/cocina/comandas')
+  .then(r => r.json())
+  .then(data => {
+    if (Array.isArray(data)) {
+      comandas = data.map(c => ({...c, createdAt: new Date(c.createdAt)}));
+    }
+    renderAll(null);
+  }).catch(() => renderAll(null));
 
 const script = document.createElement('script');
 script.src = '/socket.io/socket.io.js';

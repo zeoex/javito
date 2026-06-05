@@ -3048,6 +3048,15 @@ function renderMesaFooter(id) {
   footer.innerHTML = `${btnLiberar}${btnCuenta}${btnComanda}${btnCobrar}`;
 }
 
+function _autoSyncCocina(m) {
+  const foodItems = (m.pedido||[]).filter(i => getCatsComanda().includes(i.categoria));
+  if (!foodItems.length) return;
+  apiFetch('/cocina/comanda', {
+    method:'POST',
+    body: JSON.stringify({upsert:true, tipo:'mesa', mesa:{numero:m.numero, id:m.id}, mozo:m.mozo||currentUser?.nombre||'', items:foodItems})
+  }).catch(()=>{});
+}
+
 function agregarItemMesa(mesaId, prodId, size, precio, categoria) {
   const m = mesasData.find(x=>String(x.id)===String(mesaId));
   const p = productosData.find(x=>x.id===prodId);
@@ -3057,6 +3066,7 @@ function agregarItemMesa(mesaId, prodId, size, precio, categoria) {
   const existing = !nota && !esComida && m.pedido.find(i=>i.productoId===prodId&&i.size===size&&!i.nota);
   if(existing) { existing.qty++; }
   else { m.pedido.push({productoId:prodId,nombre:p.nombre,size,precio,qty:1,categoria:categoria||p.categoria,nota:nota||''}); }
+  if (esComida) _autoSyncCocina(m);
   closeModal('modalSizePicker');
   closeModal('modalAddItem');
   document.getElementById('modalMesaBody').innerHTML = mesaPedidoHTML(mesaId);
@@ -3067,8 +3077,10 @@ function agregarItemMesa(mesaId, prodId, size, precio, categoria) {
 function cambiarQtyMesa(mesaId, idx, delta) {
   const m = mesasData.find(x=>String(x.id)===String(mesaId));
   if(!m) return;
+  const wasFood = getCatsComanda().includes(m.pedido[idx]?.categoria);
   m.pedido[idx].qty += delta;
   if(m.pedido[idx].qty<=0) m.pedido.splice(idx,1);
+  if (wasFood) _autoSyncCocina(m);
   document.getElementById('modalMesaBody').innerHTML = mesaPedidoHTML(mesaId);
   renderMesaFooter(mesaId);
   syncMesa(m); saveState(); renderMesas();
@@ -3077,7 +3089,9 @@ function cambiarQtyMesa(mesaId, idx, delta) {
 function quitarItemMesa(mesaId, idx) {
   const m = mesasData.find(x=>String(x.id)===String(mesaId));
   if(!m) return;
+  const wasFood = getCatsComanda().includes(m.pedido[idx]?.categoria);
   m.pedido.splice(idx,1);
+  if (wasFood) _autoSyncCocina(m);
   document.getElementById('modalMesaBody').innerHTML = mesaPedidoHTML(mesaId);
   renderMesaFooter(mesaId);
   syncMesa(m); saveState(); renderMesas();
@@ -3331,11 +3345,8 @@ async function imprimirComanda(id) {
     printedLocal = await QzTray.send(epComanda(m, comida));
   }
 
-  // Crear comanda digital en cocina (aparece en pantalla de cocina)
-  apiFetch('/cocina/comanda', {
-    method: 'POST',
-    body: JSON.stringify({ mesa: {numero: m.numero, id: m.id}, mozo: m.mozo || currentUser?.nombre, items: comida })
-  }).catch(() => {});
+  // Ensure kitchen comanda is up to date (auto-sync also fires on item add, this is a safety net)
+  _autoSyncCocina(m);
 
   // SIEMPRE enviar al servidor para que admin/cocina reciba el print:job
   const hora = new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
@@ -3567,6 +3578,11 @@ function crearDelivery() {
   saveState();
   // Notify repartidor of the new order in real time
   if (socket) socket.emit('delivery:broadcast', deliveryData[0]);
+  // Auto-send all items to kitchen
+  apiFetch('/cocina/comanda', {
+    method:'POST',
+    body: JSON.stringify({tipo:'delivery', mesa:{numero:deliveryData[0].numero}, mozo:'', cliente:cliente, items})
+  }).catch(()=>{});
   renderDelivery();
   loadDashboard();
   showToast(`Delivery ${deliveryData[0].numero} creado`,'success');

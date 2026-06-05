@@ -986,25 +986,44 @@ app.put('/api/delivery/:id/estado', async (req, res) => {
 // ─────────────────────────────────────────────
 //  COCINA ROUTES
 // ─────────────────────────────────────────────
-// Mozo creates a kitchen comanda from imprimirComanda()
+// Auto-sent from agregarItemMesa / crearDelivery; also called from imprimirComanda
 app.post('/api/cocina/comanda', (req, res) => {
-  const { mesa, mozo, items } = req.body;
-  if (!mesa || !items || !items.length) return res.status(400).json({ error: 'mesa e items requeridos' });
+  const { mesa, mozo, items, tipo, cliente, upsert } = req.body;
+  if (!mesa || !items?.length) return res.status(400).json({ error: 'mesa e items requeridos' });
+
+  const mesaNum = (typeof mesa === 'object') ? (mesa.numero ?? mesa.id) : mesa;
+  const mesaId  = (typeof mesa === 'object') ? (mesa.id ?? null) : null;
+  const tipoFinal = tipo || (String(mesaNum).toString().startsWith('D-') ? 'delivery' : 'mesa');
+
+  const normalize = i => ({
+    nombre:   i.nombre,
+    qty:      i.qty || 1,
+    variante: (i.size && i.size !== 'null') ? i.size : null,
+    nota:     i.nota || ''
+  });
+
+  // Upsert: replace items of existing pendiente comanda for same mesa
+  if (upsert) {
+    const existing = db.comandas.find(c =>
+      c.estado === 'pendiente' && String(c.mesa) === String(mesaNum)
+    );
+    if (existing) {
+      existing.items = items.map(normalize);
+      existing.mozo  = mozo || existing.mozo;
+      io.emit('comanda:replace', existing);
+      return res.json(existing);
+    }
+  }
+
   const comanda = {
     id:        uuidv4(),
-    pedidoId:  null,
     numero:    db.comandas.length + 1,
-    mesa:      mesa.numero || mesa,
+    tipo:      tipoFinal,
+    mesa:      mesaNum,
+    mesaId,
     mozo:      mozo || '',
-    items:     items.map(i => ({
-      id:          i.productoId || uuidv4(),
-      nombre:      i.nombre,
-      variante:    i.size || 'unica',
-      cantidad:    i.qty || 1,
-      precio:      i.precio || 0,
-      extras:      [],
-      observacion: i.nota || ''
-    })),
+    cliente:   cliente || null,
+    items:     items.map(normalize),
     estado:    'pendiente',
     createdAt: new Date().toISOString()
   };
