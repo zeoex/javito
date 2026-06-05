@@ -488,16 +488,16 @@ function renderComanda(c) {
 
   let btnHtml = '';
   if (c.estado === 'pendiente') {
-    btnHtml = `<button class="btn-accion btn-iniciar" onclick="cambiarEstado(${c.id},'preparacion')">&#9654; INICIAR PREPARACIÓN</button>`;
+    btnHtml = `<button class="btn-accion btn-iniciar" onclick="cambiarEstado('${c.id}','preparacion')">&#9654; INICIAR PREPARACIÓN</button>`;
   } else if (c.estado === 'preparacion') {
-    btnHtml = `<button class="btn-accion btn-listo" onclick="cambiarEstado(${c.id},'listo')">&#10003; MARCAR COMO LISTO</button>`;
+    btnHtml = `<button class="btn-accion btn-listo" onclick="cambiarEstado('${c.id}','listo')">&#10003; MARCAR COMO LISTO</button>`;
   } else {
-    btnHtml = `<button class="btn-accion btn-entregar" onclick="cambiarEstado(${c.id},'entregado')">&#8593; MARCAR ENTREGADO</button>`;
+    btnHtml = `<button class="btn-accion btn-entregar" onclick="cambiarEstado('${c.id}','entregado')">&#8593; MARCAR ENTREGADO</button>`;
   }
 
   return `
     <div class="comanda" id="comanda-${c.id}" draggable="true"
-         ondragstart="onDragStart(event,${c.id})"
+         ondragstart="onDragStart(event,'${c.id}')"
          ondragend="onDragEnd(event)">
       <div class="comanda-header">
         <div class="comanda-num"><span>#</span>${c.numero}</div>
@@ -546,7 +546,7 @@ function renderAll(newId) {
 
 /* ── ESTADO ─────────────────────────────────────────────────────────────────── */
 function cambiarEstado(id, nuevoEstado) {
-  const c = comandas.find(x => x.id === id);
+  const c = comandas.find(x => String(x.id) === String(id));
   if (!c) return;
 
   if (nuevoEstado === 'entregado') {
