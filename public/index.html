@@ -1640,6 +1640,12 @@ input.form-control:focus{outline:none;border-color:var(--red)}
         <div style="position:absolute;bottom:-1px;left:0;right:0;height:10px;background:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 200 10%22><path d=%22M0 5 Q5 10 10 5 Q15 0 20 5 Q25 10 30 5 Q35 0 40 5 Q45 10 50 5 Q55 0 60 5 Q65 10 70 5 Q75 0 80 5 Q85 10 90 5 Q95 0 100 5 Q105 10 110 5 Q115 0 120 5 Q125 10 130 5 Q135 0 140 5 Q145 10 150 5 Q155 0 160 5 Q165 10 170 5 Q175 0 180 5 Q185 10 190 5 Q195 0 200 5 L200 10 L0 10 Z%22 fill=%22%23f5f5f0%22/%3E</svg>') repeat-x bottom/200px 10px"></div>
       </div>
     </div>
+    <div style="padding:0 16px 14px;background:#f5f5f0">
+      <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Datos del cliente (opcional)</div>
+      <input class="form-control" id="compXClienteNombre" placeholder="Nombre del cliente" style="margin-bottom:8px;font-size:13px">
+      <input class="form-control" id="compXClienteCuit" placeholder="CUIT / DNI" style="font-size:13px">
+      <button class="btn btn-sm btn-outline" style="margin-top:8px;width:100%;font-size:13px" onclick="guardarDatosClienteComprobante()">💾 Guardar datos cliente</button>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modalComprobanteX')">Cerrar</button>
       <button class="btn btn-primary" id="btnImprimirComprobanteX" onclick="reimprimirComprobanteX(_comprobanteXId)">🖨️ Imprimir</button>
@@ -1924,6 +1930,8 @@ function _buildComprobanteHtml(f) {
   <div class="meta">Fecha: ${f.fecha}</div>
   <div class="meta">Origen: ${f.origen}</div>
   ${f.mozo?`<div class="meta">Atendido por: ${f.mozo}</div>`:''}
+  ${f.clienteNombre?`<div class="meta">Cliente: ${f.clienteNombre}</div>`:''}
+  ${f.clienteCuit?`<div class="meta">CUIT/DNI: ${f.clienteCuit}</div>`:''}
   <div class="sep"></div>
   ${itemRows}
   <div class="sep"></div>
@@ -1988,6 +1996,8 @@ function verComprobanteX(id) {
       <span style="color:#666">Origen</span><span>${f.origen}</span>
     </div>
     ${f.mozo ? `<div style="display:flex;justify-content:space-between;font-size:12px;margin-top:2px"><span style="color:#666">Mozo</span><span>${f.mozo}</span></div>` : ''}
+    ${f.clienteNombre ? `<div style="display:flex;justify-content:space-between;font-size:12px;margin-top:2px"><span style="color:#666">Cliente</span><span>${f.clienteNombre}</span></div>` : ''}
+    ${f.clienteCuit ? `<div style="display:flex;justify-content:space-between;font-size:12px;margin-top:2px"><span style="color:#666">CUIT/DNI</span><span>${f.clienteCuit}</span></div>` : ''}
     ${sep}
     ${itemsHtml}
     ${sep}
@@ -2015,7 +2025,19 @@ function verComprobanteX(id) {
     </div>
     ${biz.recibo ? `${sep}<div style="text-align:center;font-size:11px;color:#888;font-style:italic">${biz.recibo}</div>` : ''}
   `;
+  document.getElementById('compXClienteNombre').value = f.clienteNombre || '';
+  document.getElementById('compXClienteCuit').value = f.clienteCuit || '';
   openModal('modalComprobanteX');
+}
+
+function guardarDatosClienteComprobante() {
+  const f = facturasData.find(x => String(x.id) === String(_comprobanteXId));
+  if (!f) return;
+  f.clienteNombre = document.getElementById('compXClienteNombre').value.trim() || undefined;
+  f.clienteCuit = document.getElementById('compXClienteCuit').value.trim() || undefined;
+  saveState();
+  verComprobanteX(_comprobanteXId);
+  showToast('Datos del cliente guardados','success');
 }
 
 async function reimprimirComprobanteX(id) {
@@ -2644,7 +2666,7 @@ async function syncMesa(m) {
   const payload = {
     id: m.id, numero: m.numero, zona: m.zona, capacidad: m.capacidad,
     estado: m.estado, mozo: m.mozo, mozoid: m.mozoid,
-    apertura: m.apertura, tiempo: m.tiempo,
+    apertura: m.apertura, tiempo: m.tiempo, personas: m.personas,
     pedido: m.pedido, consumo: m.consumo
   };
   if (typeof socket !== 'undefined' && socket?.connected) {
@@ -2781,26 +2803,17 @@ function renderMesas() {
     const itemsCount = (m.pedido||[]).reduce((s,i)=>s+i.qty,0);
     const estadoLabel = m.estado==='libre'?'LIBRE':m.estado==='ocupada'?'OCUPADA':'CUENTA';
     if (esMozo) {
-      let tiempoHTML = '';
-      if (m.tiempo && m.estado !== 'libre') {
-        const mins = tiempoToMins(m.tiempo);
-        const pct = Math.min(Math.round((mins / 120) * 100), 100);
-        const urgency = mins < 60 ? 'ok' : mins < 90 ? 'warn' : 'danger';
-        tiempoHTML = `
-          <div class="mesa-tiempo-bar-wrap">
-            <div class="mesa-tiempo-bar ${urgency}" style="width:${pct}%"></div>
-          </div>
-          <div class="mesa-tiempo-label ${urgency}">⏱ ${m.tiempo}</div>`;
-      }
       const itemsBadge = itemsCount > 0
         ? `<div class="mesa-items-badge">${itemsCount}</div>` : '';
+      const personasInfo = m.estado !== 'libre' && m.personas
+        ? `<div class="mesa-info">👥 ${m.personas} pers.</div>`
+        : `<div class="mesa-info">👥 cap. ${m.capacidad}</div>`;
       return `
         <div class="mesa-card ${m.estado}" onclick="clickMesa('${m.id}')">
           ${itemsBadge}
           <div class="mesa-num">${m.numero}</div>
           <div class="mesa-estado">${estadoLabel}</div>
-          <div class="mesa-info">👥 ${m.capacidad}</div>
-          ${tiempoHTML}
+          ${personasInfo}
         </div>`;
     }
     const esAdmin = ['admin','supervisor'].includes(currentUser?.rol);
@@ -2816,7 +2829,7 @@ function renderMesas() {
         <div class="mesa-estado">${estadoLabel}</div>
         <div class="mesa-info">${m.capacidad} personas</div>
         ${m.mozo ? `<div class="mesa-info">👨 ${m.mozo}</div>` : ''}
-        ${m.tiempo ? `<div class="mesa-info">⏱ ${m.tiempo}</div>` : ''}
+        ${m.personas && m.estado !== 'libre' ? `<div class="mesa-info">👥 ${m.personas} pers.</div>` : ''}
         ${itemsCount > 0 ? `<div class="mesa-info">📋 ${itemsCount} ítem${itemsCount!==1?'s':''}</div>` : ''}
       </div>`;
   }).join('');
@@ -2856,7 +2869,7 @@ function mesaPedidoHTML(id) {
   return `
     <div class="mpo-info-bar" style="background:${infoBarBg};border:1px solid ${infoBarBorder};border-radius:10px;padding:10px 14px;margin-bottom:14px">
       <span style="font-weight:700;font-size:14px">👨 ${m.mozo||'-'}</span>
-      <span style="margin-left:auto;color:var(--gray);font-size:13px;font-weight:600">⏱ ${m.tiempo||'-'}</span>
+      <span style="margin-left:auto;color:var(--gray);font-size:13px;font-weight:600">👥 ${m.personas||'?'} pers.</span>
       <span class="badge badge-${m.estado==='cuenta'?'danger':'warning'}" style="margin-left:10px;font-size:12px;padding:4px 12px">${m.estado.toUpperCase()}</span>
     </div>
     <div class="mpo-order-section">
@@ -3090,9 +3103,14 @@ function clickMesa(id) {
     const mozosOpts = esMozo
       ? `<option value="${currentUser.nombre}">${currentUser.nombre}</option>`
       : `<option value="Carlos">Carlos</option><option value="Ana">Ana</option><option value="María">María</option>`;
-    body.innerHTML = zonaHtml + `<p style="margin-bottom:14px;color:var(--gray)">Mesa libre · ${m.capacidad} personas</p>
+    const personasOpts = Array.from({length: m.capacidad}, (_,i) =>
+      `<option value="${i+1}">${i+1}</option>`).join('');
+    body.innerHTML = zonaHtml + `<p style="margin-bottom:14px;color:var(--gray)">Mesa libre · ${m.capacidad} cap.</p>
       <div class="form-group"><label>Mozo</label>
         <select class="form-control" id="abrirMozo">${mozosOpts}</select>
+      </div>
+      <div class="form-group"><label>Personas</label>
+        <select class="form-control" id="mesaPersonas">${personasOpts}</select>
       </div>`;
     footer.innerHTML = `<button class="btn btn-success" style="width:100%" onclick="abrirMesa(${sid})">✅ Abrir Mesa</button>`;
   } else {
@@ -3112,7 +3130,8 @@ function abrirMesa(id) {
   }
   const m = mesasData.find(x=>String(x.id)===String(id));
   const mozo = document.getElementById('abrirMozo').value;
-  m.estado='ocupada'; m.mozo=mozo; m.tiempo='00:00'; m.pedido=[];
+  const personas = parseInt(document.getElementById('mesaPersonas')?.value) || null;
+  m.estado='ocupada'; m.mozo=mozo; m.tiempo='00:00'; m.personas=personas; m.pedido=[];
   closeModal('modalMesa');
   syncMesa(m); saveState(); renderMesas();
   showToast(`Mesa #${m.numero} abierta por ${mozo}`,'success');
@@ -3131,7 +3150,7 @@ function pedirCuenta(id) {
 function liberarMesaVacia(id) {
   const m = mesasData.find(x=>String(x.id)===String(id));
   if(!m) return;
-  m.estado='libre'; m.mozo=null; m.tiempo=null; m.pedido=[];
+  m.estado='libre'; m.mozo=null; m.tiempo=null; m.personas=null; m.pedido=[];
   closeModal('modalMesa');
   syncMesa(m); saveState(); renderMesas();
   showToast(`Mesa #${m.numero} liberada`,'success');
@@ -3149,7 +3168,7 @@ function cerrarMesa(id, metodoPago = 'efectivo', totalOverride = null) {
   const metodoLabel = mp ? `${mp.icono||''} ${mp.nombre}` : metodoPago;
   const registro = {mozo, mesa: m.numero, fecha: new Date().toISOString(), items: itemsCount, total: total||0, pago: metodoPago};
   mozoHistorial.unshift(registro);
-  m.estado='libre'; m.mozo=null; m.tiempo=null; m.pedido=[];
+  m.estado='libre'; m.mozo=null; m.tiempo=null; m.personas=null; m.pedido=[];
   const f = {id:facturasData.length+1,numero:`F-${String(facturasData.length+1).padStart(4,'0')}`,fecha:new Date().toISOString().slice(0,16).replace('T',' '),origen:`Mesa ${m.numero}`,mesaNum:m.numero,mozo:mozo,items:itemsCount,detalle:detalleSnapshot,total:total||0,pago:metodoPago,estado:'pagada'};
   facturasData.unshift(f);
   if (total > 0) cajaMoves.push({..._cajaNow(),tipo:'ingreso',desc:`Venta Mesa #${m.numero} — ${metodoPago}`,monto:total,pago:metodoPago});
