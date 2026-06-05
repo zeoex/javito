@@ -2737,8 +2737,8 @@ function renderDashDelivery() {
         const total = (o.items||[]).reduce((s,i)=>s+i.precio*i.qty,0);
         return `<div onclick="navTo('delivery',document.querySelector('[data-section=delivery]'))" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer">
           <span style="background:${stageBg[o.estado]};color:${stageCl[o.estado]};padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;white-space:nowrap">${stageLabel[o.estado]||o.estado}</span>
-          <span style="font-weight:700;font-size:13px;flex:1">${o.cliente}</span>
-          <span style="font-size:12px;color:var(--gray)">${o.telefono||''}</span>
+          <span style="font-weight:700;font-size:13px;flex:1">${o.cliente?.nombre||o.cliente||'-'}</span>
+          <span style="font-size:12px;color:var(--gray)">${o.cliente?.telefono||o.telefono||''}</span>
           <span style="font-weight:700;font-size:13px">$${total.toLocaleString('es-AR')}</span>
         </div>`;
       }).join('')
