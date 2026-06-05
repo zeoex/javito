@@ -1685,6 +1685,18 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <input class="form-control" id="compXClienteCuit" placeholder="CUIT / DNI" style="font-size:13px">
       <button class="btn btn-sm btn-outline" style="margin-top:8px;width:100%;font-size:13px" onclick="guardarDatosClienteComprobante()">💾 Guardar datos cliente</button>
     </div>
+    <div id="compXDescuentoSection" style="padding:0 16px 14px;background:#f5f5f0;border-top:1px solid #e5e0d8;display:none">
+      <div style="font-size:11px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🔐 Descuento (Admin)</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="compXDescTipo" class="form-control" style="width:80px;flex-shrink:0;font-size:13px" onchange="_updateDescPreview(facturasData.find(x=>String(x.id)===String(_comprobanteXId)))">
+          <option value="pct">%</option>
+          <option value="fijo">$ fijo</option>
+        </select>
+        <input type="number" id="compXDescValor" class="form-control" placeholder="0" min="0" step="0.01" style="font-size:13px;flex:1" oninput="_updateDescPreview(facturasData.find(x=>String(x.id)===String(_comprobanteXId)))">
+        <button class="btn btn-sm btn-primary" style="white-space:nowrap;font-size:13px;flex-shrink:0" onclick="guardarDescuentoComprobante()">Aplicar</button>
+      </div>
+      <div id="compXDescPreview" style="margin-top:6px;font-size:12px;color:#6b7280"></div>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modalComprobanteX')">Cerrar</button>
       <button class="btn btn-primary" id="btnImprimirComprobanteX" onclick="reimprimirComprobanteX(_comprobanteXId)">🖨️ Imprimir</button>
@@ -1925,20 +1937,36 @@ function epComprobanteX(f) {
     if (i.nota) s += '   '+i.nota+NL;
   });
   s += SEP+NL;
-  const ts = '$'+f.total.toLocaleString('es-AR');
+  const desc = f.descuento;
+  let descMonto = 0;
+  if (desc?.valor > 0) {
+    descMonto = desc.tipo === 'pct'
+      ? Math.round(f.total * desc.valor / 100)
+      : Math.min(desc.valor, f.total);
+  }
+  const totalFinal = f.total - descMonto;
+  const tf = '$'+totalFinal.toLocaleString('es-AR');
+  if (descMonto > 0) {
+    const stSub = '$'+f.total.toLocaleString('es-AR');
+    const subLabel = 'Subtotal';
+    const dLabel = desc.tipo === 'pct' ? `Descuento ${desc.valor}%` : 'Descuento';
+    const dStr = '-$'+descMonto.toLocaleString('es-AR');
+    s += subLabel+' '.repeat(Math.max(1,cols-subLabel.length-stSub.length))+stSub+NL;
+    s += dLabel+' '.repeat(Math.max(1,cols-dLabel.length-dStr.length))+dStr+NL;
+  }
   const propinaPctX = getPropinaPct();
   if (propinaPctX > 0) {
-    const totalConPropina = Math.round(f.total * (1 + propinaPctX/100));
+    const totalConPropina = Math.round(totalFinal * (1 + propinaPctX/100));
     const cpStr    = '$'+totalConPropina.toLocaleString('es-AR');
     const stLabel  = 'SUBTOTAL';
     const cpLabel  = `Con Propina ${propinaPctX}%`;
     const sinLabel = 'TOTAL sin Propina';
-    s += E+'E\x01'+stLabel+' '.repeat(Math.max(1,cols-stLabel.length-ts.length))+ts+E+'E\x00'+NL;
+    s += E+'E\x01'+stLabel+' '.repeat(Math.max(1,cols-stLabel.length-tf.length))+tf+E+'E\x00'+NL;
     s += cpLabel+' '.repeat(Math.max(1,cols-cpLabel.length-cpStr.length))+cpStr+NL;
     s += NL;
-    s += sinLabel+' '.repeat(Math.max(1,cols-sinLabel.length-ts.length))+ts+NL;
+    s += sinLabel+' '.repeat(Math.max(1,cols-sinLabel.length-tf.length))+tf+NL;
   } else {
-    s += E+'E\x01'+'TOTAL'+' '.repeat(Math.max(1,cols-5-ts.length))+ts+E+'E\x00'+NL;
+    s += E+'E\x01'+'TOTAL'+' '.repeat(Math.max(1,cols-5-tf.length))+tf+E+'E\x00'+NL;
   }
   s += 'Forma de pago: '+pagoLabel+NL;
   s += SEP+NL;
@@ -1986,14 +2014,31 @@ function _buildComprobanteHtml(f) {
   <div class="sep"></div>
   ${(() => {
     const pct = getPropinaPct();
+    const desc = f.descuento;
+    let descMonto = 0;
+    if (desc?.valor > 0) {
+      descMonto = desc.tipo === 'pct'
+        ? Math.round(f.total * desc.valor / 100)
+        : Math.min(desc.valor, f.total);
+    }
+    const totalFinal = f.total - descMonto;
+    const descLabel = desc?.tipo === 'pct' ? `Descuento ${desc.valor}%` : 'Descuento';
+    let out = '';
+    if (descMonto > 0) {
+      out += `<div class="row"><span>Subtotal</span><span>$${f.total.toLocaleString('es-AR')}</span></div>
+  <div class="row" style="color:#dc2626;font-weight:700"><span>${descLabel}</span><span>-$${descMonto.toLocaleString('es-AR')}</span></div>`;
+    }
     if (pct > 0) {
-      const conP = Math.round(f.total * (1 + pct/100));
-      return `<div class="row total"><span>SUBTOTAL</span><span>$${f.total.toLocaleString('es-AR')}</span></div>
+      const base = totalFinal;
+      const conP = Math.round(base * (1 + pct/100));
+      out += `<div class="row total"><span>SUBTOTAL</span><span>$${base.toLocaleString('es-AR')}</span></div>
   <div class="row" style="color:#e67e22;font-weight:700"><span>Con Propina ${pct}%</span><span>$${conP.toLocaleString('es-AR')}</span></div>
   <div style="height:4px"></div>
-  <div class="row" style="font-size:10px;color:#555"><span>TOTAL sin Propina</span><span>$${f.total.toLocaleString('es-AR')}</span></div>`;
+  <div class="row" style="font-size:10px;color:#555"><span>TOTAL sin Propina</span><span>$${base.toLocaleString('es-AR')}</span></div>`;
+    } else {
+      out += `<div class="row total"><span>TOTAL</span><span>$${totalFinal.toLocaleString('es-AR')}</span></div>`;
     }
-    return `<div class="row total"><span>TOTAL</span><span>$${f.total.toLocaleString('es-AR')}</span></div>`;
+    return out;
   })()}
   <div class="meta">Pago: ${pagoLabel}</div>
   <div class="sep"></div>
@@ -2052,22 +2097,43 @@ function verComprobanteX(id) {
     ${sep}
     ${(() => {
       const pct = getPropinaPct();
-      if (pct > 0) {
-        const conP = Math.round(f.total * (1 + pct/100));
-        return `<div style="display:flex;justify-content:space-between;font-size:15px;font-weight:900">
-      <span>SUBTOTAL</span><span>$${f.total.toLocaleString('es-AR')}</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:#e67e22;margin-top:4px">
-      <span>Con Propina ${pct}%</span><span>$${conP.toLocaleString('es-AR')}</span>
-    </div>
-    <div style="height:6px"></div>
-    <div style="display:flex;justify-content:space-between;font-size:12px;color:#555">
-      <span>TOTAL sin Propina</span><span>$${f.total.toLocaleString('es-AR')}</span>
-    </div>`;
+      const desc = f.descuento;
+      let descMonto = 0;
+      if (desc?.valor > 0) {
+        descMonto = desc.tipo === 'pct'
+          ? Math.round(f.total * desc.valor / 100)
+          : Math.min(desc.valor, f.total);
       }
-      return `<div style="display:flex;justify-content:space-between;font-size:16px;font-weight:900">
-      <span>TOTAL</span><span>$${f.total.toLocaleString('es-AR')}</span>
-    </div>`;
+      const totalFinal = f.total - descMonto;
+      const descLabel = desc?.tipo === 'pct' ? `Descuento ${desc.valor}%` : 'Descuento';
+      let html = '';
+      if (descMonto > 0) {
+        html += `<div style="display:flex;justify-content:space-between;font-size:13px;color:#555">
+          <span>Subtotal</span><span>$${f.total.toLocaleString('es-AR')}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:#dc2626;margin-top:3px">
+          <span>${descLabel}</span><span>-$${descMonto.toLocaleString('es-AR')}</span>
+        </div>`;
+      }
+      if (pct > 0) {
+        const base = descMonto > 0 ? totalFinal : f.total;
+        const conP = Math.round(base * (1 + pct/100));
+        html += `<div style="display:flex;justify-content:space-between;font-size:15px;font-weight:900;margin-top:4px">
+          <span>SUBTOTAL</span><span>$${base.toLocaleString('es-AR')}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:#e67e22;margin-top:4px">
+          <span>Con Propina ${pct}%</span><span>$${conP.toLocaleString('es-AR')}</span>
+        </div>
+        <div style="height:6px"></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:#555">
+          <span>TOTAL sin Propina</span><span>$${base.toLocaleString('es-AR')}</span>
+        </div>`;
+      } else {
+        html += `<div style="display:flex;justify-content:space-between;font-size:16px;font-weight:900;margin-top:${descMonto>0?'4':'0'}px">
+          <span>TOTAL</span><span>$${totalFinal.toLocaleString('es-AR')}</span>
+        </div>`;
+      }
+      return html;
     })()}
     <div style="text-align:center;margin-top:6px;font-size:12px">
       <span style="background:#f0f0f0;padding:3px 12px;border-radius:12px">${pagoIcon[f.pago]||''} ${pagoLabel[f.pago]||f.pago}</span>
@@ -2076,6 +2142,15 @@ function verComprobanteX(id) {
   `;
   document.getElementById('compXClienteNombre').value = f.clienteNombre || '';
   document.getElementById('compXClienteCuit').value = f.clienteCuit || '';
+  // Mostrar sección descuento solo para admin/supervisor
+  const esAdmin = currentUser?.rol === 'admin' || currentUser?.rol === 'supervisor';
+  const descSec = document.getElementById('compXDescuentoSection');
+  descSec.style.display = esAdmin ? 'block' : 'none';
+  if (esAdmin) {
+    document.getElementById('compXDescTipo').value = f.descuento?.tipo || 'pct';
+    document.getElementById('compXDescValor').value = f.descuento?.valor || '';
+    _updateDescPreview(f);
+  }
   openModal('modalComprobanteX');
 }
 
@@ -2087,6 +2162,32 @@ function guardarDatosClienteComprobante() {
   saveState();
   verComprobanteX(_comprobanteXId);
   showToast('Datos del cliente guardados','success');
+}
+
+function _updateDescPreview(f) {
+  const prev = document.getElementById('compXDescPreview');
+  if (!prev) return;
+  const tipo = document.getElementById('compXDescTipo')?.value || 'pct';
+  const valor = parseFloat(document.getElementById('compXDescValor')?.value) || 0;
+  if (!valor || !f) { prev.textContent = ''; return; }
+  const monto = tipo === 'pct' ? Math.round(f.total * valor / 100) : Math.min(valor, f.total);
+  const totalFinal = f.total - monto;
+  prev.innerHTML = `<span style="color:#dc2626">-$${monto.toLocaleString('es-AR')}</span> &rarr; Total: <strong>$${totalFinal.toLocaleString('es-AR')}</strong>`;
+}
+
+function guardarDescuentoComprobante() {
+  const f = facturasData.find(x => String(x.id) === String(_comprobanteXId));
+  if (!f) return;
+  const tipo = document.getElementById('compXDescTipo').value;
+  const valor = parseFloat(document.getElementById('compXDescValor').value) || 0;
+  if (valor > 0) {
+    f.descuento = {tipo, valor};
+  } else {
+    delete f.descuento;
+  }
+  saveState();
+  verComprobanteX(_comprobanteXId);
+  showToast(valor > 0 ? 'Descuento aplicado al comprobante' : 'Descuento eliminado', 'success');
 }
 
 async function reimprimirComprobanteX(id) {
