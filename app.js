@@ -428,8 +428,9 @@ app.use('/api', (req, res, next) => {
   // Repartidor accesses these without admin JWT (has its own auth)
   if (req.path === '/delivery/activos' && req.method === 'GET') return next();
   if (/^\/delivery\/[^/]+\/estado$/.test(req.path) && req.method === 'PUT') return next();
-  // Mozo sends comandas and print jobs — no auth required (internal intranet actions)
-  if (req.path === '/cocina/comanda' && req.method === 'POST') return next();
+  // Cocina screen has no login — all /cocina/* routes are open
+  if (req.path.startsWith('/cocina')) return next();
+  // Mozo sends print jobs — no auth required (internal intranet actions)
   if (req.path === '/print' && req.method === 'POST') return next();
   authMiddleware(req, res, next);
 });
