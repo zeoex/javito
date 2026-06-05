@@ -352,15 +352,19 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#e9ecef;color:#495057}
 
 /* ===== MOZO TOP NAV ===== */
-.mozo-topnav{display:none;height:64px;background:#fff;border-bottom:1.5px solid #e5e7eb;align-items:center;padding:0 20px;gap:12px;flex-shrink:0;z-index:50;box-shadow:0 1px 6px rgba(0,0,0,0.07)}
-.mozo-topnav .mtn-logo{font-size:20px;font-weight:900;color:#111827;letter-spacing:-0.5px;flex:1;display:flex;align-items:center;gap:8px}
-.mozo-topnav .mtn-logo span{font-size:22px}
-.mozo-topnav-btns{display:flex;gap:8px;align-items:center}
-.mtn-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;border:1.5px solid #e5e7eb;background:#f9fafb;color:#374151;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap}
-.mtn-btn:hover{background:#f3f4f6;border-color:#d1d5db}
-.mtn-btn.active{background:#1d3557;color:#fff;border-color:#1d3557;box-shadow:0 2px 8px rgba(29,53,87,0.25)}
-.mtn-btn-logout{border-color:#fecaca;background:#fef2f2;color:#dc2626}
-.mtn-btn-logout:hover{background:#fee2e2;border-color:#fca5a5}
+.mozo-topnav{display:none;height:52px;background:#fff;border-bottom:1.5px solid #e5e7eb;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;z-index:50;box-shadow:0 1px 6px rgba(0,0,0,0.07)}
+.mozo-topnav .mtn-logo{font-size:16px;font-weight:900;color:#111827;letter-spacing:-0.3px;flex:1;display:flex;align-items:center;gap:6px}
+.mozo-topnav .mtn-logo span{font-size:18px}
+/* bottom tab bar */
+.mozo-bottomtab{display:none;position:fixed;bottom:0;left:0;right:0;height:62px;background:#fff;border-top:1.5px solid #e5e7eb;box-shadow:0 -2px 12px rgba(0,0,0,0.08);z-index:100;padding-bottom:env(safe-area-inset-bottom,0)}
+.mozo-bottomtab.visible{display:flex}
+.mbt-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:transparent;color:#9ca3af;font-size:11px;font-weight:700;cursor:pointer;transition:color .15s;font-family:inherit;position:relative;padding:6px 4px;letter-spacing:.3px;text-transform:uppercase}
+.mbt-btn:active{background:#f9fafb}
+.mbt-btn.active{color:#1d3557}
+.mbt-icon{font-size:22px;line-height:1;transition:transform .15s}
+.mbt-btn.active .mbt-icon{transform:scale(1.15)}
+.mbt-dot{position:absolute;top:6px;right:calc(50% - 16px);width:8px;height:8px;border-radius:50%;background:#22c55e;border:2px solid #fff;animation:mtnPulse 1.2s ease-in-out infinite}
+#mainContent.mozo-layout .content{padding-bottom:calc(16px + 62px + env(safe-area-inset-bottom,0px))}
 .mtn-notif{display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-left:2px;animation:mtnPulse 1.2s ease-in-out infinite}
 @keyframes mtnPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
 .mcc-list{display:flex;flex-direction:column;gap:12px;padding:4px 0}
@@ -774,17 +778,24 @@ input.form-control:focus{outline:none;border-color:var(--red)}
     <!-- Mozo-only top navigation bar -->
     <div class="mozo-topnav" id="mozoTopnav">
       <div class="mtn-logo"><span>🍴</span> ResTito</div>
-      <div class="mozo-topnav-btns">
-        <button class="mtn-btn active" id="mtnBtnMesas" onclick="mozoNavTo('mesas')">🪑 <span class="mtn-label">Mesas</span></button>
-        <button class="mtn-btn" id="mtnBtnCocina" onclick="mozoNavTo('mozo-cocina')">🍳 <span class="mtn-label">Cocina</span><span class="mtn-notif" id="mtnCocinaNotif" style="display:none"></span></button>
-        <button class="mtn-btn" id="mtnBtnStats" onclick="mozoNavTo('mozostats')">📊 <span class="mtn-label">Stats</span></button>
-      </div>
       <div class="mtn-avatar-wrap" id="mozoAvatarWrap">
         <div class="mtn-avatar" id="mozoAvatar" title="" onclick="toggleMozoMenu()">CM</div>
         <div class="mtn-avatar-menu" id="mozoAvatarMenu">
           <button onclick="doLogout()">🔴 Cerrar sesión</button>
         </div>
       </div>
+    </div>
+    <div class="mozo-bottomtab" id="mozoBottomtab">
+      <button class="mbt-btn active" id="mbtMesas" onclick="mozoNavTo('mesas')">
+        <span class="mbt-icon">🪑</span>Mesas
+      </button>
+      <button class="mbt-btn" id="mbtCocina" onclick="mozoNavTo('mozo-cocina')">
+        <span class="mbt-icon">🍳</span>Cocina
+        <span class="mbt-dot" id="mtnCocinaNotif" style="display:none"></span>
+      </button>
+      <button class="mbt-btn" id="mbtStats" onclick="mozoNavTo('mozostats')">
+        <span class="mbt-icon">📊</span>Stats
+      </button>
     </div>
     <div class="topbar" id="mainTopbar">
       <button class="hamburger" onclick="toggleSidebar()" aria-label="Abrir menú">☰</button>
@@ -2428,6 +2439,7 @@ function initApp() {
     document.getElementById('mainContent').classList.add('mozo-layout');
     // Show mozo topnav, hide regular topbar
     document.getElementById('mozoTopnav').classList.add('visible');
+    document.getElementById('mozoBottomtab').classList.add('visible');
     document.getElementById('mainTopbar').style.display = 'none';
     document.getElementById('mesasTabs').classList.add('tabs-full');
     // Set avatar initials (up to 2 words)
@@ -2688,9 +2700,9 @@ function navTo(section, el) {
 }
 
 function mozoNavTo(section) {
-  document.getElementById('mtnBtnMesas').classList.toggle('active', section==='mesas');
-  document.getElementById('mtnBtnCocina').classList.toggle('active', section==='mozo-cocina');
-  document.getElementById('mtnBtnStats').classList.toggle('active', section==='mozostats');
+  document.getElementById('mbtMesas').classList.toggle('active', section==='mesas');
+  document.getElementById('mbtCocina').classList.toggle('active', section==='mozo-cocina');
+  document.getElementById('mbtStats').classList.toggle('active', section==='mozostats');
   if (section === 'mozo-cocina') {
     loadMozoCocina();
     document.getElementById('mtnCocinaNotif').style.display = 'none';
@@ -3178,7 +3190,6 @@ function agregarItemMesa(mesaId, prodId, size, precio, categoria) {
   const existing = !nota && !esComida && m.pedido.find(i=>i.productoId===prodId&&i.size===size&&!i.nota);
   if(existing) { existing.qty++; }
   else { m.pedido.push({productoId:prodId,nombre:p.nombre,size,precio,qty:1,categoria:categoria||p.categoria,nota:nota||''}); }
-  if (esComida) _autoSyncCocina(m);
   closeModal('modalSizePicker');
   closeModal('modalAddItem');
   document.getElementById('modalMesaBody').innerHTML = mesaPedidoHTML(mesaId);
@@ -3192,7 +3203,6 @@ function cambiarQtyMesa(mesaId, idx, delta) {
   const wasFood = getCatsComanda().includes(m.pedido[idx]?.categoria);
   m.pedido[idx].qty += delta;
   if(m.pedido[idx].qty<=0) m.pedido.splice(idx,1);
-  if (wasFood) _autoSyncCocina(m);
   document.getElementById('modalMesaBody').innerHTML = mesaPedidoHTML(mesaId);
   renderMesaFooter(mesaId);
   syncMesa(m); saveState(); renderMesas();
@@ -3201,9 +3211,7 @@ function cambiarQtyMesa(mesaId, idx, delta) {
 function quitarItemMesa(mesaId, idx) {
   const m = mesasData.find(x=>String(x.id)===String(mesaId));
   if(!m) return;
-  const wasFood = getCatsComanda().includes(m.pedido[idx]?.categoria);
   m.pedido.splice(idx,1);
-  if (wasFood) _autoSyncCocina(m);
   document.getElementById('modalMesaBody').innerHTML = mesaPedidoHTML(mesaId);
   renderMesaFooter(mesaId);
   syncMesa(m); saveState(); renderMesas();
@@ -3457,7 +3465,7 @@ async function imprimirComanda(id) {
     printedLocal = await QzTray.send(epComanda(m, comida));
   }
 
-  // Ensure kitchen comanda is up to date (auto-sync also fires on item add, this is a safety net)
+  // Send comanda to kitchen
   _autoSyncCocina(m);
 
   // SIEMPRE enviar al servidor para que admin/cocina reciba el print:job
