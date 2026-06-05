@@ -1322,16 +1322,17 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <div class="section" id="sec-mozostats">
         <div class="section-header"><h2>📊 Mis Estadísticas</h2></div>
 
-        <!-- Hero counter -->
-        <div style="background:#fff;border-radius:16px;padding:20px 24px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.07);display:flex;align-items:center;gap:16px">
-          <div style="width:56px;height:56px;background:#dcfce7;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0">🪑</div>
-          <div>
-            <div style="font-size:13px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">Mesas atendidas hoy</div>
-            <div id="mz-hoy" style="font-size:42px;font-weight:900;color:#16a34a;line-height:1">0</div>
+        <!-- Hero counters -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+          <div style="background:#fff;border-radius:16px;padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.07);display:flex;flex-direction:column;gap:4px">
+            <div style="width:40px;height:40px;background:#dcfce7;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:4px">🪑</div>
+            <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">Mesas hoy</div>
+            <div id="mz-hoy" style="font-size:38px;font-weight:900;color:#16a34a;line-height:1">0</div>
           </div>
-          <div style="margin-left:auto;text-align:right">
-            <div style="font-size:13px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">Este mes</div>
-            <div id="mz-mes" style="font-size:28px;font-weight:800;color:var(--blue);line-height:1.2">0</div>
+          <div style="background:#fff;border-radius:16px;padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.07);display:flex;flex-direction:column;gap:4px">
+            <div style="width:40px;height:40px;background:#dbeafe;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:4px">📅</div>
+            <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">Este mes</div>
+            <div id="mz-mes" style="font-size:38px;font-weight:900;color:var(--blue);line-height:1">0</div>
           </div>
         </div>
 
@@ -1688,6 +1689,16 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <button class="btn btn-outline" onclick="closeModal('modalComprobanteX')">Cerrar</button>
       <button class="btn btn-primary" id="btnImprimirComprobanteX" onclick="reimprimirComprobanteX(_comprobanteXId)">🖨️ Imprimir</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalMesaDetalle" onclick="if(event.target===this)closeModal('modalMesaDetalle')">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <h3 id="modalMesaDetalleTitle">Mesa #</h3>
+      <button class="modal-close" onclick="closeModal('modalMesaDetalle')">✕</button>
+    </div>
+    <div class="modal-body" id="modalMesaDetalleBody" style="padding:16px 18px"></div>
   </div>
 </div>
 
@@ -3300,7 +3311,7 @@ function cerrarMesa(id, metodoPago = 'efectivo', totalOverride = null) {
   const mozo = (currentUser?.rol==='mozo' ? currentUser?.nombre : null) || m.mozo || currentUser?.nombre || '-';
   const mp = getMediosPago().find(x=>x.id===metodoPago);
   const metodoLabel = mp ? `${mp.icono||''} ${mp.nombre}` : metodoPago;
-  const registro = {mozo, mesa: m.numero, fecha: new Date().toISOString(), items: itemsCount, total: total||0, pago: metodoPago};
+  const registro = {mozo, mesa: m.numero, fecha: new Date().toISOString(), items: itemsCount, total: total||0, pago: metodoPago, detalle: detalleSnapshot};
   mozoHistorial.unshift(registro);
   m.estado='libre'; m.mozo=null; m.tiempo=null; m.personas=null; m.pedido=[];
   const f = {id:facturasData.length+1,numero:`F-${String(facturasData.length+1).padStart(4,'0')}`,fecha:new Date().toISOString().slice(0,16).replace('T',' '),origen:`Mesa ${m.numero}`,mesaNum:m.numero,mozo:mozo,items:itemsCount,detalle:detalleSnapshot,total:total||0,pago:metodoPago,estado:'pagada'};
@@ -4858,16 +4869,20 @@ function renderMozoStats() {
       body.innerHTML = '<div style="text-align:center;padding:32px;color:#aaa;font-size:14px">Sin mesas ese día.</div>';
       return;
     }
-    body.innerHTML = dayRecs.map(h => {
+    window._mzCurDayRecs = dayRecs;
+    body.innerHTML = dayRecs.map((h, idx) => {
       const hora = new Date(h.fecha).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
       const pagoIcon = {efectivo:'💵',tarjeta:'💳',transferencia:'📲'}[h.pago] || '💰';
-      return `<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid #f3f4f6">
+      return `<div onclick="verMesaHistorial(${idx})" style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid #f3f4f6;cursor:pointer;transition:background .15s" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background=''">
         <div style="width:40px;height:40px;background:#f0fdf4;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🪑</div>
         <div style="flex:1">
           <div style="font-weight:700;font-size:14px;color:#111827">Mesa #${h.mesa}</div>
           <div style="font-size:12px;color:#9ca3af;margin-top:2px">${h.items} ítem${h.items!==1?'s':''} · ${pagoIcon} ${(h.pago||'').charAt(0).toUpperCase()+(h.pago||'').slice(1)}</div>
         </div>
-        <div style="font-size:13px;font-weight:600;color:#6b7280">${hora}</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="font-size:13px;font-weight:600;color:#6b7280">${hora}</div>
+          <div style="font-size:11px;color:#9ca3af">›</div>
+        </div>
       </div>`;
     }).join('');
   } else {
@@ -4896,6 +4911,43 @@ function renderMozoStats() {
       </div>`;
     }).join('');
   }
+}
+
+function verMesaHistorial(idx) {
+  const h = (window._mzCurDayRecs || [])[idx];
+  if (!h) return;
+  const hora = new Date(h.fecha).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  const pagoIcon = {efectivo:'💵',tarjeta:'💳',transferencia:'📲'}[h.pago] || '💰';
+  const pagoLabel = (h.pago||'').charAt(0).toUpperCase()+(h.pago||'').slice(1);
+
+  let detalleHtml;
+  if (h.detalle?.length) {
+    const filas = h.detalle.map(i => {
+      const size = i.size && i.size !== 'null' ? ` <span style="font-size:11px;color:#9ca3af">(${i.size})</span>` : '';
+      const nota = i.nota ? `<div style="font-size:11px;color:#9ca3af;margin-top:1px">📝 ${i.nota}</div>` : '';
+      const sub = (i.precio * i.qty).toLocaleString('es-AR');
+      return `<div style="display:flex;align-items:flex-start;gap:8px;padding:9px 0;border-bottom:1px solid #f3f4f6">
+        <div style="width:24px;height:24px;background:#f3f4f6;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#374151;flex-shrink:0">${i.qty}</div>
+        <div style="flex:1;font-size:14px;font-weight:600;color:#111827">${i.nombre}${size}${nota}</div>
+        <div style="font-size:13px;font-weight:700;color:#374151;flex-shrink:0">$${sub}</div>
+      </div>`;
+    }).join('');
+    detalleHtml = filas + `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0 2px;border-top:2px solid #e5e7eb;margin-top:4px">
+      <span style="font-size:14px;font-weight:800;color:#1d3557;text-transform:uppercase;letter-spacing:.5px">Total</span>
+      <span style="font-size:20px;font-weight:900;color:#1d3557">$${(h.total||0).toLocaleString('es-AR')}</span>
+    </div>`;
+  } else {
+    detalleHtml = `<div style="text-align:center;padding:24px 16px;color:#9ca3af;font-size:13px">Sin detalle disponible<br><span style="font-size:11px">Solo mesas cerradas desde la última actualización guardan detalle</span></div>`;
+  }
+
+  document.getElementById('modalMesaDetalleTitle').textContent = `Mesa #${h.mesa}`;
+  document.getElementById('modalMesaDetalleBody').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;padding:0 0 14px;margin-bottom:4px;border-bottom:1.5px solid #f3f4f6">
+      <div style="flex:1;font-size:13px;font-weight:700;color:#374151">🕐 ${hora}</div>
+      <div style="font-size:13px;font-weight:700;color:#374151">${pagoIcon} ${pagoLabel}</div>
+    </div>
+    ${detalleHtml}`;
+  openModal('modalMesaDetalle');
 }
 
 // ======= MEDIOS DE PAGO =======
