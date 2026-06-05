@@ -2347,6 +2347,10 @@ function saveState() {
         categorias: categoriasData,
         biz_cfg: getBizConfig()
       })
+    }).then(() => {
+      // Grabar pz_saved_at DESPUÉS de que PG confirme el save.
+      // Así Date.now() > PG.updated_at y loadStateFromAPI() no pisa localStorage.
+      try { localStorage.setItem('pz_saved_at', Date.now().toString()); } catch(e) {}
     }).catch(() => {});
   }
 }

@@ -327,12 +327,14 @@ async function restoreStateFromPG() {
     const { rows } = await pool.query('SELECT * FROM app_state WHERE id = 1');
     const state = rows[0];
     if (!state) { console.log('[PG] No saved state found — using seed data'); return; }
-    if (Array.isArray(state.mesas)     && state.mesas.length     > 0) db.mesas     = state.mesas;
-    if (Array.isArray(state.delivery)  && state.delivery.length  > 0) db.delivery  = state.delivery;
-    if (Array.isArray(state.productos) && state.productos.length > 0) db.productos = state.productos;
-    if (Array.isArray(state.clientes)  && state.clientes.length  > 0) db.clientes  = state.clientes;
-    if (Array.isArray(state.categorias)&& state.categorias.length> 0) db.categorias= state.categorias;
-    console.log(`[PG] State restored — mesas:${db.mesas.length} delivery:${db.delivery.length} productos:${db.productos.length}`);
+    if (Array.isArray(state.mesas)      && state.mesas.length      > 0) db.mesas      = state.mesas;
+    if (Array.isArray(state.delivery)   && state.delivery.length   > 0) db.delivery   = state.delivery;
+    if (Array.isArray(state.productos)  && state.productos.length  > 0) db.productos  = state.productos;
+    if (Array.isArray(state.clientes)   && state.clientes.length   > 0) db.clientes   = state.clientes;
+    if (Array.isArray(state.categorias) && state.categorias.length > 0) db.categorias = state.categorias;
+    if (Array.isArray(state.facturas)   && state.facturas.length   > 0) db.facturas   = state.facturas;
+    if (Array.isArray(state.usuarios)   && state.usuarios.length   > 0) db.users      = state.usuarios;
+    console.log(`[PG] State restored — mesas:${db.mesas.length} delivery:${db.delivery.length} productos:${db.productos.length} facturas:${db.facturas.length}`);
   } catch(e) {
     console.error('[PG] restoreStateFromPG failed:', e.message);
   }
