@@ -361,6 +361,23 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 .mtn-btn.active{background:#1d3557;color:#fff;border-color:#1d3557;box-shadow:0 2px 8px rgba(29,53,87,0.25)}
 .mtn-btn-logout{border-color:#fecaca;background:#fef2f2;color:#dc2626}
 .mtn-btn-logout:hover{background:#fee2e2;border-color:#fca5a5}
+.mtn-notif{display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-left:2px;animation:mtnPulse 1.2s ease-in-out infinite}
+@keyframes mtnPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+.mcc-list{display:flex;flex-direction:column;gap:12px;padding:4px 0}
+.mcc-card{background:#fff;border-radius:16px;border-left:5px solid #e5e7eb;padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,0.07);transition:box-shadow .3s}
+.mcc-card.pendiente{border-left-color:#f59e0b}
+.mcc-card.preparacion{border-left-color:#3b82f6}
+.mcc-card.listo{border-left-color:#22c55e;animation:listaGlow 1.6s ease-in-out infinite}
+@keyframes listaGlow{0%,100%{box-shadow:0 2px 8px rgba(34,197,94,0.15)}50%{box-shadow:0 4px 20px rgba(34,197,94,0.45)}}
+.mcc-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.mcc-mesa{font-size:22px;font-weight:900;color:#1d3557}
+.mcc-badge{font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;letter-spacing:.5px;text-transform:uppercase}
+.mcc-badge.pendiente{background:#fef3c7;color:#d97706}
+.mcc-badge.preparacion{background:#dbeafe;color:#1d4ed8}
+.mcc-badge.listo{background:#dcfce7;color:#16a34a}
+.mcc-time{margin-left:auto;font-size:11px;color:#9ca3af;flex-shrink:0}
+.mcc-items{font-size:13px;color:#374151;line-height:1.8}
+.mcc-empty{text-align:center;padding:56px 20px;color:#9ca3af}
 .mtn-avatar{width:38px;height:38px;border-radius:50%;background:#1d3557;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0;border:2px solid #e5e7eb;cursor:pointer;letter-spacing:0.5px;transition:opacity .15s}
 .mtn-avatar:hover{opacity:.85}
 .mtn-avatar-wrap{position:relative;flex-shrink:0}
@@ -759,6 +776,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <div class="mtn-logo"><span>🍴</span> ResTito</div>
       <div class="mozo-topnav-btns">
         <button class="mtn-btn active" id="mtnBtnMesas" onclick="mozoNavTo('mesas')">🪑 <span class="mtn-label">Mesas</span></button>
+        <button class="mtn-btn" id="mtnBtnCocina" onclick="mozoNavTo('mozo-cocina')">🍳 <span class="mtn-label">Cocina</span><span class="mtn-notif" id="mtnCocinaNotif" style="display:none"></span></button>
         <button class="mtn-btn" id="mtnBtnStats" onclick="mozoNavTo('mozostats')">📊 <span class="mtn-label">Stats</span></button>
       </div>
       <div class="mtn-avatar-wrap" id="mozoAvatarWrap">
@@ -911,6 +929,15 @@ input.form-control:focus{outline:none;border-color:var(--red)}
           <div class="tab" id="tabVereda" onclick="switchTab('vereda')">🌿 Vereda</div>
         </div>
         <div class="mesas-grid" id="mesasGrid"></div>
+      </div>
+
+      <!-- MOZO COCINA PANEL -->
+      <div class="section" id="sec-mozo-cocina">
+        <div class="section-header">
+          <h2>🍳 Estado en Cocina</h2>
+          <button class="btn btn-outline btn-sm" onclick="loadMozoCocina()">↻ Actualizar</button>
+        </div>
+        <div id="mozoCocinaList" class="mcc-list"></div>
       </div>
 
       <!-- DELIVERY -->
@@ -2387,7 +2414,7 @@ function initApp() {
   loadStateFromAPI().then(() => {
     _populateCatSelects();
     const saved = (() => { try { return localStorage.getItem('pz_last_section'); } catch(e){} return null; })();
-    const validSections = ['dashboard','mesas','delivery','productos','stock','caja','facturacion','clientes','reportes','usuarios','config'];
+    const validSections = ['dashboard','mesas','delivery','productos','stock','caja','facturacion','clientes','reportes','usuarios','config','mozo-cocina'];
     const target = (saved && validSections.includes(saved)) ? saved : 'dashboard';
     navTo(target, null);
     renderCaja();
@@ -2453,7 +2480,37 @@ function initApp() {
       const badge = document.getElementById('deliveryBadge');
       if(badge) badge.textContent = enDelivery || 0;
     });
-    socket.on('comanda:nueva', () => showToast('Nueva comanda en cocina','success'));
+    socket.on('comanda:nueva', (comanda) => {
+      if (comanda && comanda.id) {
+        if (!_cocinaComandas.find(c => String(c.id) === String(comanda.id))) {
+          _cocinaComandas.unshift({...comanda, createdAt: new Date(comanda.createdAt || Date.now())});
+        }
+        if (currentUser?.rol === 'mozo') renderMozoCocina();
+      }
+      showToast('Nueva comanda en cocina','success');
+    });
+    socket.on('comanda:update', ({ id, estado }) => {
+      const c = _cocinaComandas.find(x => String(x.id) === String(id));
+      if (c) {
+        if (estado === 'entregado') {
+          _cocinaComandas = _cocinaComandas.filter(x => String(x.id) !== String(id));
+        } else {
+          c.estado = estado;
+        }
+        if (currentUser?.rol === 'mozo') {
+          if (estado === 'listo') showToast(`✅ Mesa ${c.mesa} — listo para servir!`, 'success');
+          renderMozoCocina();
+        }
+      }
+    });
+    socket.on('comanda:replace', (comanda) => {
+      if (!comanda?.id) return;
+      const idx = _cocinaComandas.findIndex(c => String(c.id) === String(comanda.id));
+      if (idx >= 0) {
+        _cocinaComandas[idx] = {...comanda, createdAt: new Date(comanda.createdAt)};
+        if (currentUser?.rol === 'mozo') renderMozoCocina();
+      }
+    });
     socket.on('print:job', (job) => {
       const rol = currentUser?.rol;
       if (rol !== 'admin' && rol !== 'cajero' && rol !== 'supervisor') return;
@@ -2568,6 +2625,7 @@ function initApp() {
   // Load first section: mozo goes straight to mesas
   if (currentUser?.rol === 'mozo') {
     mozoNavTo('mesas');
+    loadMozoCocina();
   } else {
     loadDashboard();
   }
@@ -2631,9 +2689,63 @@ function navTo(section, el) {
 
 function mozoNavTo(section) {
   document.getElementById('mtnBtnMesas').classList.toggle('active', section==='mesas');
+  document.getElementById('mtnBtnCocina').classList.toggle('active', section==='mozo-cocina');
   document.getElementById('mtnBtnStats').classList.toggle('active', section==='mozostats');
+  if (section === 'mozo-cocina') {
+    loadMozoCocina();
+    document.getElementById('mtnCocinaNotif').style.display = 'none';
+  }
   navTo(section, null);
 }
+let _cocinaComandas = [];
+
+function loadMozoCocina() {
+  fetch('/api/cocina/comandas')
+    .then(r => r.json())
+    .then(data => {
+      if (Array.isArray(data)) {
+        _cocinaComandas = data.map(c => ({...c, createdAt: new Date(c.createdAt)}));
+      }
+      renderMozoCocina();
+    }).catch(() => renderMozoCocina());
+}
+
+function renderMozoCocina() {
+  const container = document.getElementById('mozoCocinaList');
+  if (!container) return;
+  const myName = currentUser?.nombre;
+  const mine = _cocinaComandas.filter(c =>
+    c.tipo !== 'delivery' && c.estado !== 'entregado' &&
+    (!myName || !c.mozo || c.mozo === myName)
+  );
+  if (!mine.length) {
+    container.innerHTML = `<div class="mcc-empty"><div style="font-size:40px;margin-bottom:8px">✅</div><p style="font-weight:600;font-size:15px">Sin comandas activas</p></div>`;
+    document.getElementById('mtnCocinaNotif').style.display = 'none';
+    return;
+  }
+  const stateLabel = {pendiente:'Pendiente',preparacion:'En Preparación',listo:'✅ Listo para servir'};
+  const nowMs = Date.now();
+  container.innerHTML = mine.map(c => {
+    const mins = Math.floor((nowMs - new Date(c.createdAt).getTime()) / 60000);
+    const itemsHtml = (c.items||[]).map(i => {
+      const v = i.variante && i.variante !== 'unica' ? ` (${i.variante})` : '';
+      const n = i.nota ? ` — <em style="color:#6b7280">${i.nota}</em>` : '';
+      return `${i.qty}× ${i.nombre}${v}${n}`;
+    }).join('<br>');
+    return `<div class="mcc-card ${c.estado}">
+      <div class="mcc-header">
+        <span class="mcc-mesa">Mesa ${c.mesa}</span>
+        <span class="mcc-badge ${c.estado}">${stateLabel[c.estado]||c.estado}</span>
+        <span class="mcc-time">${mins}m</span>
+      </div>
+      <div class="mcc-items">${itemsHtml||'<em style="color:#9ca3af">Sin ítems</em>'}</div>
+    </div>`;
+  }).join('');
+  const listos = mine.filter(c => c.estado === 'listo').length;
+  const notif = document.getElementById('mtnCocinaNotif');
+  if (notif) notif.style.display = listos > 0 ? 'inline-block' : 'none';
+}
+
 function cambiarZonaMesa(id, zona) {
   const m = mesasData.find(x=>String(x.id)===String(id));
   if(m) { m.zona = zona; syncMesa(m); saveState(); }

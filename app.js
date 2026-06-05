@@ -1343,7 +1343,7 @@ io.on('connection', (socket) => {
     console.log(`[WS] delivery:status id=${id} → ${estado}`);
   });
 
-  // Kitchen updates comanda state — relay + trigger llamado when ready
+  // Kitchen updates comanda state — relay + sync delivery + trigger llamado when ready
   socket.on('comanda:update', ({ id, estado }) => {
     const comanda = db.comandas.find(c => String(c.id) === String(id));
     if (comanda) {
@@ -1352,7 +1352,33 @@ io.on('connection', (socket) => {
     }
     socket.broadcast.emit('comanda:update', { id, estado });
 
-    if (estado === 'listo' && comanda) {
+    // Sync delivery order state when cocina advances a delivery comanda
+    if (comanda && comanda.tipo === 'delivery') {
+      const estadoMap = { preparacion: 'en_cocina', listo: 'listo' };
+      const nuevoEstadoDelivery = estadoMap[estado];
+      if (nuevoEstadoDelivery) {
+        const delivery = db.delivery.find(d => String(d.numero) === String(comanda.mesa));
+        if (delivery) {
+          delivery.estado = nuevoEstadoDelivery;
+          io.emit('delivery:update', delivery);
+          // Persist to PostgreSQL async
+          (async () => {
+            const pool = getPool();
+            if (!pool) return;
+            try {
+              const { rows } = await pool.query('SELECT delivery FROM app_state WHERE id = 1');
+              const list = rows[0]?.delivery || [];
+              const idx = list.findIndex(d => String(d.id) === String(delivery.id));
+              if (idx >= 0) { list[idx] = { ...list[idx], estado: nuevoEstadoDelivery }; }
+              await pool.query('UPDATE app_state SET delivery=$1, updated_at=NOW() WHERE id=1', [JSON.stringify(list)]);
+            } catch(e) { console.error('[sync delivery estado]', e.message); }
+          })();
+        }
+      }
+    }
+
+    // Trigger llamado to mozo when mesa comanda is ready
+    if (estado === 'listo' && comanda && comanda.tipo !== 'delivery') {
       const mesa = db.mesas.find(m => String(m.id) === String(comanda.mesaId) || m.numero === comanda.mesa);
       const llamado = {
         id: uuidv4(), tipo: 'mesa',
