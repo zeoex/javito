@@ -1,5 +1,39 @@
 # ResTito — Sistema POS para Restaurantes
 
+## 📌 Versión actual: v1.0.0 — 2026-06-05
+
+**Checkpoint:** `v1.0.0` — primer release completo y estable.
+
+### Módulos incluidos en esta versión
+| Módulo | Estado |
+|---|---|
+| Mesas (admin + mozo) | ✅ Completo |
+| Delivery (admin) | ✅ Completo |
+| Cocina (pantalla separada) | ✅ Completo — sincronizado en tiempo real |
+| Repartidor (app independiente) | ✅ Completo |
+| Caja / Facturación | ✅ Completo |
+| Reportes | ✅ Completo |
+| Clientes | ✅ Completo |
+| Configuración (medios de pago, propinas, QR, etc.) | ✅ Completo |
+| Impresión ESC/POS (QZ Tray) | ✅ Completo |
+| Mozo — bottom tab bar (UX mobile-first) | ✅ Completo |
+| Mozo — panel cocina (ver estado de comandas) | ✅ Completo |
+| Mozo — mis estadísticas con detalle por mesa | ✅ Completo |
+| Comprobante X editable (nombre/CUIT cliente) | ✅ Completo |
+
+### Historial de cambios principales
+- Personas por mesa; timer eliminado de las cards
+- Comprobante X editable para datos del cliente (facturas)
+- Fix `[object Object]` en dashboard delivery
+- Cocina: sincronización completa con mesas y delivery (Socket.io + polling 45s)
+- Cocina: fix botones (UUIDs entre comillas en onclick)
+- Sync delivery → cocina → admin en tiempo real
+- Comanda mozo: solo se envía a cocina al presionar el botón "Comanda"
+- Mozo: bottom tab bar nativo mobile (Mesas / Cocina / Stats)
+- Mozo stats: 2 tarjetas alineadas + popup de detalle por mesa
+
+---
+
 ## Railway
 
 - **Token API**: `55ea6497-1857-4e12-a4ab-a31565de4d0c`
