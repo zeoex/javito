@@ -632,7 +632,7 @@ function applyBizConfig(biz) {
   }
   const parts = [biz.dir, biz.tel].filter(Boolean);
   if (parts.length) document.getElementById('heroSub').textContent = parts.join(' · ');
-  bizWsp = (biz.tel || biz.wsp || '').replace(/\D/g, '');
+  bizWsp = (biz.wsp || biz.tel || '').replace(/\D/g, '');
   bizAlias = biz.alias || '';
   bizCbu = biz.cbu || '';
   costoEnvio = parseFloat(biz.costoEnvio) || 0;
@@ -952,6 +952,15 @@ function selectModoEnvio(modo) {
   navigator.geolocation.getCurrentPosition(pos => {
     customerLat = pos.coords.latitude;
     customerLon = pos.coords.longitude;
+    // Auto-fill address via Nominatim reverse geocoding
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${customerLat}&lon=${customerLon}&format=json`)
+      .then(r => r.json())
+      .then(data => {
+        const addr = data.address || {};
+        const parts = [addr.road, addr.house_number, addr.suburb || addr.neighbourhood || addr.city_district].filter(Boolean);
+        const dirField = document.getElementById('confirmDireccion');
+        if (dirField && !dirField.value && parts.length) dirField.value = parts.join(' ');
+      }).catch(() => {});
     if (bizLat && bizLon) {
       const km = haversineKm(bizLat, bizLon, customerLat, customerLon);
       if (km > bizRadioDelivery) {
