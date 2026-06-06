@@ -335,7 +335,19 @@ async function restoreStateFromPG() {
     if (Array.isArray(state.clientes)   && state.clientes.length   > 0) db.clientes   = state.clientes;
     if (Array.isArray(state.categorias) && state.categorias.length > 0) db.categorias = state.categorias;
     if (Array.isArray(state.facturas)   && state.facturas.length   > 0) db.facturas   = state.facturas;
-    if (Array.isArray(state.usuarios)   && state.usuarios.length   > 0) db.users      = state.usuarios;
+    if (Array.isArray(state.usuarios) && state.usuarios.length > 0) {
+      const seedUsers = db.users; // seed users always have valid bcrypt hashes
+      db.users = state.usuarios.map(pgUser => {
+        if (pgUser.password && pgUser.password.startsWith('$2')) return pgUser;
+        // PG user has no valid password — restore from matching seed user
+        const seed = seedUsers.find(s => s.email === pgUser.email);
+        return seed ? { ...pgUser, password: seed.password } : null;
+      }).filter(Boolean);
+      // Ensure all seed users remain accessible (e.g. new users added in code)
+      for (const su of seedUsers) {
+        if (!db.users.find(u => u.email === su.email)) db.users.push(su);
+      }
+    }
     console.log(`[PG] State restored — mesas:${db.mesas.length} delivery:${db.delivery.length} productos:${db.productos.length} facturas:${db.facturas.length}`);
   } catch(e) {
     console.error('[PG] restoreStateFromPG failed:', e.message);
@@ -1525,6 +1537,22 @@ app.post('/api/state', authMiddleware, async (req, res) => {
     if (!pool) return res.json({ ok: true, skipped: true });
     const { mesas, delivery, facturas, clientes, usuarios, productos, mozo_historial,
             caja_abierta, caja_inicial, caja_moves, caja_cierres, categorias, biz_cfg } = req.body;
+
+    // Merge users: ensure every user has a valid bcrypt password before saving to PG
+    let mergedUsers = db.users;
+    if (Array.isArray(usuarios) && usuarios.length > 0) {
+      mergedUsers = await Promise.all(usuarios.map(async u => {
+        if (u.password && !u.password.startsWith('$2')) {
+          return { ...u, password: await bcrypt.hash(u.password, 10) };
+        }
+        if (!u.password || !u.password.startsWith('$2')) {
+          const existing = db.users.find(x => x.email === u.email);
+          return existing?.password ? { ...u, password: existing.password } : null;
+        }
+        return u;
+      })).then(users => users.filter(Boolean));
+    }
+
     await pool.query(`
       INSERT INTO app_state (id, mesas, delivery, facturas, clientes, usuarios, productos, mozo_historial,
         caja_abierta, caja_inicial, caja_moves, caja_cierres, categorias, biz_cfg, updated_at)
@@ -1535,29 +1563,21 @@ app.post('/api/state', authMiddleware, async (req, res) => {
         caja_moves=$10, caja_cierres=$11, categorias=$12, biz_cfg=$13, updated_at=NOW()
     `, [
       JSON.stringify(mesas||[]), JSON.stringify(delivery||[]), JSON.stringify(facturas||[]),
-      JSON.stringify(clientes||[]), JSON.stringify(usuarios||[]), JSON.stringify(productos||[]),
+      JSON.stringify(clientes||[]), JSON.stringify(mergedUsers), JSON.stringify(productos||[]),
       JSON.stringify(mozo_historial||[]),
       caja_abierta ?? true, caja_inicial ?? 5000,
       JSON.stringify(caja_moves||[]), JSON.stringify(caja_cierres||[]),
       JSON.stringify(categorias||[]), JSON.stringify(biz_cfg||{})
     ]);
-    // Sync in-memory state so PATCH calls find correct IDs and server stays in sync
+
     if (Array.isArray(mesas))      db.mesas      = mesas;
     if (Array.isArray(delivery))   db.delivery   = delivery;
     if (Array.isArray(productos))  db.productos  = productos;
     if (Array.isArray(clientes))   db.clientes   = clientes;
     if (Array.isArray(categorias)) db.categorias = categorias;
     if (biz_cfg && typeof biz_cfg === 'object') db.biz_cfg = biz_cfg;
-    // Hash plaintext passwords before storing in-memory users
-    if (Array.isArray(usuarios) && usuarios.length > 0) {
-      db.users = await Promise.all(usuarios.map(async u => {
-        if (u.password && !u.password.startsWith('$2')) {
-          return { ...u, password: await bcrypt.hash(u.password, 10) };
-        }
-        return u;
-      }));
-    }
-    // Notify all connected clients so they can pull fresh state if needed
+    db.users = mergedUsers;
+
     const savedAt = new Date().toISOString();
     io.emit('state:changed', { updated_at: savedAt });
     res.json({ ok: true });
