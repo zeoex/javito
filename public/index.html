@@ -2433,29 +2433,40 @@ function loadState() {
   } catch(e) {}
 }
 
+function _syncCatalogToServer() {
+  if (typeof token !== 'undefined' && token && productosData.length > 0) {
+    apiFetch('/catalog', {
+      method: 'POST',
+      body: JSON.stringify({ productos: productosData, categorias: categoriasData })
+    }).catch(() => {});
+  }
+}
+
 async function loadStateFromAPI() {
   try {
     const res = await apiFetch('/state');
-    if (!res.ok) return;
+    if (!res.ok) {
+      // Server error — push local catalog so /api/public/menu tenga datos actuales
+      _syncCatalogToServer();
+      return;
+    }
     const data = await res.json();
-    if (!data) return;
+    if (!data) {
+      // PG vacío (sin fila en app_state) — push local products al servidor
+      console.log('[state] PG sin datos — pusheando catálogo local al servidor');
+      _syncCatalogToServer();
+      return;
+    }
 
     // Comparar timestamps: solo usar PG si es más reciente que el localStorage local.
-    // Esto evita que un POST /api/state lento (aún en vuelo al refrescar) pise datos correctos.
     const pgTime   = data.updated_at ? new Date(data.updated_at).getTime() : 0;
     const localTime = parseInt(localStorage.getItem('pz_saved_at') || '0');
     const pgIsNewer = pgTime > localTime;
 
     if (!pgIsNewer && localTime > 0) {
-      // localStorage es más reciente — PG puede tener datos viejos, no pisar
+      // localStorage es más reciente — mantener local y sincronizar catálogo al servidor
       console.log('[state] localStorage más reciente que PG, se mantiene local');
-      // Pero sincronizar catálogo al servidor para que /api/public/menu sirva datos actuales
-      if (typeof token !== 'undefined' && token) {
-        apiFetch('/catalog', {
-          method: 'POST',
-          body: JSON.stringify({ productos: productosData, categorias: categoriasData })
-        }).catch(() => {});
-      }
+      _syncCatalogToServer();
       return;
     }
 
@@ -2491,9 +2502,12 @@ async function loadStateFromAPI() {
       localStorage.setItem('pz_caja_cierres', JSON.stringify(cajaCierres));
       localStorage.setItem('pz_saved_at',     pgTime.toString());
     } catch(e) {}
+    // Sincronizar catálogo al servidor (cubre el caso de restart donde db.productos tiene seed)
+    _syncCatalogToServer();
     console.log('[state] Cargado desde PG — mesas:', mesasData.length, '| pgTime:', new Date(pgTime).toISOString());
   } catch(e) {
     console.log('[state] PG no disponible, usando localStorage');
+    _syncCatalogToServer();
   }
 }
 
