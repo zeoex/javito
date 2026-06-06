@@ -333,24 +333,28 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
   background:rgba(0,0,0,.55);
   z-index:300;
   align-items:center;justify-content:center;
-  padding:20px;
+  padding:16px;
+  overflow-y:auto;
 }
 .confirm-overlay.open{display:flex}
 .confirm-card{
   background:#fff;
   border-radius:24px;
-  padding:32px 24px 28px;
+  padding:28px 22px 26px;
   width:100%;max-width:400px;
   box-shadow:0 20px 60px rgba(0,0,0,.22);
+  max-height:calc(100vh - 32px);
+  overflow-y:auto;
+  my:auto;
 }
-.confirm-title{font-size:22px;font-weight:900;color:#1a1a1a;margin-bottom:8px;text-align:center}
-.confirm-sub{font-size:13px;color:var(--muted);line-height:1.6;text-align:center;margin-bottom:4px}
+.confirm-title{font-size:21px;font-weight:900;color:#1a1a1a;margin-bottom:6px;text-align:center}
+.confirm-sub{font-size:13px;color:var(--muted);line-height:1.5;text-align:center;margin-bottom:4px}
 .confirm-items{
-  margin:16px 0;
+  margin:12px 0 8px;
   background:#fafafa;
   border-radius:12px;
-  padding:12px 14px;
-  max-height:220px;overflow-y:auto;
+  padding:10px 12px;
+  max-height:160px;overflow-y:auto;
   border:1px solid var(--border);
 }
 .confirm-item-row{
@@ -365,12 +369,46 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 .confirm-item-price{color:var(--red);font-weight:700;white-space:nowrap}
 .confirm-total{
   display:flex;justify-content:space-between;align-items:center;
-  padding:10px 0 0;
-  font-size:16px;font-weight:800;
+  padding:8px 0 0;
+  font-size:15px;font-weight:800;
   border-top:2px solid var(--border);
-  margin-top:4px;
 }
 .confirm-total span:last-child{color:var(--red)}
+.confirm-form-sep{border:none;border-top:1px solid var(--border);margin:14px 0 0}
+.confirm-form-label{
+  font-size:11px;font-weight:700;color:#666;
+  text-transform:uppercase;letter-spacing:.5px;
+  display:block;margin:12px 0 5px;
+}
+.confirm-form-input{
+  width:100%;border:1.5px solid var(--border);border-radius:10px;
+  padding:9px 12px;font-size:14px;font-family:inherit;
+  color:#1a1a1a;background:#fafafa;
+  transition:border-color .15s;
+}
+.confirm-form-input:focus{outline:none;border-color:var(--red)}
+.confirm-form-select{
+  width:100%;border:1.5px solid var(--border);border-radius:10px;
+  padding:9px 12px;font-size:14px;font-family:inherit;
+  color:#1a1a1a;background:#fafafa;
+  appearance:none;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;
+  padding-right:32px;
+  transition:border-color .15s;
+}
+.confirm-form-select:focus{outline:none;border-color:var(--red)}
+.confirm-radio-group{display:flex;gap:8px}
+.confirm-radio-btn{
+  flex:1;padding:9px 6px;border-radius:10px;
+  border:1.5px solid var(--border);
+  background:transparent;color:#555;
+  font-size:13px;font-weight:500;
+  cursor:pointer;text-align:center;
+  font-family:inherit;
+  transition:all .15s;
+}
+.confirm-radio-btn.sel{background:var(--red);border-color:var(--red);color:#fff;font-weight:700}
 
 /* ── TOAST ── */
 .toast{
@@ -459,18 +497,35 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 <!-- ── CONFIRMACIÓN ── -->
 <div class="confirm-overlay" id="confirmOverlay">
   <div class="confirm-card">
-    <div class="confirm-title">¿Estás seguro?</div>
-    <div class="confirm-sub">Revisá tu pedido antes de enviarlo</div>
+    <div class="confirm-title">Confirmar pedido</div>
+    <div class="confirm-sub">Revisá el pedido y completá tus datos</div>
     <div class="confirm-items" id="confirmItems"></div>
     <div class="confirm-total">
       <span>Total</span>
       <span id="confirmTotal"></span>
     </div>
-    <button class="btn-wsp" onclick="enviarWhatsApp()">
+
+    <hr class="confirm-form-sep"/>
+
+    <label class="confirm-form-label">Nombre y apellido</label>
+    <input type="text" class="confirm-form-input" id="confirmNombre" placeholder="Ej: Juan Pérez" autocomplete="name"/>
+
+    <label class="confirm-form-label">Medio de pago</label>
+    <select class="confirm-form-select" id="confirmMedioPago">
+      <option value="">-- Elegir --</option>
+    </select>
+
+    <label class="confirm-form-label">Modo de envío</label>
+    <div class="confirm-radio-group">
+      <button type="button" class="confirm-radio-btn" id="modoRetiro" onclick="selectModoEnvio('retiro')">🏠 Retiro en sucursal</button>
+      <button type="button" class="confirm-radio-btn" id="modoDelivery" onclick="selectModoEnvio('delivery')">🛵 Envío a domicilio</button>
+    </div>
+
+    <button class="btn-wsp" onclick="enviarWhatsApp()" style="margin-top:18px">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-      Sí, enviar por WhatsApp
+      Enviar pedido por WhatsApp
     </button>
-    <button class="btn-secondary" onclick="cerrarConfirmacion()">No, editar pedido</button>
+    <button class="btn-secondary" onclick="cerrarConfirmacion()">← Editar pedido</button>
   </div>
 </div>
 
@@ -497,6 +552,8 @@ let selectedSize = null;
 let observer = null;
 let scrolling = false;
 let bizWsp = '';
+let mediosPago = [];
+let modoEnvio = '';
 
 /* ─── Cart helpers ─── */
 function cartTotal() { return cart.reduce((s, i) => s + i.precio * i.qty, 0); }
@@ -521,6 +578,7 @@ function applyBizConfig(biz) {
   const parts = [biz.dir, biz.tel].filter(Boolean);
   if (parts.length) document.getElementById('heroSub').textContent = parts.join(' · ');
   bizWsp = (biz.wsp || biz.tel || '').replace(/\D/g, '');
+  if (Array.isArray(biz.mediosPago) && biz.mediosPago.length) mediosPago = biz.mediosPago;
 }
 
 /* ─── Render card ─── */
@@ -766,6 +824,12 @@ function renderCartItems() {
 }
 
 /* ─── Confirmación WhatsApp ─── */
+function selectModoEnvio(modo) {
+  modoEnvio = modo;
+  document.getElementById('modoRetiro').classList.toggle('sel', modo === 'retiro');
+  document.getElementById('modoDelivery').classList.toggle('sel', modo === 'delivery');
+}
+
 function abrirConfirmacion() {
   if (!cart.length) return;
   document.getElementById('cartModal').classList.remove('open');
@@ -780,6 +844,20 @@ function abrirConfirmacion() {
 
   document.getElementById('confirmItems').innerHTML = itemsHtml;
   document.getElementById('confirmTotal').textContent = formatPrice(cartTotal());
+
+  // Reset form fields
+  document.getElementById('confirmNombre').value = '';
+  modoEnvio = '';
+  document.getElementById('modoRetiro').classList.remove('sel');
+  document.getElementById('modoDelivery').classList.remove('sel');
+
+  // Populate payment methods
+  const defaults = ['Efectivo', 'Tarjeta de débito', 'Tarjeta de crédito', 'Transferencia'];
+  const opciones = mediosPago.length ? mediosPago.map(m => m.nombre) : defaults;
+  const select = document.getElementById('confirmMedioPago');
+  select.innerHTML = '<option value="">-- Elegir --</option>' +
+    opciones.map(o => `<option value="${o}">${o}</option>`).join('');
+
   document.getElementById('confirmOverlay').classList.add('open');
 }
 
@@ -791,27 +869,47 @@ function cerrarConfirmacion() {
 function enviarWhatsApp() {
   if (!cart.length) return;
 
-  const bizNombre = document.getElementById('heroNombre').textContent || 'el local';
-  let msg = `Hola ${bizNombre}! Quiero hacer un pedido:\n\n`;
+  const nombre = document.getElementById('confirmNombre').value.trim();
+  const medioPago = document.getElementById('confirmMedioPago').value;
 
-  for (const i of cart) {
-    const desc = i.size ? `${i.nombre} (${i.size})` : i.nombre;
-    const nota = i.nota ? ` — ${i.nota}` : '';
-    msg += `${i.qty}x ${desc}${nota} — ${formatPrice(i.precio * i.qty)}\n`;
+  if (!nombre) {
+    showToast('Ingresá tu nombre y apellido');
+    document.getElementById('confirmNombre').focus();
+    return;
+  }
+  if (!medioPago) {
+    showToast('Elegí un medio de pago');
+    return;
+  }
+  if (!modoEnvio) {
+    showToast('Elegí el modo de envío');
+    return;
   }
 
-  msg += `\n*Total: ${formatPrice(cartTotal())}*`;
-
-  const encoded = encodeURIComponent(msg);
   const number = bizWsp || '';
-
   if (!number) {
     showToast('El negocio no tiene número de WhatsApp configurado');
     return;
   }
 
+  const modoTexto = modoEnvio === 'retiro' ? 'retiro en sucursal' : 'envío con delivery';
+
+  let pedido = '';
+  for (const i of cart) {
+    const desc = i.size ? `${i.nombre} (${i.size})` : i.nombre;
+    const nota = i.nota ? ` (${i.nota})` : '';
+    pedido += `${i.qty}x ${desc}${nota} — ${formatPrice(i.precio * i.qty)}\n`;
+  }
+
+  const msg =
+    `Hola soy ${nombre}, quisiera hacer este pedido:\n\n` +
+    pedido +
+    `\n*Total: ${formatPrice(cartTotal())}*\n\n` +
+    `Voy a pagar con ${medioPago}\n` +
+    `El modo de envío es ${modoTexto}`;
+
   document.getElementById('confirmOverlay').classList.remove('open');
-  window.open(`https://wa.me/${number}?text=${encoded}`, '_blank');
+  window.open(`https://wa.me/${number}?text=${encodeURIComponent(msg)}`, '_blank');
 
   cart = [];
   updateCartBar();
