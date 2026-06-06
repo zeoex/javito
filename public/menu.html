@@ -526,9 +526,11 @@ async function loadMenu() {
             foto: p.foto || null,
             nombre: p.nombre,
             desc: p.descripcion || '',
-            ...((p.precio_chica || p.precio_mediana || p.precio_grande)
-              ? { precios: { Chica: p.precio_chica, Mediana: p.precio_mediana, Grande: p.precio_grande } }
-              : { precio: p.precio })
+            ...((p.presentaciones?.length)
+              ? { precios: Object.fromEntries(p.presentaciones.map(v => [v.nombre, v.precio])), variante_label: 'Presentación' }
+              : (p.precio_chica || p.precio_grande)
+                ? { precios: Object.fromEntries(Object.entries({Chica: p.precio_chica, Grande: p.precio_grande}).filter(([,v])=>v)), variante_label: 'Tamaño' }
+                : { precio: p.precio })
           }))
         });
       }
@@ -545,9 +547,11 @@ async function loadMenu() {
             foto: p.foto || null,
             nombre: p.nombre,
             desc: p.descripcion || '',
-            ...((p.precio_chica || p.precio_mediana || p.precio_grande)
-              ? { precios: { Chica: p.precio_chica, Mediana: p.precio_mediana, Grande: p.precio_grande } }
-              : { precio: p.precio })
+            ...((p.presentaciones?.length)
+              ? { precios: Object.fromEntries(p.presentaciones.map(v => [v.nombre, v.precio])), variante_label: 'Presentación' }
+              : (p.precio_chica || p.precio_grande)
+                ? { precios: Object.fromEntries(Object.entries({Chica: p.precio_chica, Grande: p.precio_grande}).filter(([,v])=>v)), variante_label: 'Tamaño' }
+                : { precio: p.precio })
           }))
         });
       }
@@ -561,9 +565,11 @@ async function loadMenu() {
           foto: p.foto || null,
           nombre: p.nombre,
           desc: p.descripcion || '',
-          ...(p.precio_chica
-            ? { precios: { Chica: p.precio_chica, Mediana: p.precio_mediana, Grande: p.precio_grande } }
-            : { precio: p.precio })
+          ...((p.presentaciones?.length)
+            ? { precios: Object.fromEntries(p.presentaciones.map(v => [v.nombre, v.precio])), variante_label: 'Presentación' }
+            : (p.precio_chica || p.precio_grande)
+              ? { precios: Object.fromEntries(Object.entries({Chica: p.precio_chica, Grande: p.precio_grande}).filter(([,v])=>v)), variante_label: 'Tamaño' }
+              : { precio: p.precio })
         }))
       });
     }
