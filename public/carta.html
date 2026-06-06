@@ -136,15 +136,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
 }
 .card-price{font-size:16px;font-weight:800;color:#e74c3c;line-height:1}
-.card-price-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
+.card-price-chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:5px;width:100%;margin-bottom:8px}
 .price-chip{
-  display:inline-block;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
   background:#fff0ef;color:#c0392b;
   font-size:11px;font-weight:700;
-  padding:3px 8px;border-radius:10px;
+  padding:5px 4px;border-radius:10px;
   border:1px solid #fcd0cc;
+  text-align:center;line-height:1.3;
 }
 .card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:8px}
+.card-footer--chips{flex-direction:column;align-items:stretch;gap:0;padding-top:8px}
+.card-footer--chips .card-add-btn{align-self:flex-end;margin-top:2px}
 .card-add-btn{
   width:32px;height:32px;border-radius:50%;
   background:#e74c3c;color:#fff;
@@ -507,12 +510,14 @@ function renderCard(item) {
     : `<span class="card-emoji">${item.emoji}</span>`;
 
   let priceBlock;
+  let footerClass = 'card-footer';
   if (item.precios) {
     const chips = Object.entries(item.precios)
       .filter(([, v]) => v)
-      .map(([k, v]) => `<span class="price-chip">${k} ${formatPrice(v)}</span>`)
+      .map(([k, v]) => `<span class="price-chip"><span style="opacity:.75;font-size:10px">${k}</span> ${formatPrice(v)}</span>`)
       .join('');
     priceBlock = `<div class="card-price-chips">${chips}</div>`;
+    footerClass = 'card-footer card-footer--chips';
   } else {
     priceBlock = `<div class="card-price">${formatPrice(item.precio)}</div>`;
   }
@@ -522,7 +527,7 @@ function renderCard(item) {
       <div class="card-body">
         <div class="card-name">${item.nombre}</div>
         ${item.desc ? `<div class="card-desc">${item.desc}</div>` : ''}
-        <div class="card-footer">
+        <div class="${footerClass}">
           ${priceBlock}
           <button class="card-add-btn" onclick="event.stopPropagation();openAddModal('${item.id}')" title="Agregar">+</button>
         </div>
@@ -799,7 +804,7 @@ async function loadMenu() {
             foto: p.foto || null,
             nombre: p.nombre,
             desc: p.descripcion || '',
-            ...(p.precio_chica
+            ...((p.precio_chica || p.precio_mediana || p.precio_grande)
               ? { precios: { Chica: p.precio_chica, Mediana: p.precio_mediana, Grande: p.precio_grande } }
               : { precio: p.precio })
           }))
@@ -818,7 +823,7 @@ async function loadMenu() {
             foto: p.foto || null,
             nombre: p.nombre,
             desc: p.descripcion || '',
-            ...(p.precio_chica
+            ...((p.precio_chica || p.precio_mediana || p.precio_grande)
               ? { precios: { Chica: p.precio_chica, Mediana: p.precio_mediana, Grande: p.precio_grande } }
               : { precio: p.precio })
           }))
