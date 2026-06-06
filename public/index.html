@@ -3358,13 +3358,17 @@ function seleccionarProductoMesa(prodId) {
     </div>` : '';
 
   let html = '<div class="spk-size-list">';
-  if(p.precio_chica) {
+  if(p.presentaciones?.length) {
+    p.presentaciones.forEach((pres, i) => {
+      const cls = i === p.presentaciones.length - 1 ? 'grande' : '';
+      html += `<button class="spk-size-btn ${cls}" onclick="agregarItemMesa(${sid},${p.id},'${pres.nombre.replace(/'/g,"\\'")}',${pres.precio},'${p.categoria}')">
+        <span>${pres.nombre}</span>${!esMozo?`<span class="spk-price">$${Number(pres.precio).toLocaleString()}</span>`:''}
+      </button>`;
+    });
+  } else if(p.precio_chica) {
     html += `
       <button class="spk-size-btn" onclick="agregarItemMesa(${sid},${p.id},'chica',${p.precio_chica},'${p.categoria}')">
         <span>Chica</span>${!esMozo?`<span class="spk-price">$${p.precio_chica.toLocaleString()}</span>`:''}
-      </button>
-      <button class="spk-size-btn" onclick="agregarItemMesa(${sid},${p.id},'mediana',${p.precio_mediana},'${p.categoria}')">
-        <span>Mediana</span>${!esMozo?`<span class="spk-price">$${p.precio_mediana.toLocaleString()}</span>`:''}
       </button>
       <button class="spk-size-btn grande" onclick="agregarItemMesa(${sid},${p.id},'grande',${p.precio_grande},'${p.categoria}')">
         <span>Grande</span>${!esMozo?`<span class="spk-price">$${p.precio_grande.toLocaleString()}</span>`:''}
