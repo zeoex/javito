@@ -1010,7 +1010,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
           </div>
           <div class="card">
             <div class="table-wrap"><table id="productosTable">
-              <thead><tr><th>Producto</th><th>Categoría</th><th>Precio Chica</th><th>Precio Med.</th><th>Precio Grande</th><th>Estado</th><th>Visibilidad</th><th>Acciones</th></tr></thead>
+              <thead><tr><th>Producto</th><th>Categoría</th><th>Precio Chica</th><th>Precio Grande</th><th>Estado</th><th>Visibilidad</th><th>Acciones</th></tr></thead>
               <tbody id="productosTbody"></tbody>
             </table></div>
           </div>
@@ -4480,8 +4480,7 @@ function renderProductos() {
         </div>
       </td>
       <td><span class="tag">${p.categoria}</span></td>
-      <td>${p.precio_chica?'$'+p.precio_chica.toLocaleString():'-'}</td>
-      <td>${p.precio_mediana?'$'+p.precio_mediana.toLocaleString():p.precio?'$'+p.precio.toLocaleString():'-'}</td>
+      <td>${p.precio_chica?'$'+p.precio_chica.toLocaleString():p.precio?'$'+p.precio.toLocaleString():'-'}</td>
       <td>${p.precio_grande?'$'+p.precio_grande.toLocaleString():'-'}</td>
       <td><span class="badge ${p.activo?'badge-success':'badge-secondary'}">${p.activo?'Activo':'Inactivo'}</span></td>
       <td style="font-size:13px">${p.en_carta_qr!==false?'📲':''} ${p.en_menu_online!==false?'📋':''}</td>
