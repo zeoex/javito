@@ -972,6 +972,68 @@ app.post('/api/delivery', (req, res) => {
   res.status(201).json(envio);
 });
 
+// Pedidos desde el menú online (carta.html) → aparecen en el módulo de delivery del admin
+app.post('/api/web/pedido', async (req, res) => {
+  const { cliente, items, total, metodo_pago, nota, origen, costo_envio, modo_envio } = req.body;
+  if (!cliente?.nombre || !Array.isArray(items) || !items.length) {
+    return res.status(400).json({ error: 'Datos insuficientes' });
+  }
+  const hora = new Date().toLocaleTimeString('es-AR', {
+    hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires'
+  });
+  const newId = Date.now(); // garantiza unicidad
+  const pedido = {
+    id: newId,
+    numero: `W-${String(newId).slice(-4)}`,
+    estado: 'nuevo',
+    cliente: { nombre: cliente.nombre, telefono: cliente.telefono || '' },
+    direccion: cliente.direccion || '',
+    items,
+    total: total || 0,
+    metodo_pago: metodo_pago || 'Transferencia',
+    nota: nota || '',
+    hora,
+    origen: 'web',
+    costo_envio: costo_envio || 0,
+    modo_envio: modo_envio || 'retiro'
+  };
+
+  // Persistir en PostgreSQL directamente para que el admin lo vea aunque no esté conectado
+  const pool = getPool();
+  if (pool) {
+    try {
+      const { rows } = await pool.query('SELECT delivery FROM app_state WHERE id = 1');
+      const list = rows[0]?.delivery || [];
+      list.unshift(pedido);
+      await pool.query('UPDATE app_state SET delivery=$1, updated_at=NOW() WHERE id=1', [JSON.stringify(list)]);
+    } catch(e) { console.error('[web:pedido]', e.message); }
+  }
+
+  // Notificar al panel admin en tiempo real
+  io.emit('delivery:update', pedido);
+  res.status(201).json(pedido);
+});
+
+// Actualizar costo de envío de un pedido web
+app.put('/api/delivery/:id/costo-envio', async (req, res) => {
+  const targetId = req.params.id;
+  const { costo_envio } = req.body;
+  const pool = getPool();
+  if (pool) {
+    try {
+      const { rows } = await pool.query('SELECT delivery FROM app_state WHERE id = 1');
+      const list = rows[0]?.delivery || [];
+      const idx = list.findIndex(d => String(d.id) === String(targetId));
+      if (idx >= 0) {
+        list[idx].costo_envio = costo_envio;
+        await pool.query('UPDATE app_state SET delivery=$1, updated_at=NOW() WHERE id=1', [JSON.stringify(list)]);
+      }
+    } catch(e) { console.error('[delivery:costo-envio]', e.message); }
+  }
+  io.emit('delivery:update', { id: targetId, costo_envio });
+  res.json({ ok: true });
+});
+
 app.put('/api/delivery/:id/estado', async (req, res) => {
   const targetId = req.params.id;
   const nuevoEstado = req.body.estado;

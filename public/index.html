@@ -1174,8 +1174,10 @@ input.form-control:focus{outline:none;border-color:var(--red)}
             <div class="card-body">
               <div class="form-group"><label>Nombre del local</label><input class="form-control" id="cfgNombre" value="ResTito"/></div>
               <div class="form-group"><label>Dirección</label><input class="form-control" id="cfgDir" value=""/></div>
-              <div class="form-group"><label>Teléfono</label><input class="form-control" id="cfgTel" value=""/></div>
-              <div class="form-group"><label>WhatsApp (para pedidos del menú online)</label><input class="form-control" id="cfgWsp" value="" placeholder="Ej: 5491112345678"/><small style="color:var(--gray);font-size:11px">Incluí el código de país sin + (ej: 54911...)</small></div>
+              <div class="form-group"><label>Teléfono / WhatsApp</label><input class="form-control" id="cfgTel" value="" placeholder="Ej: 5491112345678"/><small style="color:var(--gray);font-size:11px">Incluí código de país sin + — se usa para pedidos del menú online</small></div>
+              <div class="form-group"><label>Alias (transferencias menú online)</label><input class="form-control" id="cfgAlias" value="" placeholder="Ej: negocio.pagos"/></div>
+              <div class="form-group"><label>CBU/CVU (transferencias menú online)</label><input class="form-control" id="cfgCbu" value="" placeholder="22 dígitos"/></div>
+              <div class="form-group"><label>Costo de envío fijo ($)</label><input class="form-control" id="cfgCostoEnvio" type="number" min="0" value="0"/><small style="color:var(--gray);font-size:11px">El operador ajusta por pedido web según distancia. 0 = Bonificado</small></div>
               <div class="form-group"><label>Pie de recibo</label><input class="form-control" id="cfgRecibo" value="¡Gracias por su visita!"/></div>
               <div class="form-group">
                 <label>Logo del local</label>
@@ -2670,8 +2672,12 @@ function initApp() {
     socket.on('delivery:update', (updated) => {
       if (updated && updated.id) {
         const idx = deliveryData.findIndex(d => String(d.id) === String(updated.id));
+        const esNuevo = idx < 0;
         if (idx >= 0) deliveryData[idx] = {...deliveryData[idx], ...updated};
         else deliveryData.unshift(updated);
+        if (esNuevo && updated.origen === 'web') {
+          showToast(`🌐 Nuevo pedido web: ${updated.numero}`, 'info');
+        }
         saveState();
       }
       if(document.getElementById('sec-delivery').classList.contains('active')) renderDelivery();
@@ -3770,15 +3776,42 @@ function renderDeliveryCard(o,stage) {
     ? `<button class="btn btn-danger btn-sm" onclick="cancelarDelivery(${o.id})" title="Cancelar pedido">✕ Cancelar</button>`
     : '';
   const mp = getMediosPago().find(m => m.id === o.metodo_pago);
-  const mpLabel = mp ? `${mp.icono||''} ${mp.nombre}${mp.recargo!==0?(mp.recargo>0?` (+${mp.recargo}%)`:` (${mp.recargo}%)`):''}` : o.metodo_pago;
+  const mpLabel = mp ? `${mp.icono||''} ${mp.nombre}${mp.recargo!==0?(mp.recargo>0?` (+${mp.recargo}%)`:` (${mp.recargo}%)`):''}` : (o.metodo_pago||'');
+  const webBadge = o.origen === 'web' ? `<span style="background:#3b82f6;color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;letter-spacing:.5px;margin-left:6px">🌐 WEB</span>` : '';
+  const costoEnvioStr = o.origen === 'web'
+    ? ` · Envío: ${o.costo_envio > 0 ? '$'+Number(o.costo_envio).toLocaleString() : 'Bonificado'}`
+    : '';
+  const editEnvioBtn = o.origen === 'web' && stage === 'nuevo'
+    ? `<button class="btn btn-outline btn-sm" onclick="editarCostoEnvio('${o.id}')" title="Editar costo de envío">📦 Envío</button>`
+    : '';
+  const dirStr = o.direccion ? `<div style="font-size:11px;color:var(--gray)">📍 ${o.direccion}</div>` : '';
   return `<div class="delivery-card">
-    <div class="delivery-card-num">${o.numero}</div>
-    <div class="delivery-card-client">👤 ${o.cliente.nombre}</div>
-    <div class="delivery-card-items">${o.items.map(i=>`${i.qty}x ${i.nombre}`).join(', ')}</div>
-    <div style="font-size:11px;color:var(--gray)">📍 ${o.direccion}</div>
-    <div class="delivery-card-total">💰 $${o.total.toLocaleString()} · ${mpLabel}</div>
-    <div class="delivery-card-actions">${nextBtn}<button class="btn btn-outline btn-sm" onclick="imprimirDelivery(${o.id})" title="Imprimir">🖨️</button>${cancelBtn}</div>
+    <div class="delivery-card-num">${o.numero}${webBadge}</div>
+    <div class="delivery-card-client">👤 ${o.cliente?.nombre||o.clienteNombre||'—'}</div>
+    <div class="delivery-card-items">${(o.items||[]).map(i=>`${i.qty}x ${i.nombre}`).join(', ')}</div>
+    ${dirStr}
+    <div class="delivery-card-total">💰 $${Number(o.total||0).toLocaleString()} · ${mpLabel}${costoEnvioStr}</div>
+    <div class="delivery-card-actions">${nextBtn}<button class="btn btn-outline btn-sm" onclick="imprimirDelivery(${o.id})" title="Imprimir">🖨️</button>${editEnvioBtn}${cancelBtn}</div>
   </div>`;
+}
+
+function editarCostoEnvio(id) {
+  const pedido = deliveryData.find(d => String(d.id) === String(id));
+  if (!pedido) return;
+  const actual = pedido.costo_envio || 0;
+  const nuevo = prompt(`Costo de envío ($) — 0 = Bonificado:`, actual);
+  if (nuevo === null) return;
+  const valor = Math.max(0, parseFloat(nuevo) || 0);
+  pedido.costo_envio = valor;
+  pedido.total = (pedido._subtotal || (pedido.total - actual)) + valor;
+  fetch(`/api/delivery/${id}/costo-envio`, {
+    method: 'PUT',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ costo_envio: valor })
+  }).catch(() => {});
+  saveState();
+  renderDelivery();
+  showToast(`Envío actualizado: ${valor > 0 ? '$'+valor.toLocaleString() : 'Bonificado'}`, 'success');
 }
 
 function advanceDelivery(id) {
@@ -5531,8 +5564,8 @@ function descargarPDFQRCarta() {
 // ======= CONFIG =======
 // ======= BIZ CONFIG + LOGO =======
 function getBizConfig() {
-  try { return {...{nombre:'ResTito',dir:'',tel:'',wsp:'',recibo:'¡Gracias por su visita!',logo:null}, ...JSON.parse(localStorage.getItem('pz_biz_cfg')||'{}')}; }
-  catch(e) { return {nombre:'ResTito',dir:'',tel:'',wsp:'',recibo:'¡Gracias por su visita!',logo:null}; }
+  try { return {...{nombre:'ResTito',dir:'',tel:'',alias:'',cbu:'',costoEnvio:0,recibo:'¡Gracias por su visita!',logo:null}, ...JSON.parse(localStorage.getItem('pz_biz_cfg')||'{}')}; }
+  catch(e) { return {nombre:'ResTito',dir:'',tel:'',alias:'',cbu:'',costoEnvio:0,recibo:'¡Gracias por su visita!',logo:null}; }
 }
 
 function loadBizConfig() {
@@ -5578,7 +5611,9 @@ function loadBizConfig() {
   const n = document.getElementById('cfgNombre'); if (n) n.value = biz.nombre;
   const d = document.getElementById('cfgDir');    if (d) d.value = biz.dir||'';
   const t = document.getElementById('cfgTel');    if (t) t.value = biz.tel||'';
-  const w = document.getElementById('cfgWsp');    if (w) w.value = biz.wsp||'';
+  const al = document.getElementById('cfgAlias'); if (al) al.value = biz.alias||'';
+  const cb = document.getElementById('cfgCbu');   if (cb) cb.value = biz.cbu||'';
+  const ce = document.getElementById('cfgCostoEnvio'); if (ce) ce.value = biz.costoEnvio||0;
   const r = document.getElementById('cfgRecibo'); if (r) r.value = biz.recibo||'';
   // Logo preview in config
   _renderLogoPreview(biz.logo);
@@ -5631,11 +5666,13 @@ function removeLogoConfig() {
 
 function saveConfig() {
   const biz = getBizConfig();
-  biz.nombre  = document.getElementById('cfgNombre')?.value?.trim() || 'ResTito';
-  biz.dir     = document.getElementById('cfgDir')?.value?.trim()    || '';
-  biz.tel     = document.getElementById('cfgTel')?.value?.trim()    || '';
-  biz.wsp     = document.getElementById('cfgWsp')?.value?.trim()    || '';
-  biz.recibo  = document.getElementById('cfgRecibo')?.value?.trim() || '¡Gracias por su visita!';
+  biz.nombre      = document.getElementById('cfgNombre')?.value?.trim()     || 'ResTito';
+  biz.dir         = document.getElementById('cfgDir')?.value?.trim()         || '';
+  biz.tel         = document.getElementById('cfgTel')?.value?.trim()         || '';
+  biz.alias       = document.getElementById('cfgAlias')?.value?.trim()       || '';
+  biz.cbu         = document.getElementById('cfgCbu')?.value?.trim()         || '';
+  biz.costoEnvio  = parseFloat(document.getElementById('cfgCostoEnvio')?.value) || 0;
+  biz.recibo      = document.getElementById('cfgRecibo')?.value?.trim()      || '¡Gracias por su visita!';
   localStorage.setItem('pz_biz_cfg', JSON.stringify(biz));
   loadBizConfig();
   saveState();

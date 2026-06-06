@@ -29,7 +29,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 }
 .hero-bg{
   position:absolute;inset:0;
-  background-image:url('/img/food1.jpg');
+  background-image:url('/img/food-menu.jpg');
   background-size:cover;
   background-position:center;
   z-index:0;
@@ -364,12 +364,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 .confirm-item-row:last-child{border-bottom:none}
 .confirm-item-name{flex:1;color:#1a1a1a;font-weight:500}
 .confirm-item-price{color:var(--red);font-weight:700;white-space:nowrap}
-.confirm-total{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:8px 0 0;font-size:15px;font-weight:800;
-  border-top:2px solid var(--border);
-}
-.confirm-total span:last-child{color:var(--red)}
+.confirm-totals-box{margin:8px 0 4px}
+.confirm-total-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:14px;color:#555}
+.confirm-grand-total{font-weight:800;font-size:16px;color:#1a1a1a;border-top:2px solid var(--border);margin-top:4px;padding-top:8px}
+.confirm-grand-total span:last-child{color:var(--red)}
+.confirm-transfer-box{background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:12px;margin-bottom:4px}
+.transfer-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 0}
+.transfer-row+.transfer-row{border-top:1px solid #dbeafe;margin-top:2px}
+.transfer-label-group{flex:1;min-width:0}
+.transfer-key{display:block;font-size:10px;font-weight:700;color:#3b82f6;text-transform:uppercase;letter-spacing:.5px}
+.transfer-val{font-size:13px;font-weight:600;color:#1e3a5f;word-break:break-all}
+.btn-copy{background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.btn-copy:active{opacity:.8}
+.confirm-envio-info{font-size:12px;color:#555;background:#f5f5f5;border-radius:8px;padding:7px 10px;margin-top:8px;text-align:center}
 .confirm-form-sep{border:none;border-top:1px solid var(--border);margin:14px 0 0}
 .confirm-form-label{
   font-size:11px;font-weight:700;color:#666;
@@ -504,9 +511,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
     <div class="confirm-title">Confirmar pedido</div>
     <div class="confirm-sub">Revisá el pedido y completá tus datos</div>
     <div class="confirm-items" id="confirmItems"></div>
-    <div class="confirm-total">
-      <span>Total</span>
-      <span id="confirmTotal"></span>
+
+    <!-- Resumen de totales -->
+    <div class="confirm-totals-box">
+      <div class="confirm-total-row">
+        <span>Subtotal</span>
+        <span id="confirmSubtotal"></span>
+      </div>
+      <div class="confirm-total-row" id="confirmEnvioRow" style="display:none">
+        <span>Envío</span>
+        <span id="confirmEnvioVal"></span>
+      </div>
+      <div class="confirm-total-row confirm-grand-total">
+        <span>Total</span>
+        <span id="confirmTotal"></span>
+      </div>
     </div>
 
     <hr class="confirm-form-sep"/>
@@ -514,15 +533,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
     <label class="confirm-form-label">Nombre y apellido</label>
     <input type="text" class="confirm-form-input" id="confirmNombre" placeholder="Ej: Juan Pérez" autocomplete="name"/>
 
-    <label class="confirm-form-label">Medio de pago</label>
-    <select class="confirm-form-select" id="confirmMedioPago">
-      <option value="">-- Elegir --</option>
-    </select>
+    <label class="confirm-form-label">Pago por transferencia</label>
+    <div class="confirm-transfer-box" id="confirmTransferBox"></div>
 
     <label class="confirm-form-label">Modo de envío</label>
     <div class="confirm-radio-group">
       <button type="button" class="confirm-radio-btn" id="modoRetiro" onclick="selectModoEnvio('retiro')">🏠 Retiro en sucursal</button>
       <button type="button" class="confirm-radio-btn" id="modoDelivery" onclick="selectModoEnvio('delivery')">🛵 Envío a domicilio</button>
+    </div>
+
+    <div id="addressBox" style="display:none;margin-top:10px">
+      <label class="confirm-form-label">Dirección de envío</label>
+      <input type="text" class="confirm-form-input" id="confirmDireccion" placeholder="Calle, número, piso..."/>
     </div>
 
     <button class="btn-wsp" onclick="enviarWhatsApp()" style="margin-top:18px">
@@ -556,7 +578,9 @@ let selectedSize = null;
 let observer = null;
 let scrolling = false;
 let bizWsp = '';
-let mediosPago = [];
+let bizAlias = '';
+let bizCbu = '';
+let costoEnvio = 0;
 let modoEnvio = '';
 
 /* ─── Mesa ─── */
@@ -591,8 +615,10 @@ function applyBizConfig(biz) {
   }
   const parts = [biz.dir, biz.tel].filter(Boolean);
   if (parts.length) document.getElementById('heroSub').textContent = parts.join(' · ');
-  bizWsp = (biz.wsp || biz.tel || '').replace(/\D/g, '');
-  if (Array.isArray(biz.mediosPago) && biz.mediosPago.length) mediosPago = biz.mediosPago;
+  bizWsp = (biz.tel || '').replace(/\D/g, '');
+  bizAlias = biz.alias || '';
+  bizCbu = biz.cbu || '';
+  costoEnvio = parseFloat(biz.costoEnvio) || 0;
 }
 
 /* ─── Render card ─── */
@@ -847,6 +873,17 @@ function selectModoEnvio(modo) {
   modoEnvio = modo;
   document.getElementById('modoRetiro').classList.toggle('sel', modo === 'retiro');
   document.getElementById('modoDelivery').classList.toggle('sel', modo === 'delivery');
+  document.getElementById('addressBox').style.display = modo === 'delivery' ? '' : 'none';
+  const envioRow = document.getElementById('confirmEnvioRow');
+  const subtotal = cartTotal();
+  if (modo === 'delivery') {
+    envioRow.style.display = '';
+    document.getElementById('confirmEnvioVal').textContent = costoEnvio > 0 ? formatPrice(costoEnvio) : 'Bonificado';
+    document.getElementById('confirmTotal').textContent = formatPrice(subtotal + (costoEnvio > 0 ? costoEnvio : 0));
+  } else {
+    envioRow.style.display = 'none';
+    document.getElementById('confirmTotal').textContent = formatPrice(subtotal);
+  }
 }
 
 function confirmarPedido() {
@@ -862,20 +899,26 @@ function confirmarPedido() {
   }).join('');
 
   document.getElementById('confirmItems').innerHTML = itemsHtml;
-  document.getElementById('confirmTotal').textContent = formatPrice(cartTotal());
+  const subtotal = cartTotal();
+  document.getElementById('confirmSubtotal').textContent = formatPrice(subtotal);
+  document.getElementById('confirmEnvioRow').style.display = 'none';
+  document.getElementById('confirmTotal').textContent = formatPrice(subtotal);
 
   // Reset form
   document.getElementById('confirmNombre').value = '';
+  document.getElementById('confirmDireccion').value = '';
   modoEnvio = '';
   document.getElementById('modoRetiro').classList.remove('sel');
   document.getElementById('modoDelivery').classList.remove('sel');
+  document.getElementById('addressBox').style.display = 'none';
 
-  // Populate payment methods
-  const defaults = ['Efectivo', 'Tarjeta de débito', 'Tarjeta de crédito', 'Transferencia'];
-  const opciones = mediosPago.length ? mediosPago.map(m => m.nombre) : defaults;
-  const select = document.getElementById('confirmMedioPago');
-  select.innerHTML = '<option value="">-- Elegir --</option>' +
-    opciones.map(o => `<option value="${o}">${o}</option>`).join('');
+  // Transfer data (alias / CBU)
+  const box = document.getElementById('confirmTransferBox');
+  let tHtml = '';
+  if (bizAlias) tHtml += `<div class="transfer-row"><div class="transfer-label-group"><span class="transfer-key">Alias</span><span class="transfer-val">${bizAlias}</span></div><button class="btn-copy" onclick="copiarTexto('${bizAlias}','✓ Alias copiado')">Copiar</button></div>`;
+  if (bizCbu)   tHtml += `<div class="transfer-row"><div class="transfer-label-group"><span class="transfer-key">CBU/CVU</span><span class="transfer-val">${bizCbu}</span></div><button class="btn-copy" onclick="copiarTexto('${bizCbu}','✓ CBU copiado')">Copiar</button></div>`;
+  if (!tHtml)   tHtml = '<div style="color:#888;font-size:13px;padding:4px 0">Consultá el CBU/Alias al negocio</div>';
+  box.innerHTML = tHtml;
 
   document.getElementById('confirmedOverlay').classList.add('open');
 }
@@ -885,38 +928,83 @@ function cerrarConfirmacion() {
   openCartModal();
 }
 
+function copiarTexto(texto, mensaje) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(texto).then(() => showToast(mensaje || 'Copiado')).catch(() => {
+      _copiarFallback(texto, mensaje);
+    });
+  } else {
+    _copiarFallback(texto, mensaje);
+  }
+}
+function _copiarFallback(texto, mensaje) {
+  const ta = document.createElement('textarea');
+  ta.value = texto;
+  ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); showToast(mensaje || 'Copiado'); } catch(e) {}
+  document.body.removeChild(ta);
+}
+
 function enviarWhatsApp() {
   if (!cart.length) return;
 
   const nombre = document.getElementById('confirmNombre').value.trim();
-  const medioPago = document.getElementById('confirmMedioPago').value;
-
   if (!nombre) {
     showToast('Ingresá tu nombre y apellido');
     document.getElementById('confirmNombre').focus();
     return;
   }
-  if (!medioPago) { showToast('Elegí un medio de pago'); return; }
   if (!modoEnvio) { showToast('Elegí el modo de envío'); return; }
 
   const number = bizWsp || '';
   if (!number) { showToast('El negocio no tiene número de WhatsApp configurado'); return; }
 
-  const modoTexto = modoEnvio === 'retiro' ? 'retiro en sucursal' : 'envío con delivery';
+  const esDelivery = modoEnvio === 'delivery';
+  const modoTexto = esDelivery ? 'envío con delivery' : 'retiro en sucursal';
+  const subtotal = cartTotal();
+  const envioMonto = esDelivery && costoEnvio > 0 ? costoEnvio : 0;
+  const totalFinal = subtotal + envioMonto;
+  const direccion = esDelivery ? (document.getElementById('confirmDireccion').value.trim() || '') : '';
 
-  let pedido = '';
+  let pedidoLineas = '';
   for (const i of cart) {
     const desc = i.size ? `${i.nombre} (${i.size})` : i.nombre;
     const nota = i.nota ? ` (${i.nota})` : '';
-    pedido += `${i.qty}x ${desc}${nota} — ${formatPrice(i.precio * i.qty)}\n`;
+    pedidoLineas += `${i.qty}x ${desc}${nota} — ${formatPrice(i.precio * i.qty)}\n`;
+  }
+
+  let envioLinea = '';
+  if (esDelivery) {
+    envioLinea = `Envío: ${envioMonto > 0 ? formatPrice(envioMonto) : 'Bonificado'}\n`;
   }
 
   const msg =
     `Hola soy ${nombre}, quisiera hacer este pedido:\n\n` +
-    pedido +
-    `\n*Total: ${formatPrice(cartTotal())}*\n\n` +
-    `Voy a pagar con ${medioPago}\n` +
-    `El modo de envío es ${modoTexto}`;
+    pedidoLineas +
+    `\nSubtotal: ${formatPrice(subtotal)}\n` +
+    envioLinea +
+    `*Total: ${formatPrice(totalFinal)}*\n\n` +
+    `Voy a pagar con Transferencia\n` +
+    `El modo de envío es ${modoTexto}` +
+    (direccion ? `\nDirección: ${direccion}` : '');
+
+  // Registrar el pedido en el módulo de delivery (fire & forget)
+  fetch('/api/web/pedido', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      cliente: { nombre, telefono: '', direccion },
+      items: cart.map(i => ({ nombre: i.nombre, qty: i.qty, precio: i.precio, size: i.size || null, nota: i.nota || '' })),
+      total: totalFinal,
+      metodo_pago: 'Transferencia',
+      nota: `Pedido web · ${esDelivery ? 'Delivery' : 'Retiro'}${esDelivery ? ` · Envío: ${envioMonto > 0 ? formatPrice(envioMonto) : 'Bonificado'}` : ''}`,
+      origen: 'web',
+      costo_envio: envioMonto,
+      modo_envio: modoEnvio
+    })
+  }).catch(() => {});
 
   document.getElementById('confirmedOverlay').classList.remove('open');
   window.open(`https://wa.me/${number}?text=${encodeURIComponent(msg)}`, '_blank');
