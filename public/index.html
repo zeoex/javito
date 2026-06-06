@@ -2352,6 +2352,12 @@ function saveState() {
     localStorage.setItem('pz_caja_moves', JSON.stringify(cajaMoves));
     localStorage.setItem('pz_caja_cierres', JSON.stringify(cajaCierres));
     localStorage.setItem('pz_categorias', JSON.stringify(categoriasData));
+    // Intentar guardar productos con fotos; si el quota no alcanza, guardar sin fotos
+    try {
+      localStorage.setItem('pz_productos', JSON.stringify(productosData));
+    } catch(qe) {
+      try { localStorage.setItem('pz_productos', JSON.stringify(productosData.map(p=>({...p, foto:null})))); } catch(e2) {}
+    }
     localStorage.setItem('pz_saved_at', savedAt.toString());
   } catch(e) {}
   // Solo persistir en PG si los IDs son reales (no los numéricos del demo)
@@ -2407,6 +2413,8 @@ function loadState() {
     if (cc) { const parsed = JSON.parse(cc); if (Array.isArray(parsed)) cajaCierres = parsed; }
     const cats = localStorage.getItem('pz_categorias');
     if (cats) { const parsed = JSON.parse(cats); if (Array.isArray(parsed) && parsed.length > 0) categoriasData = parsed; }
+    const prods = localStorage.getItem('pz_productos');
+    if (prods) { const parsed = JSON.parse(prods); if (Array.isArray(parsed) && parsed.length > 0) productosData = parsed; }
   } catch(e) {}
 }
 
@@ -4279,7 +4287,16 @@ function guardarProducto() {
   const cat = document.getElementById('prodCat').value;
   if(!nombre){ showToast('Ingresá el nombre del producto','error'); return; }
   const fotoEl = document.getElementById('prodFotoImg');
-  const fotoVal = (fotoEl.style.display !== 'none' && fotoEl.src && fotoEl.src.startsWith('data:')) ? fotoEl.src : null;
+  let fotoVal = null;
+  if (fotoEl.style.display !== 'none' && fotoEl.src) {
+    if (fotoEl.src.startsWith('data:')) {
+      fotoVal = fotoEl.src;  // nueva foto subida o foto original como data:
+    } else if (editingProdId) {
+      // Browser normalizó la URL — preservar la foto original del producto
+      const orig = productosData.find(x=>String(x.id)===String(editingProdId));
+      fotoVal = orig?.foto || null;
+    }
+  }
   const base = { nombre, categoria:cat, emoji:document.getElementById('prodEmoji').value||'🍕', descripcion:document.getElementById('prodDesc').value, activo:true, en_carta_qr:document.getElementById('prodEnCartaQr').checked, en_menu_online:document.getElementById('prodEnMenuOnline').checked, foto:fotoVal };
   if(cat==='pizzas'){
     base.precio_chica=parseInt(document.getElementById('prodPChica').value)||0;

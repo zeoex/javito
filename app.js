@@ -385,8 +385,8 @@ function emitDashboardStats() {
 //  MIDDLEWARE GLOBAL
 // ─────────────────────────────────────────────
 app.use(cors({ origin: '*' }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '25mb' }));
+app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 const noCache = (res) => { res.setHeader('Cache-Control','no-cache, no-store, must-revalidate'); res.setHeader('Pragma','no-cache'); res.setHeader('Expires','0'); };
 // Role-specific routes must be registered BEFORE express.static to override index.html default
