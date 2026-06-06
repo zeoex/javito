@@ -1005,6 +1005,7 @@ app.post('/api/web/pedido', async (req, res) => {
     nota: nota || '',
     hora,
     origen: 'web',
+    fecha: arDate(),
     costo_envio: costo_envio || 0,
     modo_envio: modo_envio || 'retiro',
     distancia_km: distancia_km || null,

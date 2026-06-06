@@ -984,7 +984,8 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <div class="section" id="sec-delivery">
         <div class="section-header">
           <h2>🛵 Pedidos</h2>
-          <button class="btn btn-primary btn-sm" onclick="abrirModalNuevoDelivery()">+ Nuevo Pedido</button>
+          <button class="btn btn-outline btn-sm" onclick="openHistorialDelivery()">📋 Ver anteriores</button>
+          <button class="btn btn-primary btn-sm" onclick="abrirModalNuevoDelivery()" style="margin-left:40px">+ Nuevo Pedido</button>
         </div>
         <div class="delivery-pipeline" id="deliveryPipeline"></div>
       </div>
@@ -1596,6 +1597,21 @@ input.form-control:focus{outline:none;border-color:var(--red)}
   </div>
 </div>
 
+<div class="modal-overlay" id="modalHistorialDelivery" onclick="if(event.target===this)closeModal('modalHistorialDelivery')">
+  <div class="modal modal-lg" style="max-width:700px">
+    <div class="modal-header"><h3>📋 Pedidos Anteriores</h3><button class="modal-close" onclick="closeModal('modalHistorialDelivery')">✕</button></div>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+        <label style="font-size:13px;color:var(--gray);white-space:nowrap">Filtrar por fecha:</label>
+        <input type="date" class="form-control" id="historialDlvFecha" style="width:160px" oninput="renderHistorialDelivery()"/>
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('historialDlvFecha').value='';renderHistorialDelivery()">Ver todos</button>
+        <span id="historialDlvCount" style="font-size:12px;color:var(--gray);margin-left:auto"></span>
+      </div>
+      <div id="historialDlvBody" style="max-height:62vh;overflow-y:auto"></div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modalCierreCaja">
   <div class="modal">
     <div class="modal-header"><h3>🔴 Cierre de Caja</h3><button class="modal-close" onclick="closeModal('modalCierreCaja')">✕</button></div>
@@ -1914,7 +1930,7 @@ function _ep(mesa, lines, header, footer) {
   let s = E+'@';
   s += E+'a\x01'+E+'E\x01'+G+'!\x10'+header+NL+G+'!\x00'+E+'E\x00';
   s += SEP+NL;
-  s += E+'a\x01'+G+'!\x11'+E+'E\x01'+'MESA '+mesa.numero+NL+G+'!\x00'+E+'E\x00';
+  s += E+'a\x01'+E+'E\x01'+'MESA '+mesa.numero+E+'E\x00'+NL;
   if (mesa.mozo) s += E+'a\x01'+mesa.mozo+NL;
   s += E+'a\x01'+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Argentina/Buenos_Aires'})+NL;
   s += SEP+NL+E+'a\x00';
@@ -3787,6 +3803,8 @@ async function imprimirCuenta(id) {
 // ======= DELIVERY =======
 function renderDelivery() {
   if (!_repartidoresList.length) cargarRepartidores();
+  const hoy = _arDate();
+  const todayOrders = deliveryData.filter(o => !o.fecha || o.fecha === hoy);
   const stages = [
     {key:'web',    label:'🌐 PEDIDOS WEB', cls:'pipeline-web',    filterFn: o => o.origen === 'web' && o.estado === 'nuevo'},
     {key:'nuevo',  label:'MOSTRADOR',       cls:'pipeline-nuevo',  filterFn: o => o.estado === 'nuevo' && o.origen !== 'web'},
@@ -3796,13 +3814,80 @@ function renderDelivery() {
     {key:'entregado',label:'ENTREGADO',    cls:'pipeline-entregado', filterFn: o => o.estado === 'entregado'},
   ];
   document.getElementById('deliveryPipeline').innerHTML = stages.map(s=>{
-    const orders = deliveryData.filter(s.filterFn);
+    const orders = todayOrders.filter(s.filterFn);
     const colStyle = s.key === 'web' ? ' style="border-top:3px solid #3b82f6"' : '';
     return `<div class="pipeline-col ${s.cls}"${colStyle}>
       <div class="pipeline-header">${s.label} (${orders.length})</div>
       <div class="pipeline-body">${orders.map(o=>renderDeliveryCard(o,s.key === 'web' ? 'nuevo' : s.key)).join('')||'<div style="color:#aaa;font-size:12px;text-align:center;padding:16px">Vacío</div>'}
       </div></div>`;
   }).join('');
+}
+
+function openHistorialDelivery() {
+  renderHistorialDelivery();
+  openModal('modalHistorialDelivery');
+}
+
+function renderHistorialDelivery() {
+  const hoy = _arDate();
+  const filtroFecha = document.getElementById('historialDlvFecha')?.value || '';
+  let historicos = deliveryData.filter(o => o.fecha && o.fecha < hoy);
+  if (filtroFecha) historicos = historicos.filter(o => o.fecha === filtroFecha);
+  const countEl = document.getElementById('historialDlvCount');
+  if (countEl) countEl.textContent = `${historicos.length} pedido${historicos.length !== 1 ? 's' : ''}`;
+  const body = document.getElementById('historialDlvBody');
+  if (!historicos.length) {
+    body.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa;font-size:14px">No hay pedidos anteriores registrados.</div>';
+    return;
+  }
+  const byDate = {};
+  historicos.forEach(o => { if (!byDate[o.fecha]) byDate[o.fecha]=[]; byDate[o.fecha].push(o); });
+  const sortedDates = Object.keys(byDate).sort().reverse();
+  body.innerHTML = sortedDates.map(fecha => {
+    const orders = byDate[fecha].sort((a,b) => (b.hora||'').localeCompare(a.hora||''));
+    const [y,m,d] = fecha.split('-');
+    const fechaLabel = `${d}/${m}/${y}`;
+    const totalDia = orders.reduce((s,o) => s + (Number(o.total)||0), 0);
+    return `<div style="margin-bottom:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:#f0f4ff;border-radius:8px;margin-bottom:8px">
+        <span style="font-weight:700;font-size:14px;color:var(--blue)">📅 ${fechaLabel}</span>
+        <span style="font-size:12px;color:var(--gray)">${orders.length} pedido${orders.length!==1?'s':''} · $${totalDia.toLocaleString('es-AR')} total</span>
+      </div>
+      ${orders.map(o => _renderHistorialDlvCard(o)).join('')}
+    </div>`;
+  }).join('');
+}
+
+function _renderHistorialDlvCard(o) {
+  const estadoBadges = {
+    nuevo:'<span style="background:#cce5ff;color:#004085;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">MOSTRADOR</span>',
+    en_cocina:'<span style="background:#fff3cd;color:#856404;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">EN COCINA</span>',
+    listo:'<span style="background:#d4edda;color:#155724;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">LISTO</span>',
+    en_camino:'<span style="background:#d1ecf1;color:#0c5460;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">EN CAMINO</span>',
+    entregado:'<span style="background:#e2e3e5;color:#383d41;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">ENTREGADO</span>',
+    cancelado:'<span style="background:#f8d7da;color:#721c24;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">CANCELADO</span>',
+  };
+  const badge = estadoBadges[o.estado] || '';
+  const webBadge = o.origen==='web' ? '<span style="background:#3b82f6;color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;margin-left:4px">🌐 WEB</span>' : '';
+  const itemsStr = (o.items||[]).map(i=>`${i.qty}× ${i.nombre}${i.size?` (${i.size})`:''}`).join(', ');
+  const mp = getMediosPago().find(m=>m.id===o.metodo_pago);
+  const mpLabel = mp ? `${mp.icono||''} ${mp.nombre}` : (o.metodo_pago||'');
+  return `<div style="border:1px solid #eee;border-radius:8px;padding:10px 14px;margin-bottom:6px;display:flex;gap:12px;align-items:center">
+    <div style="flex:0 0 54px;text-align:center">
+      <div style="font-weight:800;font-size:13px;color:var(--blue)">${o.numero}</div>
+      <div style="font-size:11px;color:var(--gray)">${o.hora||''}</div>
+    </div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:13px;font-weight:600">👤 ${o.cliente?.nombre||o.clienteNombre||'—'}${webBadge}</div>
+      <div style="font-size:11px;color:var(--gray);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${itemsStr}">${itemsStr}</div>
+      ${o.direccion?`<div style="font-size:11px;color:var(--gray)">📍 ${o.direccion}</div>`:''}
+    </div>
+    <div style="flex:0 0 auto;text-align:right">
+      <div style="font-weight:700;font-size:14px">$${Number(o.total||0).toLocaleString('es-AR')}</div>
+      <div style="font-size:11px;color:var(--gray)">${mpLabel}</div>
+    </div>
+    <div style="flex:0 0 auto">${badge}</div>
+  </div>`;
 }
 
 function renderDeliveryCard(o,stage) {
@@ -4026,6 +4111,7 @@ function crearDelivery() {
     cliente:{nombre:cliente,telefono:tel}, direccion:dir,
     items, total: totalFinal,
     metodo_pago: mpId,
+    fecha: _arDate(),
     repartidor: document.getElementById('dlvRepartidor').value||null,
     hora: new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Argentina/Buenos_Aires'})
   });
