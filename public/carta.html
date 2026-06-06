@@ -876,6 +876,7 @@ function addToCart(prodId, sizeLabel, precio, nota) {
     });
   }
   updateCartBar();
+  saveCart();
 }
 
 function changeQty(id, delta) {
@@ -884,11 +885,19 @@ function changeQty(id, delta) {
   item.qty += delta;
   if (item.qty <= 0) cart = cart.filter(x => x.id !== id);
   updateCartBar();
+  saveCart();
   renderCartItems();
   if (!cart.length) closeCartModal();
 }
 
 /* ─── Cart bar ─── */
+function saveCart() {
+  try { localStorage.setItem('pz_carta_cart', JSON.stringify(cart)); } catch(e) {}
+}
+function loadCart() {
+  try { const s = localStorage.getItem('pz_carta_cart'); if (s) cart = JSON.parse(s); } catch(e) {}
+}
+
 function updateCartBar() {
   const count = cartCount();
   const total = cartTotal();
@@ -1158,6 +1167,7 @@ function enviarWhatsApp() {
   window.open(`https://wa.me/${number}?text=${encodeURIComponent(msg)}`, '_blank');
 
   cart = [];
+  saveCart();
   updateCartBar();
 }
 
@@ -1251,6 +1261,8 @@ async function loadMenu() {
   renderMenu();
 }
 
+loadCart();
+updateCartBar();
 loadMenu();
 </script>
 </body>
