@@ -506,7 +506,7 @@ function applyBizConfig(biz) {
 /* ─── Render card ─── */
 function renderCard(item) {
   const mediaContent = item.foto
-    ? `<img src="${item.foto}" alt="${item.nombre}" onload="this.style.display='block'" onerror="this.style.display='none'">`
+    ? `<img src="${item.foto}" alt="${item.nombre}" onload="this.style.display='block'" onerror="this.style.display='none'"><span class="card-emoji" style="position:absolute">${item.emoji}</span>`
     : `<span class="card-emoji">${item.emoji}</span>`;
 
   let priceBlock;
