@@ -804,8 +804,9 @@ function openAddModal(id) {
   const confirmBtn = document.getElementById('addModalConfirm');
 
   if (item.precios) {
-    // Multiple sizes
-    sizesDiv.innerHTML = Object.entries(item.precios)
+    const label = item.variante_label || 'Tamaño';
+    sizesDiv.innerHTML = `<div style="font-size:12px;color:var(--muted);margin-bottom:10px;text-align:center;letter-spacing:.5px;text-transform:uppercase">${label}</div>` +
+      Object.entries(item.precios)
       .filter(([, v]) => v)
       .map(([k, v]) =>
         `<button class="size-btn" onclick="selectSize('${k}',${v},this)">
@@ -814,7 +815,7 @@ function openAddModal(id) {
          </button>`
       ).join('');
     confirmBtn.disabled = true;
-    confirmBtn.textContent = 'Seleccioná un tamaño';
+    confirmBtn.textContent = `Seleccioná ${label.toLowerCase() === 'presentación' ? 'una presentación' : 'un tamaño'}`;
   } else {
     // Single price
     sizesDiv.innerHTML = '';
@@ -1214,9 +1215,11 @@ async function loadMenu() {
             foto: p.foto || null,
             nombre: p.nombre,
             desc: p.descripcion || '',
-            ...((p.precio_chica || p.precio_mediana || p.precio_grande)
-              ? { precios: { Chica: p.precio_chica, Mediana: p.precio_mediana, Grande: p.precio_grande } }
-              : { precio: p.precio })
+            ...(p.presentaciones?.length
+              ? { precios: Object.fromEntries(p.presentaciones.map(v => [v.nombre, v.precio])), variante_label: 'Presentación' }
+              : (p.precio_chica || p.precio_grande)
+                ? { precios: Object.fromEntries(Object.entries({Chica: p.precio_chica, Grande: p.precio_grande}).filter(([,v])=>v)), variante_label: 'Tamaño' }
+                : { precio: p.precio })
           }))
         });
       }
@@ -1233,9 +1236,11 @@ async function loadMenu() {
             foto: p.foto || null,
             nombre: p.nombre,
             desc: p.descripcion || '',
-            ...((p.precio_chica || p.precio_mediana || p.precio_grande)
-              ? { precios: { Chica: p.precio_chica, Mediana: p.precio_mediana, Grande: p.precio_grande } }
-              : { precio: p.precio })
+            ...(p.presentaciones?.length
+              ? { precios: Object.fromEntries(p.presentaciones.map(v => [v.nombre, v.precio])), variante_label: 'Presentación' }
+              : (p.precio_chica || p.precio_grande)
+                ? { precios: Object.fromEntries(Object.entries({Chica: p.precio_chica, Grande: p.precio_grande}).filter(([,v])=>v)), variante_label: 'Tamaño' }
+                : { precio: p.precio })
           }))
         });
       }
@@ -1249,9 +1254,11 @@ async function loadMenu() {
           foto: p.foto || null,
           nombre: p.nombre,
           desc: p.descripcion || '',
-          ...(p.precio_chica
-            ? { precios: { Chica: p.precio_chica, Mediana: p.precio_mediana, Grande: p.precio_grande } }
-            : { precio: p.precio })
+          ...(p.presentaciones?.length
+            ? { precios: Object.fromEntries(p.presentaciones.map(v => [v.nombre, v.precio])), variante_label: 'Presentación' }
+            : (p.precio_chica || p.precio_grande)
+              ? { precios: Object.fromEntries(Object.entries({Chica: p.precio_chica, Grande: p.precio_grande}).filter(([,v])=>v)), variante_label: 'Tamaño' }
+              : { precio: p.precio })
         }))
       });
     }

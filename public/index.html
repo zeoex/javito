@@ -1483,7 +1483,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
         </div>
         <div class="form-group" style="flex:0 0 auto;align-self:flex-end">
           <label style="display:block;margin-bottom:6px;font-size:12px;color:var(--gray)">Precios</label>
-          <button type="button" id="btnToggleVariantes" class="btn btn-outline btn-sm" onclick="toggleProdVarianteManual()" style="white-space:nowrap">📐 Por tamaño</button>
+          <button type="button" id="btnToggleVariantes" class="btn btn-outline btn-sm" onclick="toggleProdVarianteManual()" style="white-space:nowrap" data-mode="unico">💲 Precio único</button>
         </div>
       </div>
       <div class="form-group"><label>Descripción</label><input class="form-control" id="prodDesc" placeholder="Descripción breve..."/></div>
@@ -1507,14 +1507,17 @@ input.form-control:focus{outline:none;border-color:var(--red)}
           </div>
         </div>
       </div>
-      <div id="prodPrecioVariantes">
-        <div class="form-row cols-3">
+      <div id="prodPrecioVariantes" style="display:none">
+        <div class="form-row">
           <div class="form-group"><label>Precio Chica</label><input class="form-control" id="prodPChica" type="number" placeholder="sin precio"/></div>
-          <div class="form-group"><label>Precio Mediana</label><input class="form-control" id="prodPMed" type="number" placeholder="sin precio"/></div>
           <div class="form-group"><label>Precio Grande</label><input class="form-control" id="prodPGrande" type="number" placeholder="sin precio"/></div>
         </div>
       </div>
-      <div id="prodPrecioUnico" style="display:none">
+      <div id="prodPrecioPresentacion" style="display:none">
+        <div id="prodPresentacionRows"></div>
+        <button type="button" class="btn btn-outline btn-sm" onclick="addPresentacionRow()" style="margin-top:6px">+ Agregar presentación</button>
+      </div>
+      <div id="prodPrecioUnico">
         <div class="form-group"><label>Precio</label><input class="form-control" id="prodPrecio" type="number" placeholder="350"/></div>
       </div>
       <div class="form-group" style="margin-top:12px">
@@ -1923,11 +1926,18 @@ function _ep(mesa, lines, header, footer) {
 }
 
 function epComanda(mesa, items) {
-  const E='\x1B';
-  return _ep(mesa, items.map(i => {
-    const l = 'x'+i.qty+'  '+i.nombre+(i.size?' ('+i.size+')':'');
-    return E+'E\x01'+l+E+'E\x00'+(i.nota?'\n   Nota: '+i.nota:'');
-  }), 'COCINA', null);
+  const E='\x1B', G='\x1D';
+  const cols = printConfig.paperWidth === '58mm' ? 32 : 42;
+  const lines = [];
+  items.forEach(i => {
+    const size = i.size ? ' '+i.size : '';
+    const itemText = 'x'+i.qty+'  '+i.nombre+size;
+    // Double-height for readability — keeps full column width, text is 2x taller
+    lines.push(G+'!\x10'+E+'E\x01'+itemText+E+'E\x00'+G+'!\x00');
+    if (i.nota) lines.push('   > '+i.nota);
+    lines.push(''); // blank separator between items
+  });
+  return _ep(mesa, lines, 'COCINA', null);
 }
 
 function epCuenta(mesa, items) {
@@ -4355,13 +4365,14 @@ function _resetModalProducto() {
   document.getElementById('prodDesc').value='';
   document.getElementById('prodEmoji').value='🍕';
   document.getElementById('prodPChica').value='';
-  document.getElementById('prodPMed').value='';
   document.getElementById('prodPGrande').value='';
+  document.getElementById('prodPresentacionRows').innerHTML='';
   document.getElementById('prodPrecio').value='';
   document.getElementById('prodEnCartaQr').checked=true;
   document.getElementById('prodEnMenuOnline').checked=true;
   clearProdFoto();
   _populateCatSelects();
+  _setProdMode('unico');
   toggleProdPrecios();
 }
 
@@ -4399,24 +4410,44 @@ function filterProductos(v){ productosFiltro=v; renderProductos(); }
 function filterProductosCat(v){ productosCatFiltro=v; renderProductos(); }
 
 function toggleProdPrecios() {
+  const btn = document.getElementById('btnToggleVariantes');
+  if (btn?.dataset.mode && btn.dataset.mode !== 'unico') return; // already set manually
   const cat = document.getElementById('prodCat').value;
-  // Verificar si la categoría seleccionada tiene nombre que implica variantes (pizzas, etc.)
   const catObj = categoriasData.find(c => String(c.id) === String(cat));
   const catNombre = (catObj?.nombre || cat).toLowerCase();
   const esVariante = cat === 'pizzas' || catNombre.includes('pizza');
-  _setProdVariantes(esVariante);
+  if (esVariante) _setProdMode('tamano');
 }
 
 function _setProdVariantes(variantes) {
-  document.getElementById('prodPrecioVariantes').style.display = variantes ? 'block' : 'none';
-  document.getElementById('prodPrecioUnico').style.display = variantes ? 'none' : 'block';
-  const btn = document.getElementById('btnToggleVariantes');
-  if (btn) btn.style.opacity = variantes ? '1' : '0.5';
+  _setProdMode(variantes ? 'tamano' : 'unico');
 }
 
 function toggleProdVarianteManual() {
-  const visible = document.getElementById('prodPrecioVariantes').style.display !== 'none';
-  _setProdVariantes(!visible);
+  const btn = document.getElementById('btnToggleVariantes');
+  const modes = ['unico', 'tamano', 'presentacion'];
+  const current = btn.dataset.mode || 'unico';
+  const next = modes[(modes.indexOf(current) + 1) % 3];
+  _setProdMode(next);
+}
+
+function _setProdMode(mode) {
+  const btn = document.getElementById('btnToggleVariantes');
+  if (btn) btn.dataset.mode = mode;
+  document.getElementById('prodPrecioVariantes').style.display = mode === 'tamano' ? '' : 'none';
+  document.getElementById('prodPrecioPresentacion').style.display = mode === 'presentacion' ? '' : 'none';
+  document.getElementById('prodPrecioUnico').style.display = mode === 'unico' ? '' : 'none';
+  const labels = { unico: '💲 Precio único', tamano: '📐 Por tamaño', presentacion: '🍽️ Por presentación' };
+  if (btn) { btn.textContent = labels[mode]; btn.style.opacity = mode === 'unico' ? '0.5' : '1'; }
+}
+
+function addPresentacionRow(nombre='', precio='') {
+  const container = document.getElementById('prodPresentacionRows');
+  const row = document.createElement('div');
+  row.className = 'form-row';
+  row.style.cssText = 'align-items:flex-end;gap:8px;margin-bottom:8px';
+  row.innerHTML = `<div class="form-group" style="flex:2"><label>Nombre</label><input class="form-control" type="text" placeholder="Ej: Entero, Medio, Individual…" value="${nombre}"/></div><div class="form-group" style="flex:1"><label>Precio</label><input class="form-control" type="number" placeholder="0" value="${precio}"/></div><button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.form-row').remove()" style="margin-bottom:4px">✕</button>`;
+  container.appendChild(row);
 }
 
 function editProducto(id) {
@@ -4429,12 +4460,18 @@ function editProducto(id) {
   document.getElementById('prodDesc').value = p.descripcion||'';
   document.getElementById('prodEmoji').value = p.emoji||'🍕';
   toggleProdPrecios();
-  if(p.precio_chica || p.precio_mediana || p.precio_grande){
-    _setProdVariantes(true);
-    document.getElementById('prodPChica').value=p.precio_chica||'';
-    document.getElementById('prodPMed').value=p.precio_mediana||'';
-    document.getElementById('prodPGrande').value=p.precio_grande||'';
-  } else if(p.precio){ document.getElementById('prodPrecio').value=p.precio; }
+  document.getElementById('prodPresentacionRows').innerHTML = '';
+  if (p.presentaciones?.length) {
+    _setProdMode('presentacion');
+    p.presentaciones.forEach(v => addPresentacionRow(v.nombre, v.precio));
+  } else if (p.precio_chica || p.precio_grande) {
+    _setProdMode('tamano');
+    document.getElementById('prodPChica').value = p.precio_chica || '';
+    document.getElementById('prodPGrande').value = p.precio_grande || '';
+  } else {
+    _setProdMode('unico');
+    if (p.precio) document.getElementById('prodPrecio').value = p.precio;
+  }
   document.getElementById('prodEnCartaQr').checked = p.en_carta_qr !== false;
   document.getElementById('prodEnMenuOnline').checked = p.en_menu_online !== false;
   clearProdFoto();
@@ -4466,11 +4503,22 @@ function guardarProducto() {
     }
   }
   const base = { nombre, categoria:cat, emoji:document.getElementById('prodEmoji').value||'🍕', descripcion:document.getElementById('prodDesc').value, activo:true, en_carta_qr:document.getElementById('prodEnCartaQr').checked, en_menu_online:document.getElementById('prodEnMenuOnline').checked, foto:fotoVal };
-  if(document.getElementById('prodPrecioVariantes').style.display !== 'none'){
-    base.precio_chica=parseInt(document.getElementById('prodPChica').value)||0;
-    base.precio_mediana=parseInt(document.getElementById('prodPMed').value)||0;
-    base.precio_grande=parseInt(document.getElementById('prodPGrande').value)||0;
-  } else { base.precio=parseInt(document.getElementById('prodPrecio').value)||0; }
+  const mode = document.getElementById('btnToggleVariantes')?.dataset.mode || 'unico';
+  if (mode === 'tamano') {
+    base.precio_chica = parseInt(document.getElementById('prodPChica').value) || 0;
+    base.precio_grande = parseInt(document.getElementById('prodPGrande').value) || 0;
+    base.precio_mediana = 0; base.presentaciones = null;
+  } else if (mode === 'presentacion') {
+    const rows = document.querySelectorAll('#prodPresentacionRows .form-row');
+    base.presentaciones = Array.from(rows).map(r => {
+      const ins = r.querySelectorAll('input');
+      return { nombre: ins[0].value.trim(), precio: parseInt(ins[1].value) || 0 };
+    }).filter(v => v.nombre && v.precio > 0);
+    base.precio_chica = 0; base.precio_grande = 0; base.precio_mediana = 0;
+  } else {
+    base.precio = parseInt(document.getElementById('prodPrecio').value) || 0;
+    base.precio_chica = 0; base.precio_grande = 0; base.precio_mediana = 0; base.presentaciones = null;
+  }
   if(editingProdId) {
     const idx = productosData.findIndex(x=>x.id===editingProdId);
     productosData[idx] = {...productosData[idx],...base};
