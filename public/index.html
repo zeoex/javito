@@ -1483,9 +1483,9 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       </div>
       <div id="prodPrecioVariantes">
         <div class="form-row cols-3">
-          <div class="form-group"><label>Precio Chica</label><input class="form-control" id="prodPChica" type="number" placeholder="800"/></div>
-          <div class="form-group"><label>Precio Mediana</label><input class="form-control" id="prodPMed" type="number" placeholder="1200"/></div>
-          <div class="form-group"><label>Precio Grande</label><input class="form-control" id="prodPGrande" type="number" placeholder="1600"/></div>
+          <div class="form-group"><label>Precio Chica</label><input class="form-control" id="prodPChica" type="number" placeholder="sin precio"/></div>
+          <div class="form-group"><label>Precio Mediana</label><input class="form-control" id="prodPMed" type="number" placeholder="sin precio"/></div>
+          <div class="form-group"><label>Precio Grande</label><input class="form-control" id="prodPGrande" type="number" placeholder="sin precio"/></div>
         </div>
       </div>
       <div id="prodPrecioUnico" style="display:none">
@@ -4316,9 +4316,9 @@ function editProducto(id) {
   document.getElementById('prodDesc').value = p.descripcion||'';
   document.getElementById('prodEmoji').value = p.emoji||'🍕';
   toggleProdPrecios();
-  if(p.precio_chica){
+  if(p.precio_chica || p.precio_mediana || p.precio_grande){
     _setProdVariantes(true);
-    document.getElementById('prodPChica').value=p.precio_chica;
+    document.getElementById('prodPChica').value=p.precio_chica||'';
     document.getElementById('prodPMed').value=p.precio_mediana||'';
     document.getElementById('prodPGrande').value=p.precio_grande||'';
   } else if(p.precio){ document.getElementById('prodPrecio').value=p.precio; }
