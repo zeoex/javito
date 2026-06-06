@@ -2366,30 +2366,35 @@ function saveState() {
     }
     localStorage.setItem('pz_saved_at', savedAt.toString());
   } catch(e) {}
-  // Solo persistir en PG si los IDs son reales (no los numéricos del demo)
-  if (typeof token !== 'undefined' && token && _hasValidMesaIds()) {
-    apiFetch('/state', {
+  if (typeof token !== 'undefined' && token) {
+    // Sincronizar catálogo (productos + categorías) siempre, sin gate de IDs
+    apiFetch('/catalog', {
       method: 'POST',
-      body: JSON.stringify({
-        mesas: mesasData,
-        delivery: deliveryData,
-        facturas: facturasData,
-        clientes: clientesData,
-        usuarios: usuariosData,
-        productos: productosData,
-        mozo_historial: mozoHistorial,
-        caja_abierta: cajaAbierta,
-        caja_inicial: cajaInicial,
-        caja_moves: cajaMoves,
-        caja_cierres: cajaCierres,
-        categorias: categoriasData,
-        biz_cfg: getBizConfig()
-      })
-    }).then(() => {
-      // Grabar pz_saved_at DESPUÉS de que PG confirme el save.
-      // Así Date.now() > PG.updated_at y loadStateFromAPI() no pisa localStorage.
-      try { localStorage.setItem('pz_saved_at', Date.now().toString()); } catch(e) {}
+      body: JSON.stringify({ productos: productosData, categorias: categoriasData })
     }).catch(() => {});
+    // Estado completo solo con IDs de mesa reales (evita pisar PG con datos demo)
+    if (_hasValidMesaIds()) {
+      apiFetch('/state', {
+        method: 'POST',
+        body: JSON.stringify({
+          mesas: mesasData,
+          delivery: deliveryData,
+          facturas: facturasData,
+          clientes: clientesData,
+          usuarios: usuariosData,
+          productos: productosData,
+          mozo_historial: mozoHistorial,
+          caja_abierta: cajaAbierta,
+          caja_inicial: cajaInicial,
+          caja_moves: cajaMoves,
+          caja_cierres: cajaCierres,
+          categorias: categoriasData,
+          biz_cfg: getBizConfig()
+        })
+      }).then(() => {
+        try { localStorage.setItem('pz_saved_at', Date.now().toString()); } catch(e) {}
+      }).catch(() => {});
+    }
   }
 }
 

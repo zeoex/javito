@@ -772,9 +772,9 @@ async function loadMenu() {
   } catch (e) {}
 
   try {
-    const res = await fetch('/api/state');
+    const res = await fetch('/api/public/menu');
     const state = await res.json();
-    const biz = state.biz_config || {};
+    const biz = state.biz_cfg || state.biz_config || {};
     applyBizConfig(biz);
 
     const productos = (state.productos || [])

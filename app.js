@@ -1487,6 +1487,32 @@ app.get('/api/state', async (_req, res) => {
   } catch(e) { console.error('[state:get]', e.message); res.json(null); }
 });
 
+// Endpoint público para menú QR y menú online — sirve desde memoria (siempre actualizado)
+app.get('/api/public/menu', (_req, res) => {
+  res.json({
+    productos: db.productos || [],
+    categorias: db.categorias || [],
+    biz_cfg: db.biz_cfg || {}
+  });
+});
+
+// Sincroniza solo productos y categorías (usado por admin sin gate de IDs de mesa)
+app.post('/api/catalog', authMiddleware, async (req, res) => {
+  const { productos, categorias } = req.body;
+  if (Array.isArray(productos))  db.productos  = productos;
+  if (Array.isArray(categorias)) db.categorias = categorias;
+  try {
+    const pool = getPool();
+    if (pool) {
+      await pool.query(
+        'UPDATE app_state SET productos=$1, categorias=$2, updated_at=NOW() WHERE id=1',
+        [JSON.stringify(productos||[]), JSON.stringify(categorias||[])]
+      );
+    }
+  } catch(e) { console.error('[catalog:post]', e.message); }
+  res.json({ ok: true });
+});
+
 app.post('/api/state', authMiddleware, async (req, res) => {
   try {
     const pool = getPool();
@@ -1515,6 +1541,7 @@ app.post('/api/state', authMiddleware, async (req, res) => {
     if (Array.isArray(productos))  db.productos  = productos;
     if (Array.isArray(clientes))   db.clientes   = clientes;
     if (Array.isArray(categorias)) db.categorias = categorias;
+    if (biz_cfg && typeof biz_cfg === 'object') db.biz_cfg = biz_cfg;
     // Hash plaintext passwords before storing in-memory users
     if (Array.isArray(usuarios) && usuarios.length > 0) {
       db.users = await Promise.all(usuarios.map(async u => {
