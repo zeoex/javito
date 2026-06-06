@@ -544,7 +544,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 
     <label class="confirm-form-label">Modo de envío</label>
     <div class="confirm-radio-group">
-      <button type="button" class="confirm-radio-btn" id="modoRetiro" onclick="selectModoEnvio('retiro')">🏠 Retiro en sucursal</button>
+      <button type="button" class="confirm-radio-btn" id="modoRetiro" onclick="selectModoEnvio('retiro')">🏠 Retiro en Local</button>
       <button type="button" class="confirm-radio-btn" id="modoDelivery" onclick="selectModoEnvio('delivery')">🛵 Envío a domicilio</button>
     </div>
 
@@ -930,7 +930,16 @@ function selectModoEnvio(modo) {
     envioRow.style.display = 'none';
     document.getElementById('confirmTotal').textContent = formatPrice(subtotal);
     const locStatus = document.getElementById('locationStatus');
-    if (locStatus) locStatus.style.display = 'none';
+    if (locStatus) {
+      if (bizLat && bizLon) {
+        const mapsUrl = `https://www.google.com/maps?q=${bizLat},${bizLon}`;
+        locStatus.style.display = '';
+        locStatus.style.color = '#34d399';
+        locStatus.innerHTML = `🏠 Retiro en el local · <a href="${mapsUrl}" target="_blank" style="color:#fbbf24;text-decoration:underline">Ver ubicación en Maps</a>`;
+      } else {
+        locStatus.style.display = 'none';
+      }
+    }
     checkReady();
     return;
   }
