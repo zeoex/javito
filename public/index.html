@@ -3233,7 +3233,7 @@ function mesaPedidoHTML(id) {
   const m = mesasData.find(x=>String(x.id)===String(id));
   const esMozo = currentUser?.rol === 'mozo';
   const cats = [...new Set(productosData.map(p=>p.categoria))];
-  const catLabels = Object.fromEntries(categoriasData.map(c=>[c.id,`${c.emoji} ${c.nombre}`]));
+  const catLabels = Object.fromEntries(categoriasData.map(c=>[c.id, c.emoji ? `${c.emoji} ${c.nombre}` : c.nombre]));
   const subtotal = (m.pedido||[]).reduce((s,i)=>s+i.precio*i.qty,0);
   const sid = `'${id}'`;
 
@@ -3255,7 +3255,7 @@ function mesaPedidoHTML(id) {
     ? `<div class="mpo-total">Total: $${subtotal.toLocaleString()}</div>` : '';
 
   const catPills = cats.map(c=>
-    `<button class="mpo-cat-pill" id="catBtn-${c}" onclick="filtrarCatMesa('${c}')">${catLabels[c]||c}</button>`
+    `<button class="mpo-cat-pill" id="catBtn-${c}" onclick="filtrarCatMesa('${c}')">${catLabels[c]||(c.charAt(0).toUpperCase()+c.slice(1))}</button>`
   ).join('');
 
   const infoBarBg = m.estado==='cuenta' ? 'rgba(220,38,38,0.08)' : 'rgba(29,53,87,0.05)';
