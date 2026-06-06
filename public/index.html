@@ -3753,17 +3753,19 @@ async function imprimirCuenta(id) {
 function renderDelivery() {
   if (!_repartidoresList.length) cargarRepartidores();
   const stages = [
-    {key:'nuevo',label:'NUEVO',cls:'pipeline-nuevo'},
-    {key:'en_cocina',label:'EN COCINA',cls:'pipeline-cocina'},
-    {key:'listo',label:'LISTO',cls:'pipeline-listo'},
-    {key:'en_camino',label:'EN CAMINO',cls:'pipeline-camino'},
-    {key:'entregado',label:'ENTREGADO',cls:'pipeline-entregado'},
+    {key:'web',    label:'🌐 PEDIDOS WEB', cls:'pipeline-web',    filterFn: o => o.origen === 'web' && o.estado === 'nuevo'},
+    {key:'nuevo',  label:'NUEVO',          cls:'pipeline-nuevo',  filterFn: o => o.estado === 'nuevo' && o.origen !== 'web'},
+    {key:'en_cocina',label:'EN COCINA',    cls:'pipeline-cocina', filterFn: o => o.estado === 'en_cocina'},
+    {key:'listo',  label:'LISTO',          cls:'pipeline-listo',  filterFn: o => o.estado === 'listo'},
+    {key:'en_camino',label:'EN CAMINO',    cls:'pipeline-camino', filterFn: o => o.estado === 'en_camino'},
+    {key:'entregado',label:'ENTREGADO',    cls:'pipeline-entregado', filterFn: o => o.estado === 'entregado'},
   ];
   document.getElementById('deliveryPipeline').innerHTML = stages.map(s=>{
-    const orders = deliveryData.filter(d=>d.estado===s.key);
-    return `<div class="pipeline-col ${s.cls}">
+    const orders = deliveryData.filter(s.filterFn);
+    const colStyle = s.key === 'web' ? ' style="border-top:3px solid #3b82f6"' : '';
+    return `<div class="pipeline-col ${s.cls}"${colStyle}>
       <div class="pipeline-header">${s.label} (${orders.length})</div>
-      <div class="pipeline-body">${orders.map(o=>renderDeliveryCard(o,s.key)).join('')||'<div style="color:#aaa;font-size:12px;text-align:center;padding:16px">Vacío</div>'}
+      <div class="pipeline-body">${orders.map(o=>renderDeliveryCard(o,s.key === 'web' ? 'nuevo' : s.key)).join('')||'<div style="color:#aaa;font-size:12px;text-align:center;padding:16px">Vacío</div>'}
       </div></div>`;
   }).join('');
 }
@@ -3800,10 +3802,13 @@ function renderDeliveryCard(o,stage) {
   const asignarBtn = stage !== 'entregado'
     ? `<button class="btn btn-outline btn-sm" onclick="asignarRepartidor('${o.id}')" title="Asignar repartidor">👤</button>`
     : '';
+  const itemsHtml = o.origen === 'web'
+    ? (o.items||[]).map(i=>`<div style="font-size:11px;color:var(--gray);line-height:1.6">${i.qty}× ${i.nombre}${i.size?` (${i.size})`:''} — $${Number(i.precio*i.qty).toLocaleString()}</div>`).join('')
+    : (o.items||[]).map(i=>`${i.qty}x ${i.nombre}`).join(', ');
   return `<div class="delivery-card">
     <div class="delivery-card-num">${o.numero}${webBadge}</div>
     <div class="delivery-card-client">👤 ${o.cliente?.nombre||o.clienteNombre||'—'}</div>
-    <div class="delivery-card-items">${(o.items||[]).map(i=>`${i.qty}x ${i.nombre}`).join(', ')}</div>
+    <div class="delivery-card-items">${itemsHtml}</div>
     ${dirStr}${repartidorStr}
     <div class="delivery-card-total">💰 $${Number(o.total||0).toLocaleString()} · ${mpLabel}${costoEnvioStr}</div>
     <div class="delivery-card-actions">${nextBtn}<button class="btn btn-outline btn-sm" onclick="imprimirDelivery(${o.id})" title="Imprimir">🖨️</button>${gpsBtn}${editEnvioBtn}${asignarBtn}${cancelBtn}</div>

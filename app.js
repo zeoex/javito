@@ -453,6 +453,8 @@ app.use('/api', (req, res, next) => {
   if (req.path === '/print' && req.method === 'POST') return next();
   // Public menu for QR and online menu (no login required)
   if (req.path === '/public/menu' && req.method === 'GET') return next();
+  // Web orders from carta.html (public, no login)
+  if (req.path.startsWith('/web/')) return next();
   authMiddleware(req, res, next);
 });
 
