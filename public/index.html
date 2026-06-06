@@ -1152,6 +1152,11 @@ input.form-control:focus{outline:none;border-color:var(--red)}
           <h2>👤 Usuarios</h2>
           <button class="btn btn-primary btn-sm" onclick="_resetModalUsuario();openModal('modalUsuario')">+ Nuevo Usuario</button>
         </div>
+        <div id="repInfoBanner" style="display:none;background:linear-gradient(135deg,#1e40af,#3b82f6);border-radius:12px;padding:12px 16px;margin-bottom:14px;color:#fff;font-size:13px;display:flex;align-items:center;gap:12px">
+          <span style="font-size:22px">🛵</span>
+          <span style="flex:1">Los usuarios con rol <strong>Repartidor</strong> ingresan desde <strong>/repartidor</strong> con su email y contraseña.</span>
+          <a href="/repartidor" target="_blank" class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);white-space:nowrap">Abrir app</a>
+        </div>
         <div class="card">
           <div class="table-wrap"><table>
             <thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Último Acceso</th><th>Acciones</th></tr></thead>
@@ -1667,6 +1672,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
           <option value="mozo">Mozo</option>
           <option value="cajero">Cajero</option>
           <option value="cocina">Cocina</option>
+          <option value="repartidor">Repartidor</option>
         </select>
       </div>
     </div>
@@ -2563,7 +2569,7 @@ function initApp() {
   const av = document.getElementById('userAvatar');
   av.textContent = (currentUser?.nombre||'U')[0].toUpperCase();
   document.getElementById('userName').textContent = currentUser?.nombre || 'Usuario';
-  const roles = {admin:'Administrador',mozo:'Mozo',cajero:'Cajero',cocina:'Cocina'};
+  const roles = {admin:'Administrador',mozo:'Mozo',cajero:'Cajero',cocina:'Cocina',repartidor:'🛵 Repartidor'};
   document.getElementById('userRole').textContent = roles[currentUser?.rol] || currentUser?.rol || '';
   // Hide usuarios for non-admin
   if (currentUser?.rol !== 'admin') document.getElementById('navUsuarios').style.display = 'none';
@@ -4933,7 +4939,10 @@ function renderReportes() {
 
 // ======= USUARIOS =======
 function renderUsuarios() {
-  const roles = {admin:'Administrador',mozo:'Mozo',cajero:'Cajero',cocina:'Cocina'};
+  const roles = {admin:'Administrador',mozo:'Mozo',cajero:'Cajero',cocina:'Cocina',repartidor:'🛵 Repartidor'};
+  const hasRep = usuariosData.some(u=>u.rol==='repartidor');
+  const banner = document.getElementById('repInfoBanner');
+  if (banner) banner.style.display = hasRep ? 'flex' : 'none';
   document.getElementById('usuariosTbody').innerHTML = usuariosData.map(u=>`
     <tr>
       <td><strong>${u.nombre}</strong></td>

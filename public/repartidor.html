@@ -1415,7 +1415,7 @@
     </form>
 
     <div class="login-error" id="login-error"></div>
-    <div class="login-hint">Demo: conductor1 / 1234 &nbsp;•&nbsp; conductor2 / 1234</div>
+    <div class="login-hint">Ingresá con tu email y contraseña creados en Admin → Usuarios</div>
   </div>
 
 </div>
@@ -1611,22 +1611,40 @@ let disponible = true;
 let socket = null;
 
 /* ── AUTH ────────────────────────────────────────── */
-function handleLogin() {
-  const user = document.getElementById('input-conductor').value.trim().toLowerCase();
+async function handleLogin() {
+  const user = document.getElementById('input-conductor').value.trim();
   const pin  = document.getElementById('input-pin').value.trim();
   const errEl = document.getElementById('login-error');
 
   if (!user || !pin) { errEl.textContent = 'Completá todos los campos.'; return; }
 
-  const driver = DRIVERS[user];
+  // Primero intentar contra la API (usuarios reales con rol repartidor)
+  try {
+    const res = await fetch('/api/repartidores/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: user, password: pin })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      errEl.textContent = '';
+      currentDriver = { user: data.email, id: data.id, nombre: data.nombre, telefono: data.telefono || '' };
+      try { localStorage.setItem('rep_driver', JSON.stringify(currentDriver)); } catch(e) {}
+      bootApp();
+      return;
+    }
+  } catch(e) { /* red no disponible, caer al fallback */ }
+
+  // Fallback: demo hardcoded
+  const key = user.toLowerCase();
+  const driver = DRIVERS[key];
   if (!driver || driver.pin !== pin) {
-    errEl.textContent = 'Usuario o PIN incorrecto.';
+    errEl.textContent = 'Usuario o contraseña incorrectos.';
     document.getElementById('input-pin').value = '';
     return;
   }
-
   errEl.textContent = '';
-  currentDriver = { user, ...driver };
+  currentDriver = { user: key, ...driver };
   try { localStorage.setItem('rep_driver', JSON.stringify(currentDriver)); } catch(e) {}
   bootApp();
 }

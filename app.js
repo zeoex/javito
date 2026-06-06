@@ -466,6 +466,23 @@ app.post('/api/auth/logout', (_req, res) => {
   res.json({ message: 'Sesión cerrada correctamente' });
 });
 
+// Login sin auth para repartidores — verifica contra db.users con rol repartidor
+app.post('/api/repartidores/login', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: 'Email y contraseña requeridos' });
+  const user = db.users.find(u => u.email === email && u.rol === 'repartidor' && u.activo);
+  if (!user) return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+  // Soportar tanto bcrypt hash como plaintext (migración)
+  let ok = false;
+  if (user.password && user.password.startsWith('$2')) {
+    ok = await bcrypt.compare(password, user.password);
+  } else {
+    ok = (user.password === password);
+  }
+  if (!ok) return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+  res.json({ id: user.id, nombre: user.nombre, email: user.email, telefono: user.telefono || '' });
+});
+
 // ─────────────────────────────────────────────
 //  MESAS ROUTES
 // ─────────────────────────────────────────────
@@ -1498,6 +1515,15 @@ app.post('/api/state', authMiddleware, async (req, res) => {
     if (Array.isArray(productos))  db.productos  = productos;
     if (Array.isArray(clientes))   db.clientes   = clientes;
     if (Array.isArray(categorias)) db.categorias = categorias;
+    // Hash plaintext passwords before storing in-memory users
+    if (Array.isArray(usuarios) && usuarios.length > 0) {
+      db.users = await Promise.all(usuarios.map(async u => {
+        if (u.password && !u.password.startsWith('$2')) {
+          return { ...u, password: await bcrypt.hash(u.password, 10) };
+        }
+        return u;
+      }));
+    }
     // Notify all connected clients so they can pull fresh state if needed
     const savedAt = new Date().toISOString();
     io.emit('state:changed', { updated_at: savedAt });
