@@ -1455,6 +1455,10 @@ input.form-control:focus{outline:none;border-color:var(--red)}
         <div class="form-group"><label>Categoría</label>
           <select class="form-control" id="prodCat" onchange="toggleProdPrecios()"></select>
         </div>
+        <div class="form-group" style="flex:0 0 auto;align-self:flex-end">
+          <label style="display:block;margin-bottom:6px;font-size:12px;color:var(--gray)">Precios</label>
+          <button type="button" id="btnToggleVariantes" class="btn btn-outline btn-sm" onclick="toggleProdVarianteManual()" style="white-space:nowrap">📐 Por tamaño</button>
+        </div>
       </div>
       <div class="form-group"><label>Descripción</label><input class="form-control" id="prodDesc" placeholder="Descripción breve..."/></div>
       <div class="form-row" style="align-items:flex-start;gap:16px">
@@ -2445,6 +2449,13 @@ async function loadStateFromAPI() {
     if (!pgIsNewer && localTime > 0) {
       // localStorage es más reciente — PG puede tener datos viejos, no pisar
       console.log('[state] localStorage más reciente que PG, se mantiene local');
+      // Pero sincronizar catálogo al servidor para que /api/public/menu sirva datos actuales
+      if (typeof token !== 'undefined' && token) {
+        apiFetch('/catalog', {
+          method: 'POST',
+          body: JSON.stringify({ productos: productosData, categorias: categoriasData })
+        }).catch(() => {});
+      }
       return;
     }
 
@@ -4262,8 +4273,23 @@ function filterProductosCat(v){ productosCatFiltro=v; renderProductos(); }
 
 function toggleProdPrecios() {
   const cat = document.getElementById('prodCat').value;
-  document.getElementById('prodPrecioVariantes').style.display = cat==='pizzas'?'block':'none';
-  document.getElementById('prodPrecioUnico').style.display = cat!=='pizzas'?'block':'none';
+  // Verificar si la categoría seleccionada tiene nombre que implica variantes (pizzas, etc.)
+  const catObj = categoriasData.find(c => String(c.id) === String(cat));
+  const catNombre = (catObj?.nombre || cat).toLowerCase();
+  const esVariante = cat === 'pizzas' || catNombre.includes('pizza');
+  _setProdVariantes(esVariante);
+}
+
+function _setProdVariantes(variantes) {
+  document.getElementById('prodPrecioVariantes').style.display = variantes ? 'block' : 'none';
+  document.getElementById('prodPrecioUnico').style.display = variantes ? 'none' : 'block';
+  const btn = document.getElementById('btnToggleVariantes');
+  if (btn) btn.style.opacity = variantes ? '1' : '0.5';
+}
+
+function toggleProdVarianteManual() {
+  const visible = document.getElementById('prodPrecioVariantes').style.display !== 'none';
+  _setProdVariantes(!visible);
 }
 
 function editProducto(id) {
@@ -4276,8 +4302,12 @@ function editProducto(id) {
   document.getElementById('prodDesc').value = p.descripcion||'';
   document.getElementById('prodEmoji').value = p.emoji||'🍕';
   toggleProdPrecios();
-  if(p.precio_chica){ document.getElementById('prodPChica').value=p.precio_chica; document.getElementById('prodPMed').value=p.precio_mediana; document.getElementById('prodPGrande').value=p.precio_grande; }
-  else if(p.precio){ document.getElementById('prodPrecio').value=p.precio; }
+  if(p.precio_chica){
+    _setProdVariantes(true);
+    document.getElementById('prodPChica').value=p.precio_chica;
+    document.getElementById('prodPMed').value=p.precio_mediana||'';
+    document.getElementById('prodPGrande').value=p.precio_grande||'';
+  } else if(p.precio){ document.getElementById('prodPrecio').value=p.precio; }
   document.getElementById('prodEnCartaQr').checked = p.en_carta_qr !== false;
   document.getElementById('prodEnMenuOnline').checked = p.en_menu_online !== false;
   clearProdFoto();
@@ -4309,7 +4339,7 @@ function guardarProducto() {
     }
   }
   const base = { nombre, categoria:cat, emoji:document.getElementById('prodEmoji').value||'🍕', descripcion:document.getElementById('prodDesc').value, activo:true, en_carta_qr:document.getElementById('prodEnCartaQr').checked, en_menu_online:document.getElementById('prodEnMenuOnline').checked, foto:fotoVal };
-  if(cat==='pizzas'){
+  if(document.getElementById('prodPrecioVariantes').style.display !== 'none'){
     base.precio_chica=parseInt(document.getElementById('prodPChica').value)||0;
     base.precio_mediana=parseInt(document.getElementById('prodPMed').value)||0;
     base.precio_grande=parseInt(document.getElementById('prodPGrande').value)||0;
