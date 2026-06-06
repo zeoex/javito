@@ -2448,26 +2448,37 @@ async function loadStateFromAPI() {
     if (!res.ok) return;
     const data = await res.json();
     if (!data) {
-      // PG sin fila — el server usa seed. No pushear desde localStorage
-      // porque puede tener datos viejos. El usuario debe guardar desde admin.
       console.log('[state] PG sin datos — usar seed del servidor');
       return;
     }
 
-    // Comparar timestamps: solo usar PG si es más reciente que el localStorage local.
+    const arr = (v, def=[]) => Array.isArray(v) ? v : def;
+
+    // Productos y categorías siempre desde PG — es la fuente de verdad.
+    // NUNCA pisar PG con localStorage (puede tener fotos eliminadas por quota).
+    if (arr(data.productos).length > 0) {
+      productosData = data.productos;
+      try {
+        localStorage.setItem('pz_productos', JSON.stringify(productosData));
+      } catch(e) {
+        try { localStorage.setItem('pz_productos', JSON.stringify(productosData.map(p=>({...p,foto:null})))); } catch(e2) {}
+      }
+    }
+    if (arr(data.categorias).length > 0) {
+      categoriasData = data.categorias;
+      try { localStorage.setItem('pz_categorias', JSON.stringify(categoriasData)); } catch(e) {}
+    }
+
+    // Para el estado operacional (mesas, delivery, caja) usar timestamp para decidir fuente.
     const pgTime   = data.updated_at ? new Date(data.updated_at).getTime() : 0;
     const localTime = parseInt(localStorage.getItem('pz_saved_at') || '0');
-    const pgIsNewer = pgTime > localTime;
 
-    if (!pgIsNewer && localTime > 0) {
-      // localStorage es más reciente — mantener local y sincronizar catálogo al servidor
-      console.log('[state] localStorage más reciente que PG, se mantiene local');
-      _syncCatalogToServer();
+    if (localTime > 0 && localTime > pgTime) {
+      console.log('[state] Estado operacional: localStorage más reciente, se mantiene');
       return;
     }
 
-    const arr = (v, def=[]) => Array.isArray(v) ? v : def;
-    // Validar que PG no tenga IDs de demo (numéricos) antes de aceptarlos
+    // PG es más reciente o no hay localStorage — cargar estado operacional desde PG
     const pgMesas = arr(data.mesas);
     const pgIdsValidos = pgMesas.length === 0 || pgMesas.every(m => typeof m.id === 'string' && m.id.length > 10 && m.id.includes('-'));
     if (pgMesas.length > 0 && pgIdsValidos) mesasData = pgMesas;
@@ -2476,18 +2487,14 @@ async function loadStateFromAPI() {
     if (arr(data.facturas).length > 0)        facturasData  = data.facturas;
     if (arr(data.clientes).length > 0)        clientesData  = data.clientes;
     if (arr(data.usuarios).length > 0)        usuariosData  = data.usuarios;
-    if (arr(data.productos).length > 0)       productosData = data.productos;
     if (arr(data.mozo_historial).length > 0)  mozoHistorial = data.mozo_historial;
     if (data.caja_abierta !== null && data.caja_abierta !== undefined) cajaAbierta = data.caja_abierta === true;
     if (data.caja_inicial)                    cajaInicial   = parseInt(data.caja_inicial) || 5000;
     if (arr(data.caja_moves).length > 0)      cajaMoves     = data.caja_moves.map(m=>({...m, desc:m.desc||'', monto:Number(m.monto)||0}));
     if (arr(data.caja_cierres).length > 0)    cajaCierres   = data.caja_cierres;
-    if (arr(data.categorias).length > 0)      categoriasData= data.categorias;
     if (data.biz_cfg && typeof data.biz_cfg === 'object' && data.biz_cfg.nombre) {
       localStorage.setItem('pz_biz_cfg', JSON.stringify(data.biz_cfg));
     }
-
-    // Actualizar localStorage con los datos de PG (y registrar su timestamp)
     try {
       localStorage.setItem('pz_mesas',       JSON.stringify(mesasData));
       localStorage.setItem('pz_delivery',     JSON.stringify(deliveryData));
@@ -2498,12 +2505,9 @@ async function loadStateFromAPI() {
       localStorage.setItem('pz_caja_cierres', JSON.stringify(cajaCierres));
       localStorage.setItem('pz_saved_at',     pgTime.toString());
     } catch(e) {}
-    // Sincronizar catálogo al servidor (cubre el caso de restart donde db.productos tiene seed)
-    _syncCatalogToServer();
-    console.log('[state] Cargado desde PG — mesas:', mesasData.length, '| pgTime:', new Date(pgTime).toISOString());
+    console.log('[state] Cargado desde PG — productos:', productosData.length, '| pgTime:', pgTime ? new Date(pgTime).toISOString() : 'N/A');
   } catch(e) {
     console.log('[state] PG no disponible, usando localStorage');
-    _syncCatalogToServer();
   }
 }
 
