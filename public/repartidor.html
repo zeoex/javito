@@ -1884,13 +1884,13 @@ function buildOrderCard(p) {
     </div>`
   ).join('');
 
+  const tieneGps = !!(p.lat_cliente && p.lon_cliente);
+  const mapsBtn = `<button class="btn-action btn-maps" onclick="verEnMaps('${p.id}')">${tieneGps ? '🛰️ Navegar GPS' : '📍 Ver en Maps'}</button>`;
   let actionsHtml = '';
   if (p.estado === 'listo' || p.estado === 'asignado') {
-    actionsHtml = `<button class="btn-action btn-start" onclick="iniciarViaje('${p.id}')">▶ Iniciar viaje</button>`;
+    actionsHtml = `<button class="btn-action btn-start" onclick="iniciarViaje('${p.id}')">▶ Iniciar viaje</button>${mapsBtn}`;
   } else if (p.estado === 'en_camino') {
-    actionsHtml = `
-      <button class="btn-action btn-maps" onclick="verEnMaps('${p.id}')">📍 Ver en Maps</button>
-      <button class="btn-action btn-deliver" onclick="marcarEntregado('${p.id}')">✅ Marcar Entregado</button>`;
+    actionsHtml = `${mapsBtn}<button class="btn-action btn-deliver" onclick="marcarEntregado('${p.id}')">✅ Marcar Entregado</button>`;
   } else if (p.estado === 'entregado') {
     actionsHtml = `<button class="btn-action btn-done" disabled>✓ Entregado</button>`;
   } else {
@@ -1942,9 +1942,11 @@ function iniciarViaje(id) {
 }
 
 function verEnMaps(id) {
-  const p = pedidos.find(p => p.id === id);
+  const p = pedidos.find(p => String(p.id) === String(id));
   if (!p) return;
-  const url = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.direccion);
+  const url = (p.lat_cliente && p.lon_cliente)
+    ? `https://www.google.com/maps/dir/?api=1&destination=${p.lat_cliente},${p.lon_cliente}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.direccion)}`;
   window.open(url, '_blank');
 }
 

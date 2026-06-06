@@ -1124,7 +1124,9 @@ function enviarWhatsApp() {
       origen: 'web',
       costo_envio: envioMonto,
       modo_envio: modoEnvio,
-      distancia_km: (esDelivery && customerLat && bizLat) ? parseFloat(haversineKm(bizLat, bizLon, customerLat, customerLon).toFixed(2)) : null
+      distancia_km: (esDelivery && customerLat && bizLat) ? parseFloat(haversineKm(bizLat, bizLon, customerLat, customerLon).toFixed(2)) : null,
+      lat_cliente: esDelivery && customerLat ? customerLat : null,
+      lon_cliente: esDelivery && customerLon ? customerLon : null
     })
   }).catch(() => {});
 

@@ -1556,8 +1556,6 @@ input.form-control:focus{outline:none;border-color:var(--red)}
         <div class="form-group"><label>Repartidor</label>
           <select class="form-control" id="dlvRepartidor">
             <option value="">Sin asignar</option>
-            <option value="conductor1">Conductor 1</option>
-            <option value="conductor2">Conductor 2</option>
           </select>
         </div>
         <div class="form-group"><label>Método de pago</label>
@@ -3753,6 +3751,7 @@ async function imprimirCuenta(id) {
 
 // ======= DELIVERY =======
 function renderDelivery() {
+  if (!_repartidoresList.length) cargarRepartidores();
   const stages = [
     {key:'nuevo',label:'NUEVO',cls:'pipeline-nuevo'},
     {key:'en_cocina',label:'EN COCINA',cls:'pipeline-cocina'},
@@ -3791,14 +3790,58 @@ function renderDeliveryCard(o,stage) {
     ? `<button class="btn btn-outline btn-sm" onclick="editarCostoEnvio('${o.id}')" title="Editar costo de envío">📦 Envío</button>`
     : '';
   const dirStr = o.direccion ? `<div style="font-size:11px;color:var(--gray)">📍 ${o.direccion}</div>` : '';
+  const gpsBtn = (o.lat_cliente && o.lon_cliente)
+    ? `<a class="btn btn-outline btn-sm" href="https://www.google.com/maps?q=${o.lat_cliente},${o.lon_cliente}" target="_blank" title="Ver en Maps">🗺️</a>`
+    : '';
+  const repartidorNombre = o.repartidorNombre || (o.repartidor ? o.repartidor : null);
+  const repartidorStr = repartidorNombre
+    ? `<div style="font-size:11px;color:var(--gray)">🛵 ${repartidorNombre}</div>`
+    : '';
+  const asignarBtn = stage !== 'entregado'
+    ? `<button class="btn btn-outline btn-sm" onclick="asignarRepartidor('${o.id}')" title="Asignar repartidor">👤</button>`
+    : '';
   return `<div class="delivery-card">
     <div class="delivery-card-num">${o.numero}${webBadge}</div>
     <div class="delivery-card-client">👤 ${o.cliente?.nombre||o.clienteNombre||'—'}</div>
     <div class="delivery-card-items">${(o.items||[]).map(i=>`${i.qty}x ${i.nombre}`).join(', ')}</div>
-    ${dirStr}
+    ${dirStr}${repartidorStr}
     <div class="delivery-card-total">💰 $${Number(o.total||0).toLocaleString()} · ${mpLabel}${costoEnvioStr}</div>
-    <div class="delivery-card-actions">${nextBtn}<button class="btn btn-outline btn-sm" onclick="imprimirDelivery(${o.id})" title="Imprimir">🖨️</button>${editEnvioBtn}${cancelBtn}</div>
+    <div class="delivery-card-actions">${nextBtn}<button class="btn btn-outline btn-sm" onclick="imprimirDelivery(${o.id})" title="Imprimir">🖨️</button>${gpsBtn}${editEnvioBtn}${asignarBtn}${cancelBtn}</div>
   </div>`;
+}
+
+let _repartidoresList = [];
+async function cargarRepartidores() {
+  try {
+    const data = await apiFetch('/repartidores');
+    _repartidoresList = Array.isArray(data) ? data : [];
+    // Populate new delivery form dropdown
+    const sel = document.getElementById('dlvRepartidor');
+    if (sel) {
+      sel.innerHTML = '<option value="">Sin asignar</option>' +
+        _repartidoresList.map(r => `<option value="${r.id}">${r.nombre}</option>`).join('');
+    }
+  } catch(e) {}
+}
+
+async function asignarRepartidor(id) {
+  if (!_repartidoresList.length) await cargarRepartidores();
+  if (!_repartidoresList.length) { showToast('No hay repartidores configurados','error'); return; }
+  const pedido = deliveryData.find(d => String(d.id) === String(id));
+  if (!pedido) return;
+  const opciones = _repartidoresList.map((r, i) => `${i+1}. ${r.nombre}`).join('\n');
+  const actual = pedido.repartidorNombre || pedido.repartidor || 'Sin asignar';
+  const input = prompt(`Asignar repartidor para ${pedido.numero}\nActual: ${actual}\n\n${opciones}\n\nIngresá el número:`);
+  if (!input) return;
+  const idx = parseInt(input) - 1;
+  if (isNaN(idx) || idx < 0 || idx >= _repartidoresList.length) { showToast('Número inválido','error'); return; }
+  const rep = _repartidoresList[idx];
+  pedido.repartidorId = rep.id;
+  pedido.repartidorNombre = rep.nombre;
+  await apiFetch(`/delivery/${id}/repartidor`, { method: 'PUT', body: JSON.stringify({ repartidorId: rep.id }) });
+  saveState();
+  renderDelivery();
+  showToast(`${pedido.numero} → ${rep.nombre}`, 'success');
 }
 
 function editarCostoEnvio(id) {

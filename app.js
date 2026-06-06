@@ -444,7 +444,9 @@ app.use('/api', (req, res, next) => {
   // Repartidor accesses these without admin JWT (has its own auth)
   if (req.path === '/delivery/activos' && req.method === 'GET') return next();
   if (/^\/delivery\/[^/]+\/estado$/.test(req.path) && req.method === 'PUT') return next();
+  if (/^\/delivery\/[^/]+\/repartidor$/.test(req.path) && req.method === 'PUT') return next();
   if (req.path === '/repartidores/login' && req.method === 'POST') return next();
+  if (req.path === '/repartidores' && req.method === 'GET') return next();
   // Cocina screen has no login — all /cocina/* routes are open
   if (req.path.startsWith('/cocina')) return next();
   // Mozo sends print jobs — no auth required (internal intranet actions)
@@ -480,6 +482,13 @@ app.post('/api/auth/login', async (req, res) => {
 app.post('/api/auth/logout', (_req, res) => {
   // Stateless JWT — sólo confirmamos en cliente
   res.json({ message: 'Sesión cerrada correctamente' });
+});
+
+// Lista de repartidores activos (para el panel admin — sin auth)
+app.get('/api/repartidores', (req, res) => {
+  const lista = db.users.filter(u => u.rol === 'repartidor' && u.activo)
+    .map(u => ({ id: u.id, nombre: u.nombre, telefono: u.telefono || '' }));
+  res.json(lista);
 });
 
 // Login sin auth para repartidores — verifica contra db.users con rol repartidor
@@ -974,7 +983,7 @@ app.post('/api/delivery', (req, res) => {
 
 // Pedidos desde el menú online (carta.html) → aparecen en el módulo de delivery del admin
 app.post('/api/web/pedido', async (req, res) => {
-  const { cliente, items, total, metodo_pago, nota, origen, costo_envio, modo_envio, distancia_km } = req.body;
+  const { cliente, items, total, metodo_pago, nota, origen, costo_envio, modo_envio, distancia_km, lat_cliente, lon_cliente } = req.body;
   if (!cliente?.nombre || !Array.isArray(items) || !items.length) {
     return res.status(400).json({ error: 'Datos insuficientes' });
   }
@@ -996,7 +1005,9 @@ app.post('/api/web/pedido', async (req, res) => {
     origen: 'web',
     costo_envio: costo_envio || 0,
     modo_envio: modo_envio || 'retiro',
-    distancia_km: distancia_km || null
+    distancia_km: distancia_km || null,
+    lat_cliente: lat_cliente || null,
+    lon_cliente: lon_cliente || null
   };
 
   // Persistir en PostgreSQL directamente para que el admin lo vea aunque no esté conectado
@@ -1033,6 +1044,33 @@ app.put('/api/delivery/:id/costo-envio', async (req, res) => {
   }
   io.emit('delivery:update', { id: targetId, costo_envio });
   res.json({ ok: true });
+});
+
+// Asignar repartidor a un pedido
+app.put('/api/delivery/:id/repartidor', async (req, res) => {
+  const targetId = req.params.id;
+  const { repartidorId } = req.body;
+  const repartidor = db.users.find(u => u.id === repartidorId && u.rol === 'repartidor');
+  const repartidorNombre = repartidor?.nombre || null;
+
+  const inMem = db.delivery.find(d => String(d.id) === String(targetId));
+  if (inMem) { inMem.repartidorId = repartidorId; inMem.repartidorNombre = repartidorNombre; }
+
+  const pool = getPool();
+  if (pool) {
+    try {
+      const { rows } = await pool.query('SELECT delivery FROM app_state WHERE id = 1');
+      const list = rows[0]?.delivery || [];
+      const idx = list.findIndex(d => String(d.id) === String(targetId));
+      if (idx >= 0) {
+        list[idx].repartidorId = repartidorId;
+        list[idx].repartidorNombre = repartidorNombre;
+        await pool.query('UPDATE app_state SET delivery=$1, updated_at=NOW() WHERE id=1', [JSON.stringify(list)]);
+      }
+    } catch(e) { console.error('[delivery:repartidor]', e.message); }
+  }
+  io.emit('delivery:update', { id: targetId, repartidorId, repartidorNombre });
+  res.json({ ok: true, repartidorNombre });
 });
 
 app.put('/api/delivery/:id/estado', async (req, res) => {
