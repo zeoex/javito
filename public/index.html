@@ -1185,7 +1185,8 @@ input.form-control:focus{outline:none;border-color:var(--red)}
             <div class="card-body">
               <div class="form-group"><label>Nombre del local</label><input class="form-control" id="cfgNombre" value="ResTito"/></div>
               <div class="form-group"><label>Dirección</label><input class="form-control" id="cfgDir" value=""/></div>
-              <div class="form-group"><label>Teléfono / WhatsApp</label><input class="form-control" id="cfgTel" value="" placeholder="Ej: 5491112345678"/><small style="color:var(--gray);font-size:11px">Incluí código de país sin + — se usa para pedidos del menú online</small></div>
+              <div class="form-group"><label>Teléfono</label><input class="form-control" id="cfgTel" value="" placeholder="Ej: (011) 4567-8900"/><small style="color:var(--gray);font-size:11px">Se muestra en recibos y comprobantes</small></div>
+              <div class="form-group"><label>WhatsApp</label><input class="form-control" id="cfgWsp" value="" placeholder="Ej: 5491112345678"/><small style="color:var(--gray);font-size:11px">Con código de país sin + (Argentina: 549 + número sin 0 ni 15). Se usa para pedidos del menú online</small></div>
               <div class="form-group"><label>Alias (transferencias menú online)</label><input class="form-control" id="cfgAlias" value="" placeholder="Ej: negocio.pagos"/></div>
               <div class="form-group"><label>CBU/CVU (transferencias menú online)</label><input class="form-control" id="cfgCbu" value="" placeholder="22 dígitos"/></div>
               <div class="form-group"><label>Costo de envío fijo ($)</label><input class="form-control" id="cfgCostoEnvio" type="number" min="0" value="0"/><small style="color:var(--gray);font-size:11px">Se usa cuando no hay precio por km configurado. 0 = Bonificado</small></div>
@@ -5569,7 +5570,7 @@ function descargarPDFQRCarta() {
 // ======= CONFIG =======
 // ======= BIZ CONFIG + LOGO =======
 function getBizConfig() {
-  const defaults = {nombre:'ResTito',dir:'',tel:'',alias:'',cbu:'',costoEnvio:0,precioPorKm:0,radioDelivery:10,latitud:'',longitud:'',recibo:'¡Gracias por su visita!',logo:null};
+  const defaults = {nombre:'ResTito',dir:'',tel:'',wsp:'',alias:'',cbu:'',costoEnvio:0,precioPorKm:0,radioDelivery:10,latitud:'',longitud:'',recibo:'¡Gracias por su visita!',logo:null};
   try { return {...defaults, ...JSON.parse(localStorage.getItem('pz_biz_cfg')||'{}')}; }
   catch(e) { return defaults; }
 }
@@ -5617,6 +5618,7 @@ function loadBizConfig() {
   const n = document.getElementById('cfgNombre'); if (n) n.value = biz.nombre;
   const d = document.getElementById('cfgDir');    if (d) d.value = biz.dir||'';
   const t = document.getElementById('cfgTel');    if (t) t.value = biz.tel||'';
+  const w = document.getElementById('cfgWsp');    if (w) w.value = biz.wsp||'';
   const al = document.getElementById('cfgAlias'); if (al) al.value = biz.alias||'';
   const cb = document.getElementById('cfgCbu');   if (cb) cb.value = biz.cbu||'';
   const ce = document.getElementById('cfgCostoEnvio'); if (ce) ce.value = biz.costoEnvio||0;
@@ -5689,6 +5691,7 @@ function saveConfig() {
   biz.nombre      = document.getElementById('cfgNombre')?.value?.trim()     || 'ResTito';
   biz.dir         = document.getElementById('cfgDir')?.value?.trim()         || '';
   biz.tel         = document.getElementById('cfgTel')?.value?.trim()         || '';
+  biz.wsp         = document.getElementById('cfgWsp')?.value?.trim()         || '';
   biz.alias         = document.getElementById('cfgAlias')?.value?.trim()         || '';
   biz.cbu           = document.getElementById('cfgCbu')?.value?.trim()           || '';
   biz.costoEnvio    = parseFloat(document.getElementById('cfgCostoEnvio')?.value)    || 0;
