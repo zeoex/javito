@@ -4,6 +4,8 @@
 //  ResTito – Backend completo (single file)
 // ─────────────────────────────────────────────
 
+function arDate() { return new Date().toLocaleString('sv-SE',{timeZone:'America/Argentina/Buenos_Aires'}).slice(0,10); }
+
 const express    = require('express');
 const http       = require('http');
 const path       = require('path');
@@ -300,7 +302,7 @@ const db = {
   db.caja = [
     {
       id: uuidv4(),
-      fecha:        new Date().toISOString().split('T')[0],
+      fecha:        arDate(),
       apertura:     new Date(Date.now() - 6 * 3600000).toISOString(),
       cierre:       null,
       saldoInicial: 5000,
@@ -357,7 +359,7 @@ function cajaActual() {
 }
 
 function emitDashboardStats() {
-  const hoy = new Date().toISOString().split('T')[0];
+  const hoy = arDate();
   const pedidosHoy = db.pedidos.filter(p => p.createdAt.startsWith(hoy));
   const ventaHoy   = pedidosHoy.filter(p => p.estado === 'pagado').reduce((s, p) => s + p.total, 0);
   const caja       = cajaActual();
@@ -1081,7 +1083,7 @@ app.post('/api/caja/abrir', (req, res) => {
   const { saldoInicial } = req.body;
   const caja = {
     id:           uuidv4(),
-    fecha:        new Date().toISOString().split('T')[0],
+    fecha:        arDate(),
     apertura:     new Date().toISOString(),
     cierre:       null,
     saldoInicial: parseFloat(saldoInicial || 0),

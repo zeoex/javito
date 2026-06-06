@@ -1458,6 +1458,7 @@
     </div>
 
     <div class="pedidos-badge" id="pedidos-badge">0</div>
+    <span id="rep-clock" style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.7);letter-spacing:.5px;margin-left:4px"></span>
 
   </div>
 
@@ -1933,7 +1934,7 @@ function marcarEntregado(id) {
   const p = pedidos.find(p => String(p.id) === String(id));
   if (!p || p.estado !== 'en_camino') return;
   p.estado = 'entregado';
-  p.hora_entrega = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  p.hora_entrega = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' });
 
   // Save to history
   saveToHistory(p);
@@ -1950,7 +1951,7 @@ let repComments = (() => { try { return JSON.parse(localStorage.getItem('restito
 let repHistory  = (() => { try { return JSON.parse(localStorage.getItem('restito_rep_history')  || '[]'); } catch(e) { return [];  } })();
 
 function saveToHistory(p) {
-  const today = new Date().toLocaleDateString('es-AR');
+  const today = new Date().toLocaleDateString('es-AR',{timeZone:'America/Argentina/Buenos_Aires'});
   const exists = repHistory.find(h => String(h.id) === String(p.id));
   if (exists) return;
   repHistory.unshift({
@@ -1959,7 +1960,7 @@ function saveToHistory(p) {
     direccion: p.direccion || '—',
     total: p.total || 0,
     metodo_pago: p.metodo_pago || '',
-    hora: p.hora_entrega || p.hora || new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}),
+    hora: p.hora_entrega || p.hora || new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Argentina/Buenos_Aires'}),
     fecha: today
   });
   if (repHistory.length > 300) repHistory = repHistory.slice(0, 300);
@@ -2009,8 +2010,8 @@ function renderHistory() {
   });
 
   list.innerHTML = '';
-  const today = new Date().toLocaleDateString('es-AR');
-  const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('es-AR');
+  const today = new Date().toLocaleDateString('es-AR',{timeZone:'America/Argentina/Buenos_Aires'});
+  const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('es-AR',{timeZone:'America/Argentina/Buenos_Aires'});
 
   Object.keys(byDate).forEach(fecha => {
     const group = document.createElement('div');
@@ -2123,6 +2124,11 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   });
+  (function repClock() {
+    const el = document.getElementById('rep-clock');
+    if (el) el.textContent = new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Argentina/Buenos_Aires'});
+    setTimeout(repClock, 1000);
+  })();
 }
 </script>
 </body>
