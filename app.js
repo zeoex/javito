@@ -1508,7 +1508,9 @@ app.post('/api/catalog', authMiddleware, async (req, res) => {
     const pool = getPool();
     if (pool) {
       await pool.query(
-        'UPDATE app_state SET productos=$1, categorias=$2, updated_at=NOW() WHERE id=1',
+        `INSERT INTO app_state (id, productos, categorias, updated_at)
+         VALUES (1, $1, $2, NOW())
+         ON CONFLICT (id) DO UPDATE SET productos=$1, categorias=$2, updated_at=NOW()`,
         [JSON.stringify(productos||[]), JSON.stringify(categorias||[])]
       );
     }
