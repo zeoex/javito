@@ -1168,8 +1168,19 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <!-- CONFIG -->
       <div class="section" id="sec-config">
         <div class="section-header"><h2>⚙️ Configuración</h2></div>
+
+        <!-- Shortcuts de secciones -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('cfgCardNegocio').scrollIntoView({behavior:'smooth',block:'start'})">🏢 Datos</button>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('cfgCardBackup').scrollIntoView({behavior:'smooth',block:'start'})">💾 Backup</button>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('cardComanderas').scrollIntoView({behavior:'smooth',block:'start'})">🖨️ Impresora</button>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('cfgCardMedios').scrollIntoView({behavior:'smooth',block:'start'})">💳 Medios de Pago</button>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('cfgCardPropinas').scrollIntoView({behavior:'smooth',block:'start'})">💰 Propinas</button>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('cfgCardQR').scrollIntoView({behavior:'smooth',block:'start'})">📲 QR Carta</button>
+        </div>
+
         <div class="grid-2">
-          <div class="card">
+          <div class="card" id="cfgCardNegocio">
             <div class="card-header"><h3>🏢 Datos del Negocio</h3></div>
             <div class="card-body">
               <div class="form-group"><label>Nombre del local</label><input class="form-control" id="cfgNombre" value="ResTito"/></div>
@@ -1196,7 +1207,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
               <button class="btn btn-primary" onclick="saveConfig()">💾 Guardar</button>
             </div>
           </div>
-          <div class="card">
+          <div class="card" id="cfgCardBackup">
             <div class="card-header" style="display:flex;align-items:center;gap:8px">
               <h3 style="flex:1">💾 Copias de seguridad</h3>
               <span id="cfgBackupStatus" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:#d4edda;color:#155724">✓ Al día</span>
@@ -1303,7 +1314,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
             </div>
           </div>
         </div>
-        <div class="card">
+        <div class="card" id="cfgCardMedios">
           <div class="card-header" style="display:flex;align-items:center;justify-content:space-between">
             <h3>💳 Medios de Pago</h3>
             <button class="btn btn-primary btn-sm" onclick="addMedioPago()">+ Agregar</button>
@@ -1313,7 +1324,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
             <div id="mediosPagoList"></div>
           </div>
         </div>
-        <div class="card">
+        <div class="card" id="cfgCardPropinas">
           <div class="card-header"><h3>💰 Propinas</h3></div>
           <div class="card-body">
             <p style="font-size:12px;color:var(--gray);margin-bottom:10px">Si configurás un porcentaje mayor a 0, se mostrará como sugerencia en el ticket de cierre de mesa y en el comprobante X.</p>
@@ -1325,7 +1336,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
             <p style="font-size:11px;color:var(--gray);margin-top:6px">Con 0% no aparece nada en el ticket.</p>
           </div>
         </div>
-        <div class="card">
+        <div class="card" id="cfgCardQR">
           <div class="card-header"><h3>📲 QR de la Carta</h3></div>
           <div class="card-body">
             <p style="font-size:12px;color:var(--gray);margin-bottom:12px">Imprimí el código QR para que tus clientes accedan a la carta digital desde su celular. El QR se genera con el logo del negocio si está configurado.</p>
@@ -1334,17 +1345,6 @@ input.form-control:focus{outline:none;border-color:var(--red)}
               <button class="btn btn-outline btn-sm" onclick="generarQRCarta()">👁️ Previsualizar</button>
               <button class="btn btn-primary btn-sm" onclick="descargarPDFQRCarta()">📄 Generar PDF</button>
             </div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-header"><h3>🍕 Cocina & Delivery</h3></div>
-          <div class="card-body">
-            <div class="grid-3">
-              <div><label style="font-size:13px;font-weight:600">Tiempo estimado cocina (min)</label><input class="form-control mt-1" value="15" type="number"/></div>
-              <div><label style="font-size:13px;font-weight:600">Tiempo estimado delivery (min)</label><input class="form-control mt-1" value="40" type="number"/></div>
-              <div><label style="font-size:13px;font-weight:600">Radio de delivery (km)</label><input class="form-control mt-1" value="5" type="number"/></div>
-            </div>
-            <div class="mt-2"><a href="/cocina.html" target="_blank" class="btn btn-outline btn-sm">🍕 Abrir Pantalla de Cocina</a> <a href="/repartidor.html" target="_blank" class="btn btn-outline btn-sm ml-auto" style="margin-left:8px">🛵 Abrir App Repartidor</a> <a href="/cliente.html" target="_blank" class="btn btn-outline btn-sm" style="margin-left:8px">👤 Ver Portal Clientes</a></div>
           </div>
         </div>
       </div>
