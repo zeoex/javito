@@ -536,7 +536,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
     <hr class="confirm-form-sep"/>
 
     <label class="confirm-form-label">Nombre y apellido</label>
-    <input type="text" class="confirm-form-input" id="confirmNombre" placeholder="Ej: Juan Pérez" autocomplete="name"/>
+    <input type="text" class="confirm-form-input" id="confirmNombre" placeholder="Ej: Juan Pérez" autocomplete="name" oninput="checkReady()" onblur="checkNameError()"/>
+    <div id="nameError" style="display:none;color:#f87171;font-size:12px;margin-top:4px;margin-bottom:2px">⚠ Completá tu nombre y apellido</div>
 
     <label class="confirm-form-label">Pago por transferencia</label>
     <div class="confirm-transfer-box" id="confirmTransferBox"></div>
@@ -551,8 +552,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
       <label class="confirm-form-label">Dirección de envío</label>
       <input type="text" class="confirm-form-input" id="confirmDireccion" placeholder="Calle, número, piso..."/>
     </div>
+    <div id="locationStatus" style="display:none;font-size:12px;margin-top:8px;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,0.05)"></div>
 
-    <button class="btn-wsp" onclick="enviarWhatsApp()" style="margin-top:18px">
+    <button class="btn-wsp" id="btnWsp" onclick="enviarWhatsApp()" style="margin-top:18px" disabled>
       <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
       Enviar pedido por WhatsApp
     </button>
@@ -587,6 +589,16 @@ let bizAlias = '';
 let bizCbu = '';
 let costoEnvio = 0;
 let modoEnvio = '';
+let bizLat = null;
+let bizLon = null;
+let bizRadioDelivery = 10;
+let bizPrecioPorKm = 0;
+let aliasCopied = false;
+let cbuCopied = false;
+let locationOk = false;
+let coverageExceeded = false;
+let customerLat = null;
+let customerLon = null;
 
 /* ─── Mesa ─── */
 const urlParams = new URLSearchParams(window.location.search);
@@ -620,10 +632,42 @@ function applyBizConfig(biz) {
   }
   const parts = [biz.dir, biz.tel].filter(Boolean);
   if (parts.length) document.getElementById('heroSub').textContent = parts.join(' · ');
-  bizWsp = (biz.tel || '').replace(/\D/g, '');
+  bizWsp = (biz.tel || biz.wsp || '').replace(/\D/g, '');
   bizAlias = biz.alias || '';
   bizCbu = biz.cbu || '';
   costoEnvio = parseFloat(biz.costoEnvio) || 0;
+  bizLat = parseFloat(biz.latitud) || null;
+  bizLon = parseFloat(biz.longitud) || null;
+  bizRadioDelivery = parseFloat(biz.radioDelivery) || 10;
+  bizPrecioPorKm = parseFloat(biz.precioPorKm) || 0;
+}
+
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function checkReady() {
+  const nombre = (document.getElementById('confirmNombre')?.value || '').trim();
+  const hasPayment = aliasCopied || cbuCopied || (!bizAlias && !bizCbu);
+  const hasMode = !!modoEnvio;
+  const deliveryOk = modoEnvio !== 'delivery' || (locationOk && !coverageExceeded);
+  const ok = nombre.length > 0 && hasPayment && hasMode && deliveryOk;
+  const btn = document.getElementById('btnWsp');
+  if (btn) {
+    btn.disabled = !ok;
+    btn.style.opacity = ok ? '1' : '0.45';
+    btn.style.cursor = ok ? 'pointer' : 'not-allowed';
+  }
+}
+
+function checkNameError() {
+  const nombre = (document.getElementById('confirmNombre')?.value || '').trim();
+  const err = document.getElementById('nameError');
+  if (err) err.style.display = nombre ? 'none' : '';
 }
 
 /* ─── Render card ─── */
@@ -881,14 +925,62 @@ function selectModoEnvio(modo) {
   document.getElementById('addressBox').style.display = modo === 'delivery' ? '' : 'none';
   const envioRow = document.getElementById('confirmEnvioRow');
   const subtotal = cartTotal();
-  if (modo === 'delivery') {
-    envioRow.style.display = '';
-    document.getElementById('confirmEnvioVal').textContent = costoEnvio > 0 ? formatPrice(costoEnvio) : 'Bonificado';
-    document.getElementById('confirmTotal').textContent = formatPrice(subtotal + (costoEnvio > 0 ? costoEnvio : 0));
-  } else {
+  if (modo === 'retiro') {
+    locationOk = false; coverageExceeded = false;
     envioRow.style.display = 'none';
     document.getElementById('confirmTotal').textContent = formatPrice(subtotal);
+    const locStatus = document.getElementById('locationStatus');
+    if (locStatus) locStatus.style.display = 'none';
+    checkReady();
+    return;
   }
+  // delivery — request geolocation
+  const locStatus = document.getElementById('locationStatus');
+  if (locStatus) { locStatus.style.display = ''; locStatus.textContent = '📍 Obteniendo tu ubicación…'; locStatus.style.color = 'var(--muted)'; }
+  locationOk = false; coverageExceeded = false;
+  envioRow.style.display = '';
+  document.getElementById('confirmEnvioVal').textContent = '…';
+  document.getElementById('confirmTotal').textContent = '…';
+  checkReady();
+  if (!navigator.geolocation) {
+    if (locStatus) { locStatus.textContent = '⚠ Tu navegador no soporta geolocalización'; locStatus.style.color = '#f87171'; }
+    // fallback to flat costoEnvio
+    document.getElementById('confirmEnvioVal').textContent = costoEnvio > 0 ? formatPrice(costoEnvio) : 'Bonificado';
+    document.getElementById('confirmTotal').textContent = formatPrice(subtotal + (costoEnvio > 0 ? costoEnvio : 0));
+    locationOk = true; checkReady(); return;
+  }
+  navigator.geolocation.getCurrentPosition(pos => {
+    customerLat = pos.coords.latitude;
+    customerLon = pos.coords.longitude;
+    if (bizLat && bizLon) {
+      const km = haversineKm(bizLat, bizLon, customerLat, customerLon);
+      if (km > bizRadioDelivery) {
+        coverageExceeded = true; locationOk = false;
+        if (locStatus) { locStatus.textContent = `⛔ Excede la cobertura de envío (${km.toFixed(1)} km — límite ${bizRadioDelivery} km)`; locStatus.style.color = '#f87171'; }
+        document.getElementById('confirmEnvioVal').textContent = 'Sin cobertura';
+        document.getElementById('confirmTotal').textContent = formatPrice(subtotal);
+      } else {
+        coverageExceeded = false; locationOk = true;
+        const costo = bizPrecioPorKm > 0 ? Math.ceil(km * bizPrecioPorKm) : costoEnvio;
+        costoEnvio = costo;
+        document.getElementById('confirmEnvioVal').textContent = costo > 0 ? formatPrice(costo) : 'Bonificado';
+        document.getElementById('confirmTotal').textContent = formatPrice(subtotal + (costo > 0 ? costo : 0));
+        if (locStatus) { locStatus.textContent = `📍 ${km.toFixed(1)} km · Envío calculado`; locStatus.style.color = '#34d399'; }
+      }
+    } else {
+      locationOk = true; coverageExceeded = false;
+      document.getElementById('confirmEnvioVal').textContent = costoEnvio > 0 ? formatPrice(costoEnvio) : 'Bonificado';
+      document.getElementById('confirmTotal').textContent = formatPrice(subtotal + (costoEnvio > 0 ? costoEnvio : 0));
+      if (locStatus) { locStatus.textContent = '📍 Ubicación obtenida'; locStatus.style.color = '#34d399'; }
+    }
+    checkReady();
+  }, err => {
+    if (locStatus) { locStatus.textContent = '⚠ No se pudo obtener tu ubicación'; locStatus.style.color = '#f87171'; }
+    locationOk = true; coverageExceeded = false;
+    document.getElementById('confirmEnvioVal').textContent = costoEnvio > 0 ? formatPrice(costoEnvio) : 'Bonificado';
+    document.getElementById('confirmTotal').textContent = formatPrice(subtotal + (costoEnvio > 0 ? costoEnvio : 0));
+    checkReady();
+  }, { timeout: 10000 });
 }
 
 function confirmarPedido() {
@@ -913,18 +1005,27 @@ function confirmarPedido() {
   document.getElementById('confirmNombre').value = '';
   document.getElementById('confirmDireccion').value = '';
   modoEnvio = '';
+  aliasCopied = false;
+  cbuCopied = false;
+  locationOk = false;
+  coverageExceeded = false;
   document.getElementById('modoRetiro').classList.remove('sel');
   document.getElementById('modoDelivery').classList.remove('sel');
   document.getElementById('addressBox').style.display = 'none';
+  const locStatus = document.getElementById('locationStatus');
+  if (locStatus) locStatus.style.display = 'none';
+  const nameErr = document.getElementById('nameError');
+  if (nameErr) nameErr.style.display = 'none';
 
   // Transfer data (alias / CBU)
   const box = document.getElementById('confirmTransferBox');
   let tHtml = '';
-  if (bizAlias) tHtml += `<div class="transfer-row"><div class="transfer-label-group"><span class="transfer-key">Alias</span><span class="transfer-val">${bizAlias}</span></div><button class="btn-copy" onclick="copiarTexto('${bizAlias}','✓ Alias copiado')">Copiar</button></div>`;
-  if (bizCbu)   tHtml += `<div class="transfer-row"><div class="transfer-label-group"><span class="transfer-key">CBU/CVU</span><span class="transfer-val">${bizCbu}</span></div><button class="btn-copy" onclick="copiarTexto('${bizCbu}','✓ CBU copiado')">Copiar</button></div>`;
+  if (bizAlias) tHtml += `<div class="transfer-row"><div class="transfer-label-group"><span class="transfer-key">Alias</span><span class="transfer-val">${bizAlias}</span></div><button class="btn-copy" id="btnCopyAlias" onclick="copiarTexto('${bizAlias}','✓ Alias copiado',this,'alias')">Copiar</button></div>`;
+  if (bizCbu)   tHtml += `<div class="transfer-row"><div class="transfer-label-group"><span class="transfer-key">CBU/CVU</span><span class="transfer-val">${bizCbu}</span></div><button class="btn-copy" id="btnCopyCbu" onclick="copiarTexto('${bizCbu}','✓ CBU copiado',this,'cbu')">Copiar</button></div>`;
   if (!tHtml)   tHtml = '<div style="color:#888;font-size:13px;padding:4px 0">Consultá el CBU/Alias al negocio</div>';
   box.innerHTML = tHtml;
 
+  checkReady();
   document.getElementById('confirmedOverlay').classList.add('open');
 }
 
@@ -933,22 +1034,27 @@ function cerrarConfirmacion() {
   openCartModal();
 }
 
-function copiarTexto(texto, mensaje) {
+function copiarTexto(texto, mensaje, btnEl, tipo) {
+  const done = () => {
+    showToast(mensaje || 'Copiado');
+    if (btnEl) { btnEl.textContent = '✓ Copiado'; btnEl.style.background = '#16a34a'; btnEl.style.color = '#fff'; }
+    if (tipo === 'alias') { aliasCopied = true; }
+    if (tipo === 'cbu')   { cbuCopied = true; }
+    checkReady();
+  };
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(texto).then(() => showToast(mensaje || 'Copiado')).catch(() => {
-      _copiarFallback(texto, mensaje);
-    });
+    navigator.clipboard.writeText(texto).then(done).catch(() => { _copiarFallback(texto, done); });
   } else {
-    _copiarFallback(texto, mensaje);
+    _copiarFallback(texto, done);
   }
 }
-function _copiarFallback(texto, mensaje) {
+function _copiarFallback(texto, cb) {
   const ta = document.createElement('textarea');
   ta.value = texto;
   ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
   document.body.appendChild(ta);
   ta.select();
-  try { document.execCommand('copy'); showToast(mensaje || 'Copiado'); } catch(e) {}
+  try { document.execCommand('copy'); if (typeof cb === 'function') cb(); } catch(e) {}
   document.body.removeChild(ta);
 }
 
@@ -957,11 +1063,12 @@ function enviarWhatsApp() {
 
   const nombre = document.getElementById('confirmNombre').value.trim();
   if (!nombre) {
-    showToast('Ingresá tu nombre y apellido');
+    checkNameError();
     document.getElementById('confirmNombre').focus();
     return;
   }
   if (!modoEnvio) { showToast('Elegí el modo de envío'); return; }
+  if (coverageExceeded) { showToast('Tu dirección excede la cobertura de envío'); return; }
 
   const number = bizWsp || '';
   if (!number) { showToast('El negocio no tiene número de WhatsApp configurado'); return; }
@@ -1007,7 +1114,8 @@ function enviarWhatsApp() {
       nota: `Pedido web · ${esDelivery ? 'Delivery' : 'Retiro'}${esDelivery ? ` · Envío: ${envioMonto > 0 ? formatPrice(envioMonto) : 'Bonificado'}` : ''}`,
       origen: 'web',
       costo_envio: envioMonto,
-      modo_envio: modoEnvio
+      modo_envio: modoEnvio,
+      distancia_km: (esDelivery && customerLat && bizLat) ? parseFloat(haversineKm(bizLat, bizLon, customerLat, customerLon).toFixed(2)) : null
     })
   }).catch(() => {});
 

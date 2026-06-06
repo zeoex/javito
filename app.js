@@ -974,7 +974,7 @@ app.post('/api/delivery', (req, res) => {
 
 // Pedidos desde el menú online (carta.html) → aparecen en el módulo de delivery del admin
 app.post('/api/web/pedido', async (req, res) => {
-  const { cliente, items, total, metodo_pago, nota, origen, costo_envio, modo_envio } = req.body;
+  const { cliente, items, total, metodo_pago, nota, origen, costo_envio, modo_envio, distancia_km } = req.body;
   if (!cliente?.nombre || !Array.isArray(items) || !items.length) {
     return res.status(400).json({ error: 'Datos insuficientes' });
   }
@@ -995,7 +995,8 @@ app.post('/api/web/pedido', async (req, res) => {
     hora,
     origen: 'web',
     costo_envio: costo_envio || 0,
-    modo_envio: modo_envio || 'retiro'
+    modo_envio: modo_envio || 'retiro',
+    distancia_km: distancia_km || null
   };
 
   // Persistir en PostgreSQL directamente para que el admin lo vea aunque no esté conectado
