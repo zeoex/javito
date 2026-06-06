@@ -3281,8 +3281,6 @@ let _mesaModalId = null;
 let _mesaCobroMode = false;
 let _mesaCobroConfirm = null; // metodoPago pending confirmation
 
-const _addItemCatLabels = {pizzas:'🍕 Pizzas',empanadas:'🥟 Empanadas',bebidas:'🥤 Bebidas',tragos:'🍹 Tragos',postres:'🍮 Postres',entradas:'🧀 Entradas'};
-
 function openAddItem(mesaId) {
   const m = mesasData.find(x=>String(x.id)===String(mesaId));
   if(!m) return;
@@ -3293,15 +3291,15 @@ function openAddItem(mesaId) {
 
 function showAddItemCats(mesaId) {
   const cats = [...new Set(productosData.filter(p=>p.activo).map(p=>p.categoria))];
+  const getCatNombre = c => (categoriasData.find(x=>x.id===c)?.nombre || (c.charAt(0).toUpperCase()+c.slice(1)));
   document.getElementById('addItemBody').innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       ${cats.map(c=>`
         <button onclick="showAddItemProds('${mesaId}','${c}')"
-          style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:20px 12px;border:1.5px solid #e5e7eb;border-radius:14px;background:#fff;cursor:pointer;font-family:inherit;transition:all .15s;min-height:90px"
-          onmouseover="this.style.borderColor='var(--red)';this.style.background='#fff5f5'"
-          onmouseout="this.style.borderColor='#e5e7eb';this.style.background='#fff'">
-          <span style="font-size:32px;line-height:1">${(_addItemCatLabels[c]||c).split(' ')[0]}</span>
-          <span style="font-size:14px;font-weight:700;color:#1d3557">${(_addItemCatLabels[c]||c).replace(/^\S+\s*/,'')}</span>
+          style="display:flex;align-items:center;justify-content:center;padding:22px 12px;border:1.5px solid #e5e7eb;border-radius:14px;background:#fff;cursor:pointer;font-family:inherit;transition:all .15s;min-height:72px;font-size:15px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#1d3557"
+          onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)';this.style.background='#fff5f5'"
+          onmouseout="this.style.borderColor='#e5e7eb';this.style.color='#1d3557';this.style.background='#fff'">
+          ${getCatNombre(c)}
         </button>`).join('')}
     </div>`;
 }
@@ -3309,13 +3307,13 @@ function showAddItemCats(mesaId) {
 function showAddItemProds(mesaId, cat) {
   const esMozo = currentUser?.rol === 'mozo';
   const prods = productosData.filter(p=>p.categoria===cat&&p.activo);
-  const label = _addItemCatLabels[cat] || cat;
+  const label = categoriasData.find(x=>x.id===cat)?.nombre || (cat.charAt(0).toUpperCase()+cat.slice(1));
   document.getElementById('addItemBody').innerHTML = `
     <button onclick="showAddItemCats('${mesaId}')"
       style="display:flex;align-items:center;gap:6px;margin-bottom:14px;border:none;background:none;cursor:pointer;font-size:14px;font-weight:600;color:var(--blue);font-family:inherit;padding:0">
       ← Volver
     </button>
-    <div style="font-size:13px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">${label}</div>
+    <div style="font-size:12px;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">${label}</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px">
       ${prods.map(p=>`
         <div class="mpo-prod-card" onclick="seleccionarProductoMesa(${p.id})" style="min-height:80px;border-radius:12px;padding:12px 8px">
