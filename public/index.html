@@ -2445,16 +2445,12 @@ function _syncCatalogToServer() {
 async function loadStateFromAPI() {
   try {
     const res = await apiFetch('/state');
-    if (!res.ok) {
-      // Server error — push local catalog so /api/public/menu tenga datos actuales
-      _syncCatalogToServer();
-      return;
-    }
+    if (!res.ok) return;
     const data = await res.json();
     if (!data) {
-      // PG vacío (sin fila en app_state) — push local products al servidor
-      console.log('[state] PG sin datos — pusheando catálogo local al servidor');
-      _syncCatalogToServer();
+      // PG sin fila — el server usa seed. No pushear desde localStorage
+      // porque puede tener datos viejos. El usuario debe guardar desde admin.
+      console.log('[state] PG sin datos — usar seed del servidor');
       return;
     }
 

@@ -452,6 +452,7 @@ app.post('/api/auth/login', async (req, res) => {
   const user = db.users.find(u => u.email === email && u.activo);
   if (!user) return res.status(401).json({ error: 'Credenciales inválidas' });
 
+  if (!user.password) return res.status(401).json({ error: 'Credenciales inválidas' });
   const ok = await bcrypt.compare(password, user.password);
   if (!ok) return res.status(401).json({ error: 'Credenciales inválidas' });
 
