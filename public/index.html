@@ -105,6 +105,15 @@ body{font-family:'Inter',sans-serif;background:var(--light);color:#212529;overfl
 .topbar-title{font-size:20px;font-weight:700;color:var(--blue);flex:1}
 .topbar-badge{background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px}
 .topbar-time{font-size:13px;color:var(--gray)}
+.topbar-user{position:relative;cursor:pointer;flex-shrink:0}
+.topbar-avatar{width:34px;height:34px;border-radius:50%;background:var(--blue);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:opacity .15s}
+.topbar-avatar:hover{opacity:.85}
+.topbar-user-menu{display:none;position:absolute;top:calc(100% + 8px);right:0;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.12);padding:10px;min-width:160px;z-index:300}
+.topbar-user-menu.open{display:block}
+.topbar-user-name{font-size:13px;font-weight:700;color:var(--blue)}
+.topbar-user-role{font-size:11px;color:var(--gray);margin-top:2px}
+.topbar-user-menu button{width:100%;text-align:left;padding:7px 8px;border:none;background:none;cursor:pointer;font-size:13px;border-radius:6px;color:var(--text)}
+.topbar-user-menu button:hover{background:var(--bg)}
 /* === PRINT QUEUE === */
 .pq-btn{position:relative;background:#f8f9fa;border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:18px;cursor:pointer;line-height:1;display:none;align-items:center;gap:5px;transition:background .15s}
 .pq-btn:hover{background:#e9ecef}
@@ -728,8 +737,8 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <div class="nav-item" data-section="mesas" data-tooltip="Mesas" onclick="navTo('mesas',this);closeSidebar()">
         <span class="nav-icon">🪑</span><span class="nav-text">Mesas</span> <span class="nav-badge" id="mesasBadge">0</span>
       </div>
-      <div class="nav-item" data-section="delivery" data-tooltip="Delivery" onclick="navTo('delivery',this);closeSidebar()">
-        <span class="nav-icon">🛵</span><span class="nav-text">Delivery</span> <span class="nav-badge" id="deliveryBadge">0</span>
+      <div class="nav-item" data-section="delivery" data-tooltip="Pedidos" onclick="navTo('delivery',this);closeSidebar()">
+        <span class="nav-icon">🛵</span><span class="nav-text">Pedidos</span> <span class="nav-badge" id="deliveryBadge">0</span>
       </div>
       <div class="nav-item" data-section="productos" data-tooltip="Productos" onclick="navTo('productos',this);closeSidebar()">
         <span class="nav-icon">🍕</span><span class="nav-text">Productos</span>
@@ -811,6 +820,15 @@ input.form-control:focus{outline:none;border-color:var(--red)}
         <span class="pq-badge" id="pqBadge">0</span>
       </button>
       <span class="topbar-time" id="topbarTime"></span>
+      <div class="topbar-user" id="topbarUser" onclick="toggleTopbarUserMenu()">
+        <div class="topbar-avatar" id="topbarAvatar">A</div>
+        <div class="topbar-user-menu" id="topbarUserMenu">
+          <div class="topbar-user-name" id="topbarUserName">Admin</div>
+          <div class="topbar-user-role" id="topbarUserRole">Administrador</div>
+          <hr style="margin:6px 0;border:none;border-top:1px solid var(--border)"/>
+          <button onclick="doLogout();event.stopPropagation()">🔴 Cerrar sesión</button>
+        </div>
+      </div>
     </div>
 
     <!-- Llamador Drawer -->
@@ -879,7 +897,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
                 🛵
                 <span class="ha-badge" id="hab-delivery" style="display:none">0</span>
               </div>
-              <span class="ha-label">Delivery</span>
+              <span class="ha-label">Pedidos</span>
             </button>
             <button class="ha-btn" onclick="navTo('productos',document.querySelector('[data-section=productos]'))">
               <div class="ha-circle" style="background:#d1fae5;box-shadow:0 6px 18px rgba(16,185,129,0.22)">
@@ -926,7 +944,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
         <!-- Delivery activo -->
         <div class="card" style="margin-bottom:16px">
           <div class="card-header" style="display:flex;align-items:center;gap:10px">
-            <h3 style="flex:1">🛵 Delivery Activo</h3>
+            <h3 style="flex:1">🛵 Pedidos Activos</h3>
             <button class="btn btn-outline btn-sm" onclick="navTo('delivery',document.querySelector('[data-section=delivery]'))">Ver todos →</button>
           </div>
           <div class="card-body" id="dashDelivery">
@@ -965,7 +983,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <!-- DELIVERY -->
       <div class="section" id="sec-delivery">
         <div class="section-header">
-          <h2>🛵 Delivery</h2>
+          <h2>🛵 Pedidos</h2>
           <button class="btn btn-primary btn-sm" onclick="abrirModalNuevoDelivery()">+ Nuevo Pedido</button>
         </div>
         <div class="delivery-pipeline" id="deliveryPipeline"></div>
@@ -2607,6 +2625,13 @@ function initApp() {
   document.getElementById('userName').textContent = currentUser?.nombre || 'Usuario';
   const roles = {admin:'Administrador',mozo:'Mozo',cajero:'Cajero',cocina:'Cocina',repartidor:'🛵 Repartidor'};
   document.getElementById('userRole').textContent = roles[currentUser?.rol] || currentUser?.rol || '';
+  // Topbar user widget
+  const tav = document.getElementById('topbarAvatar');
+  if (tav) tav.textContent = (currentUser?.nombre||'U')[0].toUpperCase();
+  const tun = document.getElementById('topbarUserName');
+  if (tun) tun.textContent = currentUser?.nombre || 'Usuario';
+  const tur = document.getElementById('topbarUserRole');
+  if (tur) tur.textContent = roles[currentUser?.rol] || currentUser?.rol || '';
   // Hide usuarios for non-admin
   if (currentUser?.rol !== 'admin') document.getElementById('navUsuarios').style.display = 'none';
   // Mesa management (create/edit/delete) only for admin and supervisor
@@ -2891,7 +2916,7 @@ function navTo(section, el) {
   else document.querySelector(`[data-section="${section}"]`)?.classList.add('active');
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('sec-'+section).classList.add('active');
-  const titles = {dashboard:'Vista Principal',mesas:'Mesas',delivery:'Delivery',productos:'Productos',stock:'Stock',caja:'Caja',facturacion:'Facturación',clientes:'Clientes',reportes:'Reportes',usuarios:'Usuarios',config:'Configuración',mozostats:'Mis Estadísticas'};
+  const titles = {dashboard:'Vista Principal',mesas:'Mesas',delivery:'Pedidos',productos:'Productos',stock:'Stock',caja:'Caja',facturacion:'Facturación',clientes:'Clientes',reportes:'Reportes',usuarios:'Usuarios',config:'Configuración',mozostats:'Mis Estadísticas'};
   document.getElementById('topbarTitle').textContent = titles[section] || section;
   const loaders = {dashboard:loadDashboard,mesas:renderMesas,delivery:renderDelivery,productos:renderProductos,stock:renderStock,caja:renderCaja,facturacion:loadFacturacion,clientes:renderClientes,reportes:renderReportes,usuarios:renderUsuarios,mozostats:renderMozoStats,config:loadPrintConfigUI};
   if(loaders[section]) loaders[section]();
@@ -3754,7 +3779,7 @@ function renderDelivery() {
   if (!_repartidoresList.length) cargarRepartidores();
   const stages = [
     {key:'web',    label:'🌐 PEDIDOS WEB', cls:'pipeline-web',    filterFn: o => o.origen === 'web' && o.estado === 'nuevo'},
-    {key:'nuevo',  label:'NUEVO',          cls:'pipeline-nuevo',  filterFn: o => o.estado === 'nuevo' && o.origen !== 'web'},
+    {key:'nuevo',  label:'MOSTRADOR',       cls:'pipeline-nuevo',  filterFn: o => o.estado === 'nuevo' && o.origen !== 'web'},
     {key:'en_cocina',label:'EN COCINA',    cls:'pipeline-cocina', filterFn: o => o.estado === 'en_cocina'},
     {key:'listo',  label:'LISTO',          cls:'pipeline-listo',  filterFn: o => o.estado === 'listo'},
     {key:'en_camino',label:'EN CAMINO',    cls:'pipeline-camino', filterFn: o => o.estado === 'en_camino'},
@@ -5838,6 +5863,17 @@ function openModalProducto() {
 // Override button to reset form
 document.querySelector('[onclick="openModal(\'modalProducto\')"]')?.setAttribute('onclick','openModalProducto()');
 
+// ======= TOPBAR USER MENU =======
+function toggleTopbarUserMenu() {
+  document.getElementById('topbarUserMenu')?.classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  const user = document.getElementById('topbarUser');
+  if (user && !user.contains(e.target)) {
+    document.getElementById('topbarUserMenu')?.classList.remove('open');
+  }
+});
+
 // ======= SIDEBAR TOGGLE =======
 function toggleSidebar() {
   const sb = document.querySelector('.sidebar');
@@ -5869,8 +5905,11 @@ function closeSidebar() {
   } else if (isTablet) {
     sb.classList.remove('tablet-open');
     document.getElementById('sidebarOverlay').classList.remove('open');
+  } else {
+    // Desktop: collapse to icon-only after navigation
+    sb.classList.add('collapsed');
+    document.querySelector('.main').style.marginLeft = '64px';
   }
-  // Desktop: clicking a nav item doesn't close the sidebar (it stays expanded/collapsed as-is)
 }
 
 // ======= LLAMADOR =======
