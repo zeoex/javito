@@ -2465,7 +2465,7 @@ function loadState() {
     const ci = localStorage.getItem('pz_caja_inicial');
     const cm = localStorage.getItem('pz_caja_moves');
     if (m) mesasData = JSON.parse(m);
-    if (d) deliveryData = JSON.parse(d);
+    if (d) { const hoy=_arDate(); deliveryData = JSON.parse(d).map(o=>o.fecha?o:{...o,fecha:hoy}); }
     if (f) facturasData = JSON.parse(f);
     if (s) stockData = JSON.parse(s);
     if (c) clientesData = JSON.parse(c);
@@ -2533,7 +2533,10 @@ async function loadStateFromAPI() {
     const pgIdsValidos = pgMesas.length === 0 || pgMesas.every(m => typeof m.id === 'string' && m.id.length > 10 && m.id.includes('-'));
     if (pgMesas.length > 0 && pgIdsValidos) mesasData = pgMesas;
 
-    if (arr(data.delivery).length > 0)       deliveryData  = data.delivery;
+    if (arr(data.delivery).length > 0) {
+      const hoy = _arDate();
+      deliveryData = data.delivery.map(o => o.fecha ? o : {...o, fecha: hoy});
+    }
     if (arr(data.facturas).length > 0)        facturasData  = data.facturas;
     if (arr(data.clientes).length > 0)        clientesData  = data.clientes;
     if (arr(data.usuarios).length > 0)        usuariosData  = data.usuarios;
@@ -3806,7 +3809,7 @@ async function imprimirCuenta(id) {
 function renderDelivery() {
   if (!_repartidoresList.length) cargarRepartidores();
   const hoy = _arDate();
-  const todayOrders = deliveryData.filter(o => !o.fecha || o.fecha === hoy);
+  const todayOrders = deliveryData.filter(o => o.fecha === hoy);
   const stages = [
     {key:'web',    label:'🌐 PEDIDOS WEB', cls:'pipeline-web',    filterFn: o => o.origen === 'web' && o.estado === 'nuevo'},
     {key:'nuevo',  label:'MOSTRADOR',       cls:'pipeline-nuevo',  filterFn: o => o.estado === 'nuevo' && o.origen !== 'web'},
