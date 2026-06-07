@@ -699,14 +699,14 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <label>Email</label>
       <div class="login-input-wrap">
         <span class="login-input-icon">📧</span>
-        <input type="email" id="loginEmail" placeholder="Email" autocomplete="username"/>
+        <input type="email" id="loginEmail" placeholder="Email" autocomplete="off"/>
       </div>
     </div>
     <div class="login-input-group">
       <label>Contraseña</label>
       <div class="login-input-wrap">
         <span class="login-input-icon">🔒</span>
-        <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password"/>
+        <input type="password" id="loginPass" placeholder="Contraseña" autocomplete="new-password"/>
       </div>
     </div>
     <button class="btn-login" onclick="doLogin()">Ingresar</button>
@@ -2906,10 +2906,10 @@ function initApp() {
     le.style.fontSize = '0';
   }
   document.getElementById('loginTitle').textContent   = cfg.title;
-  document.getElementById('loginEmail').value         = cfg.email;
-  document.getElementById('loginPass').value          = cfg.pass;
-  document.getElementById('loginEmail').placeholder   = cfg.email || 'Email';
-  document.getElementById('loginDemo').textContent    = cfg.hint;
+  document.getElementById('loginEmail').value         = '';
+  document.getElementById('loginPass').value          = '';
+  document.getElementById('loginEmail').placeholder   = 'Email';
+  document.getElementById('loginDemo').textContent    = '';
   document.documentElement.style.setProperty('--login-accent',  cfg.accent);
   document.documentElement.style.setProperty('--login-accent-l', cfg.accentL);
 })();
