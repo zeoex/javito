@@ -2465,7 +2465,7 @@ function loadState() {
     const ci = localStorage.getItem('pz_caja_inicial');
     const cm = localStorage.getItem('pz_caja_moves');
     if (m) mesasData = JSON.parse(m);
-    if (d) { const hoy=_arDate(); deliveryData = JSON.parse(d).map(o=>o.fecha?o:{...o,fecha:hoy}); }
+    if (d) { deliveryData = JSON.parse(d).map(o=>o.fecha?o:{...o,fecha:'2000-01-01'}); }
     if (f) facturasData = JSON.parse(f);
     if (s) stockData = JSON.parse(s);
     if (c) clientesData = JSON.parse(c);
@@ -2534,8 +2534,7 @@ async function loadStateFromAPI() {
     if (pgMesas.length > 0 && pgIdsValidos) mesasData = pgMesas;
 
     if (arr(data.delivery).length > 0) {
-      const hoy = _arDate();
-      deliveryData = data.delivery.map(o => o.fecha ? o : {...o, fecha: hoy});
+      deliveryData = data.delivery.map(o => o.fecha ? o : {...o, fecha: '2000-01-01'});
     }
     if (arr(data.facturas).length > 0)        facturasData  = data.facturas;
     if (arr(data.clientes).length > 0)        clientesData  = data.clientes;
