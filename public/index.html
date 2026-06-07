@@ -4482,8 +4482,12 @@ function renderProductos() {
         </div>
       </td>
       <td><span class="tag">${p.categoria}</span></td>
-      <td>${p.precio_chica?'$'+p.precio_chica.toLocaleString():p.precio?'$'+p.precio.toLocaleString():'-'}</td>
-      <td>${p.precio_grande?'$'+p.precio_grande.toLocaleString():'-'}</td>
+      <td>${
+        p.presentaciones?.length
+          ? p.presentaciones.map(v=>`<div style="font-size:11px;line-height:1.8"><span style="color:var(--gray)">${v.nombre}</span> <strong>$${Number(v.precio).toLocaleString()}</strong></div>`).join('')
+          : (p.precio_chica?'$'+p.precio_chica.toLocaleString():p.precio?'$'+p.precio.toLocaleString():'-')
+      }</td>
+      <td>${p.presentaciones?.length?'':p.precio_grande?'$'+p.precio_grande.toLocaleString():'-'}</td>
       <td><span class="badge ${p.activo?'badge-success':'badge-secondary'}">${p.activo?'Activo':'Inactivo'}</span></td>
       <td style="font-size:13px">${p.en_carta_qr!==false?'📲':''} ${p.en_menu_online!==false?'📋':''}</td>
       <td>
