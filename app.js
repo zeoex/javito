@@ -114,7 +114,8 @@ const db = {
   facturas:   [],
   stock:      [],
   printJobs:  [],
-  llamados:   []
+  llamados:   [],
+  biz_cfg:    {}
 };
 
 // ─────────────────────────────────────────────
@@ -335,6 +336,7 @@ async function restoreStateFromPG() {
     if (Array.isArray(state.clientes)   && state.clientes.length   > 0) db.clientes   = state.clientes;
     if (Array.isArray(state.categorias) && state.categorias.length > 0) db.categorias = state.categorias;
     if (Array.isArray(state.facturas)   && state.facturas.length   > 0) db.facturas   = state.facturas;
+    if (state.biz_cfg && typeof state.biz_cfg === 'object' && Object.keys(state.biz_cfg).length > 0) db.biz_cfg = state.biz_cfg;
     if (Array.isArray(state.usuarios) && state.usuarios.length > 0) {
       const seedUsers = db.users; // seed users always have valid bcrypt hashes
       db.users = state.usuarios.map(pgUser => {
