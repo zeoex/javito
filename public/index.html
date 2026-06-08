@@ -985,11 +985,11 @@ input.form-control:focus{outline:none;border-color:var(--red)}
       <div class="section" id="sec-delivery">
         <div class="section-header">
           <h2>🛵 Pedidos</h2>
+          <button class="btn btn-outline btn-sm" onclick="openEstadisticasDelivery()">📊 Estadísticas</button>
           <button class="btn btn-outline btn-sm" onclick="openHistorialDelivery()">📋 Ver anteriores</button>
-          <button class="btn btn-primary btn-sm" onclick="abrirModalNuevoDelivery()" style="margin-left:40px">+ Nuevo Pedido</button>
+          <button class="btn btn-primary btn-sm" onclick="abrirModalNuevoDelivery()" style="margin-left:24px">+ Nuevo Pedido</button>
         </div>
         <div class="delivery-pipeline" id="deliveryPipeline"></div>
-        <div id="repartidorSummary"></div>
       </div>
 
       <!-- PRODUCTOS -->
@@ -1610,6 +1610,23 @@ input.form-control:focus{outline:none;border-color:var(--red)}
         <span id="historialDlvCount" style="font-size:12px;color:var(--gray);margin-left:auto"></span>
       </div>
       <div id="historialDlvBody" style="max-height:62vh;overflow-y:auto"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal estadísticas delivery -->
+<div class="modal-overlay" id="modalEstadisticasDelivery" onclick="if(event.target===this)closeModal('modalEstadisticasDelivery')">
+  <div class="modal modal-lg" style="max-width:720px">
+    <div class="modal-header"><h3>📊 Estadísticas de Pedidos</h3><button class="modal-close" onclick="closeModal('modalEstadisticasDelivery')">✕</button></div>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+        <label style="font-size:13px;color:var(--gray);white-space:nowrap">Fecha:</label>
+        <input type="date" class="form-control" id="estadsDlvFecha" style="width:160px" oninput="renderEstadisticasDelivery()"/>
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('estadsDlvFecha').value='';renderEstadisticasDelivery()">Ver todos</button>
+        <span id="estadsDlvCount" style="font-size:12px;color:var(--gray);margin-left:auto"></span>
+      </div>
+      <div id="estadsDlvCards" style="margin-bottom:16px"></div>
+      <div id="estadsDlvBody" style="max-height:52vh;overflow-y:auto"></div>
     </div>
   </div>
 </div>
@@ -3825,7 +3842,6 @@ function renderDelivery() {
     {key:'en_cocina',label:'EN COCINA',    cls:'pipeline-cocina', filterFn: o => o.estado === 'en_cocina'},
     {key:'listo',  label:'LISTO',          cls:'pipeline-listo',  filterFn: o => o.estado === 'listo'},
     {key:'en_camino',label:'EN CAMINO',    cls:'pipeline-camino', filterFn: o => o.estado === 'en_camino'},
-    {key:'entregado',label:'ENTREGADO',    cls:'pipeline-entregado', filterFn: o => o.estado === 'entregado'},
   ];
   document.getElementById('deliveryPipeline').innerHTML = stages.map(s=>{
     const orders = todayOrders.filter(s.filterFn);
@@ -3835,81 +3851,96 @@ function renderDelivery() {
       <div class="pipeline-body">${orders.map(o=>renderDeliveryCard(o,s.key === 'web' ? 'nuevo' : s.key)).join('')||'<div style="color:#aaa;font-size:12px;text-align:center;padding:16px">Vacío</div>'}
       </div></div>`;
   }).join('');
-  _renderRepartidorSummary();
 }
 
-function _renderRepartidorSummary() {
-  const el = document.getElementById('repartidorSummary');
-  if (!el) return;
-  const hoy = _arDate();
-  const entregados = deliveryData.filter(o => o.estado === 'entregado' && o.fecha === hoy);
-  if (!entregados.length) { el.innerHTML = ''; return; }
+function openEstadisticasDelivery() {
+  document.getElementById('estadsDlvFecha').value = _arDate();
+  renderEstadisticasDelivery();
+  openModal('modalEstadisticasDelivery');
+}
+
+function renderEstadisticasDelivery() {
+  const filtroFecha = document.getElementById('estadsDlvFecha')?.value || '';
+  const todos = deliveryData.filter(o => o.estado === 'entregado' || o.estado === 'cancelado');
+  const filtered = filtroFecha ? todos.filter(o => o.fecha === filtroFecha) : todos;
+  const soloEntregados = filtered.filter(o => o.estado === 'entregado');
+
+  const countEl = document.getElementById('estadsDlvCount');
+  if (countEl) countEl.textContent = `${filtered.length} pedido${filtered.length !== 1 ? 's' : ''}`;
 
   const byRep = {};
-  entregados.forEach(o => {
+  soloEntregados.forEach(o => {
     const nombre = o.repartidorNombre || o.repartidor || '— Sin repartidor';
-    if (!byRep[nombre]) byRep[nombre] = { items: [], ventas: 0, envios: 0 };
-    byRep[nombre].items.push(o);
+    if (!byRep[nombre]) byRep[nombre] = { count: 0, ventas: 0, envios: 0 };
+    byRep[nombre].count++;
     byRep[nombre].ventas += Number(o.total || 0);
     byRep[nombre].envios += Number(o.costo_envio || 0);
   });
-
-  const totalDia = entregados.reduce((s,o) => s + Number(o.total||0), 0);
-  const totalEnvios = entregados.reduce((s,o) => s + Number(o.costo_envio||0), 0);
+  const totalVentas = soloEntregados.reduce((s, o) => s + Number(o.total || 0), 0);
+  const totalEnvios = soloEntregados.reduce((s, o) => s + Number(o.costo_envio || 0), 0);
 
   const repCards = Object.entries(byRep).map(([nombre, d]) => `
-    <div style="background:#fff;border-radius:12px;padding:16px 18px;border:1px solid #e5e7eb;flex:0 0 auto;min-width:210px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#1d3557,#457b9d);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">🛵</div>
+    <div style="background:#fff;border-radius:12px;padding:14px 16px;border:1px solid #e5e7eb;flex:0 0 auto;min-width:200px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#1d3557,#457b9d);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🛵</div>
         <div style="font-size:13px;font-weight:800;color:var(--blue);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nombre}</div>
       </div>
-      <div style="display:flex;gap:0;border:1px solid #f3f4f6;border-radius:10px;overflow:hidden">
-        <div style="flex:1;padding:10px 8px;text-align:center;background:#f8faff">
-          <div style="font-size:22px;font-weight:900;color:#1d3557;line-height:1">${d.items.length}</div>
-          <div style="font-size:9px;color:#9ca3af;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:3px">pedidos</div>
+      <div style="display:flex;border:1px solid #f3f4f6;border-radius:10px;overflow:hidden">
+        <div style="flex:1;padding:8px 6px;text-align:center;background:#f8faff">
+          <div style="font-size:20px;font-weight:900;color:#1d3557;line-height:1">${d.count}</div>
+          <div style="font-size:9px;color:#9ca3af;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">pedidos</div>
         </div>
         <div style="width:1px;background:#f3f4f6"></div>
-        <div style="flex:2;padding:10px 8px;text-align:center">
-          <div style="font-size:15px;font-weight:800;color:#16a34a;line-height:1">$${d.ventas.toLocaleString('es-AR')}</div>
-          <div style="font-size:9px;color:#9ca3af;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:3px">ventas</div>
+        <div style="flex:2;padding:8px 6px;text-align:center">
+          <div style="font-size:13px;font-weight:800;color:#16a34a;line-height:1">$${d.ventas.toLocaleString('es-AR')}</div>
+          <div style="font-size:9px;color:#9ca3af;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">ventas</div>
         </div>
         <div style="width:1px;background:#f3f4f6"></div>
-        <div style="flex:2;padding:10px 8px;text-align:center">
-          <div style="font-size:15px;font-weight:800;color:#f59e0b;line-height:1">$${d.envios.toLocaleString('es-AR')}</div>
-          <div style="font-size:9px;color:#9ca3af;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:3px">envíos</div>
+        <div style="flex:2;padding:8px 6px;text-align:center">
+          <div style="font-size:13px;font-weight:800;color:#f59e0b;line-height:1">$${d.envios.toLocaleString('es-AR')}</div>
+          <div style="font-size:9px;color:#9ca3af;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">envíos</div>
         </div>
       </div>
     </div>`).join('');
 
-  const orderRows = [...entregados].sort((a,b) => (b.hora||'').localeCompare(a.hora||'')).map(o => {
-    const rep = o.repartidorNombre || o.repartidor || '—';
-    const webBadge = o.origen === 'web'
-      ? `<span style="background:#3b82f6;color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:6px;vertical-align:middle;margin-left:3px">WEB</span>` : '';
-    return `<div onclick="verDetalleEntregado('${o.id}')" style="display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;border-bottom:1px solid #f3f4f6;transition:background .12s" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background=''">
-      <div style="font-size:11px;color:#9ca3af;font-weight:600;width:38px;flex-shrink:0">${(o.hora||'').slice(0,5)}</div>
-      <div style="font-size:12px;font-weight:700;color:var(--blue);width:72px;flex-shrink:0">${o.numero}${webBadge}</div>
-      <div style="flex:1;font-size:12px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.cliente?.nombre||o.clienteNombre||'—'}</div>
-      <div style="font-size:11px;color:#6b7280;white-space:nowrap;flex-shrink:0">🛵 ${rep}</div>
-      <div style="font-size:12px;font-weight:700;color:#16a34a;white-space:nowrap;flex-shrink:0;margin-left:6px">$${Number(o.total||0).toLocaleString('es-AR')}</div>
-      <div style="font-size:14px;color:#d1d5db;flex-shrink:0">›</div>
+  const cardsEl = document.getElementById('estadsDlvCards');
+  if (soloEntregados.length) {
+    cardsEl.innerHTML = `
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">
+        <div style="font-size:12px;font-weight:800;color:var(--blue);white-space:nowrap">Resumen</div>
+        <div style="flex:1;height:1px;background:#e5e7eb"></div>
+        <div style="font-size:12px;color:#6b7280;white-space:nowrap">
+          <strong style="color:#16a34a">$${totalVentas.toLocaleString('es-AR')}</strong> ventas ·
+          <strong style="color:#f59e0b">$${totalEnvios.toLocaleString('es-AR')}</strong> envíos en ${soloEntregados.length} entrega${soloEntregados.length !== 1 ? 's' : ''}
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px">${repCards}</div>`;
+  } else {
+    cardsEl.innerHTML = '';
+  }
+
+  const body = document.getElementById('estadsDlvBody');
+  if (!filtered.length) {
+    body.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa;font-size:14px">Sin pedidos para el período seleccionado.</div>';
+    return;
+  }
+  const byDate = {};
+  filtered.forEach(o => { if (!byDate[o.fecha]) byDate[o.fecha] = []; byDate[o.fecha].push(o); });
+  const sortedDates = Object.keys(byDate).sort().reverse();
+  const hoy = _arDate();
+  body.innerHTML = sortedDates.map(fecha => {
+    const orders = byDate[fecha].sort((a, b) => (b.hora || '').localeCompare(a.hora || ''));
+    const [y, m, d] = fecha.split('-');
+    const fechaLabel = fecha === hoy ? `Hoy (${d}/${m}/${y})` : `${d}/${m}/${y}`;
+    const totalDia = orders.reduce((s, o) => s + Number(o.total || 0), 0);
+    return `<div style="margin-bottom:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:#f0f4ff;border-radius:8px;margin-bottom:8px">
+        <span style="font-weight:700;font-size:14px;color:var(--blue)">📅 ${fechaLabel}</span>
+        <span style="font-size:12px;color:var(--gray)">${orders.length} pedido${orders.length !== 1 ? 's' : ''} · $${totalDia.toLocaleString('es-AR')} total</span>
+      </div>
+      ${orders.map(o => _renderHistorialDlvCard(o)).join('')}
     </div>`;
   }).join('');
-
-  el.innerHTML = `<div style="margin-top:8px">
-    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
-      <div style="font-size:13px;font-weight:800;color:var(--blue);letter-spacing:.2px;white-space:nowrap">📊 Estadísticas del día</div>
-      <div style="flex:1;height:1px;background:#e5e7eb"></div>
-      <div style="font-size:12px;color:#6b7280;white-space:nowrap"><span style="font-weight:700;color:#16a34a">$${totalDia.toLocaleString('es-AR')}</span> en ${entregados.length} entrega${entregados.length!==1?'s':''}</div>
-    </div>
-    <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px">${repCards}</div>
-    <div style="background:#fff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05)">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#f8faff;border-bottom:1px solid #e5e7eb">
-        <span style="font-size:12px;font-weight:800;color:#374151;letter-spacing:.3px;text-transform:uppercase">Envíos realizados hoy</span>
-        <span style="font-size:11px;color:#9ca3af">${entregados.length} entrega${entregados.length!==1?'s':''} · envíos <strong style="color:#f59e0b">$${totalEnvios.toLocaleString('es-AR')}</strong></span>
-      </div>
-      <div>${orderRows}</div>
-    </div>
-  </div>`;
 }
 
 function verDetalleEntregado(id) {
