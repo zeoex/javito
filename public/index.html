@@ -4033,6 +4033,13 @@ function advanceDelivery(id) {
   const flow = ['nuevo','en_cocina','listo','en_camino','entregado'];
   const idx = flow.indexOf(o.estado);
   if(idx<flow.length-1) o.estado=flow[idx+1];
+  if (o.estado === 'en_cocina') {
+    // Send comanda to kitchen screen
+    apiFetch('/cocina/comanda', {
+      method:'POST',
+      body: JSON.stringify({tipo:'delivery', mesa:{numero:o.numero}, mozo:'', cliente: o.cliente?.nombre || o.clienteNombre || '', items: o.items})
+    }).catch(()=>{});
+  }
   if (o.estado === 'entregado' && o.total > 0) {
     const pago = o.metodo_pago || 'efectivo';
     cajaMoves.push({..._cajaNow(),tipo:'ingreso',desc:`Delivery ${o.numero} — ${pago}`,monto:o.total,pago});
