@@ -1614,6 +1614,17 @@ input.form-control:focus{outline:none;border-color:var(--red)}
   </div>
 </div>
 
+<!-- Modal detalle entregado -->
+<div class="modal-overlay" id="modalDetalleEntregado" onclick="if(event.target===this)closeModal('modalDetalleEntregado')">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header"><h3 id="modalDetalleEntregadoTitle">📦 Detalle del pedido</h3><button class="modal-close" onclick="closeModal('modalDetalleEntregado')">✕</button></div>
+    <div class="modal-body" id="modalDetalleEntregadoBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalDetalleEntregado')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modalCierreCaja">
   <div class="modal">
     <div class="modal-header"><h3>🔴 Cierre de Caja</h3><button class="modal-close" onclick="closeModal('modalCierreCaja')">✕</button></div>
@@ -3837,34 +3848,109 @@ function _renderRepartidorSummary() {
   const byRep = {};
   entregados.forEach(o => {
     const nombre = o.repartidorNombre || o.repartidor || '— Sin repartidor';
-    if (!byRep[nombre]) byRep[nombre] = { pedidos: 0, ventas: 0, envios: 0 };
-    byRep[nombre].pedidos++;
+    if (!byRep[nombre]) byRep[nombre] = { items: [], ventas: 0, envios: 0 };
+    byRep[nombre].items.push(o);
     byRep[nombre].ventas += Number(o.total || 0);
     byRep[nombre].envios += Number(o.costo_envio || 0);
   });
 
-  const rows = Object.entries(byRep).map(([nombre, d]) => `
-    <tr>
-      <td><strong>🛵 ${nombre}</strong></td>
-      <td style="text-align:center;font-weight:700">${d.pedidos}</td>
-      <td><strong>$${d.ventas.toLocaleString('es-AR')}</strong></td>
-      <td><strong style="color:#16a34a">$${d.envios.toLocaleString('es-AR')}</strong></td>
-    </tr>`).join('');
+  const totalDia = entregados.reduce((s,o) => s + Number(o.total||0), 0);
+  const totalEnvios = entregados.reduce((s,o) => s + Number(o.costo_envio||0), 0);
 
-  el.innerHTML = `<div class="card" style="margin-top:16px;overflow-x:auto">
-    <div style="font-size:13px;font-weight:800;color:var(--blue);margin-bottom:10px;letter-spacing:.3px">
-      🛵 Resumen repartidores — hoy
+  const repCards = Object.entries(byRep).map(([nombre, d]) => `
+    <div style="background:#fff;border-radius:12px;padding:16px 18px;border:1px solid #e5e7eb;flex:0 0 auto;min-width:210px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#1d3557,#457b9d);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">🛵</div>
+        <div style="font-size:13px;font-weight:800;color:var(--blue);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nombre}</div>
+      </div>
+      <div style="display:flex;gap:0;border:1px solid #f3f4f6;border-radius:10px;overflow:hidden">
+        <div style="flex:1;padding:10px 8px;text-align:center;background:#f8faff">
+          <div style="font-size:22px;font-weight:900;color:#1d3557;line-height:1">${d.items.length}</div>
+          <div style="font-size:9px;color:#9ca3af;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:3px">pedidos</div>
+        </div>
+        <div style="width:1px;background:#f3f4f6"></div>
+        <div style="flex:2;padding:10px 8px;text-align:center">
+          <div style="font-size:15px;font-weight:800;color:#16a34a;line-height:1">$${d.ventas.toLocaleString('es-AR')}</div>
+          <div style="font-size:9px;color:#9ca3af;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:3px">ventas</div>
+        </div>
+        <div style="width:1px;background:#f3f4f6"></div>
+        <div style="flex:2;padding:10px 8px;text-align:center">
+          <div style="font-size:15px;font-weight:800;color:#f59e0b;line-height:1">$${d.envios.toLocaleString('es-AR')}</div>
+          <div style="font-size:9px;color:#9ca3af;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:3px">envíos</div>
+        </div>
+      </div>
+    </div>`).join('');
+
+  const orderRows = [...entregados].sort((a,b) => (b.hora||'').localeCompare(a.hora||'')).map(o => {
+    const rep = o.repartidorNombre || o.repartidor || '—';
+    const webBadge = o.origen === 'web'
+      ? `<span style="background:#3b82f6;color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:6px;vertical-align:middle;margin-left:3px">WEB</span>` : '';
+    return `<div onclick="verDetalleEntregado('${o.id}')" style="display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;border-bottom:1px solid #f3f4f6;transition:background .12s" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background=''">
+      <div style="font-size:11px;color:#9ca3af;font-weight:600;width:38px;flex-shrink:0">${(o.hora||'').slice(0,5)}</div>
+      <div style="font-size:12px;font-weight:700;color:var(--blue);width:72px;flex-shrink:0">${o.numero}${webBadge}</div>
+      <div style="flex:1;font-size:12px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.cliente?.nombre||o.clienteNombre||'—'}</div>
+      <div style="font-size:11px;color:#6b7280;white-space:nowrap;flex-shrink:0">🛵 ${rep}</div>
+      <div style="font-size:12px;font-weight:700;color:#16a34a;white-space:nowrap;flex-shrink:0;margin-left:6px">$${Number(o.total||0).toLocaleString('es-AR')}</div>
+      <div style="font-size:14px;color:#d1d5db;flex-shrink:0">›</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `<div style="margin-top:8px">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+      <div style="font-size:13px;font-weight:800;color:var(--blue);letter-spacing:.2px;white-space:nowrap">📊 Estadísticas del día</div>
+      <div style="flex:1;height:1px;background:#e5e7eb"></div>
+      <div style="font-size:12px;color:#6b7280;white-space:nowrap"><span style="font-weight:700;color:#16a34a">$${totalDia.toLocaleString('es-AR')}</span> en ${entregados.length} entrega${entregados.length!==1?'s':''}</div>
     </div>
-    <table style="width:100%;border-collapse:collapse;font-size:13px">
-      <thead><tr style="background:#f8f9fa">
-        <th style="padding:8px 10px;text-align:left;border-bottom:2px solid var(--border)">Repartidor</th>
-        <th style="padding:8px 10px;text-align:center;border-bottom:2px solid var(--border)">Pedidos</th>
-        <th style="padding:8px 10px;text-align:left;border-bottom:2px solid var(--border)">Total Ventas</th>
-        <th style="padding:8px 10px;text-align:left;border-bottom:2px solid var(--border)">Total Envíos</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
+    <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px">${repCards}</div>
+    <div style="background:#fff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#f8faff;border-bottom:1px solid #e5e7eb">
+        <span style="font-size:12px;font-weight:800;color:#374151;letter-spacing:.3px;text-transform:uppercase">Envíos realizados hoy</span>
+        <span style="font-size:11px;color:#9ca3af">${entregados.length} entrega${entregados.length!==1?'s':''} · envíos <strong style="color:#f59e0b">$${totalEnvios.toLocaleString('es-AR')}</strong></span>
+      </div>
+      <div>${orderRows}</div>
+    </div>
   </div>`;
+}
+
+function verDetalleEntregado(id) {
+  const o = deliveryData.find(d => String(d.id) === String(id));
+  if (!o) return;
+  const mp = getMediosPago().find(m => m.id === o.metodo_pago);
+  const mpLabel = mp ? `${mp.icono||''} ${mp.nombre}` : (o.metodo_pago || '—');
+  const rep = o.repartidorNombre || o.repartidor || '—';
+  const hora = o.hora ? ` · ${o.hora.slice(0,5)}` : '';
+  const origen = o.origen === 'web'
+    ? `<span style="background:#3b82f6;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;margin-left:6px">🌐 WEB</span>` : '';
+  const itemsHtml = (o.items||[]).map(i => {
+    const sub = Number((i.precio||0) * (i.qty||1));
+    return `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f3f4f6;font-size:13px">
+      <div style="color:#374151">${i.qty||1}× ${i.nombre}${i.size?` <span style="color:#9ca3af;font-size:11px">(${i.size})</span>`:''}</div>
+      <div style="font-weight:600;color:#1d3557">$${sub.toLocaleString('es-AR')}</div>
+    </div>`;
+  }).join('');
+  const costoEnvio = Number(o.costo_envio||0);
+  const envioRow = costoEnvio > 0
+    ? `<div style="display:flex;justify-content:space-between;padding:7px 0;font-size:13px;color:#6b7280"><div>📦 Costo de envío</div><div>$${costoEnvio.toLocaleString('es-AR')}</div></div>` : '';
+  const gpsBtn = (o.lat_cliente && o.lon_cliente)
+    ? `<a class="btn btn-outline btn-sm" href="https://www.google.com/maps?q=${o.lat_cliente},${o.lon_cliente}" target="_blank" style="margin-top:12px">🗺️ Ver en Maps</a>` : '';
+  document.getElementById('modalDetalleEntregadoTitle').innerHTML = `📦 ${o.numero}${origen}`;
+  document.getElementById('modalDetalleEntregadoBody').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:16px">
+      <div style="font-size:15px;font-weight:700;color:#1d3557">👤 ${o.cliente?.nombre||o.clienteNombre||'—'}${hora}</div>
+      ${o.direccion?`<div style="font-size:13px;color:#6b7280">📍 ${o.direccion}</div>`:''}
+      <div style="font-size:13px;color:#6b7280">🛵 ${rep}</div>
+    </div>
+    <div style="background:#f8f9fa;border-radius:10px;padding:12px 14px;margin-bottom:12px">
+      ${itemsHtml}
+      ${envioRow}
+      <div style="display:flex;justify-content:space-between;padding:10px 0 0;font-size:14px;font-weight:800;color:#1d3557;border-top:2px solid #e5e7eb;margin-top:4px">
+        <div>Total</div>
+        <div style="color:#16a34a">$${Number(o.total||0).toLocaleString('es-AR')}</div>
+      </div>
+    </div>
+    <div style="font-size:13px;color:#6b7280">💳 ${mpLabel}</div>
+    ${gpsBtn}`;
+  openModal('modalDetalleEntregado');
 }
 
 function openHistorialDelivery() {
@@ -4020,7 +4106,6 @@ async function cargarRepartidores() {
     if (!res.ok) return;
     const data = await res.json();
     _repartidoresList = Array.isArray(data) ? data : [];
-    // Populate new delivery form dropdown
     const sel = document.getElementById('dlvRepartidor');
     if (sel) {
       sel.innerHTML = '<option value="">Sin asignar</option>' +
