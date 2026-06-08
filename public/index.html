@@ -4198,7 +4198,7 @@ function advanceDelivery(id) {
   }
   if (o.estado === 'entregado') {
     if (o.total > 0) {
-      const pago = o.metodo_pago || 'efectivo';
+      const pago = (o.metodo_pago || 'efectivo').toLowerCase();
       cajaMoves.push({..._cajaNow(),tipo:'ingreso',desc:`Delivery ${o.numero} — ${pago}`,monto:o.total,pago});
     }
     // Registrar en facturación
@@ -4924,7 +4924,7 @@ function abrirCajaDesdeGuard() {
 
 function _cajaResumen() {
   const _pago = m => {
-    if (m.pago) return m.pago;
+    if (m.pago) return m.pago.toLowerCase();
     const d = (m.desc||'').toLowerCase();
     if (d.includes('tarjeta')||d.includes('posnet')) return 'tarjeta';
     if (d.includes('transfer')) return 'transferencia';
