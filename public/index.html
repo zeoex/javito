@@ -4223,7 +4223,10 @@ function advanceDelivery(id) {
   if (socket) socket.emit('delivery:broadcast', o);
   renderDelivery();
   loadDashboard();
-  if (o.estado === 'entregado') loadFacturacion();
+  if (o.estado === 'entregado') {
+    renderCaja();
+    loadFacturacion();
+  }
   showToast(`Pedido ${o.numero} → ${o.estado}`);
 }
 
