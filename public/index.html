@@ -988,6 +988,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
           <button class="btn btn-primary btn-sm" onclick="abrirModalNuevoDelivery()" style="margin-left:40px">+ Nuevo Pedido</button>
         </div>
         <div class="delivery-pipeline" id="deliveryPipeline"></div>
+        <div id="repartidorSummary"></div>
       </div>
 
       <!-- PRODUCTOS -->
@@ -3822,6 +3823,47 @@ function renderDelivery() {
       <div class="pipeline-body">${orders.map(o=>renderDeliveryCard(o,s.key === 'web' ? 'nuevo' : s.key)).join('')||'<div style="color:#aaa;font-size:12px;text-align:center;padding:16px">Vacío</div>'}
       </div></div>`;
   }).join('');
+  _renderRepartidorSummary();
+}
+
+function _renderRepartidorSummary() {
+  const el = document.getElementById('repartidorSummary');
+  if (!el) return;
+  const hoy = _arDate();
+  const entregados = deliveryData.filter(o => o.estado === 'entregado' && o.fecha === hoy);
+  if (!entregados.length) { el.innerHTML = ''; return; }
+
+  const byRep = {};
+  entregados.forEach(o => {
+    const nombre = o.repartidorNombre || o.repartidor || '— Sin repartidor';
+    if (!byRep[nombre]) byRep[nombre] = { pedidos: 0, ventas: 0, envios: 0 };
+    byRep[nombre].pedidos++;
+    byRep[nombre].ventas += Number(o.total || 0);
+    byRep[nombre].envios += Number(o.costo_envio || 0);
+  });
+
+  const rows = Object.entries(byRep).map(([nombre, d]) => `
+    <tr>
+      <td><strong>🛵 ${nombre}</strong></td>
+      <td style="text-align:center;font-weight:700">${d.pedidos}</td>
+      <td><strong>$${d.ventas.toLocaleString('es-AR')}</strong></td>
+      <td><strong style="color:#16a34a">$${d.envios.toLocaleString('es-AR')}</strong></td>
+    </tr>`).join('');
+
+  el.innerHTML = `<div class="card" style="margin-top:16px;overflow-x:auto">
+    <div style="font-size:13px;font-weight:800;color:var(--blue);margin-bottom:10px;letter-spacing:.3px">
+      🛵 Resumen repartidores — hoy
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="background:#f8f9fa">
+        <th style="padding:8px 10px;text-align:left;border-bottom:2px solid var(--border)">Repartidor</th>
+        <th style="padding:8px 10px;text-align:center;border-bottom:2px solid var(--border)">Pedidos</th>
+        <th style="padding:8px 10px;text-align:left;border-bottom:2px solid var(--border)">Total Ventas</th>
+        <th style="padding:8px 10px;text-align:left;border-bottom:2px solid var(--border)">Total Envíos</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
 }
 
 function openHistorialDelivery() {
@@ -4029,18 +4071,35 @@ function advanceDelivery(id) {
   const idx = flow.indexOf(o.estado);
   if(idx<flow.length-1) o.estado=flow[idx+1];
   if (o.estado === 'en_cocina') {
-    // Send comanda to kitchen screen
     apiFetch('/cocina/comanda', {
       method:'POST',
       body: JSON.stringify({tipo:'delivery', mesa:{numero:o.numero}, mozo:'', cliente: o.cliente?.nombre || o.clienteNombre || '', items: o.items})
     }).catch(()=>{});
   }
-  if (o.estado === 'entregado' && o.total > 0) {
-    const pago = o.metodo_pago || 'efectivo';
-    cajaMoves.push({..._cajaNow(),tipo:'ingreso',desc:`Delivery ${o.numero} — ${pago}`,monto:o.total,pago});
+  if (o.estado === 'entregado') {
+    if (o.total > 0) {
+      const pago = o.metodo_pago || 'efectivo';
+      cajaMoves.push({..._cajaNow(),tipo:'ingreso',desc:`Delivery ${o.numero} — ${pago}`,monto:o.total,pago});
+    }
+    // Registrar en facturación
+    const fNum = facturasData.length + 1;
+    const origenLabel = o.origen === 'web' ? `🌐 Web ${o.numero}` : `Delivery ${o.numero}`;
+    const itemsCount = (o.items||[]).reduce((s,i)=>s+(i.qty||1), 0);
+    facturasData.unshift({
+      id: Date.now(),
+      numero: `F-${String(fNum).padStart(4,'0')}`,
+      fecha: _arDateTime(),
+      origen: origenLabel,
+      mozo: o.repartidorNombre || o.repartidor || '-',
+      items: itemsCount,
+      detalle: o.items || [],
+      total: o.total || 0,
+      pago: o.metodo_pago || 'efectivo',
+      estado: 'pagada',
+      clienteNombre: o.cliente?.nombre || ''
+    });
   }
   saveState();
-  // Broadcast to repartidor in real time
   if (socket) socket.emit('delivery:broadcast', o);
   renderDelivery();
   loadDashboard();
