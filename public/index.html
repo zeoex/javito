@@ -3503,20 +3503,15 @@ function clickMesa(id) {
   const body = document.getElementById('modalMesaBody');
   const footer = document.getElementById('modalMesaFooter');
   const esMozo = currentUser?.rol === 'mozo';
-  const esAdmin = !esMozo;
-  const zonaHtml = esAdmin ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:8px 12px;background:#f8f9fa;border-radius:8px">
-    <span style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px">Zona</span>
-    <select id="mesaZonaSelect" class="form-control" style="width:auto;padding:4px 10px;font-size:13px;flex:1" onchange="cambiarZonaMesa(${sid},this.value)">
-      <option value="salon" ${m.zona==='salon'?'selected':''}>🏠 Salón</option>
-      <option value="vereda" ${m.zona==='vereda'?'selected':''}>🌿 Vereda</option>
-    </select></div>` : '';
   if(m.estado==='libre') {
     const mozosOpts = esMozo
       ? `<option value="${currentUser.nombre}">${currentUser.nombre}</option>`
-      : `<option value="Carlos">Carlos</option><option value="Ana">Ana</option><option value="María">María</option>`;
+      : usuariosData.filter(u=>['mozo','admin','supervisor'].includes(u.rol)&&u.activo!==false)
+          .map(u=>`<option value="${u.nombre}">${u.nombre}</option>`).join('') ||
+        `<option value="${currentUser?.nombre||'Admin'}">${currentUser?.nombre||'Admin'}</option>`;
     const personasOpts = Array.from({length: m.capacidad}, (_,i) =>
       `<option value="${i+1}">${i+1}</option>`).join('');
-    body.innerHTML = zonaHtml + `<p style="margin-bottom:14px;color:var(--gray)">Mesa libre · ${m.capacidad} cap.</p>
+    body.innerHTML = `<p style="margin-bottom:14px;color:var(--gray)">Mesa libre · ${m.capacidad} cap.</p>
       <div class="form-group"><label>Mozo</label>
         <select class="form-control" id="abrirMozo">${mozosOpts}</select>
       </div>
@@ -3525,7 +3520,7 @@ function clickMesa(id) {
       </div>`;
     footer.innerHTML = `<button class="btn btn-success" style="width:100%" onclick="abrirMesa(${sid})">✅ Abrir Mesa</button>`;
   } else {
-    body.innerHTML = zonaHtml + mesaPedidoHTML(id);
+    body.innerHTML = mesaPedidoHTML(id);
     renderMesaFooter(id);
   }
   openModal('modalMesa');
