@@ -969,7 +969,7 @@
     height: 36px;
     border-radius: 50%;
     background: #d1fae5;
-    border: 1px solid #a7f3d0;
+    border: 1.5px solid #a7f3d0;
     color: #059669;
     font-size: 16px;
     font-weight: 700;
@@ -977,13 +977,15 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    margin-top: 1px;
   }
 
-  .history-info { flex: 1; min-width: 0; overflow: hidden; }
-  .history-order { font-size: 14px; font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .history-client { font-size: 12px; color: var(--text-2); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .history-time { font-size: 11px; color: var(--text-3); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .history-total { font-size: 15px; font-weight: 800; color: #059669; white-space: nowrap; flex-shrink: 0; letter-spacing: -0.5px; }
+  .history-info { flex: 1; min-width: 0; }
+  .history-order { font-size: 14px; font-weight: 700; color: var(--text); }
+  .history-client { font-size: 12px; color: var(--text-2); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .history-addr { font-size: 12px; color: var(--text-2); margin-top: 3px; line-height: 1.4; word-break: break-word; }
+  .history-time { font-size: 11px; color: var(--text-3); margin-top: 3px; }
+  .history-total { font-size: 16px; font-weight: 900; color: #059669; white-space: nowrap; flex-shrink: 0; letter-spacing: -0.5px; padding-top: 2px; }
 
   .empty-state {
     text-align: center;
@@ -1009,14 +1011,17 @@
     padding: 2px 8px; border-radius: 20px;
   }
   .history-item {
-    background: #ffffff; border: 1px solid #e5e7eb;
-    border-radius: 14px; padding: 12px 14px;
+    background: #ffffff;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 14px 16px;
     display: flex; flex-direction: column; gap: 0;
-    transition: border-color .2s;
-    margin: 0 14px 8px;
+    transition: border-color .2s, box-shadow .2s;
+    margin: 0 14px 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04);
   }
-  .history-item-top { display: flex; align-items: center; gap: 12px; }
-  .history-item:hover { border-color: var(--border-active); }
+  .history-item-top { display: flex; align-items: flex-start; gap: 12px; }
+  .history-item:hover { border-color: var(--border-active); box-shadow: 0 2px 8px rgba(0,0,0,.08); }
   .hist-comment-text {
     font-size: 12px; color: var(--text-2);
     background: #f8f9fb; border-radius: 8px;
@@ -2058,8 +2063,8 @@ function renderHistory() {
           <div class="history-info">
             <div class="history-order">Pedido #${escHtml(e.numero)}</div>
             <div class="history-client">👤 ${escHtml(e.cliente)}</div>
-            <div class="history-time">📍 ${escHtml(e.direccion)}</div>
-            <div class="history-time">🕐 ${escHtml(e.hora)}${e.metodo_pago ? '  ·  💳 ' + escHtml(e.metodo_pago) : ''}</div>
+            ${e.direccion && e.direccion !== '—' ? `<div class="history-addr">📍 ${escHtml(e.direccion)}</div>` : ''}
+            <div class="history-time">🕐 ${escHtml(e.hora)}${e.metodo_pago ? ' &nbsp;·&nbsp; 💳 ' + escHtml(e.metodo_pago) : ''}</div>
           </div>
           <div class="history-total">$${Number(e.total).toLocaleString('es-AR')}</div>
         </div>
