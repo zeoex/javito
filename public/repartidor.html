@@ -2046,8 +2046,17 @@ let repHistory  = (() => { try { return JSON.parse(localStorage.getItem('restito
 
 function saveToHistory(p) {
   const today = new Date().toLocaleDateString('es-AR',{timeZone:'America/Argentina/Buenos_Aires'});
-  const exists = repHistory.find(h => String(h.id) === String(p.id));
-  if (exists) return;
+  const existsIdx = repHistory.findIndex(h => String(h.id) === String(p.id));
+  if (existsIdx !== -1) {
+    // Enrich existing entry with items/phone/note if missing (e.g. saved before this version)
+    const ex = repHistory[existsIdx];
+    let changed = false;
+    if ((!ex.items || !ex.items.length) && Array.isArray(p.items) && p.items.length) { ex.items = p.items; changed = true; }
+    if (!ex.telefono && p.cliente?.telefono) { ex.telefono = p.cliente.telefono; changed = true; }
+    if (!ex.nota && p.nota) { ex.nota = p.nota; changed = true; }
+    if (changed) localStorage.setItem('restito_rep_history', JSON.stringify(repHistory));
+    return;
+  }
   repHistory.unshift({
     id: p.id, numero: p.numero,
     cliente: p.cliente?.nombre || '—',
@@ -2161,19 +2170,20 @@ function verDetallePedido(id) {
   if (!e) return;
   document.getElementById('detallePedidoTitle').textContent = `Pedido #${e.numero}`;
   const pago = e.metodo_pago ? e.metodo_pago.charAt(0).toUpperCase() + e.metodo_pago.slice(1) : '—';
-  const itemsHtml = e.items && e.items.length
-    ? `<div>
-        <div class="rep-det-label" style="margin-bottom:6px">Productos</div>
-        ${e.items.map(i => {
+  const itemsHtml = `<div>
+    <div class="rep-det-label" style="margin-bottom:6px">Productos</div>
+    ${e.items && e.items.length
+      ? e.items.map(i => {
           const sub = Number(i.precio||0) * Number(i.qty||1);
           return `<div class="rep-item-row">
             <span class="rep-item-name">${escHtml(i.nombre||'')}${i.size ? ` <span style="color:var(--text-3);font-size:11px">(${escHtml(i.size)})</span>` : ''}</span>
             <span class="rep-item-qty">${i.qty||1}×</span>
             <span class="rep-item-price">$${sub.toLocaleString('es-AR')}</span>
           </div>`;
-        }).join('')}
-      </div>`
-    : '';
+        }).join('')
+      : `<div style="font-size:13px;color:var(--text-3);padding:4px 0">Sin detalle de productos registrado</div>`
+    }
+  </div>`;
   document.getElementById('detallePedidoBody').innerHTML = `
     <div class="rep-det-row">
       <span class="rep-det-icon">👤</span>
