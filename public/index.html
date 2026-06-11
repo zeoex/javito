@@ -3062,7 +3062,7 @@ function showAddItemProds(mesaId, cat) {
         <div class="mpo-prod-card" onclick="seleccionarProductoMesa(${p.id})" style="min-height:80px;border-radius:12px;padding:12px 8px">
           <div class="mpo-prod-emoji" style="font-size:26px">${p.emoji}</div>
           <div class="mpo-prod-name" style="font-size:12px">${p.nombre}</div>
-          ${!esMozo?`<div class="mpo-prod-price">${p.precio_chica?'desde $'+p.precio_chica.toLocaleString():'$'+p.precio.toLocaleString()}</div>`:''}
+          ${!esMozo?`<div class="mpo-prod-price">${p.precio_chica?'desde $'+p.precio_chica.toLocaleString():'$'+(p.precio||0).toLocaleString()}</div>`:''}
         </div>`).join('') || '<div style="color:#bbb;font-size:13px;padding:8px">Sin productos</div>'}
     </div>`;
 }
@@ -3077,7 +3077,7 @@ function filtrarCatMesa(cat) {
     <div class="mpo-prod-card" onclick="seleccionarProductoMesa(${p.id})">
       <div class="mpo-prod-emoji">${p.emoji}</div>
       <div class="mpo-prod-name">${p.nombre}</div>
-      ${!esMozo?`<div class="mpo-prod-price">${p.precio_chica?'desde $'+p.precio_chica.toLocaleString():'$'+p.precio.toLocaleString()}</div>`:''}
+      ${!esMozo?`<div class="mpo-prod-price">${p.precio_chica?'desde $'+p.precio_chica.toLocaleString():'$'+(p.precio||0).toLocaleString()}</div>`:''}
     </div>`).join('') || '<div style="color:#bbb;font-size:12px;padding:8px">Sin productos</div>';
 }
 
@@ -3111,9 +3111,10 @@ function seleccionarProductoMesa(prodId) {
         <span>Grande</span>${!esMozo?`<span class="spk-price">$${p.precio_grande.toLocaleString()}</span>`:''}
       </button>`;
   } else {
+    const _pr = p.precio || 0;
     html += `
-      <button class="spk-size-btn grande" onclick="agregarItemMesa(${sid},${p.id},null,${p.precio},'${p.categoria}')">
-        <span>Agregar</span>${!esMozo?`<span class="spk-price">$${p.precio.toLocaleString()}</span>`:''}
+      <button class="spk-size-btn grande" onclick="agregarItemMesa(${sid},${p.id},null,${_pr},'${p.categoria}')">
+        <span>Agregar</span>${!esMozo?`<span class="spk-price">$${_pr.toLocaleString()}</span>`:''}
       </button>`;
   }
   html += notaHTML + '</div>';
@@ -4127,7 +4128,11 @@ function guardarProducto() {
     base.precio_chica=parseInt(document.getElementById('prodPChica').value)||0;
     base.precio_mediana=parseInt(document.getElementById('prodPMed').value)||0;
     base.precio_grande=parseInt(document.getElementById('prodPGrande').value)||0;
-  } else { base.precio=parseInt(document.getElementById('prodPrecio').value)||0; }
+    if(!base.precio_chica && !base.precio_mediana && !base.precio_grande){ showToast('Ingresá al menos un precio','error'); return; }
+  } else {
+    base.precio=parseInt(document.getElementById('prodPrecio').value)||0;
+    if(!base.precio){ showToast('Ingresá el precio del producto','error'); return; }
+  }
   if(editingProdId) {
     const idx = productosData.findIndex(x=>x.id===editingProdId);
     productosData[idx] = {...productosData[idx],...base};
