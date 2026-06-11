@@ -247,35 +247,42 @@ tr:hover td{background:#fafafa}
 .mesa-card.cuenta .mesa-estado{color:#721c24}
 .mesa-info{font-size:11px;color:#6c757d;margin-top:4px}
 /* === MOZO LIGHT CANVAS === */
-#mainContent.mozo-layout{background:#f4f6fb}
-#mainContent.mozo-layout .content{background:#f4f6fb;padding:16px}
+#mainContent.mozo-layout{background:linear-gradient(180deg,#eef4f0 0%,#f2f5f4 30%,#f4f6f5 100%)}
+#mainContent.mozo-layout .content{background:transparent;padding:16px}
+#mainContent.mozo-layout .section-header h2{font-size:21px;font-weight:900;letter-spacing:-.4px;color:#0f172a}
 /* === MOZO TAB BAR === */
-#mainContent.mozo-layout #mesasTabs{display:flex;background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;padding:5px;margin-bottom:20px;width:100%;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
-#mainContent.mozo-layout #mesasTabs .tab{flex:1;text-align:center;padding:10px 20px;border-radius:9px;font-size:15px;font-weight:700;color:#9ca3af;min-height:var(--tap);display:flex;align-items:center;justify-content:center}
-#mainContent.mozo-layout #mesasTabs .tab.active{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(29,53,87,0.25)}
+#mainContent.mozo-layout #mesasTabs{display:flex;background:rgba(255,255,255,0.9);border:1px solid rgba(5,150,105,0.12);border-radius:16px;padding:5px;margin-bottom:18px;width:100%;box-shadow:0 2px 12px rgba(15,23,42,0.06)}
+#mainContent.mozo-layout #mesasTabs .tab{flex:1;text-align:center;padding:10px 20px;border-radius:12px;font-size:15px;font-weight:700;color:#94a3b8;min-height:var(--tap);display:flex;align-items:center;justify-content:center;transition:all .2s}
+#mainContent.mozo-layout #mesasTabs .tab.active{background:linear-gradient(135deg,#059669,#047857);color:#fff;box-shadow:0 4px 14px rgba(5,150,105,0.35)}
 /* === MOZO MESA GRID === */
 #mainContent.mozo-layout .mesas-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
 /* === MOZO MESA CARDS === */
-#mainContent.mozo-layout .mesa-card{background:#fff;border:none;border-radius:18px;border-top:5px solid #e5e7eb;padding:18px 14px 14px;min-height:152px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;overflow:hidden;transition:transform .15s,box-shadow .15s;box-shadow:0 2px 8px rgba(0,0,0,0.07)}
-#mainContent.mozo-layout .mesa-card:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,0.12)}
+#mainContent.mozo-layout .mesa-card{position:relative;background:#fff;border:1px solid rgba(15,23,42,0.05);border-top:none;border-radius:20px;padding:22px 14px 16px;min-height:152px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;overflow:hidden;transition:transform .18s cubic-bezier(.34,1.56,.64,1),box-shadow .18s;box-shadow:0 1px 3px rgba(15,23,42,0.05),0 4px 14px rgba(15,23,42,0.06)}
+/* gradient status cap */
+#mainContent.mozo-layout .mesa-card::before{content:'';position:absolute;top:0;left:0;right:0;height:6px;background:#e5e7eb;border-radius:20px 20px 0 0}
+#mainContent.mozo-layout .mesa-card:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(15,23,42,0.12)}
 #mainContent.mozo-layout .mesa-card:active{transform:scale(0.94)}
-#mainContent.mozo-layout .mesa-card.libre{border-top-color:var(--mz-libre)}
-#mainContent.mozo-layout .mesa-card.libre:hover{box-shadow:0 8px 24px var(--mz-libre-glow)}
-#mainContent.mozo-layout .mesa-card.ocupada{border-top-color:var(--mz-ocupada)}
-#mainContent.mozo-layout .mesa-card.ocupada:hover{box-shadow:0 8px 24px var(--mz-ocupada-glow)}
-#mainContent.mozo-layout .mesa-card.cuenta{border-top-color:var(--mz-cuenta);animation:cuentaPulse 2.2s ease-in-out infinite}
-@keyframes cuentaPulse{0%,100%{box-shadow:0 2px 8px rgba(0,0,0,0.07)}50%{box-shadow:0 4px 20px rgba(220,38,38,0.3)}}
-/* Hero number */
-#mainContent.mozo-layout .mesa-num{font-size:58px;font-weight:900;line-height:1;letter-spacing:-2px;color:var(--blue);margin-bottom:4px}
+#mainContent.mozo-layout .mesa-card.libre::before{background:linear-gradient(90deg,#10b981,#34d399)}
+#mainContent.mozo-layout .mesa-card.libre:hover{box-shadow:0 10px 28px var(--mz-libre-glow)}
+#mainContent.mozo-layout .mesa-card.ocupada::before{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+#mainContent.mozo-layout .mesa-card.ocupada:hover{box-shadow:0 10px 28px var(--mz-ocupada-glow)}
+#mainContent.mozo-layout .mesa-card.cuenta::before{background:linear-gradient(90deg,#dc2626,#f87171)}
+#mainContent.mozo-layout .mesa-card.cuenta{animation:cuentaPulse 2.2s ease-in-out infinite}
+@keyframes cuentaPulse{0%,100%{box-shadow:0 1px 3px rgba(15,23,42,0.05),0 4px 14px rgba(15,23,42,0.06)}50%{box-shadow:0 4px 22px rgba(220,38,38,0.32)}}
+/* Hero number — color-coded by estado */
+#mainContent.mozo-layout .mesa-num{font-size:58px;font-weight:900;line-height:1;letter-spacing:-2.5px;color:#0f172a;margin-bottom:5px}
+#mainContent.mozo-layout .mesa-card.libre .mesa-num{color:#047857}
+#mainContent.mozo-layout .mesa-card.ocupada .mesa-num{color:#b45309}
+#mainContent.mozo-layout .mesa-card.cuenta .mesa-num{color:#b91c1c}
 /* Status badge */
-#mainContent.mozo-layout .mesa-estado{font-size:10px;font-weight:800;letter-spacing:1.5px;padding:3px 9px;border-radius:20px;margin-bottom:6px;margin-top:0}
-#mainContent.mozo-layout .mesa-card.libre .mesa-estado{background:#dcfce7;color:#16a34a;border:1px solid #bbf7d0}
-#mainContent.mozo-layout .mesa-card.ocupada .mesa-estado{background:#fef3c7;color:#d97706;border:1px solid #fde68a}
-#mainContent.mozo-layout .mesa-card.cuenta .mesa-estado{background:#fee2e2;color:#dc2626;border:1px solid #fecaca}
+#mainContent.mozo-layout .mesa-estado{font-size:10px;font-weight:800;letter-spacing:1.5px;padding:4px 11px;border-radius:20px;margin-bottom:7px;margin-top:0}
+#mainContent.mozo-layout .mesa-card.libre .mesa-estado{background:#d1fae5;color:#047857;border:1px solid #a7f3d0}
+#mainContent.mozo-layout .mesa-card.ocupada .mesa-estado{background:#fef3c7;color:#b45309;border:1px solid #fde68a}
+#mainContent.mozo-layout .mesa-card.cuenta .mesa-estado{background:#fee2e2;color:#b91c1c;border:1px solid #fecaca}
 /* Info text */
-#mainContent.mozo-layout .mesa-info{font-size:12px;color:#9ca3af;margin-top:2px}
+#mainContent.mozo-layout .mesa-info{font-size:12px;font-weight:600;color:#94a3b8;margin-top:2px}
 /* Time progress bar */
-#mainContent.mozo-layout .mesa-tiempo-bar-wrap{width:100%;height:4px;background:#f3f4f6;border-radius:2px;margin-top:8px;overflow:hidden}
+#mainContent.mozo-layout .mesa-tiempo-bar-wrap{width:100%;height:4px;background:#f1f5f9;border-radius:2px;margin-top:8px;overflow:hidden}
 #mainContent.mozo-layout .mesa-tiempo-bar{height:100%;border-radius:2px}
 #mainContent.mozo-layout .mesa-tiempo-bar.ok{background:#22c55e}
 #mainContent.mozo-layout .mesa-tiempo-bar.warn{background:#f59e0b}
@@ -285,9 +292,9 @@ tr:hover td{background:#fafafa}
 #mainContent.mozo-layout .mesa-tiempo-label.warn{color:#d97706}
 #mainContent.mozo-layout .mesa-tiempo-label.danger{color:#dc2626}
 /* Items count badge */
-#mainContent.mozo-layout .mesa-items-badge{position:absolute;top:10px;right:10px;background:var(--blue);color:#fff;font-size:11px;font-weight:800;border-radius:8px;padding:2px 7px}
+#mainContent.mozo-layout .mesa-items-badge{position:absolute;top:12px;right:12px;background:linear-gradient(135deg,#0f172a,#334155);color:#fff;font-size:11px;font-weight:800;border-radius:10px;padding:3px 8px;box-shadow:0 2px 8px rgba(15,23,42,0.3)}
 /* Tablet */
-@media (min-width:768px){#mainContent.mozo-layout .mesas-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px}#mainContent.mozo-layout .mesa-num{font-size:64px}#mainContent.mozo-layout .mesa-card{min-height:162px;padding:20px 16px 16px}}
+@media (min-width:768px){#mainContent.mozo-layout .mesas-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px}#mainContent.mozo-layout .mesa-num{font-size:64px}#mainContent.mozo-layout .mesa-card{min-height:162px;padding:24px 16px 16px}}
 /* === DELIVERY === */
 .delivery-pipeline{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;margin-bottom:20px}
 .pipeline-col{flex:0 0 220px;background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,0.07)}
@@ -363,23 +370,24 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#e9ecef;color:#495057}
 
 /* ===== MOZO TOP NAV ===== */
-.mozo-topnav{display:none;height:52px;background:#fff;border-bottom:1.5px solid #e5e7eb;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;z-index:50;box-shadow:0 1px 6px rgba(0,0,0,0.07)}
-.mozo-topnav .mtn-logo{font-size:16px;font-weight:900;color:#111827;letter-spacing:-0.3px;flex:1;display:flex;align-items:center;gap:6px}
-.mozo-topnav .mtn-logo span{font-size:18px}
-/* bottom tab bar */
-.mozo-bottomtab{display:none;position:fixed;bottom:0;left:0;right:0;height:62px;background:#fff;border-top:1.5px solid #e5e7eb;box-shadow:0 -2px 12px rgba(0,0,0,0.08);z-index:100;padding-bottom:env(safe-area-inset-bottom,0)}
-.mozo-bottomtab.visible{display:flex}
-.mbt-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:transparent;color:#9ca3af;font-size:11px;font-weight:700;cursor:pointer;transition:color .15s;font-family:inherit;position:relative;padding:6px 4px;letter-spacing:.3px;text-transform:uppercase}
-.mbt-btn:active{background:#f9fafb}
-.mbt-btn.active{color:#1d3557}
-.mbt-icon{font-size:22px;line-height:1;transition:transform .15s}
-.mbt-btn.active .mbt-icon{transform:scale(1.15)}
-.mbt-dot{position:absolute;top:6px;right:calc(50% - 16px);width:8px;height:8px;border-radius:50%;background:#22c55e;border:2px solid #fff;animation:mtnPulse 1.2s ease-in-out infinite}
-#mainContent.mozo-layout .content{padding-bottom:calc(16px + 62px + env(safe-area-inset-bottom,0px))}
+.mozo-topnav{display:none;height:56px;background:rgba(255,255,255,0.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(5,150,105,0.12);align-items:center;padding:0 14px;gap:10px;flex-shrink:0;z-index:50;box-shadow:0 1px 10px rgba(15,23,42,0.06)}
+.mozo-topnav .mtn-logo{font-size:16px;font-weight:900;color:#0f172a;letter-spacing:-0.3px;flex:1;display:flex;align-items:center;gap:9px}
+.mozo-topnav .mtn-logo img{width:30px;height:30px;border-radius:9px;box-shadow:0 2px 8px rgba(5,150,105,0.3)}
+.mtn-clock{font-size:12.5px;font-weight:700;color:#047857;letter-spacing:.4px;background:#d1fae5;border:1px solid #a7f3d0;border-radius:20px;padding:4px 12px;white-space:nowrap}
+/* bottom tab bar — floating dock */
+.mozo-bottomtab{display:none;position:fixed;bottom:calc(10px + env(safe-area-inset-bottom,0px));left:12px;right:12px;height:64px;background:rgba(255,255,255,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(15,23,42,0.06);border-radius:22px;box-shadow:0 8px 30px rgba(15,23,42,0.16),0 2px 8px rgba(15,23,42,0.08);z-index:100;padding:6px}
+.mozo-bottomtab.visible{display:flex;gap:4px}
+.mbt-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:transparent;border-radius:16px;color:#94a3b8;font-size:10.5px;font-weight:800;cursor:pointer;transition:all .2s cubic-bezier(.34,1.56,.64,1);font-family:inherit;position:relative;padding:5px 4px;letter-spacing:.4px;text-transform:uppercase}
+.mbt-btn:active{transform:scale(0.93)}
+.mbt-btn.active{background:linear-gradient(135deg,#ecfdf5,#d1fae5);color:#047857;box-shadow:inset 0 0 0 1px rgba(5,150,105,0.18)}
+.mbt-icon{font-size:21px;line-height:1;transition:transform .2s cubic-bezier(.34,1.56,.64,1);filter:grayscale(0.5);opacity:.75}
+.mbt-btn.active .mbt-icon{transform:scale(1.12);filter:none;opacity:1}
+.mbt-dot{position:absolute;top:7px;right:calc(50% - 18px);width:8px;height:8px;border-radius:50%;background:#22c55e;border:2px solid #fff;animation:mtnPulse 1.2s ease-in-out infinite}
+#mainContent.mozo-layout .content{padding-bottom:calc(26px + 64px + env(safe-area-inset-bottom,0px))}
 .mtn-notif{display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-left:2px;animation:mtnPulse 1.2s ease-in-out infinite}
 @keyframes mtnPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
 .mcc-list{display:flex;flex-direction:column;gap:12px;padding:4px 0}
-.mcc-card{background:#fff;border-radius:16px;border-left:5px solid #e5e7eb;padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,0.07);transition:box-shadow .3s}
+.mcc-card{background:#fff;border-radius:18px;border:1px solid rgba(15,23,42,0.05);border-left:5px solid #e5e7eb;padding:15px 17px;box-shadow:0 1px 3px rgba(15,23,42,0.05),0 4px 14px rgba(15,23,42,0.06);transition:box-shadow .3s}
 .mcc-card.pendiente{border-left-color:#f59e0b}
 .mcc-card.preparacion{border-left-color:#3b82f6}
 .mcc-card.listo{border-left-color:#22c55e;animation:listaGlow 1.6s ease-in-out infinite}
@@ -596,6 +604,22 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 .spk-size-btn.grande{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border-color:transparent;font-size:16px;padding:18px 20px}
 .spk-size-btn.grande:hover{background:linear-gradient(135deg,#15803d,#166534)}
 .spk-size-btn .spk-price{font-size:13px;opacity:.85}
+/* === ADD ITEM CTA (mesa modal) === */
+.mpo-add-btn{width:100%;padding:14px;border:2px dashed #d1d5db;border-radius:14px;background:transparent;cursor:pointer;font-size:15px;font-weight:700;color:#6b7280;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;font-family:inherit}
+.mpo-add-btn:hover{border-color:var(--red);color:var(--red)}
+.mpo-add-btn:active{transform:scale(0.97)}
+/* === MOZO IDENTITY (scoped a body.rol-mozo — modales fuera de #mainContent) === */
+body.rol-mozo .modal-overlay#modalMesa .modal-header{background:linear-gradient(135deg,#047857,#059669)}
+body.rol-mozo #modalAddItem .modal-header{background:linear-gradient(135deg,#047857,#059669)!important}
+body.rol-mozo .mpo-cat-pill:hover{border-color:#059669;color:#047857;background:#ecfdf5}
+body.rol-mozo .mpo-cat-pill.active{background:linear-gradient(135deg,#059669,#047857);color:#fff;border-color:transparent;box-shadow:0 3px 10px rgba(5,150,105,0.3)}
+body.rol-mozo .mpo-prod-card:hover{border-color:#059669;background:#ecfdf5;box-shadow:0 3px 8px rgba(5,150,105,0.15)}
+body.rol-mozo .mpo-prod-price{color:#047857}
+body.rol-mozo .mpo-add-btn{border-style:solid;border-color:#a7f3d0;background:#ecfdf5;color:#047857}
+body.rol-mozo .mpo-add-btn:hover{border-color:#059669;background:#d1fae5;color:#065f46}
+body.rol-mozo .mpo-order-section{background:#f0faf5;border-color:#d1fae5}
+body.rol-mozo .mpo-total{color:#047857}
+body.rol-mozo .spk-size-btn:hover{border-color:#059669;background:#ecfdf5}
 
 /* ── HOME ICON BUTTONS ──────────────────────── */
 @keyframes haFloat {
@@ -800,8 +824,8 @@ input.form-control:focus{outline:none;border-color:var(--red)}
   <div class="main" id="mainContent">
     <!-- Mozo-only top navigation bar -->
     <div class="mozo-topnav" id="mozoTopnav">
-      <div class="mtn-logo"><span>🍴</span> ResTito</div>
-      <span id="mtnTime" style="font-size:13px;font-weight:700;color:#6b7280;letter-spacing:.5px;flex:1;text-align:center"></span>
+      <div class="mtn-logo"><img src="/icon-mozo.svg" alt=""/> ResTito</div>
+      <span id="mtnTime" class="mtn-clock"></span>
       <div class="mtn-avatar-wrap" id="mozoAvatarWrap">
         <div class="mtn-avatar" id="mozoAvatar" title="" onclick="toggleMozoMenu()">CM</div>
         <div class="mtn-avatar-menu" id="mozoAvatarMenu">
@@ -1394,20 +1418,20 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 
         <!-- Hero counters -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
-          <div style="background:#fff;border-radius:16px;padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.07);display:flex;flex-direction:column;gap:4px">
-            <div style="width:40px;height:40px;background:#dcfce7;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:4px">🪑</div>
-            <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">Mesas hoy</div>
-            <div id="mz-hoy" style="font-size:38px;font-weight:900;color:#16a34a;line-height:1">0</div>
+          <div style="background:linear-gradient(135deg,#ecfdf5,#fff 55%);border:1px solid rgba(5,150,105,0.14);border-radius:20px;padding:18px;box-shadow:0 1px 3px rgba(15,23,42,0.05),0 4px 14px rgba(15,23,42,0.06);display:flex;flex-direction:column;gap:4px">
+            <div style="width:42px;height:42px;background:linear-gradient(135deg,#059669,#047857);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:6px;box-shadow:0 4px 12px rgba(5,150,105,0.3)">🪑</div>
+            <div style="font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.8px">Mesas hoy</div>
+            <div id="mz-hoy" style="font-size:40px;font-weight:900;color:#047857;line-height:1;letter-spacing:-1.5px">0</div>
           </div>
-          <div style="background:#fff;border-radius:16px;padding:16px 18px;box-shadow:0 2px 8px rgba(0,0,0,0.07);display:flex;flex-direction:column;gap:4px">
-            <div style="width:40px;height:40px;background:#dbeafe;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:4px">📅</div>
-            <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px">Este mes</div>
-            <div id="mz-mes" style="font-size:38px;font-weight:900;color:var(--blue);line-height:1">0</div>
+          <div style="background:linear-gradient(135deg,#eff6ff,#fff 55%);border:1px solid rgba(29,53,87,0.12);border-radius:20px;padding:18px;box-shadow:0 1px 3px rgba(15,23,42,0.05),0 4px 14px rgba(15,23,42,0.06);display:flex;flex-direction:column;gap:4px">
+            <div style="width:42px;height:42px;background:linear-gradient(135deg,#1d3557,#2d5a8e);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:6px;box-shadow:0 4px 12px rgba(29,53,87,0.3)">📅</div>
+            <div style="font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.8px">Este mes</div>
+            <div id="mz-mes" style="font-size:40px;font-weight:900;color:var(--blue);line-height:1;letter-spacing:-1.5px">0</div>
           </div>
         </div>
 
         <!-- Day filter -->
-        <div style="background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.06);display:flex;align-items:center;gap:12px">
+        <div style="background:#fff;border:1px solid rgba(15,23,42,0.05);border-radius:16px;padding:14px 16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(15,23,42,0.05),0 4px 14px rgba(15,23,42,0.06);display:flex;align-items:center;gap:12px">
           <span style="font-size:13px;font-weight:700;color:#374151">📅 Ver día:</span>
           <input type="date" id="mzFechaFiltro" class="form-control" style="flex:1;max-width:200px;font-size:14px" onchange="renderMozoStats()"/>
           <button onclick="document.getElementById('mzFechaFiltro').value='';renderMozoStats()" style="border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:#9ca3af;font-family:inherit">Todos</button>
@@ -2723,6 +2747,7 @@ function initApp() {
   });
   // Mozo: hide sidebar, show custom top nav
   if (currentUser?.rol === 'mozo') {
+    document.body.classList.add('rol-mozo');
     // Hide sidebar entirely and adjust layout
     document.querySelector('.sidebar').style.display = 'none';
     document.getElementById('sidebarOverlay').style.display = 'none';
@@ -3326,7 +3351,7 @@ function mesaPedidoHTML(id) {
         ? '<div class="mpo-empty">Sin ítems aún</div>'
         : `<div class="mpo-list">${orderRows}</div>${totalRow}`}
     </div>
-    <button onclick="openAddItem(${sid})" style="width:100%;padding:14px;border:2px dashed #d1d5db;border-radius:12px;background:transparent;cursor:pointer;font-size:15px;font-weight:700;color:#6b7280;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;font-family:inherit" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='#d1d5db';this.style.color='#6b7280'">
+    <button class="mpo-add-btn" onclick="openAddItem(${sid})">
       ➕ Agregar ítem
     </button>`;
 }
