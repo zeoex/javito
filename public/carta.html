@@ -722,9 +722,9 @@ function checkNameError() {
 
 /* ─── Render card ─── */
 function renderCard(item) {
-  const mediaContent = item.foto
-    ? `<img src="${item.foto}" alt="${item.nombre}" onload="this.style.display='block'" onerror="this.style.display='none'">`
-    : `<span class="card-emoji">${item.emoji}</span>`;
+  const mediaBlock = item.foto
+    ? `<div class="card-media"><img src="${item.foto}" alt="${item.nombre}" onload="this.style.display='block'" onerror="this.style.display='none'"></div>`
+    : '';
 
   let priceBlock;
   let footerClass = 'card-footer';
@@ -749,7 +749,7 @@ function renderCard(item) {
           <button class="card-add-btn" onclick="event.stopPropagation();openAddModal('${item.id}')" title="Agregar">+</button>
         </div>
       </div>
-      <div class="card-media">${mediaContent}</div>
+      ${mediaBlock}
     </div>`;
 }
 
@@ -831,7 +831,7 @@ function openAddModal(id) {
   selectedItem = item;
   selectedSize = null;
 
-  document.getElementById('addModalTitle').textContent = `${item.emoji}  ${item.nombre}`;
+  document.getElementById('addModalTitle').textContent = item.nombre;
   document.getElementById('addModalSub').textContent = item.desc || '';
   document.getElementById('addModalNota').value = '';
 
@@ -881,7 +881,7 @@ function closeAddModal(e) {
 document.getElementById('addModalConfirm').onclick = function () {
   if (!selectedItem || !selectedSize) return;
   const nota = document.getElementById('addModalNota').value.trim();
-  const toastMsg = `${selectedItem.emoji} ${selectedItem.nombre} agregado`;
+  const toastMsg = `${selectedItem.nombre} agregado`;
   addToCart(selectedItem.id, selectedSize.label, selectedSize.precio, nota);
   closeAddModal();
   showToast(toastMsg);
@@ -904,7 +904,6 @@ function addToCart(prodId, sizeLabel, precio, nota) {
       id: Date.now() + Math.random(),
       prodId,
       nombre: item.nombre,
-      emoji: item.emoji,
       size: sizeLabel !== 'Única' ? sizeLabel : null,
       precio,
       qty: 1,
@@ -965,7 +964,7 @@ function renderCartItems() {
   document.getElementById('cartItems').innerHTML = cart.map(i => `
     <div class="cart-item-row">
       <div class="cart-item-info">
-        <div class="cart-item-name">${i.emoji} ${i.nombre}</div>
+        <div class="cart-item-name">${i.nombre}</div>
         ${i.size ? `<div class="cart-item-size">${i.size}</div>` : ''}
         ${i.nota ? `<div class="cart-item-nota">📝 ${i.nota}</div>` : ''}
       </div>
@@ -1244,10 +1243,9 @@ async function loadMenu() {
     for (const cat of categorias) {
       if (groups[cat.id] && groups[cat.id].length) {
         MENU.push({
-          label: `${cat.emoji || ''} ${cat.nombre}`.trim(),
+          label: cat.nombre,
           items: groups[cat.id].map(p => ({
             id: p.id,
-            emoji: p.emoji || '🍽️',
             foto: p.foto || null,
             nombre: p.nombre,
             desc: p.descripcion || '',
@@ -1268,7 +1266,6 @@ async function loadMenu() {
           label: catId,
           items: items.map(p => ({
             id: p.id,
-            emoji: p.emoji || '🍽️',
             foto: p.foto || null,
             nombre: p.nombre,
             desc: p.descripcion || '',
@@ -1286,7 +1283,6 @@ async function loadMenu() {
         label: 'Otros',
         items: groups['__sin_cat'].map(p => ({
           id: p.id,
-          emoji: p.emoji || '🍽️',
           foto: p.foto || null,
           nombre: p.nombre,
           desc: p.descripcion || '',

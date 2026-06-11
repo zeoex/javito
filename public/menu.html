@@ -403,9 +403,9 @@ function formatPrice(n) {
 }
 
 function renderCard(item) {
-  const mediaContent = item.foto
-    ? `<img src="${item.foto}" alt="${item.nombre}" onload="this.style.display='block'" onerror="this.style.display='none'">`
-    : `<span class="card-emoji">${item.emoji}</span>`;
+  const mediaBlock = item.foto
+    ? `<div class="card-media"><img src="${item.foto}" alt="${item.nombre}" onload="this.style.display='block'" onerror="this.style.display='none'"></div>`
+    : '';
 
   let priceBlock;
   if (item.precios) {
@@ -425,7 +425,7 @@ function renderCard(item) {
         ${item.desc ? `<div class="card-desc">${item.desc}</div>` : ''}
         ${priceBlock}
       </div>
-      <div class="card-media">${mediaContent}</div>
+      ${mediaBlock}
     </div>`;
 }
 
@@ -519,10 +519,9 @@ async function loadMenu() {
     for (const cat of categorias) {
       if (groups[cat.id] && groups[cat.id].length) {
         MENU.push({
-          label: `${cat.emoji || ''} ${cat.nombre}`.trim(),
+          label: cat.nombre,
           items: groups[cat.id].map(p => ({
             id: p.id,
-            emoji: p.emoji || '🍽️',
             foto: p.foto || null,
             nombre: p.nombre,
             desc: p.descripcion || '',
@@ -543,7 +542,6 @@ async function loadMenu() {
           label: catId,
           items: items.map(p => ({
             id: p.id,
-            emoji: p.emoji || '🍽️',
             foto: p.foto || null,
             nombre: p.nombre,
             desc: p.descripcion || '',
@@ -561,7 +559,6 @@ async function loadMenu() {
         label: 'Otros',
         items: groups['__sin_cat'].map(p => ({
           id: p.id,
-          emoji: p.emoji || '🍽️',
           foto: p.foto || null,
           nombre: p.nombre,
           desc: p.descripcion || '',

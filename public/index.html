@@ -1034,7 +1034,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
         <div id="prodVistaCats" style="display:none">
           <div class="card">
             <div class="table-wrap"><table>
-              <thead><tr><th>Emoji</th><th>Nombre</th><th>ID</th><th>Va a Comanda</th><th>Acciones</th></tr></thead>
+              <thead><tr><th>Nombre</th><th>ID</th><th>Va a Comanda</th><th>Acciones</th></tr></thead>
               <tbody id="categoriasTbody"></tbody>
             </table></div>
           </div>
@@ -1550,10 +1550,7 @@ input.form-control:focus{outline:none;border-color:var(--red)}
     <div class="modal-header"><h3 id="modalCategoriaTitle">Nueva Categoría</h3><button class="modal-close" onclick="closeModal('modalCategoria')">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="catEditId"/>
-      <div class="form-row">
-        <div class="form-group" style="flex:2"><label>Nombre</label><input class="form-control" id="catNombre" placeholder="Pizzas"/></div>
-        <div class="form-group" style="flex:0 0 90px"><label>Emoji</label><input class="form-control" id="catEmoji" placeholder="🍕" style="text-align:center;font-size:20px"/></div>
-      </div>
+      <div class="form-group"><label>Nombre</label><input class="form-control" id="catNombre" placeholder="Pizzas"/></div>
       <div class="form-group"><label>ID interno</label><input class="form-control" id="catIdInput" placeholder="pizzas" style="font-family:monospace"/><small style="color:var(--gray);font-size:11px">Solo letras minúsculas, sin espacios. No modificar si ya tiene productos.</small></div>
       <div class="form-group" style="display:flex;align-items:center;gap:10px">
         <label style="margin:0">Va a Comanda (cocina)</label>
@@ -4583,7 +4580,7 @@ function switchProdTab(tab) {
 }
 
 function _populateCatSelects() {
-  const opts = categoriasData.map(c=>`<option value="${c.id}">${c.emoji} ${c.nombre}</option>`).join('');
+  const opts = categoriasData.map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('');
   const optsFiltro = '<option value="">Todas las categorías</option>' + opts;
   const filtro = document.getElementById('filtroCategoriaProd');
   if (filtro) filtro.innerHTML = optsFiltro;
@@ -4594,7 +4591,6 @@ function _populateCatSelects() {
 function renderCategorias() {
   document.getElementById('categoriasTbody').innerHTML = categoriasData.map(c=>`
     <tr>
-      <td style="font-size:22px;text-align:center">${c.emoji}</td>
       <td><strong>${c.nombre}</strong></td>
       <td style="font-family:monospace;font-size:12px;color:var(--gray)">${c.id}</td>
       <td style="text-align:center"><span class="badge ${c.comanda?'badge-success':'badge-secondary'}">${c.comanda?'Sí':'No'}</span></td>
@@ -4609,7 +4605,6 @@ function _resetModalCategoria() {
   document.getElementById('catEditId').value='';
   document.getElementById('modalCategoriaTitle').textContent='Nueva Categoría';
   document.getElementById('catNombre').value='';
-  document.getElementById('catEmoji').value='';
   document.getElementById('catIdInput').value='';
   document.getElementById('catIdInput').readOnly=false;
   document.getElementById('catComanda').checked=false;
@@ -4621,7 +4616,6 @@ function editarCategoria(id) {
   document.getElementById('catEditId').value=id;
   document.getElementById('modalCategoriaTitle').textContent='Editar Categoría';
   document.getElementById('catNombre').value=c.nombre;
-  document.getElementById('catEmoji').value=c.emoji;
   document.getElementById('catIdInput').value=c.id;
   document.getElementById('catIdInput').readOnly=true;
   document.getElementById('catComanda').checked=!!c.comanda;
@@ -4630,18 +4624,17 @@ function editarCategoria(id) {
 
 function guardarCategoria() {
   const nombre=document.getElementById('catNombre').value.trim();
-  const emoji=document.getElementById('catEmoji').value.trim()||'📦';
   const comanda=document.getElementById('catComanda').checked;
   const editId=document.getElementById('catEditId').value;
   if(!nombre){ showToast('Ingresá el nombre','error'); return; }
   if(editId) {
     const c=categoriasData.find(x=>x.id===editId);
-    if(c){ c.nombre=nombre; c.emoji=emoji; c.comanda=comanda; }
+    if(c){ c.nombre=nombre; c.comanda=comanda; }
   } else {
     let id=document.getElementById('catIdInput').value.trim().toLowerCase().replace(/\s+/g,'_');
     if(!id) id=nombre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
     if(categoriasData.find(x=>x.id===id)){ showToast('Ya existe una categoría con ese ID','error'); return; }
-    categoriasData.push({id,nombre,emoji,comanda});
+    categoriasData.push({id,nombre,comanda});
   }
   closeModal('modalCategoria');
   saveState();
