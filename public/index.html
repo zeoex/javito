@@ -3353,7 +3353,7 @@ function showAddItemProds(mesaId, cat) {
         <div class="mpo-prod-card" onclick="seleccionarProductoMesa(${p.id})" style="min-height:80px;border-radius:12px;padding:12px 8px">
           <div class="mpo-prod-emoji" style="font-size:26px">${p.emoji}</div>
           <div class="mpo-prod-name" style="font-size:12px">${p.nombre}</div>
-          ${!esMozo?`<div class="mpo-prod-price">${p.presentaciones?.length?'desde $'+(Math.min(...p.presentaciones.map(v=>v.precio||0))||0).toLocaleString('es-AR'):p.precio_chica?'desde $'+Number(p.precio_chica).toLocaleString('es-AR'):'$'+Number(p.precio||0).toLocaleString('es-AR')}</div>`:''}
+          ${!esMozo?`<div class="mpo-prod-price">${(()=>{if(p.presentaciones?.length){const mn=Math.min(...p.presentaciones.map(v=>v.precio||0));return 'desde $'+Number(mn||0).toLocaleString('es-AR');}const best=p.precio_chica||p.precio_grande||p.precio||0;const pfx=(p.precio_chica||p.precio_grande)?'desde $':'$';return pfx+Number(best).toLocaleString('es-AR');})()} </div>`:''}
         </div>`).join('') || '<div style="color:#bbb;font-size:13px;padding:8px">Sin productos</div>'}
     </div>`;
 }
@@ -3368,7 +3368,7 @@ function filtrarCatMesa(cat) {
     <div class="mpo-prod-card" onclick="seleccionarProductoMesa(${p.id})">
       <div class="mpo-prod-emoji">${p.emoji}</div>
       <div class="mpo-prod-name">${p.nombre}</div>
-      ${!esMozo?`<div class="mpo-prod-price">${p.presentaciones?.length?'desde $'+(Math.min(...p.presentaciones.map(v=>v.precio||0))||0).toLocaleString('es-AR'):p.precio_chica?'desde $'+Number(p.precio_chica).toLocaleString('es-AR'):'$'+Number(p.precio||0).toLocaleString('es-AR')}</div>`:''}
+      ${!esMozo?`<div class="mpo-prod-price">${(()=>{if(p.presentaciones?.length){const mn=Math.min(...p.presentaciones.map(v=>v.precio||0));return 'desde $'+Number(mn||0).toLocaleString('es-AR');}const best=p.precio_chica||p.precio_grande||p.precio||0;const pfx=(p.precio_chica||p.precio_grande)?'desde $':'$';return pfx+Number(best).toLocaleString('es-AR');})()} </div>`:''}
     </div>`).join('') || '<div style="color:#bbb;font-size:12px;padding:8px">Sin productos</div>';
 }
 
