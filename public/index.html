@@ -82,7 +82,8 @@ body{font-family:'Inter',sans-serif;background:var(--light);color:#212529;overfl
 #app{display:none;height:100vh;overflow:hidden}
 .sidebar{position:fixed;top:0;left:0;width:240px;height:100vh;background:var(--blue);display:flex;flex-direction:column;z-index:100}
 .sidebar-logo{padding:14px 14px 12px;border-bottom:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;gap:12px;overflow:hidden;background:rgba(0,0,0,0.2)}
-.sidebar-logo .s-emoji{flex-shrink:0;width:56px;height:56px;display:flex;align-items:center;justify-content:center;border-radius:14px;font-size:28px}
+.sidebar-logo .s-emoji{flex-shrink:0;width:56px;height:56px;display:flex;align-items:center;justify-content:center;border-radius:14px;font-size:28px;transition:width .25s ease,height .25s ease,border-radius .25s ease,font-size .25s ease}
+.sidebar-logo .s-emoji img{transition:width .25s ease,height .25s ease,border-radius .25s ease}
 .sidebar-logo-text{overflow:hidden;min-width:0}
 .sidebar-logo h2{font-size:15px;font-weight:700;color:#fff;margin-top:0;white-space:nowrap}
 .sidebar-logo p{font-size:10px;color:rgba(255,255,255,0.5);margin-top:3px;white-space:nowrap;display:flex;align-items:center}
@@ -422,6 +423,10 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 .sidebar.collapsed .user-details{display:none}
 .sidebar.collapsed .user-info{justify-content:center}
 .sidebar.collapsed .sidebar-footer .btn{display:none}
+/* Logo se ajusta al rail de 64px: ícono reducido y centrado, nunca recortado */
+.sidebar.collapsed .sidebar-logo{padding:14px 4px 12px;justify-content:center;gap:0}
+.sidebar.collapsed .s-emoji{width:44px!important;height:44px!important;border-radius:12px!important;font-size:24px!important}
+.sidebar.collapsed .s-emoji img{width:44px!important;height:44px!important;border-radius:12px!important}
 
 /* Tooltip on collapsed nav items */
 .sidebar.collapsed .nav-item{position:relative}
@@ -461,6 +466,10 @@ input.form-control:focus{outline:none;border-color:var(--red)}
   .sidebar:not(.tablet-open) .user-details{display:none}
   .sidebar:not(.tablet-open) .user-info{justify-content:center}
   .sidebar:not(.tablet-open) .sidebar-footer .btn{display:none}
+  /* Logo se ajusta al rail de 64px en tablet */
+  .sidebar:not(.tablet-open) .sidebar-logo{padding:14px 4px 12px;justify-content:center;gap:0}
+  .sidebar:not(.tablet-open) .s-emoji{width:44px!important;height:44px!important;border-radius:12px!important;font-size:24px!important}
+  .sidebar:not(.tablet-open) .s-emoji img{width:44px!important;height:44px!important;border-radius:12px!important}
 
   /* tooltips on tablet collapsed */
   .sidebar:not(.tablet-open) .nav-item{position:relative}
