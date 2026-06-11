@@ -309,8 +309,11 @@
      TOP BAR
   ══════════════════════════════════════ */
   .top-bar {
-    background: var(--bg-2);
-    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(220,38,38,0.10);
+    box-shadow: 0 1px 10px rgba(15,23,42,0.05);
     padding: 12px 16px;
     padding-top: calc(12px + env(safe-area-inset-top, 0px));
     display: flex;
@@ -590,17 +593,17 @@
 
   .order-card {
     background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-left: 3px solid transparent;
+    border: 1px solid rgba(15,23,42,0.06);
+    border-left: 4px solid transparent;
     border-radius: 18px;
     overflow: hidden;
     transition: transform .2s, box-shadow .2s, border-color .2s;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    box-shadow: 0 1px 3px rgba(15,23,42,0.05), 0 4px 14px rgba(15,23,42,0.06);
   }
 
   .order-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+    box-shadow: 0 6px 20px rgba(15,23,42,0.12);
   }
 
   /* Estado border colors + hover glow */
