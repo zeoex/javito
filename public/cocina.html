@@ -336,7 +336,6 @@ body{
       <div class="conn-dot"></div>
       <span id="conn-text">DEMO</span>
     </div>
-    <button class="btn-nueva" onclick="simularNuevaComanda()">+ NUEVA COMANDA &nbsp;<kbd style="font-size:10px;opacity:.7;background:rgba(0,0,0,.3);padding:1px 4px;border-radius:3px">F1</kbd></button>
   </div>
 </header>
 
@@ -649,11 +648,6 @@ function simularNuevaComanda() {
   showToast(`Nueva comanda #${numero} recibida!`, 'red');
   beep('new');
 }
-
-/* F1 shortcut */
-document.addEventListener('keydown', e => {
-  if (e.key === 'F1') { e.preventDefault(); simularNuevaComanda(); }
-});
 
 /* ── TOAST ──────────────────────────────────────────────────────────────────── */
 function showToast(msg, color) {
