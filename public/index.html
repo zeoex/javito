@@ -3353,7 +3353,7 @@ function showAddItemProds(mesaId, cat) {
         <div class="mpo-prod-card" onclick="seleccionarProductoMesa(${p.id})" style="min-height:80px;border-radius:12px;padding:12px 8px">
           <div class="mpo-prod-emoji" style="font-size:26px">${p.emoji}</div>
           <div class="mpo-prod-name" style="font-size:12px">${p.nombre}</div>
-          ${!esMozo?`<div class="mpo-prod-price">${(()=>{if(p.presentaciones?.length){const mn=Math.min(...p.presentaciones.map(v=>v.precio||0));return 'desde $'+Number(mn||0).toLocaleString('es-AR');}const best=p.precio_chica||p.precio_grande||p.precio||0;const pfx=(p.precio_chica||p.precio_grande)?'desde $':'$';return pfx+Number(best).toLocaleString('es-AR');})()} </div>`:''}
+          <div class="mpo-prod-price">${(()=>{if(p.presentaciones?.length){const mn=Math.min(...p.presentaciones.map(v=>v.precio||0));return 'desde $'+Number(mn||0).toLocaleString('es-AR');}const best=p.precio_chica||p.precio_grande||p.precio||0;const pfx=(p.precio_chica||p.precio_grande)?'desde $':'$';return pfx+Number(best).toLocaleString('es-AR');})()} </div>
         </div>`).join('') || '<div style="color:#bbb;font-size:13px;padding:8px">Sin productos</div>'}
     </div>`;
 }
@@ -3368,7 +3368,7 @@ function filtrarCatMesa(cat) {
     <div class="mpo-prod-card" onclick="seleccionarProductoMesa(${p.id})">
       <div class="mpo-prod-emoji">${p.emoji}</div>
       <div class="mpo-prod-name">${p.nombre}</div>
-      ${!esMozo?`<div class="mpo-prod-price">${(()=>{if(p.presentaciones?.length){const mn=Math.min(...p.presentaciones.map(v=>v.precio||0));return 'desde $'+Number(mn||0).toLocaleString('es-AR');}const best=p.precio_chica||p.precio_grande||p.precio||0;const pfx=(p.precio_chica||p.precio_grande)?'desde $':'$';return pfx+Number(best).toLocaleString('es-AR');})()} </div>`:''}
+      <div class="mpo-prod-price">${(()=>{if(p.presentaciones?.length){const mn=Math.min(...p.presentaciones.map(v=>v.precio||0));return 'desde $'+Number(mn||0).toLocaleString('es-AR');}const best=p.precio_chica||p.precio_grande||p.precio||0;const pfx=(p.precio_chica||p.precio_grande)?'desde $':'$';return pfx+Number(best).toLocaleString('es-AR');})()} </div>
     </div>`).join('') || '<div style="color:#bbb;font-size:12px;padding:8px">Sin productos</div>';
 }
 
@@ -3394,7 +3394,7 @@ function seleccionarProductoMesa(prodId) {
     p.presentaciones.forEach((pres, i) => {
       const cls = i === p.presentaciones.length - 1 ? 'grande' : '';
       html += `<button class="spk-size-btn ${cls}" onclick="agregarItemMesa(${sid},${p.id},'${pres.nombre.replace(/'/g,"\\'")}',${pres.precio},'${p.categoria}')">
-        <span>${pres.nombre}</span>${!esMozo?`<span class="spk-price">$${Number(pres.precio).toLocaleString()}</span>`:''}
+        <span>${pres.nombre}</span><span class="spk-price">$${Number(pres.precio).toLocaleString()}</span>
       </button>`;
     });
   } else if(p.precio_chica || p.precio_grande) {
@@ -3407,20 +3407,20 @@ function seleccionarProductoMesa(prodId) {
       _sizes.forEach((s, i) => {
         const cls = i === _sizes.length - 1 ? 'grande' : '';
         html += `<button class="spk-size-btn ${cls}" onclick="agregarItemMesa(${sid},${p.id},'${s.key}',${s.precio},'${p.categoria}')">
-          <span>${s.label}</span>${!esMozo?`<span class="spk-price">$${s.precio.toLocaleString()}</span>`:''}
+          <span>${s.label}</span><span class="spk-price">$${s.precio.toLocaleString()}</span>
         </button>`;
       });
     } else {
       const _pr = p.precio || p.precio_chica || 0;
       html += `<button class="spk-size-btn grande" onclick="agregarItemMesa(${sid},${p.id},null,${_pr},'${p.categoria}')">
-        <span>Agregar</span>${!esMozo?`<span class="spk-price">$${_pr.toLocaleString()}</span>`:''}
+        <span>Agregar</span><span class="spk-price">$${_pr.toLocaleString()}</span>
       </button>`;
     }
   } else {
     const _pr = p.precio || 0;
     html += `
       <button class="spk-size-btn grande" onclick="agregarItemMesa(${sid},${p.id},null,${_pr},'${p.categoria}')">
-        <span>Agregar</span>${!esMozo?`<span class="spk-price">$${_pr.toLocaleString()}</span>`:''}
+        <span>Agregar</span><span class="spk-price">$${_pr.toLocaleString()}</span>
       </button>`;
   }
   html += notaHTML + '</div>';
