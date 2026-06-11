@@ -3397,14 +3397,25 @@ function seleccionarProductoMesa(prodId) {
         <span>${pres.nombre}</span>${!esMozo?`<span class="spk-price">$${Number(pres.precio).toLocaleString()}</span>`:''}
       </button>`;
     });
-  } else if(p.precio_chica) {
-    html += `
-      <button class="spk-size-btn" onclick="agregarItemMesa(${sid},${p.id},'chica',${p.precio_chica},'${p.categoria}')">
-        <span>Chica</span>${!esMozo?`<span class="spk-price">$${p.precio_chica.toLocaleString()}</span>`:''}
-      </button>
-      <button class="spk-size-btn grande" onclick="agregarItemMesa(${sid},${p.id},'grande',${p.precio_grande},'${p.categoria}')">
-        <span>Grande</span>${!esMozo?`<span class="spk-price">$${p.precio_grande.toLocaleString()}</span>`:''}
+  } else if(p.precio_chica || p.precio_grande) {
+    // Solo mostrar botones para tamaños con precio > 0
+    const _sizes = [
+      {label:'Chica', key:'chica', precio: p.precio_chica || 0},
+      {label:'Grande', key:'grande', precio: p.precio_grande || 0}
+    ].filter(s => s.precio > 0);
+    if (_sizes.length) {
+      _sizes.forEach((s, i) => {
+        const cls = i === _sizes.length - 1 ? 'grande' : '';
+        html += `<button class="spk-size-btn ${cls}" onclick="agregarItemMesa(${sid},${p.id},'${s.key}',${s.precio},'${p.categoria}')">
+          <span>${s.label}</span>${!esMozo?`<span class="spk-price">$${s.precio.toLocaleString()}</span>`:''}
+        </button>`;
+      });
+    } else {
+      const _pr = p.precio || p.precio_chica || 0;
+      html += `<button class="spk-size-btn grande" onclick="agregarItemMesa(${sid},${p.id},null,${_pr},'${p.categoria}')">
+        <span>Agregar</span>${!esMozo?`<span class="spk-price">$${_pr.toLocaleString()}</span>`:''}
       </button>`;
+    }
   } else {
     const _pr = p.precio || 0;
     html += `
