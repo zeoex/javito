@@ -1,27 +1,53 @@
 # ResTito — Sistema POS para Restaurantes
 
-## 📌 Versión actual: v1.0.0 — 2026-06-05
+## 📌 Versión actual: v1.1.0 — 2026-06-06
 
-**Checkpoint:** `v1.0.0` — primer release completo y estable.
+**Checkpoint:** `v1.1.0` — Menú Online completo con pedidos web integrados al panel admin.
 
 ### Módulos incluidos en esta versión
 | Módulo | Estado |
 |---|---|
 | Mesas (admin + mozo) | ✅ Completo |
-| Delivery (admin) | ✅ Completo |
+| Pedidos / Delivery (admin) | ✅ Completo |
 | Cocina (pantalla separada) | ✅ Completo — sincronizado en tiempo real |
-| Repartidor (app independiente) | ✅ Completo |
+| Repartidor (app independiente) | ✅ Completo — GPS navigation |
 | Caja / Facturación | ✅ Completo |
 | Reportes | ✅ Completo |
 | Clientes | ✅ Completo |
-| Configuración (medios de pago, propinas, QR, etc.) | ✅ Completo |
+| Configuración (medios de pago, propinas, QR, geo delivery, etc.) | ✅ Completo |
 | Impresión ESC/POS (QZ Tray) | ✅ Completo |
 | Mozo — bottom tab bar (UX mobile-first) | ✅ Completo |
 | Mozo — panel cocina (ver estado de comandas) | ✅ Completo |
 | Mozo — mis estadísticas con detalle por mesa | ✅ Completo |
 | Comprobante X editable (nombre/CUIT cliente) | ✅ Completo |
+| **Menú Online (`/carta`)** | ✅ Completo — dark theme, carrito persistente |
+| **Pedidos Web → admin en tiempo real** | ✅ Completo — columna dedicada 🌐 WEB |
+| **Geolocalización delivery** | ✅ Completo — distancia, cobertura, precio por km |
+| **Asignación repartidor desde admin** | ✅ Completo — lista real de usuarios |
 
-### Historial de cambios principales
+### Historial de cambios principales — v1.1.0 (2026-06-06)
+- Menú Online (`/carta`) rediseñado con dark theme (fondo negro, acento ámbar)
+- Carrito persistente en localStorage (sobrevive refresco de página)
+- Botón flotante "Ver pedido" en parte superior con animación y resplandor
+- Pago exclusivo por transferencia: Alias y CBU/CVU con botones "Copiar" (feedback visual)
+- Geolocalización automática al seleccionar "Envío a domicilio":
+  - Distancia calculada con Haversine vs ubicación del local
+  - Costo de envío automático por km o tarifa fija
+  - Cobertura máxima configurable — muestra error si excede
+- "Retiro en Local" → link directo a Google Maps con coordenadas del negocio
+- Auto-relleno de dirección vía reverse geocoding (Nominatim)
+- Botón WhatsApp deshabilitado hasta: nombre + pago copiado + modo seleccionado + cobertura ok
+- Pedidos web aparecen en panel admin columna **🌐 PEDIDOS WEB** (en tiempo real)
+- Fix crítico: bypass de auth para `/api/web/` (antes fallaba con 401 silencioso)
+- Pedidos web muestran ítems detallados con precio, distancia km, botón GPS
+- Asignación de repartidor desde el pipeline de pedidos (lista real de usuarios)
+- App repartidor: navegación GPS directa cuando el pedido tiene coordenadas
+- Config: Teléfono y WhatsApp separados; lat/lon del local, radio y precio por km
+- Módulo "Delivery" renombrado a "Pedidos"; columna "NUEVO" → "MOSTRADOR"
+- Sidebar auto-colapsa en desktop al navegar
+- Icono admin con cierre de sesión movido al topbar (junto al reloj)
+
+### Historial de cambios principales — v1.0.0 (2026-06-05)
 - Personas por mesa; timer eliminado de las cards
 - Comprobante X editable para datos del cliente (facturas)
 - Fix `[object Object]` en dashboard delivery

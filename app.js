@@ -4,6 +4,8 @@
 //  ResTito – Backend completo (single file)
 // ─────────────────────────────────────────────
 
+function arDate() { return new Date().toLocaleString('sv-SE',{timeZone:'America/Argentina/Buenos_Aires'}).slice(0,10); }
+
 const express    = require('express');
 const http       = require('http');
 const path       = require('path');
@@ -112,7 +114,8 @@ const db = {
   facturas:   [],
   stock:      [],
   printJobs:  [],
-  llamados:   []
+  llamados:   [],
+  biz_cfg:    {}
 };
 
 // ─────────────────────────────────────────────
@@ -300,7 +303,7 @@ const db = {
   db.caja = [
     {
       id: uuidv4(),
-      fecha:        new Date().toISOString().split('T')[0],
+      fecha:        arDate(),
       apertura:     new Date(Date.now() - 6 * 3600000).toISOString(),
       cierre:       null,
       saldoInicial: 5000,
@@ -327,12 +330,27 @@ async function restoreStateFromPG() {
     const { rows } = await pool.query('SELECT * FROM app_state WHERE id = 1');
     const state = rows[0];
     if (!state) { console.log('[PG] No saved state found — using seed data'); return; }
-    if (Array.isArray(state.mesas)     && state.mesas.length     > 0) db.mesas     = state.mesas;
-    if (Array.isArray(state.delivery)  && state.delivery.length  > 0) db.delivery  = state.delivery;
-    if (Array.isArray(state.productos) && state.productos.length > 0) db.productos = state.productos;
-    if (Array.isArray(state.clientes)  && state.clientes.length  > 0) db.clientes  = state.clientes;
-    if (Array.isArray(state.categorias)&& state.categorias.length> 0) db.categorias= state.categorias;
-    console.log(`[PG] State restored — mesas:${db.mesas.length} delivery:${db.delivery.length} productos:${db.productos.length}`);
+    if (Array.isArray(state.mesas)      && state.mesas.length      > 0) db.mesas      = state.mesas;
+    if (Array.isArray(state.delivery)   && state.delivery.length   > 0) db.delivery   = state.delivery;
+    if (Array.isArray(state.productos)  && state.productos.length  > 0) db.productos  = state.productos;
+    if (Array.isArray(state.clientes)   && state.clientes.length   > 0) db.clientes   = state.clientes;
+    if (Array.isArray(state.categorias) && state.categorias.length > 0) db.categorias = state.categorias;
+    if (Array.isArray(state.facturas)   && state.facturas.length   > 0) db.facturas   = state.facturas;
+    if (state.biz_cfg && typeof state.biz_cfg === 'object' && Object.keys(state.biz_cfg).length > 0) db.biz_cfg = state.biz_cfg;
+    if (Array.isArray(state.usuarios) && state.usuarios.length > 0) {
+      const seedUsers = db.users; // seed users always have valid bcrypt hashes
+      db.users = state.usuarios.map(pgUser => {
+        if (pgUser.password && pgUser.password.startsWith('$2')) return pgUser;
+        // PG user has no valid password — restore from matching seed user
+        const seed = seedUsers.find(s => s.email === pgUser.email);
+        return seed ? { ...pgUser, password: seed.password } : null;
+      }).filter(Boolean);
+      // Ensure all seed users remain accessible (e.g. new users added in code)
+      for (const su of seedUsers) {
+        if (!db.users.find(u => u.email === su.email)) db.users.push(su);
+      }
+    }
+    console.log(`[PG] State restored — mesas:${db.mesas.length} delivery:${db.delivery.length} productos:${db.productos.length} facturas:${db.facturas.length}`);
   } catch(e) {
     console.error('[PG] restoreStateFromPG failed:', e.message);
   }
@@ -355,7 +373,7 @@ function cajaActual() {
 }
 
 function emitDashboardStats() {
-  const hoy = new Date().toISOString().split('T')[0];
+  const hoy = arDate();
   const pedidosHoy = db.pedidos.filter(p => p.createdAt.startsWith(hoy));
   const ventaHoy   = pedidosHoy.filter(p => p.estado === 'pagado').reduce((s, p) => s + p.total, 0);
   const caja       = cajaActual();
@@ -381,8 +399,8 @@ function emitDashboardStats() {
 //  MIDDLEWARE GLOBAL
 // ─────────────────────────────────────────────
 app.use(cors({ origin: '*' }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '25mb' }));
+app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 const noCache = (res) => { res.setHeader('Cache-Control','no-cache, no-store, must-revalidate'); res.setHeader('Pragma','no-cache'); res.setHeader('Expires','0'); };
 // Role-specific routes must be registered BEFORE express.static to override index.html default
@@ -428,10 +446,17 @@ app.use('/api', (req, res, next) => {
   // Repartidor accesses these without admin JWT (has its own auth)
   if (req.path === '/delivery/activos' && req.method === 'GET') return next();
   if (/^\/delivery\/[^/]+\/estado$/.test(req.path) && req.method === 'PUT') return next();
+  if (/^\/delivery\/[^/]+\/repartidor$/.test(req.path) && req.method === 'PUT') return next();
+  if (req.path === '/repartidores/login' && req.method === 'POST') return next();
+  if (req.path === '/repartidores' && req.method === 'GET') return next();
   // Cocina screen has no login — all /cocina/* routes are open
   if (req.path.startsWith('/cocina')) return next();
   // Mozo sends print jobs — no auth required (internal intranet actions)
   if (req.path === '/print' && req.method === 'POST') return next();
+  // Public menu for QR and online menu (no login required)
+  if (req.path === '/public/menu' && req.method === 'GET') return next();
+  // Web orders from carta.html (public, no login)
+  if (req.path.startsWith('/web/')) return next();
   authMiddleware(req, res, next);
 });
 
@@ -445,6 +470,7 @@ app.post('/api/auth/login', async (req, res) => {
   const user = db.users.find(u => u.email === email && u.activo);
   if (!user) return res.status(401).json({ error: 'Credenciales inválidas' });
 
+  if (!user.password) return res.status(401).json({ error: 'Credenciales inválidas' });
   const ok = await bcrypt.compare(password, user.password);
   if (!ok) return res.status(401).json({ error: 'Credenciales inválidas' });
 
@@ -460,6 +486,30 @@ app.post('/api/auth/login', async (req, res) => {
 app.post('/api/auth/logout', (_req, res) => {
   // Stateless JWT — sólo confirmamos en cliente
   res.json({ message: 'Sesión cerrada correctamente' });
+});
+
+// Lista de repartidores activos (para el panel admin — sin auth)
+app.get('/api/repartidores', (req, res) => {
+  const lista = db.users.filter(u => u.rol === 'repartidor' && u.activo)
+    .map(u => ({ id: u.id, nombre: u.nombre, telefono: u.telefono || '' }));
+  res.json(lista);
+});
+
+// Login sin auth para repartidores — verifica contra db.users con rol repartidor
+app.post('/api/repartidores/login', async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: 'Email y contraseña requeridos' });
+  const user = db.users.find(u => u.email === email && u.rol === 'repartidor' && u.activo);
+  if (!user) return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+  // Soportar tanto bcrypt hash como plaintext (migración)
+  let ok = false;
+  if (user.password && user.password.startsWith('$2')) {
+    ok = await bcrypt.compare(password, user.password);
+  } else {
+    ok = (user.password === password);
+  }
+  if (!ok) return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+  res.json({ id: user.id, nombre: user.nombre, email: user.email, telefono: user.telefono || '' });
 });
 
 // ─────────────────────────────────────────────
@@ -935,6 +985,99 @@ app.post('/api/delivery', (req, res) => {
   res.status(201).json(envio);
 });
 
+// Pedidos desde el menú online (carta.html) → aparecen en el módulo de delivery del admin
+app.post('/api/web/pedido', async (req, res) => {
+  const { cliente, items, total, metodo_pago, nota, origen, costo_envio, modo_envio, distancia_km, lat_cliente, lon_cliente } = req.body;
+  if (!cliente?.nombre || !Array.isArray(items) || !items.length) {
+    return res.status(400).json({ error: 'Datos insuficientes' });
+  }
+  const hora = new Date().toLocaleTimeString('es-AR', {
+    hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires'
+  });
+  const newId = Date.now(); // garantiza unicidad
+  const pedido = {
+    id: newId,
+    numero: `W-${String(newId).slice(-4)}`,
+    estado: 'nuevo',
+    cliente: { nombre: cliente.nombre, telefono: cliente.telefono || '' },
+    direccion: cliente.direccion || '',
+    items,
+    total: total || 0,
+    metodo_pago: metodo_pago || 'Transferencia',
+    nota: nota || '',
+    hora,
+    origen: 'web',
+    fecha: arDate(),
+    costo_envio: costo_envio || 0,
+    modo_envio: modo_envio || 'retiro',
+    distancia_km: distancia_km || null,
+    lat_cliente: lat_cliente || null,
+    lon_cliente: lon_cliente || null
+  };
+
+  // Persistir en PostgreSQL directamente para que el admin lo vea aunque no esté conectado
+  const pool = getPool();
+  if (pool) {
+    try {
+      const { rows } = await pool.query('SELECT delivery FROM app_state WHERE id = 1');
+      const list = rows[0]?.delivery || [];
+      list.unshift(pedido);
+      await pool.query('UPDATE app_state SET delivery=$1, updated_at=NOW() WHERE id=1', [JSON.stringify(list)]);
+    } catch(e) { console.error('[web:pedido]', e.message); }
+  }
+
+  // Notificar al panel admin en tiempo real
+  io.emit('delivery:update', pedido);
+  res.status(201).json(pedido);
+});
+
+// Actualizar costo de envío de un pedido web
+app.put('/api/delivery/:id/costo-envio', async (req, res) => {
+  const targetId = req.params.id;
+  const { costo_envio } = req.body;
+  const pool = getPool();
+  if (pool) {
+    try {
+      const { rows } = await pool.query('SELECT delivery FROM app_state WHERE id = 1');
+      const list = rows[0]?.delivery || [];
+      const idx = list.findIndex(d => String(d.id) === String(targetId));
+      if (idx >= 0) {
+        list[idx].costo_envio = costo_envio;
+        await pool.query('UPDATE app_state SET delivery=$1, updated_at=NOW() WHERE id=1', [JSON.stringify(list)]);
+      }
+    } catch(e) { console.error('[delivery:costo-envio]', e.message); }
+  }
+  io.emit('delivery:update', { id: targetId, costo_envio });
+  res.json({ ok: true });
+});
+
+// Asignar repartidor a un pedido
+app.put('/api/delivery/:id/repartidor', async (req, res) => {
+  const targetId = req.params.id;
+  const { repartidorId } = req.body;
+  const repartidor = db.users.find(u => u.id === repartidorId && u.rol === 'repartidor');
+  const repartidorNombre = repartidor?.nombre || null;
+
+  const inMem = db.delivery.find(d => String(d.id) === String(targetId));
+  if (inMem) { inMem.repartidorId = repartidorId; inMem.repartidorNombre = repartidorNombre; }
+
+  const pool = getPool();
+  if (pool) {
+    try {
+      const { rows } = await pool.query('SELECT delivery FROM app_state WHERE id = 1');
+      const list = rows[0]?.delivery || [];
+      const idx = list.findIndex(d => String(d.id) === String(targetId));
+      if (idx >= 0) {
+        list[idx].repartidorId = repartidorId;
+        list[idx].repartidorNombre = repartidorNombre;
+        await pool.query('UPDATE app_state SET delivery=$1, updated_at=NOW() WHERE id=1', [JSON.stringify(list)]);
+      }
+    } catch(e) { console.error('[delivery:repartidor]', e.message); }
+  }
+  io.emit('delivery:update', { id: targetId, repartidorId, repartidorNombre });
+  res.json({ ok: true, repartidorNombre });
+});
+
 app.put('/api/delivery/:id/estado', async (req, res) => {
   const targetId = req.params.id;
   const nuevoEstado = req.body.estado;
@@ -1079,7 +1222,7 @@ app.post('/api/caja/abrir', (req, res) => {
   const { saldoInicial } = req.body;
   const caja = {
     id:           uuidv4(),
-    fecha:        new Date().toISOString().split('T')[0],
+    fecha:        arDate(),
     apertura:     new Date().toISOString(),
     cierre:       null,
     saldoInicial: parseFloat(saldoInicial || 0),
@@ -1466,12 +1609,56 @@ app.get('/api/state', async (_req, res) => {
   } catch(e) { console.error('[state:get]', e.message); res.json(null); }
 });
 
+// Endpoint público para menú QR y menú online — sirve desde memoria (siempre actualizado)
+app.get('/api/public/menu', (_req, res) => {
+  res.json({
+    productos: db.productos || [],
+    categorias: db.categorias || [],
+    biz_cfg: db.biz_cfg || {}
+  });
+});
+
+// Sincroniza solo productos y categorías (usado por admin sin gate de IDs de mesa)
+app.post('/api/catalog', authMiddleware, async (req, res) => {
+  const { productos, categorias } = req.body;
+  if (Array.isArray(productos))  db.productos  = productos;
+  if (Array.isArray(categorias)) db.categorias = categorias;
+  try {
+    const pool = getPool();
+    if (pool) {
+      await pool.query(
+        `INSERT INTO app_state (id, productos, categorias, updated_at)
+         VALUES (1, $1, $2, NOW())
+         ON CONFLICT (id) DO UPDATE SET productos=$1, categorias=$2, updated_at=NOW()`,
+        [JSON.stringify(productos||[]), JSON.stringify(categorias||[])]
+      );
+    }
+  } catch(e) { console.error('[catalog:post]', e.message); }
+  res.json({ ok: true });
+});
+
 app.post('/api/state', authMiddleware, async (req, res) => {
   try {
     const pool = getPool();
     if (!pool) return res.json({ ok: true, skipped: true });
     const { mesas, delivery, facturas, clientes, usuarios, productos, mozo_historial,
             caja_abierta, caja_inicial, caja_moves, caja_cierres, categorias, biz_cfg } = req.body;
+
+    // Merge users: ensure every user has a valid bcrypt password before saving to PG
+    let mergedUsers = db.users;
+    if (Array.isArray(usuarios) && usuarios.length > 0) {
+      mergedUsers = await Promise.all(usuarios.map(async u => {
+        if (u.password && !u.password.startsWith('$2')) {
+          return { ...u, password: await bcrypt.hash(u.password, 10) };
+        }
+        if (!u.password || !u.password.startsWith('$2')) {
+          const existing = db.users.find(x => x.email === u.email);
+          return existing?.password ? { ...u, password: existing.password } : null;
+        }
+        return u;
+      })).then(users => users.filter(Boolean));
+    }
+
     await pool.query(`
       INSERT INTO app_state (id, mesas, delivery, facturas, clientes, usuarios, productos, mozo_historial,
         caja_abierta, caja_inicial, caja_moves, caja_cierres, categorias, biz_cfg, updated_at)
@@ -1482,19 +1669,21 @@ app.post('/api/state', authMiddleware, async (req, res) => {
         caja_moves=$10, caja_cierres=$11, categorias=$12, biz_cfg=$13, updated_at=NOW()
     `, [
       JSON.stringify(mesas||[]), JSON.stringify(delivery||[]), JSON.stringify(facturas||[]),
-      JSON.stringify(clientes||[]), JSON.stringify(usuarios||[]), JSON.stringify(productos||[]),
+      JSON.stringify(clientes||[]), JSON.stringify(mergedUsers), JSON.stringify(productos||[]),
       JSON.stringify(mozo_historial||[]),
       caja_abierta ?? true, caja_inicial ?? 5000,
       JSON.stringify(caja_moves||[]), JSON.stringify(caja_cierres||[]),
       JSON.stringify(categorias||[]), JSON.stringify(biz_cfg||{})
     ]);
-    // Sync in-memory state so PATCH calls find correct IDs and server stays in sync
+
     if (Array.isArray(mesas))      db.mesas      = mesas;
     if (Array.isArray(delivery))   db.delivery   = delivery;
     if (Array.isArray(productos))  db.productos  = productos;
     if (Array.isArray(clientes))   db.clientes   = clientes;
     if (Array.isArray(categorias)) db.categorias = categorias;
-    // Notify all connected clients so they can pull fresh state if needed
+    if (biz_cfg && typeof biz_cfg === 'object') db.biz_cfg = biz_cfg;
+    db.users = mergedUsers;
+
     const savedAt = new Date().toISOString();
     io.emit('state:changed', { updated_at: savedAt });
     res.json({ ok: true });

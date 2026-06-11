@@ -242,15 +242,15 @@ body{
   letter-spacing:-.2px;
   text-shadow:0 0 20px rgba(251,191,36,0.3);
 }
-.card-price-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:3px}
+.card-price-chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:5px;margin-top:3px;width:100%}
 .price-chip{
-  display:inline-block;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
   background:rgba(217,119,6,0.14);
   color:var(--accent-2);
   font-size:11px;font-weight:700;
-  padding:3px 9px;border-radius:10px;
+  padding:5px 4px;border-radius:10px;
   border:1px solid rgba(251,191,36,0.22);
-  letter-spacing:0.01em;
+  letter-spacing:0.01em;text-align:center;line-height:1.3;
 }
 
 .card-media{
@@ -411,7 +411,7 @@ function renderCard(item) {
   if (item.precios) {
     const chips = Object.entries(item.precios)
       .filter(([,v]) => v)
-      .map(([k,v]) => `<span class="price-chip">${k} ${formatPrice(v)}</span>`)
+      .map(([k,v]) => `<span class="price-chip"><span style="opacity:.7;font-size:10px">${k}</span> ${formatPrice(v)}</span>`)
       .join('');
     priceBlock = `<div class="card-price-chips">${chips}</div>`;
   } else {
@@ -499,9 +499,9 @@ async function loadMenu() {
   } catch(e) {}
 
   try {
-    const res = await fetch('/api/state');
+    const res = await fetch('/api/public/menu');
     const state = await res.json();
-    const biz = state.biz_config || {};
+    const biz = state.biz_cfg || state.biz_config || {};
     applyBizConfig(biz);
 
     const productos = (state.productos || [])
@@ -526,9 +526,11 @@ async function loadMenu() {
             foto: p.foto || null,
             nombre: p.nombre,
             desc: p.descripcion || '',
-            ...(p.precio_chica
-              ? { precios: { Chica: p.precio_chica, Mediana: p.precio_mediana, Grande: p.precio_grande } }
-              : { precio: p.precio })
+            ...((p.presentaciones?.length)
+              ? { precios: Object.fromEntries(p.presentaciones.map(v => [v.nombre, v.precio])), variante_label: 'Presentación' }
+              : (p.precio_chica || p.precio_grande)
+                ? { precios: Object.fromEntries(Object.entries({Chica: p.precio_chica, Grande: p.precio_grande}).filter(([,v])=>v)), variante_label: 'Tamaño' }
+                : { precio: p.precio })
           }))
         });
       }
@@ -545,9 +547,11 @@ async function loadMenu() {
             foto: p.foto || null,
             nombre: p.nombre,
             desc: p.descripcion || '',
-            ...(p.precio_chica
-              ? { precios: { Chica: p.precio_chica, Mediana: p.precio_mediana, Grande: p.precio_grande } }
-              : { precio: p.precio })
+            ...((p.presentaciones?.length)
+              ? { precios: Object.fromEntries(p.presentaciones.map(v => [v.nombre, v.precio])), variante_label: 'Presentación' }
+              : (p.precio_chica || p.precio_grande)
+                ? { precios: Object.fromEntries(Object.entries({Chica: p.precio_chica, Grande: p.precio_grande}).filter(([,v])=>v)), variante_label: 'Tamaño' }
+                : { precio: p.precio })
           }))
         });
       }
@@ -561,9 +565,11 @@ async function loadMenu() {
           foto: p.foto || null,
           nombre: p.nombre,
           desc: p.descripcion || '',
-          ...(p.precio_chica
-            ? { precios: { Chica: p.precio_chica, Mediana: p.precio_mediana, Grande: p.precio_grande } }
-            : { precio: p.precio })
+          ...((p.presentaciones?.length)
+            ? { precios: Object.fromEntries(p.presentaciones.map(v => [v.nombre, v.precio])), variante_label: 'Presentación' }
+            : (p.precio_chica || p.precio_grande)
+              ? { precios: Object.fromEntries(Object.entries({Chica: p.precio_chica, Grande: p.precio_grande}).filter(([,v])=>v)), variante_label: 'Tamaño' }
+              : { precio: p.precio })
         }))
       });
     }

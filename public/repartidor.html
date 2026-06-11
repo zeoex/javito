@@ -405,6 +405,13 @@
     text-overflow: ellipsis;
   }
 
+  @media (max-width: 480px) {
+    .top-bar { gap: 8px; padding: 10px 12px; padding-top: calc(10px + env(safe-area-inset-top, 0px)); }
+    #conn-text { display: none; }
+    #conn-badge { padding: 5px 8px; border-radius: 8px; min-width: 0; }
+    #rep-clock { display: none; }
+  }
+
   @media (max-width: 360px) {
     #status-text { display: none; }
     #btn-toggle-status { padding: 7px 9px; }
@@ -962,7 +969,7 @@
     height: 36px;
     border-radius: 50%;
     background: #d1fae5;
-    border: 1px solid #a7f3d0;
+    border: 1.5px solid #a7f3d0;
     color: #059669;
     font-size: 16px;
     font-weight: 700;
@@ -970,13 +977,15 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    margin-top: 1px;
   }
 
-  .history-info { flex: 1; min-width: 0; overflow: hidden; }
-  .history-order { font-size: 14px; font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .history-client { font-size: 12px; color: var(--text-2); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .history-time { font-size: 11px; color: var(--text-3); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .history-total { font-size: 15px; font-weight: 800; color: #059669; white-space: nowrap; flex-shrink: 0; letter-spacing: -0.5px; }
+  .history-info { flex: 1; min-width: 0; }
+  .history-order { font-size: 14px; font-weight: 700; color: var(--text); }
+  .history-client { font-size: 12px; color: var(--text-2); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .history-addr { font-size: 12px; color: var(--text-2); margin-top: 3px; line-height: 1.4; word-break: break-word; }
+  .history-time { font-size: 11px; color: var(--text-3); margin-top: 3px; }
+  .history-total { font-size: 16px; font-weight: 900; color: #059669; white-space: nowrap; flex-shrink: 0; letter-spacing: -0.5px; padding-top: 2px; }
 
   .empty-state {
     text-align: center;
@@ -1002,14 +1011,17 @@
     padding: 2px 8px; border-radius: 20px;
   }
   .history-item {
-    background: #ffffff; border: 1px solid #e5e7eb;
-    border-radius: 14px; padding: 12px 14px;
+    background: #ffffff;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 14px 16px;
     display: flex; flex-direction: column; gap: 0;
-    transition: border-color .2s;
-    margin: 0 14px 8px;
+    transition: border-color .2s, box-shadow .2s;
+    margin: 0 14px 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04);
   }
-  .history-item-top { display: flex; align-items: center; gap: 12px; }
-  .history-item:hover { border-color: var(--border-active); }
+  .history-item-top { display: flex; align-items: flex-start; gap: 12px; }
+  .history-item:hover { border-color: var(--border-active); box-shadow: 0 2px 8px rgba(0,0,0,.08); }
   .hist-comment-text {
     font-size: 12px; color: var(--text-2);
     background: #f8f9fb; border-radius: 8px;
@@ -1047,6 +1059,56 @@
     cursor: pointer; padding: 0; font-family: inherit;
   }
   .hist-add-comment:hover { color: var(--accent-light); }
+
+  /* ══════════════════════════════════════
+     DETALLE MODAL
+  ══════════════════════════════════════ */
+  .rep-modal-overlay {
+    position: fixed; inset: 0; z-index: 900;
+    background: rgba(0,0,0,.45);
+    display: flex; align-items: flex-end; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity .22s;
+  }
+  .rep-modal-overlay.open { opacity: 1; pointer-events: all; }
+  .rep-modal {
+    background: #fff; border-radius: 24px 24px 0 0;
+    width: 100%; max-width: 480px;
+    padding: 0 0 calc(20px + env(safe-area-inset-bottom,0px));
+    max-height: 88vh; overflow-y: auto;
+    transform: translateY(100%); transition: transform .25s cubic-bezier(.32,0,.67,0);
+  }
+  .rep-modal-overlay.open .rep-modal { transform: translateY(0); }
+  .rep-modal-handle { width: 36px; height: 4px; border-radius: 2px; background: #d1d5db; margin: 12px auto 0; }
+  .rep-modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .rep-modal-title { font-size: 16px; font-weight: 800; color: var(--text); }
+  .rep-modal-close {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: #f3f4f6; border: none; cursor: pointer;
+    font-size: 16px; display: flex; align-items: center; justify-content: center;
+    color: var(--text-2); flex-shrink: 0;
+  }
+  .rep-modal-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+  .rep-det-row { display: flex; gap: 10px; align-items: flex-start; }
+  .rep-det-icon { font-size: 18px; flex-shrink: 0; line-height: 1.3; }
+  .rep-det-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--text-3); margin-bottom: 2px; }
+  .rep-det-value { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.4; word-break: break-word; }
+  .rep-det-divider { height: 1px; background: #f0f0f0; }
+  .rep-item-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f9f9f9; }
+  .rep-item-row:last-child { border-bottom: none; }
+  .rep-item-name { font-size: 13px; color: var(--text); flex: 1; }
+  .rep-item-qty { font-size: 12px; color: var(--text-3); white-space: nowrap; }
+  .rep-item-price { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; }
+  .rep-det-total { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 0; }
+  .rep-det-total-label { font-size: 13px; font-weight: 700; color: var(--text-2); }
+  .rep-det-total-value { font-size: 20px; font-weight: 900; color: #059669; letter-spacing: -1px; }
+
+  /* make items tappable */
+  .history-item { cursor: pointer; }
 
   /* ══════════════════════════════════════
      PROFILE TAB
@@ -1415,7 +1477,7 @@
     </form>
 
     <div class="login-error" id="login-error"></div>
-    <div class="login-hint">Demo: conductor1 / 1234 &nbsp;•&nbsp; conductor2 / 1234</div>
+    <div class="login-hint">Ingresá con tu email y contraseña creados en Admin → Usuarios</div>
   </div>
 
 </div>
@@ -1458,6 +1520,7 @@
     </div>
 
     <div class="pedidos-badge" id="pedidos-badge">0</div>
+    <span id="rep-clock" style="font-size:11px;font-weight:700;color:var(--text-2);letter-spacing:.5px;flex-shrink:0;white-space:nowrap"></span>
 
   </div>
 
@@ -1555,6 +1618,18 @@
 
 </div><!-- /app -->
 
+<!-- Detalle pedido modal (bottom sheet) -->
+<div class="rep-modal-overlay" id="modalDetallePedido" onclick="if(event.target===this)cerrarDetallePedido()">
+  <div class="rep-modal">
+    <div class="rep-modal-handle"></div>
+    <div class="rep-modal-header">
+      <span class="rep-modal-title" id="detallePedidoTitle">Pedido</span>
+      <button class="rep-modal-close" onclick="cerrarDetallePedido()">✕</button>
+    </div>
+    <div class="rep-modal-body" id="detallePedidoBody"></div>
+  </div>
+</div>
+
 <!-- Toast container -->
 <div id="toast-container">
   <div class="toast" id="toast"></div>
@@ -1610,22 +1685,40 @@ let disponible = true;
 let socket = null;
 
 /* ── AUTH ────────────────────────────────────────── */
-function handleLogin() {
-  const user = document.getElementById('input-conductor').value.trim().toLowerCase();
+async function handleLogin() {
+  const user = document.getElementById('input-conductor').value.trim();
   const pin  = document.getElementById('input-pin').value.trim();
   const errEl = document.getElementById('login-error');
 
   if (!user || !pin) { errEl.textContent = 'Completá todos los campos.'; return; }
 
-  const driver = DRIVERS[user];
+  // Primero intentar contra la API (usuarios reales con rol repartidor)
+  try {
+    const res = await fetch('/api/repartidores/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: user, password: pin })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      errEl.textContent = '';
+      currentDriver = { user: data.email, id: data.id, nombre: data.nombre, telefono: data.telefono || '' };
+      try { localStorage.setItem('rep_driver', JSON.stringify(currentDriver)); } catch(e) {}
+      bootApp();
+      return;
+    }
+  } catch(e) { /* red no disponible, caer al fallback */ }
+
+  // Fallback: demo hardcoded
+  const key = user.toLowerCase();
+  const driver = DRIVERS[key];
   if (!driver || driver.pin !== pin) {
-    errEl.textContent = 'Usuario o PIN incorrecto.';
+    errEl.textContent = 'Usuario o contraseña incorrectos.';
     document.getElementById('input-pin').value = '';
     return;
   }
-
   errEl.textContent = '';
-  currentDriver = { user, ...driver };
+  currentDriver = { user: key, ...driver };
   try { localStorage.setItem('rep_driver', JSON.stringify(currentDriver)); } catch(e) {}
   bootApp();
 }
@@ -1865,13 +1958,13 @@ function buildOrderCard(p) {
     </div>`
   ).join('');
 
+  const tieneGps = !!(p.lat_cliente && p.lon_cliente);
+  const mapsBtn = `<button class="btn-action btn-maps" onclick="verEnMaps('${p.id}')">${tieneGps ? '🛰️ Navegar GPS' : '📍 Ver en Maps'}</button>`;
   let actionsHtml = '';
   if (p.estado === 'listo' || p.estado === 'asignado') {
-    actionsHtml = `<button class="btn-action btn-start" onclick="iniciarViaje('${p.id}')">▶ Iniciar viaje</button>`;
+    actionsHtml = `<button class="btn-action btn-start" onclick="iniciarViaje('${p.id}')">▶ Iniciar viaje</button>${mapsBtn}`;
   } else if (p.estado === 'en_camino') {
-    actionsHtml = `
-      <button class="btn-action btn-maps" onclick="verEnMaps('${p.id}')">📍 Ver en Maps</button>
-      <button class="btn-action btn-deliver" onclick="marcarEntregado('${p.id}')">✅ Marcar Entregado</button>`;
+    actionsHtml = `${mapsBtn}<button class="btn-action btn-deliver" onclick="marcarEntregado('${p.id}')">✅ Marcar Entregado</button>`;
   } else if (p.estado === 'entregado') {
     actionsHtml = `<button class="btn-action btn-done" disabled>✓ Entregado</button>`;
   } else {
@@ -1923,9 +2016,11 @@ function iniciarViaje(id) {
 }
 
 function verEnMaps(id) {
-  const p = pedidos.find(p => p.id === id);
+  const p = pedidos.find(p => String(p.id) === String(id));
   if (!p) return;
-  const url = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.direccion);
+  const url = (p.lat_cliente && p.lon_cliente)
+    ? `https://www.google.com/maps/dir/?api=1&destination=${p.lat_cliente},${p.lon_cliente}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.direccion)}`;
   window.open(url, '_blank');
 }
 
@@ -1933,7 +2028,7 @@ function marcarEntregado(id) {
   const p = pedidos.find(p => String(p.id) === String(id));
   if (!p || p.estado !== 'en_camino') return;
   p.estado = 'entregado';
-  p.hora_entrega = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  p.hora_entrega = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' });
 
   // Save to history
   saveToHistory(p);
@@ -1950,16 +2045,28 @@ let repComments = (() => { try { return JSON.parse(localStorage.getItem('restito
 let repHistory  = (() => { try { return JSON.parse(localStorage.getItem('restito_rep_history')  || '[]'); } catch(e) { return [];  } })();
 
 function saveToHistory(p) {
-  const today = new Date().toLocaleDateString('es-AR');
-  const exists = repHistory.find(h => String(h.id) === String(p.id));
-  if (exists) return;
+  const today = new Date().toLocaleDateString('es-AR',{timeZone:'America/Argentina/Buenos_Aires'});
+  const existsIdx = repHistory.findIndex(h => String(h.id) === String(p.id));
+  if (existsIdx !== -1) {
+    // Enrich existing entry with items/phone/note if missing (e.g. saved before this version)
+    const ex = repHistory[existsIdx];
+    let changed = false;
+    if ((!ex.items || !ex.items.length) && Array.isArray(p.items) && p.items.length) { ex.items = p.items; changed = true; }
+    if (!ex.telefono && p.cliente?.telefono) { ex.telefono = p.cliente.telefono; changed = true; }
+    if (!ex.nota && p.nota) { ex.nota = p.nota; changed = true; }
+    if (changed) localStorage.setItem('restito_rep_history', JSON.stringify(repHistory));
+    return;
+  }
   repHistory.unshift({
     id: p.id, numero: p.numero,
     cliente: p.cliente?.nombre || '—',
+    telefono: p.cliente?.telefono || '',
     direccion: p.direccion || '—',
+    items: Array.isArray(p.items) ? p.items : [],
     total: p.total || 0,
     metodo_pago: p.metodo_pago || '',
-    hora: p.hora_entrega || p.hora || new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}),
+    nota: p.nota || '',
+    hora: p.hora_entrega || p.hora || new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Argentina/Buenos_Aires'}),
     fecha: today
   });
   if (repHistory.length > 300) repHistory = repHistory.slice(0, 300);
@@ -2009,8 +2116,8 @@ function renderHistory() {
   });
 
   list.innerHTML = '';
-  const today = new Date().toLocaleDateString('es-AR');
-  const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('es-AR');
+  const today = new Date().toLocaleDateString('es-AR',{timeZone:'America/Argentina/Buenos_Aires'});
+  const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('es-AR',{timeZone:'America/Argentina/Buenos_Aires'});
 
   Object.keys(byDate).forEach(fecha => {
     const group = document.createElement('div');
@@ -2024,14 +2131,18 @@ function renderHistory() {
       const comment = repComments[String(e.id)] || '';
       const item = document.createElement('div');
       item.className = 'history-item';
+      item.onclick = (ev) => {
+        if (ev.target.closest('button') || ev.target.closest('textarea')) return;
+        verDetallePedido(e.id);
+      };
       item.innerHTML = `
         <div class="history-item-top">
           <div class="history-check">✓</div>
           <div class="history-info">
             <div class="history-order">Pedido #${escHtml(e.numero)}</div>
             <div class="history-client">👤 ${escHtml(e.cliente)}</div>
-            <div class="history-time">📍 ${escHtml(e.direccion)}</div>
-            <div class="history-time">🕐 ${escHtml(e.hora)}${e.metodo_pago ? '  ·  💳 ' + escHtml(e.metodo_pago) : ''}</div>
+            ${e.direccion && e.direccion !== '—' ? `<div class="history-addr">📍 ${escHtml(e.direccion)}</div>` : ''}
+            <div class="history-time">🕐 ${escHtml(e.hora)}${e.metodo_pago ? ' &nbsp;·&nbsp; 💳 ' + escHtml(e.metodo_pago) : ''}</div>
           </div>
           <div class="history-total">$${Number(e.total).toLocaleString('es-AR')}</div>
         </div>
@@ -2051,6 +2162,54 @@ function renderHistory() {
 
     list.appendChild(group);
   });
+}
+
+/* ── DETALLE PEDIDO MODAL ────────────────────────── */
+function verDetallePedido(id) {
+  const e = repHistory.find(h => String(h.id) === String(id));
+  if (!e) return;
+  document.getElementById('detallePedidoTitle').textContent = `Pedido #${e.numero}`;
+  const pago = e.metodo_pago ? e.metodo_pago.charAt(0).toUpperCase() + e.metodo_pago.slice(1) : '—';
+  const itemsHtml = `<div>
+    <div class="rep-det-label" style="margin-bottom:6px">Productos</div>
+    ${e.items && e.items.length
+      ? e.items.map(i => {
+          const sub = Number(i.precio||0) * Number(i.qty||1);
+          return `<div class="rep-item-row">
+            <span class="rep-item-name">${escHtml(i.nombre||'')}${i.size ? ` <span style="color:var(--text-3);font-size:11px">(${escHtml(i.size)})</span>` : ''}</span>
+            <span class="rep-item-qty">${i.qty||1}×</span>
+            <span class="rep-item-price">$${sub.toLocaleString('es-AR')}</span>
+          </div>`;
+        }).join('')
+      : `<div style="font-size:13px;color:var(--text-3);padding:4px 0">Sin detalle de productos registrado</div>`
+    }
+  </div>`;
+  document.getElementById('detallePedidoBody').innerHTML = `
+    <div class="rep-det-row">
+      <span class="rep-det-icon">👤</span>
+      <div><div class="rep-det-label">Cliente</div><div class="rep-det-value">${escHtml(e.cliente)}${e.telefono ? `<br><span style="font-size:12px;color:var(--text-2)">${escHtml(e.telefono)}</span>` : ''}</div></div>
+    </div>
+    ${e.direccion && e.direccion !== '—' ? `
+    <div class="rep-det-row">
+      <span class="rep-det-icon">📍</span>
+      <div><div class="rep-det-label">Dirección</div><div class="rep-det-value">${escHtml(e.direccion)}</div></div>
+    </div>` : ''}
+    <div class="rep-det-row">
+      <span class="rep-det-icon">🕐</span>
+      <div><div class="rep-det-label">Entregado</div><div class="rep-det-value">${escHtml(e.fecha)} — ${escHtml(e.hora)}</div></div>
+    </div>
+    <div class="rep-det-divider"></div>
+    ${itemsHtml}
+    ${e.nota ? `<div class="rep-det-row"><span class="rep-det-icon">📝</span><div><div class="rep-det-label">Nota</div><div class="rep-det-value">${escHtml(e.nota)}</div></div></div>` : ''}
+    <div class="rep-det-divider"></div>
+    <div class="rep-det-total">
+      <span class="rep-det-total-label">💳 ${escHtml(pago)}</span>
+      <span class="rep-det-total-value">$${Number(e.total).toLocaleString('es-AR')}</span>
+    </div>`;
+  document.getElementById('modalDetallePedido').classList.add('open');
+}
+function cerrarDetallePedido() {
+  document.getElementById('modalDetallePedido').classList.remove('open');
 }
 
 /* ── STATUS TOGGLE ───────────────────────────────── */
@@ -2123,6 +2282,11 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   });
+  (function repClock() {
+    const el = document.getElementById('rep-clock');
+    if (el) el.textContent = new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Argentina/Buenos_Aires'});
+    setTimeout(repClock, 1000);
+  })();
 }
 </script>
 </body>
