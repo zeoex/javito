@@ -1,56 +1,86 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#1a3a5c"/>
-      <stop offset="100%" stop-color="#0a1628"/>
+    <linearGradient id="mz-bg" x1="0%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%"  stop-color="#10b981"/>
+      <stop offset="48%" stop-color="#047857"/>
+      <stop offset="100%" stop-color="#022c22"/>
     </linearGradient>
+    <radialGradient id="mz-glow" cx="30%" cy="18%" r="75%">
+      <stop offset="0%"  stop-color="#6ee7b7" stop-opacity="0.5"/>
+      <stop offset="55%" stop-color="#34d399" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#34d399" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="mz-dome" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"  stop-color="#ffffff"/>
+      <stop offset="72%" stop-color="#ecfdf5"/>
+      <stop offset="100%" stop-color="#d2f5e6"/>
+    </linearGradient>
+    <linearGradient id="mz-gold" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"  stop-color="#fde68a"/>
+      <stop offset="50%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <linearGradient id="mz-sheen" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"  stop-color="#ffffff" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="mz-vig" cx="50%" cy="42%" r="78%">
+      <stop offset="62%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.32"/>
+    </radialGradient>
+    <filter id="mz-ds" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#01231b" flood-opacity="0.5"/>
+    </filter>
+    <clipPath id="mz-sq"><rect width="512" height="512" rx="88"/></clipPath>
   </defs>
 
   <!-- Background -->
-  <rect width="512" height="512" rx="88" fill="url(#bgGrad)"/>
+  <rect width="512" height="512" rx="88" fill="url(#mz-bg)"/>
+  <rect width="512" height="512" rx="88" fill="url(#mz-glow)"/>
 
-  <!-- Bow tie: left wing -->
-  <polygon points="88,100 238,138 88,176" fill="white"/>
+  <!-- Halo behind cloche -->
+  <ellipse cx="256" cy="280" rx="190" ry="150" fill="#34d399" opacity="0.20"/>
 
-  <!-- Bow tie: right wing -->
-  <polygon points="424,100 274,138 424,176" fill="white"/>
+  <!-- Bow tie -->
+  <g filter="url(#mz-ds)">
+    <path d="M 184 94 Q 178 90 178 98 L 178 140 Q 178 148 184 144 L 240 124 L 240 114 Z" fill="#ffffff"/>
+    <path d="M 328 94 Q 334 90 334 98 L 334 140 Q 334 148 328 144 L 272 124 L 272 114 Z" fill="#ffffff"/>
+    <circle cx="256" cy="119" r="16" fill="#ffffff"/>
+    <circle cx="256" cy="119" r="7" fill="#064e3b" opacity="0.45"/>
+  </g>
 
-  <!-- Bow tie: center knot -->
-  <ellipse cx="256" cy="138" rx="25" ry="22" fill="white"/>
+  <!-- Cloche group -->
+  <g filter="url(#mz-ds)">
+    <!-- Dome -->
+    <path d="M 116 330 Q 116 214 256 208 Q 396 214 396 330 Z" fill="url(#mz-dome)"/>
+    <!-- Gold knob -->
+    <rect x="247" y="196" width="18" height="14" rx="6" fill="url(#mz-gold)"/>
+    <circle cx="256" cy="188" r="15" fill="url(#mz-gold)"/>
+    <circle cx="251" cy="183" r="5" fill="#ffffff" opacity="0.75"/>
+    <!-- Plate -->
+    <ellipse cx="256" cy="330" rx="162" ry="22" fill="#022c22"/>
+    <ellipse cx="256" cy="330" rx="162" ry="22" stroke="#ffffff" stroke-width="14" fill="none"/>
+  </g>
 
-  <!-- Bow tie: inner shadow -->
-  <circle cx="256" cy="138" r="14" fill="rgba(10,22,40,0.5)"/>
+  <!-- Dome reflection -->
+  <path d="M 150 298 Q 170 248 224 236" stroke="#ffffff" stroke-opacity="0.5" stroke-width="13" stroke-linecap="round" fill="none"/>
+  <path d="M 142 318 Q 146 308 154 300" stroke="#ffffff" stroke-opacity="0.3" stroke-width="9" stroke-linecap="round" fill="none"/>
 
-  <!-- Cloche dome -->
-  <path d="M 96 332 Q 96 218 256 212 Q 416 218 416 332 Z" fill="white" opacity="0.95"/>
+  <!-- Plate under-shadow -->
+  <ellipse cx="256" cy="372" rx="148" ry="13" fill="#000000" opacity="0.22"/>
 
-  <!-- Cloche dome reflection -->
-  <path d="M 128 295 Q 156 255 200 248" stroke="white" stroke-opacity="0.28" stroke-width="10" stroke-linecap="round" fill="none"/>
+  <!-- Sparkles -->
+  <path d="M 330 244 Q 334 257 347 261 Q 334 265 330 278 Q 326 265 313 261 Q 326 257 330 244 Z" fill="#ffffff" opacity="0.92"/>
+  <path d="M 130 198 Q 133 208 143 211 Q 133 214 130 224 Q 127 214 117 211 Q 127 208 130 198 Z" fill="#ffffff" opacity="0.55"/>
+  <circle cx="392" cy="170" r="4.5" fill="#ffffff" opacity="0.5"/>
 
-  <!-- Cloche knob base -->
-  <rect x="241" y="196" width="30" height="20" rx="10" fill="white"/>
+  <!-- Glass sheen -->
+  <path d="M 0 0 H 512 V 188 Q 256 252 0 188 Z" fill="url(#mz-sheen)" clip-path="url(#mz-sq)"/>
 
-  <!-- Cloche knob cap -->
-  <rect x="249" y="188" width="14" height="12" rx="6" fill="white" opacity="0.8"/>
-
-  <!-- Plate dark interior -->
-  <ellipse cx="256" cy="332" rx="156" ry="20" fill="#0a1628"/>
-
-  <!-- Plate rim -->
-  <ellipse cx="256" cy="332" rx="156" ry="20" stroke="white" stroke-width="16" fill="none"/>
-
-  <!-- Tray -->
-  <rect x="78" y="353" width="356" height="26" rx="13" fill="white" opacity="0.88"/>
-
-  <!-- Tray stand: left leg -->
-  <line x1="135" y1="377" x2="135" y2="418" stroke="white" stroke-opacity="0.72" stroke-width="15" stroke-linecap="round"/>
-
-  <!-- Tray stand: right leg -->
-  <line x1="377" y1="377" x2="377" y2="418" stroke="white" stroke-opacity="0.72" stroke-width="15" stroke-linecap="round"/>
-
-  <!-- Tray stand: base bar -->
-  <line x1="108" y1="416" x2="404" y2="416" stroke="white" stroke-opacity="0.72" stroke-width="15" stroke-linecap="round"/>
+  <!-- Vignette + inner border -->
+  <rect width="512" height="512" rx="88" fill="url(#mz-vig)"/>
+  <rect x="5" y="5" width="502" height="502" rx="84" fill="none" stroke="#ffffff" stroke-opacity="0.12" stroke-width="2.5"/>
 
   <!-- Label -->
-  <text x="256" y="474" font-size="36" font-weight="700" text-anchor="middle" fill="rgba(255,255,255,0.58)" font-family="Arial, sans-serif" letter-spacing="9">MOZO</text>
+  <text x="256" y="492" font-size="33" font-weight="700" text-anchor="middle" fill="#ffffff" fill-opacity="0.66" font-family="Arial, sans-serif" letter-spacing="10">MOZO</text>
 </svg>

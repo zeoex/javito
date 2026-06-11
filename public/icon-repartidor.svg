@@ -1,57 +1,105 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#c1121f"/>
-      <stop offset="100%" stop-color="#6b0504"/>
+    <linearGradient id="rp-bg" x1="0%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%"  stop-color="#ef4444"/>
+      <stop offset="48%" stop-color="#b91c1c"/>
+      <stop offset="100%" stop-color="#5f0f0f"/>
     </linearGradient>
+    <radialGradient id="rp-glow" cx="30%" cy="18%" r="75%">
+      <stop offset="0%"  stop-color="#fca5a5" stop-opacity="0.5"/>
+      <stop offset="55%" stop-color="#f87171" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#f87171" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="rp-box" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"  stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fee2e2"/>
+    </linearGradient>
+    <linearGradient id="rp-bolt" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"  stop-color="#ef4444"/>
+      <stop offset="100%" stop-color="#991b1b"/>
+    </linearGradient>
+    <linearGradient id="rp-speed" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"  stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.75"/>
+    </linearGradient>
+    <linearGradient id="rp-sheen" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"  stop-color="#ffffff" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="rp-vig" cx="50%" cy="42%" r="78%">
+      <stop offset="62%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.32"/>
+    </radialGradient>
+    <radialGradient id="rp-light" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"  stop-color="#fde68a" stop-opacity="0.95"/>
+      <stop offset="60%" stop-color="#fbbf24" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="rp-ds" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#450a0a" flood-opacity="0.5"/>
+    </filter>
+    <clipPath id="rp-sq"><rect width="512" height="512" rx="88"/></clipPath>
   </defs>
 
   <!-- Background -->
-  <rect width="512" height="512" rx="88" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="88" fill="url(#rp-bg)"/>
+  <rect width="512" height="512" rx="88" fill="url(#rp-glow)"/>
 
-  <!-- Rear wheel (left side) -->
-  <circle cx="148" cy="338" r="68" fill="none" stroke="white" stroke-width="18"/>
-  <circle cx="148" cy="338" r="22" fill="white"/>
+  <!-- Halo -->
+  <ellipse cx="268" cy="280" rx="195" ry="155" fill="#f87171" opacity="0.18"/>
 
-  <!-- Front wheel (right side) -->
-  <circle cx="376" cy="338" r="68" fill="none" stroke="white" stroke-width="18"/>
-  <circle cx="376" cy="338" r="22" fill="white"/>
+  <!-- Road -->
+  <line x1="118" y1="416" x2="402" y2="416" stroke="#ffffff" stroke-opacity="0.22" stroke-width="10" stroke-linecap="round"/>
+  <line x1="196" y1="416" x2="240" y2="416" stroke="#ffffff" stroke-opacity="0.45" stroke-width="10" stroke-linecap="round"/>
 
-  <!-- Scooter frame body -->
-  <path d="M 148 338 L 186 228 L 268 208 L 346 246 L 376 296"
-        fill="none" stroke="white" stroke-width="20"
-        stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Speed lines (fade in toward the bike) -->
+  <line x1="34"  y1="250" x2="112" y2="250" stroke="url(#rp-speed)" stroke-width="13" stroke-linecap="round"/>
+  <line x1="20"  y1="286" x2="100" y2="286" stroke="url(#rp-speed)" stroke-width="10" stroke-linecap="round" opacity="0.75"/>
+  <line x1="48"  y1="322" x2="112" y2="322" stroke="url(#rp-speed)" stroke-width="8"  stroke-linecap="round" opacity="0.5"/>
 
-  <!-- Seat area -->
-  <path d="M 186 228 L 240 186 L 295 196 L 270 228 Z"
-        fill="white" opacity="0.92"/>
+  <!-- Scooter group -->
+  <g filter="url(#rp-ds)">
+    <!-- Wheels -->
+    <circle cx="160" cy="336" r="62" fill="none" stroke="#ffffff" stroke-width="17"/>
+    <circle cx="372" cy="336" r="62" fill="none" stroke="#ffffff" stroke-width="17"/>
+    <circle cx="160" cy="336" r="21" fill="#ffffff"/>
+    <circle cx="372" cy="336" r="21" fill="#ffffff"/>
+    <circle cx="160" cy="336" r="8" fill="#b91c1c"/>
+    <circle cx="372" cy="336" r="8" fill="#b91c1c"/>
 
-  <!-- Handlebars — front fork -->
-  <line x1="346" y1="246" x2="390" y2="206"
-        stroke="white" stroke-width="18" stroke-linecap="round"/>
-  <!-- Grips -->
-  <line x1="384" y1="200" x2="420" y2="220"
-        stroke="white" stroke-width="14" stroke-linecap="round"/>
+    <!-- Frame -->
+    <path d="M 160 336 L 198 234 L 272 214 L 342 250 L 372 298"
+          fill="none" stroke="#ffffff" stroke-width="19" stroke-linecap="round" stroke-linejoin="round"/>
 
-  <!-- Delivery bag/box -->
-  <rect x="150" y="148" width="108" height="82" rx="10"
-        fill="white" opacity="0.92"/>
-  <!-- Box lid stripe -->
-  <rect x="150" y="148" width="108" height="20" rx="10"
-        fill="rgba(180,10,10,0.6)"/>
-  <!-- Logo dot on box -->
-  <circle cx="204" cy="198" r="12" fill="rgba(180,10,10,0.7)"/>
+    <!-- Seat -->
+    <path d="M 192 232 Q 196 206 226 196 L 290 200 Q 296 202 292 212 L 272 234 Z" fill="#ffffff"/>
 
-  <!-- Motion lines (speed) -->
-  <line x1="38" y1="252" x2="105" y2="252"
-        stroke="white" stroke-width="10" stroke-linecap="round" opacity="0.50"/>
-  <line x1="18" y1="282" x2="95" y2="282"
-        stroke="white" stroke-width="8" stroke-linecap="round" opacity="0.35"/>
-  <line x1="52" y1="314" x2="108" y2="314"
-        stroke="white" stroke-width="6" stroke-linecap="round" opacity="0.25"/>
+    <!-- Handlebar + grip -->
+    <line x1="342" y1="250" x2="388" y2="208" stroke="#ffffff" stroke-width="17" stroke-linecap="round"/>
+    <line x1="382" y1="202" x2="418" y2="222" stroke="#ffffff" stroke-width="13" stroke-linecap="round"/>
+
+    <!-- Delivery box -->
+    <rect x="148" y="136" width="118" height="90" rx="14" fill="url(#rp-box)"/>
+    <rect x="148" y="136" width="118" height="24" rx="12" fill="#7f1d1d" opacity="0.55"/>
+    <!-- Lightning bolt on box -->
+    <path d="M 216 166 L 196 200 L 209 200 L 200 222 L 228 186 L 214 186 L 224 166 Z" fill="url(#rp-bolt)"/>
+  </g>
+
+  <!-- Headlight -->
+  <circle cx="404" cy="244" r="26" fill="url(#rp-light)"/>
+  <circle cx="400" cy="240" r="8" fill="#fde68a"/>
+
+  <!-- Sparkles -->
+  <path d="M 350 130 Q 354 143 367 147 Q 354 151 350 164 Q 346 151 333 147 Q 346 143 350 130 Z" fill="#ffffff" opacity="0.9"/>
+  <circle cx="120" cy="180" r="4.5" fill="#ffffff" opacity="0.55"/>
+
+  <!-- Glass sheen -->
+  <path d="M 0 0 H 512 V 188 Q 256 252 0 188 Z" fill="url(#rp-sheen)" clip-path="url(#rp-sq)"/>
+
+  <!-- Vignette + inner border -->
+  <rect width="512" height="512" rx="88" fill="url(#rp-vig)"/>
+  <rect x="5" y="5" width="502" height="502" rx="84" fill="none" stroke="#ffffff" stroke-opacity="0.12" stroke-width="2.5"/>
 
   <!-- Label -->
-  <text x="256" y="474" font-size="32" font-weight="700"
-        text-anchor="middle" fill="rgba(255,255,255,0.58)"
-        font-family="Arial,sans-serif" letter-spacing="6">DELIVERY</text>
+  <text x="256" y="492" font-size="31" font-weight="700" text-anchor="middle" fill="#ffffff" fill-opacity="0.66" font-family="Arial, sans-serif" letter-spacing="7">DELIVERY</text>
 </svg>

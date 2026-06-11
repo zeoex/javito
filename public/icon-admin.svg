@@ -1,32 +1,74 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#7c3aed"/>
-      <stop offset="100%" stop-color="#3b0764"/>
+    <linearGradient id="ad-bg" x1="0%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%"  stop-color="#8b5cf6"/>
+      <stop offset="48%" stop-color="#6d28d9"/>
+      <stop offset="100%" stop-color="#2e1065"/>
     </linearGradient>
+    <radialGradient id="ad-glow" cx="30%" cy="18%" r="75%">
+      <stop offset="0%"  stop-color="#c4b5fd" stop-opacity="0.5"/>
+      <stop offset="55%" stop-color="#a78bfa" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#a78bfa" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ad-shield" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"  stop-color="#ffffff"/>
+      <stop offset="70%" stop-color="#ede9fe"/>
+      <stop offset="100%" stop-color="#d8cdf8"/>
+    </linearGradient>
+    <linearGradient id="ad-star" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"  stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#4c1d95"/>
+    </linearGradient>
+    <linearGradient id="ad-sheen" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"  stop-color="#ffffff" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="ad-vig" cx="50%" cy="42%" r="78%">
+      <stop offset="62%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.32"/>
+    </radialGradient>
+    <filter id="ad-ds" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#1e0a4a" flood-opacity="0.45"/>
+    </filter>
+    <clipPath id="ad-sq"><rect width="512" height="512" rx="88"/></clipPath>
   </defs>
 
   <!-- Background -->
-  <rect width="512" height="512" rx="88" fill="url(#bgGrad)"/>
+  <rect width="512" height="512" rx="88" fill="url(#ad-bg)"/>
+  <rect width="512" height="512" rx="88" fill="url(#ad-glow)"/>
 
-  <!-- Shield outer shape -->
-  <path d="M 96 108 L 416 108 L 416 298 Q 416 400 256 444 Q 96 400 96 298 Z"
-        fill="rgba(255,255,255,0.12)" stroke="white" stroke-width="14" stroke-opacity="0.95"/>
+  <!-- Halo behind shield -->
+  <ellipse cx="256" cy="262" rx="180" ry="190" fill="#a78bfa" opacity="0.22"/>
 
-  <!-- Shield inner decorative border -->
-  <path d="M 124 136 L 388 136 L 388 292 Q 388 376 256 416 Q 124 376 124 292 Z"
-        fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="3"/>
+  <!-- Shield with depth shadow -->
+  <g filter="url(#ad-ds)">
+    <path d="M 256 70 Q 330 106 398 110 L 398 290 Q 398 392 256 448 Q 114 392 114 290 L 114 110 Q 182 106 256 70 Z"
+          fill="url(#ad-shield)"/>
+  </g>
 
-  <!-- 5-pointed star -->
-  <path d="M 256 176 L 281 243 L 353 246 L 297 291 L 316 361 L 256 321 L 196 361 L 215 291 L 159 246 L 231 243 Z"
-        fill="white" opacity="0.95"/>
+  <!-- Inner shield line -->
+  <path d="M 256 100 Q 318 130 372 134 L 372 288 Q 372 374 256 422 Q 140 374 140 288 L 140 134 Q 194 130 256 100 Z"
+        fill="none" stroke="#7c3aed" stroke-opacity="0.22" stroke-width="4"/>
 
-  <!-- Star center: purple punch-through -->
-  <circle cx="256" cy="278" r="28" fill="#5b21b6"/>
+  <!-- Star -->
+  <path d="M 256 180 L 277.2 238.9 L 339.7 240.8 L 290.2 279.1 L 307.7 339.2 L 256 304 L 204.3 339.2 L 221.8 279.1 L 172.3 240.8 L 234.8 238.9 Z"
+        fill="url(#ad-star)"/>
+  <!-- Star core -->
+  <circle cx="256" cy="271" r="17" fill="#ffffff" opacity="0.95"/>
+  <circle cx="256" cy="271" r="8"  fill="#6d28d9"/>
 
-  <!-- Star center: bright dot -->
-  <circle cx="256" cy="278" r="18" fill="white" opacity="0.9"/>
+  <!-- Sparkles -->
+  <path d="M 132 150 Q 136 164 150 168 Q 136 172 132 186 Q 128 172 114 168 Q 128 164 132 150 Z" fill="#ffffff" opacity="0.9"/>
+  <path d="M 396 330 Q 399 340 409 343 Q 399 346 396 356 Q 393 346 383 343 Q 393 340 396 330 Z" fill="#ffffff" opacity="0.6"/>
+  <circle cx="158" cy="352" r="4" fill="#ffffff" opacity="0.5"/>
+
+  <!-- Glass sheen -->
+  <path d="M 0 0 H 512 V 188 Q 256 252 0 188 Z" fill="url(#ad-sheen)" clip-path="url(#ad-sq)"/>
+
+  <!-- Vignette + inner border -->
+  <rect width="512" height="512" rx="88" fill="url(#ad-vig)"/>
+  <rect x="5" y="5" width="502" height="502" rx="84" fill="none" stroke="#ffffff" stroke-opacity="0.12" stroke-width="2.5"/>
 
   <!-- Label -->
-  <text x="256" y="490" font-size="34" font-weight="700" text-anchor="middle" fill="rgba(255,255,255,0.58)" font-family="Arial, sans-serif" letter-spacing="8">ADMIN</text>
+  <text x="256" y="492" font-size="33" font-weight="700" text-anchor="middle" fill="#ffffff" fill-opacity="0.66" font-family="Arial, sans-serif" letter-spacing="9">ADMIN</text>
 </svg>

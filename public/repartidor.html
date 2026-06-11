@@ -243,6 +243,25 @@
   }
   .btn-login:active { transform: scale(0.97); }
 
+  .login-remember {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 2px 2px 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-2);
+    user-select: none;
+  }
+  .login-remember input {
+    width: 16px;
+    height: 16px;
+    accent-color: #dc2626;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
   .login-error {
     color: #dc2626;
     font-size: 13px;
@@ -1470,6 +1489,11 @@
         <input type="hidden" id="login-password"/>
       </div>
 
+      <label class="login-remember">
+        <input type="checkbox" id="remember-pass"/>
+        Recordar contraseña
+      </label>
+
       <button class="btn-login" id="login-btn" type="button" onclick="handleLogin()">
         Entrar al turno
       </button>
@@ -1704,6 +1728,7 @@ async function handleLogin() {
       errEl.textContent = '';
       currentDriver = { user: data.email, id: data.id, nombre: data.nombre, telefono: data.telefono || '' };
       try { localStorage.setItem('rep_driver', JSON.stringify(currentDriver)); } catch(e) {}
+      _saveRememberedCreds(user, pin);
       bootApp();
       return;
     }
@@ -1720,8 +1745,32 @@ async function handleLogin() {
   errEl.textContent = '';
   currentDriver = { user: key, ...driver };
   try { localStorage.setItem('rep_driver', JSON.stringify(currentDriver)); } catch(e) {}
+  _saveRememberedCreds(user, pin);
   bootApp();
 }
+
+/* ── RECORDAR CONTRASEÑA ─────────────────────────── */
+function _saveRememberedCreds(user, pin) {
+  try {
+    if (document.getElementById('remember-pass')?.checked) {
+      localStorage.setItem('rep_remember', JSON.stringify({ user, pin }));
+    } else {
+      localStorage.removeItem('rep_remember');
+    }
+  } catch(e) {}
+}
+
+function _prefillRememberedCreds() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('rep_remember') || 'null');
+    if (saved?.user) {
+      document.getElementById('input-conductor').value = saved.user;
+      document.getElementById('input-pin').value = saved.pin || '';
+      document.getElementById('remember-pass').checked = true;
+    }
+  } catch(e) {}
+}
+_prefillRememberedCreds();
 
 document.getElementById('input-pin').addEventListener('keydown', e => {
   if (e.key === 'Enter') handleLogin();
@@ -1739,6 +1788,7 @@ function handleLogout() {
   try { localStorage.removeItem('rep_driver'); } catch(e) {}
   document.getElementById('input-conductor').value = '';
   document.getElementById('input-pin').value = '';
+  _prefillRememberedCreds();
   document.getElementById('login-error').textContent = '';
   document.getElementById('app').classList.remove('visible');
   document.getElementById('login-screen').classList.remove('hidden');
