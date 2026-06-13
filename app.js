@@ -668,11 +668,12 @@ app.get('/api/mesas/:id/cuenta', (req, res) => {
 
 // Create a new mesa (admin)
 app.post('/api/mesas', authMiddleware, (req, res) => {
-  const { numero, zona, capacidad } = req.body;
+  const { numero, zona, capacidad, nombre } = req.body;
   if (!numero) return res.status(400).json({ error: 'Número requerido' });
   const mesa = {
     id: uuidv4(), numero: parseInt(numero),
     zona: (zona || 'salon').toLowerCase(), capacidad: parseInt(capacidad || 4),
+    nombre: nombre || null,
     estado: 'libre', mozoid: null, mozo: null, apertura: null,
     tiempo: null, consumo: 0, pedido: [], pedidos: []
   };
@@ -697,7 +698,7 @@ app.delete('/api/mesas/:id', authMiddleware, (req, res) => {
 app.patch('/api/mesas/:id', authMiddleware, (req, res) => {
   const mesa = db.mesas.find(m => m.id === req.params.id);
   if (!mesa) return res.status(404).json({ error: 'Mesa no encontrada' });
-  ['numero','estado','mozo','tiempo','pedido','zona','capacidad','mozoid','apertura','consumo'].forEach(k => {
+  ['numero','estado','mozo','tiempo','pedido','zona','capacidad','mozoid','apertura','consumo','nombre','cliente','personas'].forEach(k => {
     if (req.body[k] !== undefined) mesa[k] = req.body[k];
   });
   io.emit('mesa:update', mesa);

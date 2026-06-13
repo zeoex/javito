@@ -463,12 +463,15 @@ function tiempoTranscurrido(createdAt) {
 function renderComanda(c) {
   const { texto, clase } = tiempoTranscurrido(c.createdAt);
 
+  // Mostrador (u otra mesa no numérica) se muestra por su nombre, sin el prefijo "MESA"
+  const mesaEsNumerica = /^\d+$/.test(String(c.mesa ?? '').trim());
+  const mesaLabel = mesaEsNumerica ? `MESA ${c.mesa}` : `${c.mesa}`;
   const tipoBadge = c.tipo === 'delivery'
     ? `<span class="badge-tipo badge-delivery">&#x1F6F5; DELIVERY</span>`
-    : `<span class="badge-tipo badge-mesa">&#x1F37D;&#xFE0F; MESA ${c.mesa}</span>`;
+    : `<span class="badge-tipo badge-mesa">&#x1F37D;&#xFE0F; ${mesaLabel}</span>`;
 
   const mozoLabel = c.tipo === 'mesa'
-    ? `<span class="comanda-mozo">Mozo: <strong>${c.mozo}</strong></span>`
+    ? `<span class="comanda-mozo">Mozo: <strong>${c.mozo}</strong>${c.cliente?` &middot; Cliente: <strong>${c.cliente}</strong>`:''}</span>`
     : `<span class="comanda-mozo">Cliente: <strong>${c.cliente}</strong></span>`;
 
   const itemsHtml = c.items.map(item => {

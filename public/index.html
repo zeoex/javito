@@ -1013,6 +1013,7 @@ body.rol-mozo .spk-size-btn:hover{border-color:#059669;background:#ecfdf5}
         <div class="tabs" id="mesasTabs">
           <div class="tab active" id="tabSalon" onclick="switchTab('salon')">🏠 Salón</div>
           <div class="tab" id="tabVereda" onclick="switchTab('vereda')">🌿 Vereda</div>
+          <div class="tab" id="tabMostrador" onclick="switchTab('mostrador')" style="display:none">🧾 Mostrador</div>
         </div>
         <div class="mesas-grid" id="mesasGrid"></div>
       </div>
@@ -1482,13 +1483,14 @@ body.rol-mozo .spk-size-btn:hover{border-color:#059669;background:#ecfdf5}
 
 <div class="modal-overlay" id="modalNuevaMesa">
   <div class="modal">
-    <div class="modal-header"><h3>Nueva Mesa</h3><button class="modal-close" onclick="closeModal('modalNuevaMesa')">✕</button></div>
+    <div class="modal-header"><h3 id="modalNuevaMesaTitle">Nueva Mesa</h3><button class="modal-close" onclick="closeModal('modalNuevaMesa')">✕</button></div>
     <div class="modal-body">
-      <div class="form-group"><label>Número de Mesa</label><input class="form-control" id="nuevaMesaNum" type="number" placeholder="Ej: 13"/></div>
-      <div class="form-group"><label>Capacidad (personas)</label><input class="form-control" id="nuevaMesaCap" type="number" placeholder="4" value="4"/></div>
       <div class="form-group"><label>Ubicación</label>
-        <select class="form-control" id="nuevaMesaZona"><option value="salon">Salón</option><option value="vereda">Vereda</option></select>
+        <select class="form-control" id="nuevaMesaZona" onchange="onNuevaMesaZonaChange()"><option value="salon">Salón</option><option value="vereda">Vereda</option><option value="mostrador">Mostrador</option></select>
       </div>
+      <div class="form-group" id="grpNuevaMesaNombre" style="display:none"><label>Nombre del mostrador</label><input class="form-control" id="nuevaMesaNombre" type="text" placeholder="Mostrador" value="Mostrador"/></div>
+      <div class="form-group" id="grpNuevaMesaNum"><label>Número de Mesa</label><input class="form-control" id="nuevaMesaNum" type="number" placeholder="Ej: 13"/></div>
+      <div class="form-group" id="grpNuevaMesaCap"><label>Capacidad (personas)</label><input class="form-control" id="nuevaMesaCap" type="number" placeholder="4" value="4"/></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modalNuevaMesa')">Cancelar</button>
@@ -1502,10 +1504,11 @@ body.rol-mozo .spk-size-btn:hover{border-color:#059669;background:#ecfdf5}
     <div class="modal-header"><h3>Editar Mesa</h3><button class="modal-close" onclick="closeModal('modalEditarMesa')">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="editMesaId"/>
-      <div class="form-group"><label>Número de Mesa</label><input class="form-control" id="editMesaNum" type="number" min="1"/></div>
-      <div class="form-group"><label>Capacidad (personas)</label><input class="form-control" id="editMesaCap" type="number" min="1" max="20"/></div>
+      <div class="form-group" id="grpEditMesaNombre" style="display:none"><label>Nombre del mostrador</label><input class="form-control" id="editMesaNombre" type="text" placeholder="Mostrador"/></div>
+      <div class="form-group" id="grpEditMesaNum"><label>Número de Mesa</label><input class="form-control" id="editMesaNum" type="number" min="1"/></div>
+      <div class="form-group" id="grpEditMesaCap"><label>Capacidad (personas)</label><input class="form-control" id="editMesaCap" type="number" min="1" max="20"/></div>
       <div class="form-group"><label>Ubicación</label>
-        <select class="form-control" id="editMesaZona"><option value="salon">Salón</option><option value="vereda">Vereda</option></select>
+        <select class="form-control" id="editMesaZona" onchange="onEditMesaZonaChange()"><option value="salon">Salón</option><option value="vereda">Vereda</option><option value="mostrador">Mostrador</option></select>
       </div>
     </div>
     <div class="modal-footer">
@@ -1993,7 +1996,9 @@ function _ep(mesa, lines, header, footer) {
   let s = E+'@';
   s += E+'a\x01'+E+'E\x01'+G+'!\x10'+header+NL+G+'!\x00'+E+'E\x00';
   s += SEP+NL;
-  s += E+'a\x01'+E+'E\x01'+'MESA '+mesa.numero+E+'E\x00'+NL;
+  const mesaLbl = mesa.nombre ? String(mesa.nombre).toUpperCase() : ('MESA '+mesa.numero);
+  s += E+'a\x01'+E+'E\x01'+mesaLbl+E+'E\x00'+NL;
+  if (mesa.cliente) s += E+'a\x01'+'Cliente: '+mesa.cliente+NL;
   if (mesa.mozo) s += E+'a\x01'+mesa.mozo+NL;
   s += E+'a\x01'+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Argentina/Buenos_Aires'})+NL;
   s += SEP+NL+E+'a\x00';
@@ -3123,6 +3128,7 @@ async function syncMesa(m) {
     id: m.id, numero: m.numero, zona: m.zona, capacidad: m.capacidad,
     estado: m.estado, mozo: m.mozo, mozoid: m.mozoid,
     apertura: m.apertura, tiempo: m.tiempo, personas: m.personas,
+    nombre: m.nombre || null, cliente: m.cliente || null,
     pedido: m.pedido, consumo: m.consumo
   };
   if (typeof socket !== 'undefined' && socket?.connected) {
@@ -3246,19 +3252,53 @@ function renderActividades() {
 function getCatsComanda() { return categoriasData.filter(c=>c.comanda).map(c=>c.id); }
 
 // ======= MESAS =======
+// Mostrador: estación tipo "mesa" pero identificada por nombre (no por número).
+// Solo disponible en el panel admin.
+function esMostrador(m) { return !!m && m.zona === 'mostrador'; }
+function mesaNombre(m) { return esMostrador(m) ? (m.nombre || 'Mostrador') : ('Mesa #' + m.numero); }
+function mesaTituloCard(m) { return esMostrador(m) ? (m.nombre || 'Mostrador') : m.numero; }
+
+// Genera un nombre único para una nueva estación de mostrador
+function nombreMostradorUnico(base) {
+  base = (base || 'Mostrador').trim() || 'Mostrador';
+  const usados = new Set(mesasData.filter(esMostrador).map(m => (m.nombre || 'Mostrador')));
+  if (!usados.has(base)) return base;
+  let n = 2;
+  while (usados.has(`${base} ${n}`)) n++;
+  return `${base} ${n}`;
+}
+
+function updateMostradorTabVisibility() {
+  const tab = document.getElementById('tabMostrador');
+  if (!tab) return;
+  const esAdmin = ['admin','supervisor'].includes(currentUser?.rol);
+  tab.style.display = esAdmin ? '' : 'none';
+}
+
+function onNuevaMesaZonaChange() {
+  const esMost = document.getElementById('nuevaMesaZona').value === 'mostrador';
+  document.getElementById('grpNuevaMesaNombre').style.display = esMost ? '' : 'none';
+  document.getElementById('grpNuevaMesaNum').style.display = esMost ? 'none' : '';
+  document.getElementById('grpNuevaMesaCap').style.display = esMost ? 'none' : '';
+  document.getElementById('modalNuevaMesaTitle').textContent = esMost ? 'Nuevo Mostrador' : 'Nueva Mesa';
+}
+
 function abrirModalNuevaMesa() {
   // Suggest next global number so salon and vereda don't overlap
   const nextNum = mesasData.length > 0 ? Math.max(...mesasData.map(m=>m.numero||0)) + 1 : 1;
   document.getElementById('nuevaMesaNum').value = nextNum;
   document.getElementById('nuevaMesaCap').value = 4;
   document.getElementById('nuevaMesaZona').value = currentMesaTab || 'salon';
+  document.getElementById('nuevaMesaNombre').value = 'Mostrador';
+  onNuevaMesaZonaChange();
   openModal('modalNuevaMesa');
 }
 
 function switchTab(tab) {
   currentMesaTab = tab;
   document.querySelectorAll('#mesasTabs .tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById(tab==='salon'?'tabSalon':'tabVereda').classList.add('active');
+  const tabEl = document.getElementById(tab==='salon'?'tabSalon':tab==='vereda'?'tabVereda':'tabMostrador');
+  if (tabEl) tabEl.classList.add('active');
   renderMesas();
 }
 
@@ -3269,6 +3309,7 @@ function tiempoToMins(t) {
 }
 
 function renderMesas() {
+  updateMostradorTabVisibility();
   const filtered = mesasData.filter(m=>m.zona===currentMesaTab);
   const el = document.getElementById('mesasGrid');
   el.classList.remove('mesas-grid-mozo');
@@ -3287,9 +3328,9 @@ function renderMesas() {
       return `
         <div class="mesa-card ${m.estado}" onclick="clickMesa('${m.id}')">
           ${itemsBadge}
-          <div class="mesa-num">${m.numero}</div>
+          <div class="mesa-num"${esMostrador(m)?' style="font-size:15px"':''}>${mesaTituloCard(m)}</div>
           <div class="mesa-estado">${estadoLabel}</div>
-          ${personasInfo}
+          ${esMostrador(m) && m.cliente ? `<div class="mesa-info">🙍 ${m.cliente}</div>` : personasInfo}
         </div>`;
     }
     const esAdmin = ['admin','supervisor'].includes(currentUser?.rol);
@@ -3301,11 +3342,12 @@ function renderMesas() {
     return `
       <div class="mesa-card ${m.estado}" onclick="clickMesa('${m.id}')" style="position:relative">
         ${adminBtns}
-        <div class="mesa-num">${m.numero}</div>
+        <div class="mesa-num"${esMostrador(m)?' style="font-size:17px"':''}>${mesaTituloCard(m)}</div>
         <div class="mesa-estado">${estadoLabel}</div>
-        <div class="mesa-info">${m.capacidad} personas</div>
+        ${esMostrador(m) ? '' : `<div class="mesa-info">${m.capacidad} personas</div>`}
         ${m.mozo ? `<div class="mesa-info">👨 ${m.mozo}</div>` : ''}
-        ${m.personas && m.estado !== 'libre' ? `<div class="mesa-info">👥 ${m.personas} pers.</div>` : ''}
+        ${esMostrador(m) && m.cliente && m.estado !== 'libre' ? `<div class="mesa-info">🙍 ${m.cliente}</div>` : ''}
+        ${!esMostrador(m) && m.personas && m.estado !== 'libre' ? `<div class="mesa-info">👥 ${m.personas} pers.</div>` : ''}
         ${itemsCount > 0 ? `<div class="mesa-info">📋 ${itemsCount} ítem${itemsCount!==1?'s':''}</div>` : ''}
       </div>`;
   }).join('');
@@ -3345,7 +3387,7 @@ function mesaPedidoHTML(id) {
   return `
     <div class="mpo-info-bar" style="background:${infoBarBg};border:1px solid ${infoBarBorder};border-radius:10px;padding:10px 14px;margin-bottom:14px">
       <span style="font-weight:700;font-size:14px">👨 ${m.mozo||'-'}</span>
-      <span style="margin-left:auto;color:var(--gray);font-size:13px;font-weight:600">👥 ${m.personas||'?'} pers.</span>
+      <span style="margin-left:auto;color:var(--gray);font-size:13px;font-weight:600">${esMostrador(m) ? (m.cliente?`🙍 ${m.cliente}`:'🧾 Mostrador') : `👥 ${m.personas||'?'} pers.`}</span>
       <span class="badge badge-${m.estado==='cuenta'?'danger':'warning'}" style="margin-left:10px;font-size:12px;padding:4px 12px">${m.estado.toUpperCase()}</span>
     </div>
     <div class="mpo-order-section">
@@ -3542,7 +3584,7 @@ function _autoSyncCocina(m) {
   if (!foodItems.length) return;
   apiFetch('/cocina/comanda', {
     method:'POST',
-    body: JSON.stringify({upsert:true, tipo:'mesa', mesa:{numero:m.numero, id:m.id}, mozo:m.mozo||currentUser?.nombre||'', items:foodItems})
+    body: JSON.stringify({upsert:true, tipo:'mesa', mesa:{numero: esMostrador(m) ? mesaNombre(m) : m.numero, id:m.id}, cliente: esMostrador(m) ? (m.cliente||null) : null, mozo:m.mozo||currentUser?.nombre||'', items:foodItems})
   }).catch(()=>{});
 }
 
@@ -3587,7 +3629,7 @@ function clickMesa(id) {
   if(!m) return;
   _mesaModalId = id;
   const sid = `'${id}'`;
-  document.getElementById('modalMesaTitle').textContent = `Mesa #${m.numero}`;
+  document.getElementById('modalMesaTitle').textContent = mesaNombre(m);
   const body = document.getElementById('modalMesaBody');
   const footer = document.getElementById('modalMesaFooter');
   const esMozo = currentUser?.rol === 'mozo';
@@ -3597,6 +3639,20 @@ function clickMesa(id) {
       : usuariosData.filter(u=>['mozo','admin','supervisor'].includes(u.rol)&&u.activo!==false)
           .map(u=>`<option value="${u.nombre}">${u.nombre}</option>`).join('') ||
         `<option value="${currentUser?.nombre||'Admin'}">${currentUser?.nombre||'Admin'}</option>`;
+    if (esMostrador(m)) {
+      body.innerHTML = `<p style="margin-bottom:14px;color:var(--gray)">Mostrador libre</p>
+        <div class="form-group"><label>Mozo / Cajero</label>
+          <select class="form-control" id="abrirMozo">${mozosOpts}</select>
+        </div>
+        <div class="form-group"><label>Nombre del cliente</label>
+          <div style="display:flex;gap:8px">
+            <input class="form-control" id="mostradorCliente" type="text" placeholder="Ej: Juan" style="flex:1"/>
+            <button class="btn btn-outline" type="button" onclick="autoNombreCliente()" title="Generar nombre automático">🎲 Auto</button>
+          </div>
+          <small style="color:var(--gray)">Escribilo manualmente o usá "Auto" para generarlo.</small>
+        </div>`;
+      footer.innerHTML = `<button class="btn btn-success" style="width:100%" onclick="abrirMesa(${sid})">✅ Abrir Mostrador</button>`;
+    } else {
     const personasOpts = Array.from({length: m.capacidad}, (_,i) =>
       `<option value="${i+1}">${i+1}</option>`).join('');
     body.innerHTML = `<p style="margin-bottom:14px;color:var(--gray)">Mesa libre · ${m.capacidad} cap.</p>
@@ -3607,11 +3663,20 @@ function clickMesa(id) {
         <select class="form-control" id="mesaPersonas">${personasOpts}</select>
       </div>`;
     footer.innerHTML = `<button class="btn btn-success" style="width:100%" onclick="abrirMesa(${sid})">✅ Abrir Mesa</button>`;
+    }
   } else {
     body.innerHTML = mesaPedidoHTML(id);
     renderMesaFooter(id);
   }
   openModal('modalMesa');
+}
+
+// Genera un nombre de cliente automático y secuencial para el mostrador
+function autoNombreCliente() {
+  const seq = (parseInt(localStorage.getItem('pz_mostrador_seq')) || 0) + 1;
+  localStorage.setItem('pz_mostrador_seq', String(seq));
+  const inp = document.getElementById('mostradorCliente');
+  if (inp) inp.value = `Cliente ${seq}`;
 }
 
 function abrirMesa(id) {
@@ -3624,6 +3689,15 @@ function abrirMesa(id) {
   }
   const m = mesasData.find(x=>String(x.id)===String(id));
   const mozo = document.getElementById('abrirMozo').value;
+  if (esMostrador(m)) {
+    const cliente = (document.getElementById('mostradorCliente')?.value || '').trim();
+    m.estado='ocupada'; m.mozo=mozo; m.tiempo='00:00'; m.personas=null; m.cliente=cliente || null; m.pedido=[];
+    closeModal('modalMesa');
+    syncMesa(m); saveState(); renderMesas();
+    showToast(`${mesaNombre(m)} abierto${cliente?` · ${cliente}`:''}`,'success');
+    loadDashboard();
+    return;
+  }
   const personas = parseInt(document.getElementById('mesaPersonas')?.value) || null;
   m.estado='ocupada'; m.mozo=mozo; m.tiempo='00:00'; m.personas=personas; m.pedido=[];
   closeModal('modalMesa');
@@ -3645,7 +3719,7 @@ function pedirCuenta(id) {
 function liberarMesaVacia(id) {
   const m = mesasData.find(x=>String(x.id)===String(id));
   if(!m) return;
-  m.estado='libre'; m.mozo=null; m.tiempo=null; m.personas=null; m.pedido=[];
+  m.estado='libre'; m.mozo=null; m.tiempo=null; m.personas=null; m.cliente=null; m.pedido=[];
   closeModal('modalMesa');
   syncMesa(m); saveState(); renderMesas();
   showToast(`Mesa #${m.numero} liberada`,'success');
@@ -3661,35 +3735,55 @@ function cerrarMesa(id, metodoPago = 'efectivo', totalOverride = null) {
   const mozo = (currentUser?.rol==='mozo' ? currentUser?.nombre : null) || m.mozo || currentUser?.nombre || '-';
   const mp = getMediosPago().find(x=>x.id===metodoPago);
   const metodoLabel = mp ? `${mp.icono||''} ${mp.nombre}` : metodoPago;
-  const registro = {mozo, mesa: m.numero, fecha: new Date().toISOString(), items: itemsCount, total: total||0, pago: metodoPago, detalle: detalleSnapshot};
+  const esMost = esMostrador(m);
+  const lbl = esMost ? mesaNombre(m) : `Mesa #${m.numero}`;
+  const origenLbl = esMost ? (m.cliente ? `${mesaNombre(m)} — ${m.cliente}` : mesaNombre(m)) : `Mesa ${m.numero}`;
+  const registro = {mozo, mesa: esMost ? mesaNombre(m) : m.numero, fecha: new Date().toISOString(), items: itemsCount, total: total||0, pago: metodoPago, detalle: detalleSnapshot};
   mozoHistorial.unshift(registro);
-  m.estado='libre'; m.mozo=null; m.tiempo=null; m.personas=null; m.pedido=[];
-  const f = {id:facturasData.length+1,numero:`F-${String(facturasData.length+1).padStart(4,'0')}`,fecha:_arDateTime(),origen:`Mesa ${m.numero}`,mesaNum:m.numero,mozo:mozo,items:itemsCount,detalle:detalleSnapshot,total:total||0,pago:metodoPago,estado:'pagada'};
+  m.estado='libre'; m.mozo=null; m.tiempo=null; m.personas=null; m.cliente=null; m.pedido=[];
+  const f = {id:facturasData.length+1,numero:`F-${String(facturasData.length+1).padStart(4,'0')}`,fecha:_arDateTime(),origen:origenLbl,mesaNum:m.numero,mozo:mozo,items:itemsCount,detalle:detalleSnapshot,total:total||0,pago:metodoPago,estado:'pagada'};
   facturasData.unshift(f);
-  if (total > 0) cajaMoves.push({..._cajaNow(),tipo:'ingreso',desc:`Venta Mesa #${m.numero} — ${metodoPago}`,monto:total,pago:metodoPago});
+  if (total > 0) cajaMoves.push({..._cajaNow(),tipo:'ingreso',desc:`Venta ${lbl} — ${metodoPago}`,monto:total,pago:metodoPago});
   _mesaCobroMode = false;
   _mesaCobroConfirm = null;
   closeModal('modalMesa');
   syncMesa(m); saveState(); renderMesas();
-  showToast(`Mesa #${m.numero} cerrada — ${metodoLabel}. Factura ${f.numero} emitida.`,'success');
+  showToast(`${lbl} cerrada — ${metodoLabel}. Factura ${f.numero} emitida.`,'success');
   loadDashboard();
 }
 
 async function crearMesa() {
-  const num = parseInt(document.getElementById('nuevaMesaNum').value);
-  const cap = parseInt(document.getElementById('nuevaMesaCap').value)||4;
   const zona = document.getElementById('nuevaMesaZona').value;
-  if(!num){ showToast('Ingresá número de mesa','error'); return; }
+  const esMost = zona === 'mostrador';
+  // Mostrador: número auto-asignado (no se solapa con salón/vereda), capacidad 1, identificado por nombre
+  const num = esMost
+    ? (mesasData.length > 0 ? Math.max(...mesasData.map(m=>m.numero||0)) + 1 : 1)
+    : parseInt(document.getElementById('nuevaMesaNum').value);
+  const cap = esMost ? 1 : (parseInt(document.getElementById('nuevaMesaCap').value)||4);
+  const nombre = esMost ? nombreMostradorUnico(document.getElementById('nuevaMesaNombre').value) : null;
+  if(!esMost && !num){ showToast('Ingresá número de mesa','error'); return; }
   let newId = String(Date.now());
   try {
-    const res = await apiFetch('/mesas', { method:'POST', body: JSON.stringify({numero:num, zona, capacidad:cap}) });
+    const res = await apiFetch('/mesas', { method:'POST', body: JSON.stringify({numero:num, zona, capacidad:cap, nombre}) });
     const nueva = await res.json();
     newId = nueva.id;
   } catch(e) {}
-  mesasData.push({id:newId, numero:num, capacidad:cap, estado:'libre', zona, mozo:null, tiempo:null, pedido:[]});
+  const nuevaMesa = {id:newId, numero:num, capacidad:cap, estado:'libre', zona, mozo:null, tiempo:null, pedido:[]};
+  if (esMost) nuevaMesa.nombre = nombre;
+  // Evitar duplicado si el evento socket 'mesa:update' ya agregó esta mesa
+  const idxExist = mesasData.findIndex(m => String(m.id) === String(newId));
+  if (idxExist !== -1) mesasData[idxExist] = { ...mesasData[idxExist], ...nuevaMesa };
+  else mesasData.push(nuevaMesa);
   closeModal('modalNuevaMesa');
   saveState(); renderMesas();
-  showToast(`Mesa #${num} creada`,'success');
+  showToast(esMost ? `${nombre} creado` : `Mesa #${num} creada`,'success');
+}
+
+function onEditMesaZonaChange() {
+  const esMost = document.getElementById('editMesaZona').value === 'mostrador';
+  document.getElementById('grpEditMesaNombre').style.display = esMost ? '' : 'none';
+  document.getElementById('grpEditMesaNum').style.display = esMost ? 'none' : '';
+  document.getElementById('grpEditMesaCap').style.display = esMost ? 'none' : '';
 }
 
 function abrirModalEditarMesa(id) {
@@ -3699,35 +3793,42 @@ function abrirModalEditarMesa(id) {
   document.getElementById('editMesaNum').value = m.numero;
   document.getElementById('editMesaCap').value = m.capacidad || 4;
   document.getElementById('editMesaZona').value = m.zona || 'salon';
+  document.getElementById('editMesaNombre').value = m.nombre || 'Mostrador';
+  onEditMesaZonaChange();
   openModal('modalEditarMesa');
 }
 
 async function guardarEditarMesa() {
   const id = document.getElementById('editMesaId').value;
-  const num = parseInt(document.getElementById('editMesaNum').value);
-  const cap = parseInt(document.getElementById('editMesaCap').value)||4;
   const zona = document.getElementById('editMesaZona').value;
-  if(!num){ showToast('Número inválido','error'); return; }
+  const esMost = zona === 'mostrador';
   const m = mesasData.find(x=>x.id===id);
   if (!m) return;
+  const num = esMost ? (m.numero || (mesasData.length ? Math.max(...mesasData.map(x=>x.numero||0))+1 : 1)) : parseInt(document.getElementById('editMesaNum').value);
+  const cap = esMost ? 1 : (parseInt(document.getElementById('editMesaCap').value)||4);
+  if(!esMost && !num){ showToast('Número inválido','error'); return; }
   m.numero = num;
   m.capacidad = cap;
   m.zona = zona;
-  try { await apiFetch(`/mesas/${id}`, { method:'PATCH', body: JSON.stringify({numero:num, capacidad:cap, zona}) }); } catch(e) {}
+  if (esMost) {
+    const nuevoNombre = (document.getElementById('editMesaNombre').value||'Mostrador').trim() || 'Mostrador';
+    m.nombre = (nuevoNombre === m.nombre) ? m.nombre : nombreMostradorUnico(nuevoNombre);
+  } else delete m.nombre;
+  try { await apiFetch(`/mesas/${id}`, { method:'PATCH', body: JSON.stringify({numero:num, capacidad:cap, zona, nombre:m.nombre||null}) }); } catch(e) {}
   closeModal('modalEditarMesa');
   saveState(); renderMesas();
-  showToast(`Mesa #${num} actualizada`,'success');
+  showToast(esMost ? `${m.nombre} actualizado` : `Mesa #${num} actualizada`,'success');
 }
 
 async function eliminarMesa(id) {
   const m = mesasData.find(x=>x.id===id);
   if (!m) return;
   if (m.estado !== 'libre') { showToast('Solo se pueden eliminar mesas libres','error'); return; }
-  if (!confirm(`¿Eliminar Mesa #${m.numero} (${m.zona})?`)) return;
+  if (!confirm(`¿Eliminar ${esMostrador(m) ? mesaNombre(m) : `Mesa #${m.numero} (${m.zona})`}?`)) return;
   mesasData = mesasData.filter(x=>x.id!==id);
   try { await apiFetch(`/mesas/${id}`, { method:'DELETE' }); } catch(e) {}
   saveState(); renderMesas();
-  showToast(`Mesa #${m.numero} eliminada`,'success');
+  showToast(`${esMostrador(m) ? mesaNombre(m) : `Mesa #${m.numero}`} eliminada`,'success');
 }
 
 function renumerarVereda() {
@@ -3836,18 +3937,21 @@ async function imprimirComanda(id) {
     const lbl = `${i.nombre}${i.size?' ('+i.size+')':''}`;
     return `<p class="bold" style="margin:4px 0;font-size:12px">x${i.qty} &mdash; ${lbl}${i.nota?`<br><span style="font-weight:normal;font-size:10px">&nbsp;&nbsp;Nota: ${i.nota}</span>`:''}</p>`;
   }).join('');
+  const esMost = esMostrador(m);
+  const mesaLbl = esMost ? mesaNombre(m).toUpperCase() : ('MESA ' + m.numero);
   const cuerpo = `<h1>COCINA</h1><hr class="sep">
-    <p class="center bold" style="font-size:14px">MESA ${m.numero}</p>
+    <p class="center bold" style="font-size:14px">${mesaLbl}</p>
+    ${esMost && m.cliente ? `<p class="center">Cliente: ${m.cliente}</p>` : ''}
     <p class="center">${m.mozo||''}</p>
     <p class="center">${hora}</p>
     <hr class="sep">${lineas}<hr class="sep">`;
-  const html = buildPrintDoc(`Comanda – Mesa ${m.numero}`, cuerpo);
+  const html = buildPrintDoc(esMost ? `Comanda – ${mesaNombre(m)}` : `Comanda – Mesa ${m.numero}`, cuerpo);
   try {
     await apiFetch('/print', {method:'POST', body:JSON.stringify({
       type:'comanda', html, items:comida,
-      mesa:{numero:m.numero,mozo:m.mozo},
+      mesa:{numero: esMost ? mesaNombre(m) : m.numero, nombre: esMost ? mesaNombre(m) : null, cliente: esMost ? (m.cliente||null) : null, mozo:m.mozo},
       mesaNumero:m.numero,
-      label:`Comanda — Mesa #${m.numero}`,
+      label: esMost ? `Comanda — ${mesaNombre(m)}` : `Comanda — Mesa #${m.numero}`,
       printedByClient: printedLocal   // admin no re-imprime si el mozo ya lo hizo
     })});
     showToast(printedLocal ? '🖨️ Comanda impresa y enviada a admin' : '🖨️ Comanda enviada a cocina','success');
