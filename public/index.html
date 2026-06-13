@@ -326,6 +326,7 @@ tr:hover td{background:#fafafa}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}
 #modalSizePicker{z-index:1100}
 #modalAddItem{z-index:1050}
+#modalCliente{z-index:1060}
 .modal-overlay.open{display:flex}
 .modal{background:#fff;border-radius:14px;width:100%;max-width:560px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
 .modal-lg{max-width:720px}
@@ -1192,7 +1193,7 @@ body.rol-mozo .spk-size-btn:hover{border-color:#059669;background:#ecfdf5}
       <div class="section" id="sec-clientes">
         <div class="section-header">
           <h2>👥 Clientes</h2>
-          <button class="btn btn-primary btn-sm" onclick="document.getElementById('cliEditId').value='';document.getElementById('modalClienteTitle').textContent='Nuevo Cliente';document.getElementById('cliNombre').value='';document.getElementById('cliTel').value='';document.getElementById('cliEmail').value='';document.getElementById('cliDir').value='';openModal('modalCliente')">+ Nuevo Cliente</button>
+          <button class="btn btn-primary btn-sm" onclick="_clienteReturnToDelivery=false;document.getElementById('cliEditId').value='';document.getElementById('modalClienteTitle').textContent='Nuevo Cliente';document.getElementById('cliNombre').value='';document.getElementById('cliTel').value='';document.getElementById('cliEmail').value='';document.getElementById('cliDir').value='';openModal('modalCliente')">+ Nuevo Cliente</button>
         </div>
         <div class="filter-bar">
           <input class="search-input" placeholder="Buscar por nombre o teléfono..." oninput="filterClientes(this.value)"/>
@@ -1799,7 +1800,7 @@ body.rol-mozo .spk-size-btn:hover{border-color:#059669;background:#ecfdf5}
 
 <div class="modal-overlay" id="modalCliente">
   <div class="modal">
-    <div class="modal-header"><h3 id="modalClienteTitle">Nuevo Cliente</h3><button class="modal-close" onclick="closeModal('modalCliente')">✕</button></div>
+    <div class="modal-header"><h3 id="modalClienteTitle">Nuevo Cliente</h3><button class="modal-close" onclick="_clienteReturnToDelivery=false;closeModal('modalCliente')">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="cliEditId"/>
       <div class="form-group"><label>Nombre</label><input class="form-control" id="cliNombre" placeholder="Juan García"/></div>
@@ -1808,7 +1809,7 @@ body.rol-mozo .spk-size-btn:hover{border-color:#059669;background:#ecfdf5}
       <div class="form-group"><label>Dirección</label><input class="form-control" id="cliDir" placeholder="Av. Corrientes 1234"/></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modalCliente')">Cancelar</button>
+      <button class="btn btn-outline" onclick="_clienteReturnToDelivery=false;closeModal('modalCliente')">Cancelar</button>
       <button class="btn btn-primary" onclick="guardarCliente()">Guardar</button>
     </div>
   </div>
@@ -4480,13 +4481,27 @@ function dlvSelectCliente(id) {
 }
 
 function dlvNuevoCliente() {
-  document.getElementById('dlvCliente').value = '';
-  document.getElementById('dlvCliente').dataset.clienteId = '';
-  document.getElementById('dlvTel').value = '';
-  document.getElementById('dlvDir').value = '';
+  // Abre la ventana de alta de cliente (reutiliza modalCliente) sobre el pedido
+  _clienteReturnToDelivery = true;
+  document.getElementById('cliEditId').value = '';
+  document.getElementById('modalClienteTitle').textContent = 'Nuevo Cliente';
+  document.getElementById('cliNombre').value = (document.getElementById('dlvCliente').value || '').trim();
+  document.getElementById('cliTel').value   = document.getElementById('dlvTel').value || '';
+  document.getElementById('cliEmail').value = '';
+  document.getElementById('cliDir').value   = document.getElementById('dlvDir').value || '';
   document.getElementById('dlvClienteSugg').style.display = 'none';
-  document.getElementById('dlvCliente').focus();
-  showToast('Ingresá los datos del nuevo cliente', 'info');
+  openModal('modalCliente');
+  setTimeout(() => document.getElementById('cliNombre').focus(), 50);
+}
+
+// Vuelca el cliente recién creado en el formulario del pedido
+function _dlvAplicarClienteNuevo(c) {
+  const inp = document.getElementById('dlvCliente');
+  inp.value = c.nombre;
+  inp.dataset.clienteId = c.id;
+  document.getElementById('dlvTel').value = c.telefono || '';
+  document.getElementById('dlvDir').value = c.direccion || '';
+  if (!document.getElementById('modalNuevoDelivery').classList.contains('open')) openModal('modalNuevoDelivery');
 }
 
 document.addEventListener('click', e => {
@@ -4663,6 +4678,7 @@ function abrirModalNuevoDelivery() {
 let _dlvCart = [];          // {prodId, nombre, size, precio, qty, categoria, nota}
 let _dlvCatActual = null;   // categoría activa en el catálogo
 let _dlvMode = 'delivery';  // 'delivery' | 'mostrador'
+let _clienteReturnToDelivery = false; // al guardar un cliente nuevo, volver al pedido y autocompletarlo
 
 function dlvSetMode(mode) {
   _dlvMode = mode;
@@ -5638,6 +5654,8 @@ function editarCliente(id) {
 function guardarCliente() {
   const nombre = document.getElementById('cliNombre').value.trim();
   if(!nombre){ showToast('Ingresá el nombre','error'); return; }
+  const volverADelivery = _clienteReturnToDelivery;
+  _clienteReturnToDelivery = false;
   const editId = document.getElementById('cliEditId').value;
   if(editId) {
     const c = clientesData.find(x=>String(x.id)===String(editId));
@@ -5645,9 +5663,11 @@ function guardarCliente() {
     closeModal('modalCliente');
     saveState(); renderClientes(); showToast('Cliente actualizado','success');
   } else {
-    clientesData.unshift({id:Date.now(),nombre,telefono:document.getElementById('cliTel').value,email:document.getElementById('cliEmail').value,direccion:document.getElementById('cliDir').value,pedidos:0,total_gastado:0,ultimo:_arDate()});
+    const nuevo = {id:Date.now(),nombre,telefono:document.getElementById('cliTel').value,email:document.getElementById('cliEmail').value,direccion:document.getElementById('cliDir').value,pedidos:0,total_gastado:0,ultimo:_arDate()};
+    clientesData.unshift(nuevo);
     closeModal('modalCliente');
     saveState(); renderClientes(); showToast('Cliente guardado','success');
+    if (volverADelivery) _dlvAplicarClienteNuevo(nuevo);
   }
 }
 
