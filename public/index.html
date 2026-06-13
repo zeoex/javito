@@ -1063,7 +1063,7 @@ body.rol-mozo .spk-size-btn:hover{border-color:#059669;background:#ecfdf5}
           <h2>🛵 Pedidos</h2>
           <button class="btn btn-outline btn-sm" onclick="openEstadisticasDelivery()">📊 Estadísticas</button>
           <button class="btn btn-outline btn-sm" onclick="openHistorialDelivery()">📋 Ver anteriores</button>
-          <button class="btn btn-primary btn-sm" onclick="abrirModalNuevoDelivery()" style="margin-left:24px">+ Nuevo Pedido</button>
+          <button class="btn btn-primary btn-sm" onclick="abrirModalNuevoDelivery()" style="margin-left:24px" title="Atajo: F8">+ Nuevo Pedido <kbd style="font-size:10px;opacity:.75;background:rgba(0,0,0,.2);padding:1px 5px;border-radius:4px;margin-left:4px">F8</kbd></button>
         </div>
         <div class="delivery-pipeline" id="deliveryPipeline"></div>
       </div>
@@ -2746,6 +2746,14 @@ async function doLogin() {
 }
 
 document.getElementById('loginPass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+// Atajo rápido: F8 abre "Nuevo Pedido" (solo admin/supervisor, y si no hay otro modal abierto)
+document.addEventListener('keydown', e => {
+  if (e.key !== 'F8') return;
+  if (!['admin','supervisor'].includes(currentUser?.rol)) return;
+  if (document.querySelector('.modal-overlay.open')) return; // no interrumpir otro modal
+  e.preventDefault();
+  abrirModalNuevoDelivery();
+});
 // Apply logo/name to login screen before user logs in
 loadBizConfig();
 
@@ -4645,7 +4653,7 @@ function abrirModalNuevoDelivery() {
   // Reset & render fast catalog + live cart
   _dlvCart = [];
   _dlvCatActual = null;
-  dlvSetMode('delivery');
+  dlvSetMode('mostrador');   // Mostrador por defecto (venta al paso, lo más frecuente)
   dlvRenderCatPills();
   dlvRenderCart();
   openModal('modalNuevoDelivery');
