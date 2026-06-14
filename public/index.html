@@ -627,7 +627,15 @@ input.form-control:focus{outline:none;border-color:var(--red)}
 .dlv-cart-section{padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-height:0;min-width:0}
 .dlv-prods{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
 .dlv-prods .mpo-prod-card{min-height:62px}
+.dlv-cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dlv-cat-btn{display:flex;align-items:center;justify-content:center;text-align:center;padding:20px 10px;border:1.5px solid #e5e7eb;border-radius:14px;background:#fff;cursor:pointer;font-family:inherit;min-height:70px;font-size:14px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:#1d3557;transition:all .15s}
+.dlv-cat-btn:hover{border-color:var(--red);color:var(--red);background:#fff5f5}
+.dlv-cat-btn:active{transform:scale(.96)}
+.dlv-prods-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.dlv-prods-grid .mpo-prod-card{min-height:62px}
+.dlv-level-title{font-size:13px;font-weight:800;color:#1d3557;margin-bottom:10px}
 .dlv-sizes{display:flex;flex-direction:column;gap:8px}
+body.rol-mozo .dlv-cat-btn:hover{border-color:#059669;color:#047857;background:#ecfdf5}
 .dlv-back{display:flex;align-items:center;gap:6px;margin-bottom:12px;border:none;background:none;cursor:pointer;font-size:14px;font-weight:700;color:var(--blue);font-family:inherit;padding:0}
 .dlv-cart-wrap{flex:1;min-height:80px;overflow-y:auto;display:flex;flex-direction:column;border:1.5px dashed #e5e7eb;border-radius:12px;padding:8px;gap:6px;background:#fff}
 .dlv-cart-empty{margin:auto;color:#bbb;font-size:13px;text-align:center}
@@ -4755,7 +4763,7 @@ function abrirModalNuevoDelivery() {
   _dlvCart = [];
   _dlvCatActual = null;
   dlvSetMode('mostrador');   // Mostrador por defecto (venta al paso, lo más frecuente)
-  dlvRenderCatPills();
+  dlvRenderCatalog();
   dlvRenderCart();
   openModal('modalNuevoDelivery');
 }
@@ -4791,45 +4799,57 @@ function _prodSizes(p) {
   return [{label:'Agregar', size:null, precio:p.precio || 0}];
 }
 
-function dlvRenderCatPills() {
-  const cats = [...new Set(productosData.filter(p=>p.activo!==false).map(p=>p.categoria))];
-  if (!_dlvCatActual || !cats.includes(_dlvCatActual)) _dlvCatActual = cats[0] || null;
-  const getCatNombre = c => (categoriasData.find(x=>x.id===c)?.nombre || (c.charAt(0).toUpperCase()+c.slice(1)));
-  document.getElementById('dlvCatPills').innerHTML = cats.map(c =>
-    `<button class="mpo-cat-pill ${c===_dlvCatActual?'active':''}" onclick="dlvSelectCat('${c}')">${getCatNombre(c)}</button>`
-  ).join('');
-  dlvRenderProds();
+// Drill-down: Categorías → Producto → Tamaño. Al elegir el tamaño (último paso) vuelve a Categorías.
+function dlvRenderCatalog() {
+  document.getElementById('dlvCatPills').style.display = 'none'; // se reemplaza por el drill-down
+  dlvShowCats();
 }
 
-function dlvSelectCat(cat) { _dlvCatActual = cat; dlvRenderCatPills(); }
+function _catNombre(c) { return categoriasData.find(x=>x.id===c)?.nombre || (c.charAt(0).toUpperCase()+c.slice(1)); }
 
-function dlvRenderProds() {
+// Nivel 1: categorías
+function dlvShowCats() {
+  _dlvCatActual = null;
   const el = document.getElementById('dlvProds');
-  el.className = 'dlv-prods';
-  const prods = productosData.filter(p=>p.categoria===_dlvCatActual && p.activo!==false);
-  el.innerHTML = prods.map(p => {
-    const sizes = _prodSizes(p);
-    const priceLabel = sizes.length > 1
-      ? 'desde $'+Math.min(...sizes.map(s=>s.precio||0)).toLocaleString('es-AR')
-      : '$'+(sizes[0]?.precio||0).toLocaleString('es-AR');
-    return `<div class="mpo-prod-card" onclick="dlvTapProd(${p.id})">
-        <div class="mpo-prod-name">${p.nombre}</div>
-        <div class="mpo-prod-price">${priceLabel}</div>
-      </div>`;
-  }).join('') || '<div style="color:#bbb;font-size:13px;padding:8px;grid-column:1/-1">Sin productos</div>';
+  el.className = '';
+  const cats = [...new Set(productosData.filter(p=>p.activo!==false).map(p=>p.categoria))];
+  el.innerHTML = `<div class="dlv-cat-grid">${cats.map(c =>
+    `<button class="dlv-cat-btn" onclick="dlvShowProds('${c}')">${_catNombre(c)}</button>`
+  ).join('') || '<div style="color:#bbb;font-size:13px;padding:8px">Sin categorías</div>'}</div>`;
 }
 
+// Nivel 2: productos de la categoría
+function dlvShowProds(cat) {
+  _dlvCatActual = cat;
+  const el = document.getElementById('dlvProds');
+  el.className = '';
+  const prods = productosData.filter(p=>p.categoria===cat && p.activo!==false);
+  el.innerHTML = `
+    <button class="dlv-back" onclick="dlvShowCats()">← Categorías</button>
+    <div class="dlv-level-title">${_catNombre(cat)}</div>
+    <div class="dlv-prods-grid">${prods.map(p => {
+      const sizes = _prodSizes(p);
+      const priceLabel = sizes.length > 1
+        ? 'desde $'+Math.min(...sizes.map(s=>s.precio||0)).toLocaleString('es-AR')
+        : '$'+(sizes[0]?.precio||0).toLocaleString('es-AR');
+      return `<div class="mpo-prod-card" onclick="dlvTapProd(${p.id})">
+          <div class="mpo-prod-name">${p.nombre}</div>
+          <div class="mpo-prod-price">${priceLabel}</div>
+        </div>`;
+    }).join('') || '<div style="color:#bbb;font-size:13px;padding:8px;grid-column:1/-1">Sin productos</div>'}</div>`;
+}
+
+// Nivel 3: tamaños (o agrega directo si el producto tiene un único precio)
 function dlvTapProd(prodId) {
   const p = productosData.find(x=>x.id===prodId);
   if (!p) return;
   const sizes = _prodSizes(p);
-  if (sizes.length === 1) { dlvAddToCart(p, sizes[0]); return; }
-  // Mostrar botones de tamaño inline (sin abrir otro modal)
+  if (sizes.length === 1) { dlvAddToCart(p, sizes[0]); dlvShowCats(); return; } // último paso → vuelve a categorías
   const el = document.getElementById('dlvProds');
   el.className = '';
   el.innerHTML = `
-    <button class="dlv-back" onclick="dlvRenderProds()">← Productos</button>
-    <div style="font-size:14px;font-weight:800;color:#1d3557;margin-bottom:10px">${p.nombre}</div>
+    <button class="dlv-back" onclick="dlvShowProds('${p.categoria}')">← Productos</button>
+    <div class="dlv-level-title">${p.nombre}</div>
     <div class="dlv-sizes">
       ${sizes.map((s,i)=>`<button class="spk-size-btn ${i===sizes.length-1?'grande':''}" onclick="dlvAddSize(${p.id},'${String(s.size).replace(/'/g,"\\'")}',${s.precio})"><span>${s.label}</span><span class="spk-price">$${Number(s.precio).toLocaleString('es-AR')}</span></button>`).join('')}
     </div>`;
@@ -4839,7 +4859,7 @@ function dlvAddSize(prodId, size, precio) {
   const p = productosData.find(x=>x.id===prodId);
   if (!p) return;
   dlvAddToCart(p, {size: size==='null' ? null : size, precio});
-  dlvRenderProds(); // volver a la grilla de productos
+  dlvShowCats(); // último paso elegido → vuelve al panel de categorías
 }
 
 function dlvAddToCart(p, sizeObj) {
