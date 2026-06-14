@@ -498,6 +498,15 @@ app.get('/cliente', (_req, res) => { noCache(res); res.sendFile(path.join(__dirn
 
 app.use(express.static(path.join(__dirname, 'public'), { etag: false, lastModified: false, setHeaders: (res) => { res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); } }));
 
+// URLs por local: /<local>/admin, /<local>/mozo, /<local>/cocina, /<local>/menu, /<local>/carta, /<local>/repartidor
+const _localPages = { admin:'index.html', mozo:'index.html', cocina:'cocina.html', menu:'menu.html', carta:'carta.html', repartidor:'repartidor.html', cliente:'cliente.html' };
+app.get('/:local/:page', (req, res, next) => {
+  const file = _localPages[req.params.page];
+  if (!file) return next();
+  noCache(res);
+  res.sendFile(path.join(__dirname, 'public', file));
+});
+
 // Logger
 app.use((req, _res, next) => {
   const ts = new Date().toISOString();
@@ -1742,13 +1751,15 @@ app.get('/api/state', async (req, res) => {
   } catch(e) { console.error('[state:get]', e.message); res.json(null); }
 });
 
-// Endpoint público para menú QR y menú online — sirve desde memoria (siempre actualizado)
-app.get('/api/public/menu', (_req, res) => {
-  res.json({
-    productos: db.productos || [],
-    categorias: db.categorias || [],
-    biz_cfg: db.biz_cfg || {}
-  });
+// Endpoint público para menú QR y menú online — por local (?local=)
+app.get('/api/public/menu', (req, res) => {
+  const local = req.query.local || DEFAULT_LOCAL;
+  if (isDefaultLocal(local)) {
+    return res.json({ productos: db.productos || [], categorias: db.categorias || [], biz_cfg: db.biz_cfg || {} });
+  }
+  const t = db.tenants[local] || emptyTenantState();
+  const loc = db.locals.find(l => l.id === local);
+  res.json({ productos: t.productos || [], categorias: t.categorias || [], biz_cfg: t.biz_cfg || (loc && loc.biz_cfg) || {} });
 });
 
 // Sincroniza solo productos y categorías (usado por admin sin gate de IDs de mesa)
@@ -1964,6 +1975,64 @@ app.delete('/api/users/:id', authMiddleware, async (req, res) => {
   const local = u.local_id || DEFAULT_LOCAL;
   db.users = db.users.filter(x => String(x.id) !== String(req.params.id));
   await persistLocalUsers(local);
+  res.json({ ok: true });
+});
+
+// Editar usuario (super: cualquiera; admin: solo de su local)
+app.patch('/api/users/:id', authMiddleware, async (req, res) => {
+  const u = db.users.find(x => String(x.id) === String(req.params.id));
+  if (!u) return res.status(404).json({ error: 'Usuario no encontrado' });
+  if (u.super) return res.status(403).json({ error: 'No editable' });
+  if (!req.user.super) {
+    if (!['admin','supervisor'].includes(req.user.rol)) return res.status(403).json({ error: 'No autorizado' });
+    if ((u.local_id || DEFAULT_LOCAL) !== (req.user.local_id || DEFAULT_LOCAL)) return res.status(403).json({ error: 'Solo usuarios de tu local' });
+  }
+  const { nombre, email, password, rol, activo } = req.body;
+  if (nombre !== undefined) u.nombre = String(nombre).trim();
+  if (email !== undefined) {
+    const e = String(email).trim().toLowerCase();
+    if (e !== u.email && db.users.find(x => x.email === e)) return res.status(409).json({ error: 'Ese email ya está en uso' });
+    u.email = e;
+  }
+  if (rol !== undefined && !req.user.super) u.rol = rol; // super solo edita admins, no cambia rol
+  if (activo !== undefined) u.activo = !!activo;
+  if (password) u.password = bcrypt.hashSync(password, 10);
+  await persistLocalUsers(u.local_id || DEFAULT_LOCAL);
+  res.json({ id: u.id, nombre: u.nombre, email: u.email, rol: u.rol, activo: u.activo !== false, local_id: u.local_id });
+});
+
+// Editar un local (super) — nombre / biz_cfg (el código/id no se cambia)
+app.patch('/api/locals/:id', authMiddleware, superOnly, async (req, res) => {
+  const id = req.params.id;
+  const local = db.locals.find(l => l.id === id);
+  if (!local) return res.status(404).json({ error: 'Local no encontrado' });
+  const { nombre, activo, biz_cfg } = req.body;
+  if (nombre !== undefined) local.nombre = String(nombre).trim();
+  if (activo !== undefined) local.activo = !!activo;
+  if (biz_cfg && typeof biz_cfg === 'object') local.biz_cfg = { ...local.biz_cfg, ...biz_cfg };
+  try {
+    const pool = getPool();
+    if (pool) await pool.query('UPDATE locals SET nombre=$2, activo=$3, biz_cfg=$4 WHERE id=$1',
+      [id, local.nombre, local.activo !== false, JSON.stringify(local.biz_cfg || {})]);
+  } catch(e) { console.error('[locals:patch]', e.message); }
+  res.json({ id, nombre: local.nombre, activo: local.activo !== false });
+});
+
+// Eliminar un local (super) — borra el local, sus usuarios y su estado. La Isla no se puede borrar.
+app.delete('/api/locals/:id', authMiddleware, superOnly, async (req, res) => {
+  const id = req.params.id;
+  if (isDefaultLocal(id)) return res.status(400).json({ error: 'No se puede eliminar el local principal' });
+  if (!db.locals.find(l => l.id === id)) return res.status(404).json({ error: 'Local no encontrado' });
+  db.locals = db.locals.filter(l => l.id !== id);
+  db.users  = db.users.filter(u => (u.local_id || DEFAULT_LOCAL) !== id);
+  delete db.tenants[id];
+  try {
+    const pool = getPool();
+    if (pool) {
+      await pool.query('DELETE FROM tenant_state WHERE local_id=$1', [id]);
+      await pool.query('DELETE FROM locals WHERE id=$1', [id]);
+    }
+  } catch(e) { console.error('[locals:delete]', e.message); }
   res.json({ ok: true });
 });
 

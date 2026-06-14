@@ -1223,7 +1223,8 @@ async function loadMenu() {
   } catch (e) {}
 
   try {
-    const res = await fetch('/api/public/menu');
+    const _local = (location.pathname.match(/^\/([^\/]+)\/carta/) || [])[1] || new URLSearchParams(location.search).get('local') || 'la-isla';
+    const res = await fetch('/api/public/menu?local=' + encodeURIComponent(_local));
     const state = await res.json();
     const biz = state.biz_cfg || state.biz_config || {};
     applyBizConfig(biz);

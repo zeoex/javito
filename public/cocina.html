@@ -411,8 +411,9 @@ let dragId = null;
 let nextId = 10;
 let nextNumero = 5;
 let socket = null;
-// Local de esta pantalla de cocina (?local=...) — aísla las comandas por local
-const COCINA_LOCAL = new URLSearchParams(location.search).get('local') || 'la-isla';
+// Local de esta pantalla de cocina: /<local>/cocina  o  ?local=...
+const COCINA_LOCAL = (location.pathname.match(/^\/([^\/]+)\/cocina/) || [])[1]
+  || new URLSearchParams(location.search).get('local') || 'la-isla';
 
 /* ── AUDIO ──────────────────────────────────────────────────────────────────── */
 function beep(type) {

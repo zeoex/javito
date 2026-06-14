@@ -1657,6 +1657,7 @@ body.rol-mozo .spk-size-btn:hover{border-color:#059669;background:#ecfdf5}
       <div class="dlv-mode">
         <button type="button" id="dlvModeDelivery" class="dlv-mode-btn active" onclick="dlvSetMode('delivery')">🛵 Delivery</button>
         <button type="button" id="dlvModeMostrador" class="dlv-mode-btn" onclick="dlvSetMode('mostrador')">🧾 Mostrador</button>
+        <button type="button" id="dlvModePedidosYa" class="dlv-mode-btn" onclick="dlvSetMode('pedidosya')" style="display:none">🛒 PedidosYa</button>
       </div>
       <!-- ARRIBA: datos del cliente -->
       <div class="dlv-client">
@@ -4688,24 +4689,26 @@ function crearDelivery() {
     return;
   }
   const esMost = _dlvMode === 'mostrador';
+  const esPY   = _dlvMode === 'pedidosya';
+  const sinDir = esMost || esPY;
   const clienteInput = document.getElementById('dlvCliente');
-  const cliente = clienteInput.value.trim();
-  const tel = esMost ? '' : document.getElementById('dlvTel').value;
-  const dir = esMost ? '' : document.getElementById('dlvDir').value;
+  const cliente = esPY ? (clienteInput.value.trim() || 'PedidosYa') : clienteInput.value.trim();
+  const tel = sinDir ? '' : document.getElementById('dlvTel').value;
+  const dir = sinDir ? '' : document.getElementById('dlvDir').value;
   // Ubicación Google Maps (solo delivery)
-  const mapsRaw = esMost ? '' : (document.getElementById('dlvMaps').value || '').trim();
+  const mapsRaw = sinDir ? '' : (document.getElementById('dlvMaps').value || '').trim();
   const ll = mapsRaw ? parseLatLng(mapsRaw) : null;
-  const mapsUrl = !esMost && /^https?:\/\//i.test(mapsRaw) ? mapsRaw : (ll ? `https://www.google.com/maps?q=${ll.lat},${ll.lon}` : '');
-  if (!cliente) { showToast('Ingresá el nombre del cliente','error'); return; }
-  if (!esMost && !dir) { showToast('Completá la dirección del cliente','error'); return; }
+  const mapsUrl = !sinDir && /^https?:\/\//i.test(mapsRaw) ? mapsRaw : (ll ? `https://www.google.com/maps?q=${ll.lat},${ll.lon}` : '');
+  if (!esPY && !cliente) { showToast('Ingresá el nombre del cliente','error'); return; }
+  if (!sinDir && !dir) { showToast('Completá la dirección del cliente','error'); return; }
   // Read items from the live cart
   const items = _dlvCart.map(i => ({ nombre: i.nombre, qty: i.qty, precio: i.precio, size: i.size||null, nota: i.nota||'' }));
   const total = _dlvCart.reduce((s,i)=>s + i.precio*i.qty, 0);
   if (!items.length) { showToast('Agregá al menos un producto','error'); return; }
   // Paso 1: confirmar emisión del pedido
-  if (!confirm(esMost ? '¿Emitir este pedido de mostrador?' : '¿Emitir este pedido de delivery?')) return;
-  // Delivery: guardar/actualizar el cliente (con dirección y ubicación). Mostrador es venta al paso, no se persiste.
-  if (!esMost) {
+  if (!confirm(esPY ? '¿Emitir este pedido de PedidosYa?' : (esMost ? '¿Emitir este pedido de mostrador?' : '¿Emitir este pedido de delivery?'))) return;
+  // Delivery: guardar/actualizar el cliente. Mostrador/PedidosYa no persisten cliente.
+  if (!sinDir) {
     const clienteIdStr = clienteInput.dataset.clienteId;
     const clienteId = clienteIdStr ? parseInt(clienteIdStr) : null;
     if (!clienteId || !clientesData.find(c => c.id === clienteId)) {
@@ -4722,8 +4725,9 @@ function crearDelivery() {
   const recargo = mp?.recargo || 0;
   const totalFinal = recargo !== 0 ? Math.round(total * (1 + recargo/100)) : total;
   const newId = deliveryData.length+1;
+  const _pref = esPY ? 'PY' : (esMost ? 'M' : 'D');
   deliveryData.unshift({
-    id:newId, numero:`${esMost?'M':'D'}-${String(newId).padStart(3,'0')}`, estado:'nuevo',
+    id:newId, numero:`${_pref}-${String(newId).padStart(3,'0')}`, estado:'nuevo',
     tipo: _dlvMode,
     cliente:{nombre:cliente,telefono:tel}, direccion:dir,
     maps_url: mapsUrl || null,
@@ -4732,7 +4736,7 @@ function crearDelivery() {
     items, total: totalFinal,
     metodo_pago: mpId,
     fecha: _arDate(),
-    repartidor: esMost ? null : (document.getElementById('dlvRepartidor').value||null),
+    repartidor: sinDir ? null : (document.getElementById('dlvRepartidor').value||null),
     hora: new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Argentina/Buenos_Aires'})
   });
   const creado = deliveryData[0];
@@ -4747,7 +4751,7 @@ function crearDelivery() {
   }).catch(()=>{});
   renderDelivery();
   loadDashboard();
-  showToast(`${esMost?'Pedido mostrador':'Delivery'} ${creado.numero} creado`,'success');
+  showToast(`${esPY?'Pedido PedidosYa':(esMost?'Pedido mostrador':'Delivery')} ${creado.numero} creado`,'success');
   // Paso 2: el pedido ya quedó confirmado; ofrecer imprimir la comanda
   if (confirm('¿Desea imprimir la comanda?')) imprimirDelivery(creado.id);
 }
@@ -4911,6 +4915,9 @@ function abrirModalNuevoDelivery() {
   pagoSel.innerHTML = medios.map(m =>
     `<option value="${m.id}">${m.icono||''} ${m.nombre}${m.recargo!==0?(m.recargo>0?` (+${m.recargo}%)`:` (${m.recargo}%)`):''}${m.recargo>0?' — recargo':m.recargo<0?' — descuento':''}</option>`
   ).join('');
+  // Botón PedidosYa: solo para el local La Isla
+  const _pyBtn = document.getElementById('dlvModePedidosYa');
+  if (_pyBtn) _pyBtn.style.display = ((currentUser?.local_id || 'la-isla') === 'la-isla') ? '' : 'none';
   // Reset & render fast catalog + live cart
   _dlvCart = [];
   _dlvCatActual = null;
@@ -4927,18 +4934,25 @@ let _dlvMode = 'delivery';  // 'delivery' | 'mostrador'
 let _clienteReturnToDelivery = false; // al guardar un cliente nuevo, volver al pedido y autocompletarlo
 
 function dlvSetMode(mode) {
+  const prev = _dlvMode;
   _dlvMode = mode;
   const esMost = mode === 'mostrador';
-  document.getElementById('dlvModeDelivery').classList.toggle('active', !esMost);
+  const esPY   = mode === 'pedidosya';
+  document.getElementById('dlvModeDelivery').classList.toggle('active', mode==='delivery');
   document.getElementById('dlvModeMostrador').classList.toggle('active', esMost);
-  // Mostrador: solo nombre del cliente (sin teléfono, dirección ni repartidor)
-  document.getElementById('dlvTelGrp').style.display        = esMost ? 'none' : '';
-  document.getElementById('dlvDirGrp').style.display        = esMost ? 'none' : '';
-  document.getElementById('dlvRepartidorGrp').style.display = esMost ? 'none' : '';
-  document.getElementById('dlvMapsGrp').style.display       = esMost ? 'none' : '';
-  document.getElementById('dlvModalTitle').textContent = esMost ? '🧾 Nuevo Pedido Mostrador' : '🛵 Nuevo Pedido Delivery';
-  document.getElementById('dlvCrearBtn').textContent   = esMost ? 'Crear Pedido' : 'Crear Pedido';
+  const pyBtn = document.getElementById('dlvModePedidosYa');
+  if (pyBtn) pyBtn.classList.toggle('active', esPY);
+  // Campos del cliente: Delivery muestra todo; Mostrador solo nombre; PedidosYa nada (sin cliente)
+  const ocultarOperativos = esMost || esPY;
+  document.getElementById('dlvTelGrp').style.display        = ocultarOperativos ? 'none' : '';
+  document.getElementById('dlvDirGrp').style.display        = ocultarOperativos ? 'none' : '';
+  document.getElementById('dlvRepartidorGrp').style.display = ocultarOperativos ? 'none' : '';
+  document.getElementById('dlvMapsGrp').style.display       = ocultarOperativos ? 'none' : '';
+  document.getElementById('dlvClienteGrp').style.display    = esPY ? 'none' : '';  // PedidosYa: sin cliente
+  document.getElementById('dlvModalTitle').textContent = esPY ? '🛒 Nuevo Pedido — PedidosYa' : (esMost ? '🧾 Nuevo Pedido Mostrador' : '🛵 Nuevo Pedido Delivery');
   document.getElementById('dlvCliente').placeholder    = esMost ? 'Nombre del cliente...' : 'Buscar cliente...';
+  // PedidosYa cambia los precios a $0 → si entrás o salís de ese modo, reiniciar el carrito
+  if ((prev==='pedidosya') !== esPY) { _dlvCart = []; dlvRenderCart(); }
 }
 
 function _prodSizes(p) {
@@ -5016,7 +5030,8 @@ function dlvAddSize(prodId, size, precio) {
 
 function dlvAddToCart(p, sizeObj) {
   const size = sizeObj.size || null;
-  const precio = sizeObj.precio || 0;
+  // PedidosYa: los productos van a $0 (el cobro lo maneja la plataforma)
+  const precio = (_dlvMode === 'pedidosya') ? 0 : (sizeObj.precio || 0);
   const existing = _dlvCart.find(i => i.prodId===p.id && i.size===size && !i.nota);
   if (existing) existing.qty++;
   else _dlvCart.push({prodId:p.id, nombre:p.nombre, size, precio, qty:1, categoria:p.categoria, nota:''});
@@ -6078,6 +6093,7 @@ function abrirModalNuevoLocal() {
   document.getElementById('locCodigo').addEventListener('input', function(){ this.dataset.touched='1'; }, { once:true });
   openModal('modalNuevoLocal');
 }
+let _localesCache = [];
 async function loadLocales() {
   const cont = document.getElementById('localesList');
   cont.innerHTML = '<div style="color:#aaa;padding:16px">Cargando...</div>';
@@ -6085,15 +6101,47 @@ async function loadLocales() {
     const res = await apiFetch('/locals');
     if (!res.ok) { cont.innerHTML = '<div style="color:var(--danger);padding:16px">No autorizado.</div>'; return; }
     const locales = await res.json();
+    _localesCache = locales;
     cont.innerHTML = `<table style="width:100%;font-size:13px">
-      <thead><tr><th>Local</th><th>Código</th><th>Estado</th></tr></thead>
+      <thead><tr><th>Local</th><th>Código (URL)</th><th>Estado</th><th>Acciones</th></tr></thead>
       <tbody>${locales.map(l=>`<tr>
         <td><strong>${l.nombre||l.id}</strong></td>
-        <td style="font-family:monospace;color:var(--gray)">${l.id}</td>
+        <td style="font-family:monospace;color:var(--gray)">/${l.id}/admin</td>
         <td>${l.id==='la-isla'?'<span class="badge badge-success">Principal</span>':(l.activo?'<span class="badge badge-success">Activo</span>':'<span class="badge badge-secondary">Inactivo</span>')}</td>
+        <td>
+          <button class="btn btn-outline btn-sm" onclick="editarLocal('${l.id}')">✏️ Editar</button>
+          ${l.id!=='la-isla'?`<button class="btn btn-danger btn-sm" style="margin-left:4px" onclick="eliminarLocal('${l.id}','${(l.nombre||l.id).replace(/'/g,"")}')">🗑️</button>`:''}
+        </td>
       </tr>`).join('')}</tbody>
     </table>`;
   } catch(e) { cont.innerHTML = '<div style="color:var(--danger);padding:16px">Error al cargar locales.</div>'; }
+}
+
+async function editarLocal(id) {
+  const l = _localesCache.find(x=>x.id===id);
+  const nuevo = prompt('Nuevo nombre del local:', l?.nombre || id);
+  if (nuevo === null) return;
+  const nombre = nuevo.trim();
+  if (!nombre) { showToast('El nombre no puede quedar vacío','error'); return; }
+  try {
+    const res = await apiFetch('/locals/'+id, { method:'PATCH', body: JSON.stringify({ nombre }) });
+    if (!res.ok) { const d=await res.json(); showToast(d.error||'No se pudo editar','error'); return; }
+    showToast('Local actualizado','success');
+    loadLocales();
+  } catch(e) { showToast('Error de conexión','error'); }
+}
+
+async function eliminarLocal(id, nombre) {
+  if (!confirm(`⚠️ Vas a ELIMINAR el local "${nombre}" con TODOS sus usuarios y datos. Esta acción no se puede deshacer. ¿Continuar?`)) return;
+  const pass = prompt('🔒 Confirmá tu contraseña de super-admin para eliminar el local:');
+  if (pass === null) return;
+  if (!await verificarPasswordActual(pass.trim())) { showToast('Contraseña incorrecta — no se eliminó nada','error'); return; }
+  try {
+    const res = await apiFetch('/locals/'+id, { method:'DELETE' });
+    if (!res.ok) { const d=await res.json(); showToast(d.error||'No se pudo eliminar','error'); return; }
+    showToast(`Local "${nombre}" eliminado`,'success');
+    loadLocales();
+  } catch(e) { showToast('Error de conexión','error'); }
 }
 async function crearLocalNuevo() {
   const nombre = document.getElementById('locNombre').value.trim();
@@ -6125,6 +6173,7 @@ async function renderUsuarios() {
     if (colRol) colRol.textContent = 'Local';
     let admins = [];
     try { const r = await apiFetch('/admins'); if (r.ok) admins = await r.json(); } catch(e) {}
+    _adminsCache = admins;
     document.getElementById('usuariosTbody').innerHTML = admins.length ? admins.map(u=>`
       <tr>
         <td><strong>${u.nombre}</strong></td>
@@ -6132,7 +6181,10 @@ async function renderUsuarios() {
         <td><span class="tag">🏢 ${u.local}</span></td>
         <td><span class="badge ${u.activo?'badge-success':'badge-secondary'}">${u.activo?'Activo':'Inactivo'}</span></td>
         <td style="font-size:12px">-</td>
-        <td><button class="btn btn-danger btn-sm" onclick="eliminarUsuarioSuper('${u.id}','${u.nombre}')">🗑️</button></td>
+        <td>
+          <button class="btn btn-outline btn-sm" onclick="editarUsuarioSuper('${u.id}')">✏️ Editar</button>
+          <button class="btn btn-danger btn-sm" style="margin-left:4px" onclick="eliminarUsuarioSuper('${u.id}','${u.nombre}')">🗑️</button>
+        </td>
       </tr>`).join('') : '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:20px">Sin administradores. Creá uno con "+ Nuevo Administrador".</td></tr>';
     return;
   }
@@ -6163,6 +6215,23 @@ function _setUsrRolOptions(incluirRol) {
   let roles = currentUser?.super ? ['admin'] : ['admin','mozo','repartidor'];
   if (incluirRol && !roles.includes(incluirRol)) roles = [incluirRol, ...roles];
   sel.innerHTML = roles.map(r=>`<option value="${r}">${labels[r]||r}</option>`).join('');
+}
+
+let _adminsCache = [];
+function editarUsuarioSuper(id) {
+  const u = _adminsCache.find(x=>String(x.id)===String(id));
+  if (!u) return;
+  document.getElementById('usrEditId').value = id;
+  document.getElementById('modalUsuarioTitle').textContent = 'Editar Administrador';
+  document.getElementById('usrNombre').value = u.nombre;
+  document.getElementById('usrEmail').value = u.email;
+  document.getElementById('usrPass').value = '';
+  document.getElementById('usrPassLabel').textContent = 'Contraseña (dejar vacío para no cambiar)';
+  _setUsrRolOptions('admin');
+  document.getElementById('usrRol').value = 'admin';
+  document.getElementById('usrLocalGrp').style.display = 'none'; // el local no se cambia al editar
+  document.getElementById('btnGuardarUsuario').textContent = 'Guardar';
+  openModal('modalUsuario');
 }
 
 async function eliminarUsuarioSuper(id, nombre) {
@@ -6230,6 +6299,19 @@ async function guardarUsuario() {
   const editId=document.getElementById('usrEditId').value;
   if(!nombre||!email){ showToast('Completá nombre y email','error'); return; }
   if(editId) {
+    if (currentUser?.super) {
+      // Super edita un administrador de cualquier local → endpoint
+      try {
+        const body = { nombre, email }; if (pass) body.password = pass;
+        const res = await apiFetch('/users/'+editId, { method:'PATCH', body: JSON.stringify(body) });
+        const data = await res.json();
+        if (!res.ok) { showToast(data.error || 'No se pudo guardar','error'); return; }
+        closeModal('modalUsuario');
+        showToast('Administrador actualizado','success');
+        renderUsuarios();
+      } catch(e) { showToast('Error de conexión','error'); }
+      return;
+    }
     const u = usuariosData.find(x=>String(x.id)===String(editId));
     if(u) { u.nombre=nombre; u.email=email; u.rol=rol; if(pass) u.password=pass; }
     closeModal('modalUsuario');
