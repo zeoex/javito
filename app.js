@@ -1838,26 +1838,48 @@ app.get('/api/manifest', (req, res) => {
   const local = req.query.local || DEFAULT_LOCAL;
   const role  = ['admin','mozo','repartidor','cocina'].includes(req.query.role) ? req.query.role : 'admin';
   const loc = db.locals.find(l => l.id === local);
-  const bizName = (loc && loc.biz_cfg && loc.biz_cfg.nombre) || (loc && loc.nombre) || local;
+  const biz = isDefaultLocal(local)
+    ? (db.biz_cfg || {})
+    : ((db.tenants[local] && db.tenants[local].biz_cfg) || (loc && loc.biz_cfg) || {});
+  const bizName = biz.nombre || (loc && loc.nombre) || local;
   const cfg = {
     mozo:       { label:'Mozo',       icon:'/icon-mozo.svg',       theme:'#1d3557', bg:'#0d1b2a' },
     admin:      { label:'Admin',      icon:'/icon-admin.svg',      theme:'#7c3aed', bg:'#3b0764' },
     repartidor: { label:'Repartidor', icon:'/icon-repartidor.svg', theme:'#e63946', bg:'#0d1117' },
     cocina:     { label:'Cocina',     icon:'/icon-cocina.svg',     theme:'#0f172a', bg:'#0f172a' },
   }[role];
+
+  // Ícono = logo del local si existe; si no, el ícono del rol
+  const logo = (biz.logo || '').toString();
+  function logoType(l) {
+    if (l.startsWith('data:')) return (l.slice(5).split(';')[0] || 'image/png');
+    if (/\.png(\?|$)/i.test(l)) return 'image/png';
+    if (/\.jpe?g(\?|$)/i.test(l)) return 'image/jpeg';
+    if (/\.webp(\?|$)/i.test(l)) return 'image/webp';
+    if (/\.svg(\?|$)/i.test(l)) return 'image/svg+xml';
+    return 'image/png';
+  }
+  const icons = logo
+    ? [
+        { src: logo, sizes: 'any', type: logoType(logo), purpose: 'any' },
+        { src: logo, sizes: 'any', type: logoType(logo), purpose: 'maskable' },
+      ]
+    : [
+        { src: cfg.icon, sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+        { src: cfg.icon, sizes: 'any', type: 'image/svg+xml', purpose: 'maskable' },
+      ];
+
   res.set('Content-Type', 'application/manifest+json');
   res.json({
-    name: `${bizName} — ${cfg.label}`,
-    short_name: bizName,
+    // Título de la app instalada = el rol (ej: "Mozo"); el nombre completo incluye el local
+    name: `${cfg.label} · ${bizName}`,
+    short_name: cfg.label,
     description: `${cfg.label} · ${bizName}`,
     start_url: `/${local}/${role}`,
     scope: `/${local}/`,
     display: 'standalone', orientation: 'portrait',
     background_color: cfg.bg, theme_color: cfg.theme, lang: 'es',
-    icons: [
-      { src: cfg.icon, sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
-      { src: cfg.icon, sizes: 'any', type: 'image/svg+xml', purpose: 'maskable' }
-    ]
+    icons
   });
 });
 
