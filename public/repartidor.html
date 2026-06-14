@@ -1529,15 +1529,19 @@
     <div class="login-error" id="login-error"></div>
     <div class="login-hint">Ingresá con tu email y contraseña creados en Admin → Usuarios</div>
 
-    <a id="login-apk" href="https://github.com/zeoex/javito/releases/latest/download/restito-repartidor.apk"
-      style="margin-top:16px;width:100%;box-sizing:border-box;background:linear-gradient(135deg,#dc2626,#b91c1c);border:none;color:#fff;border-radius:12px;padding:14px;font-weight:800;font-size:14.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;box-shadow:0 6px 18px rgba(220,38,38,.35)">
-      📥 Descargar app Android (.apk)
-    </a>
-    <div style="font-size:11px;color:#9ca3af;text-align:center;margin-top:7px;line-height:1.5">Recomendada: sigue compartiendo tu ubicación con la pantalla apagada.</div>
-    <button type="button" id="login-install" onclick="if(window.showPwaInstall)window.showPwaInstall()"
-      style="margin-top:10px;width:100%;background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.25);color:#b91c1c;border-radius:12px;padding:11px;font-weight:600;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
-      📲 o instalar acceso rápido (web)
-    </button>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <a id="login-apk" href="https://github.com/zeoex/javito/releases/latest/download/restito-repartidor.apk"
+        style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;box-sizing:border-box;background:rgba(61,220,132,.10);border:1.5px solid rgba(61,220,132,.55);color:#128c4b;border-radius:12px;padding:11px 8px;font-weight:700;font-size:12px;text-decoration:none;cursor:pointer" title="Descargar la app (.apk) para Android">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.6 9.48l1.84-3.18a.4.4 0 0 0-.69-.4l-1.86 3.22a11.4 11.4 0 0 0-8.78 0L6.25 5.9a.4.4 0 1 0-.69.4L7.4 9.48A10.3 10.3 0 0 0 2 18h20a10.3 10.3 0 0 0-4.4-8.52zM7 15.2a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5zm10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5z"/></svg>
+        Android
+      </a>
+      <button type="button" id="login-install" onclick="if(window.showPwaInstall)window.showPwaInstall()"
+        style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;background:rgba(0,0,0,.04);border:1.5px solid rgba(0,0,0,.18);color:#111827;border-radius:12px;padding:11px 8px;font-weight:700;font-size:12px;cursor:pointer" title="Instalar acceso directo en iPhone">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M16.37 1.43c0 1.05-.39 2.05-1.06 2.78-.74.82-1.95 1.45-2.95 1.37-.12-1.04.4-2.13 1.04-2.82.72-.78 2-1.36 2.95-1.4.02.02.02.05.02.07zM20.5 17.05c-.47 1.1-.7 1.59-1.32 2.56-.86 1.35-2.07 3.03-3.57 3.05-1.33.02-1.67-.87-3.48-.86-1.8 0-2.18.88-3.51.87-1.5-.01-2.65-1.52-3.51-2.87-2.4-3.76-2.66-8.16-1.17-10.5.99-1.6 2.55-2.53 4.02-2.53 1.5 0 2.44.86 3.68.86 1.2 0 1.93-.86 3.67-.86 1.3 0 2.69.71 3.68 1.94-3.23 1.77-2.7 6.38.99 7.34z"/></svg>
+        iPhone
+      </button>
+    </div>
+    <div style="font-size:10.5px;color:#9ca3af;text-align:center;margin-top:7px;line-height:1.5">Android: descargá la app · iPhone: acceso directo</div>
   </div>
 
 </div>
