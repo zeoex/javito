@@ -1451,12 +1451,12 @@
 
   <div class="login-logo-wrap">
     <div class="login-logo-glow"></div>
-    <img class="login-logo" src="/icon-repartidor.svg" alt="Repartidor"/>
+    <img class="login-logo" id="repLoginLogo" src="/icon-repartidor.svg" alt="Repartidor"/>
   </div>
 
   <div class="login-brand">
-    <div class="login-title">Módulo Repartidor</div>
-    <div class="login-app-name">Res<span>Tito</span></div>
+    <div class="login-title" id="repLoginTitle">Módulo Repartidor</div>
+    <div class="login-app-name" id="repLoginApp">Res<span>Tito</span></div>
   </div>
 
   <div class="login-card">
@@ -1713,6 +1713,17 @@ let socket = null;
 // Local de este repartidor: /<local>/repartidor  o  ?local=...
 const REPARTIDOR_LOCAL = (location.pathname.match(/^\/([^\/]+)\/repartidor/) || [])[1]
   || new URLSearchParams(location.search).get('local') || 'la-isla';
+// Branding del login con el logo y nombre del local
+(function(){
+  fetch('/api/public/menu?local=' + encodeURIComponent(REPARTIDOR_LOCAL)).then(function(r){return r.json();}).then(function(d){
+    var biz = (d && d.biz_cfg) || {};
+    var nombre = biz.nombre || REPARTIDOR_LOCAL;
+    var app = document.getElementById('repLoginApp'); if (app) app.textContent = nombre;
+    var ti = document.getElementById('repLoginTitle'); if (ti) ti.textContent = 'Repartidor';
+    document.title = nombre + ' · Repartidor';
+    if (biz.logo) { var lg = document.getElementById('repLoginLogo'); if (lg) lg.src = biz.logo; }
+  }).catch(function(){});
+})();
 
 /* ── AUTH ────────────────────────────────────────── */
 async function handleLogin() {

@@ -3162,6 +3162,18 @@ function initApp() {
   if (portalLink) portalLink.style.display = path === '/admin' ? '' : 'none';
   document.documentElement.style.setProperty('--login-accent',  cfg.accent);
   document.documentElement.style.setProperty('--login-accent-l', cfg.accentL);
+  // Branding por local: /<local>/admin o /<local>/mozo → logo + nombre del local
+  const _pl = _seg ? _seg[1] : null;
+  if (_pl && !esSuper) {
+    const _modLabel = (_seg[2] === 'mozo') ? 'Mozo' : 'Administración';
+    fetch('/api/public/menu?local=' + encodeURIComponent(_pl)).then(r=>r.json()).then(d=>{
+      const biz = (d && d.biz_cfg) || {};
+      const nombre = biz.nombre || _pl;
+      const lt = document.getElementById('loginTitle'); if (lt) lt.textContent = nombre + ' · ' + _modLabel;
+      document.title = nombre + ' · ' + _modLabel;
+      if (biz.logo) { const le2 = document.getElementById('loginEmoji'); if (le2) { le2.innerHTML = `<img src="${biz.logo}" alt="" style="width:88px;height:88px;object-fit:cover;border-radius:20px;display:block">`; le2.style.fontSize = '0'; } }
+    }).catch(()=>{});
+  }
 })();
 
 if (token && currentUser) {
