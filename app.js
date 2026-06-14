@@ -73,7 +73,33 @@ async function initPG() {
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
       ALTER TABLE app_state ADD COLUMN IF NOT EXISTS categorias JSONB DEFAULT '[]';
-      ALTER TABLE app_state ADD COLUMN IF NOT EXISTS biz_cfg JSONB DEFAULT '{}'
+      ALTER TABLE app_state ADD COLUMN IF NOT EXISTS biz_cfg JSONB DEFAULT '{}';
+      CREATE TABLE IF NOT EXISTS locals (
+        id TEXT PRIMARY KEY,
+        nombre TEXT,
+        biz_cfg JSONB DEFAULT '{}',
+        activo BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS tenant_state (
+        local_id TEXT PRIMARY KEY,
+        mesas JSONB DEFAULT '[]',
+        delivery JSONB DEFAULT '[]',
+        facturas JSONB DEFAULT '[]',
+        clientes JSONB DEFAULT '[]',
+        usuarios JSONB DEFAULT '[]',
+        productos JSONB DEFAULT '[]',
+        mozo_historial JSONB DEFAULT '[]',
+        caja_abierta BOOLEAN DEFAULT TRUE,
+        caja_inicial INTEGER DEFAULT 5000,
+        caja_moves JSONB DEFAULT '[]',
+        caja_cierres JSONB DEFAULT '[]',
+        categorias JSONB DEFAULT '[]',
+        biz_cfg JSONB DEFAULT '{}',
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      INSERT INTO locals (id, nombre) VALUES ('la-isla', 'La Isla')
+        ON CONFLICT (id) DO NOTHING
     `);
     console.log('[PG] app_state table ready');
   } catch(e) {
@@ -115,8 +141,22 @@ const db = {
   stock:      [],
   printJobs:  [],
   llamados:   [],
-  biz_cfg:    {}
+  biz_cfg:    {},
+  // Multi-local: registro de locales y estado aislado de los locales NUEVOS.
+  // La Isla (local por defecto) sigue usando los campos de arriba (db.mesas, etc.).
+  locals:     [{ id: 'la-isla', nombre: 'La Isla', activo: true, biz_cfg: {} }],
+  tenants:    {}   // { '<local_id>': { mesas, delivery, ... } }
 };
+
+// ── Helpers multi-local ──
+const DEFAULT_LOCAL = 'la-isla';
+function localIdOf(req) { return (req && req.user && req.user.local_id) || DEFAULT_LOCAL; }
+function isDefaultLocal(id) { return !id || id === DEFAULT_LOCAL; }
+function emptyTenantState() {
+  return { mesas: [], delivery: [], facturas: [], clientes: [], usuarios: [], productos: [],
+           mozo_historial: [], caja_abierta: true, caja_inicial: 5000, caja_moves: [],
+           caja_cierres: [], categorias: [], biz_cfg: {} };
+}
 
 // ─────────────────────────────────────────────
 //  SEED DATA
@@ -250,6 +290,10 @@ const db = {
     { id: uuidv4(), nombre: 'Cocinero Pedro', email: 'cocinero@restito.com',   password: hash('cocina123'),   rol: 'cocinero',   activo: true, createdAt: new Date().toISOString() },
     { id: uuidv4(), nombre: 'Repartidor 01',  email: 'repartidor@restito.com', password: hash('delivery123'), rol: 'repartidor', activo: true, createdAt: new Date().toISOString() }
   ];
+  // Todos los usuarios seed pertenecen al local "La Isla"
+  db.users.forEach(u => { u.local_id = DEFAULT_LOCAL; });
+  // Super-admin de ResTito (gestiona los locales). No pertenece a ningún local.
+  db.users.push({ id: uuidv4(), nombre: 'ResTito Admin', email: 'super@restito.com', password: hash('restito2024'), rol: 'admin', super: true, local_id: null, activo: true, createdAt: new Date().toISOString() });
 
   // ---------- MESAS ----------
   const mozoA = db.users.find(u => u.email === 'mozo01@restito.com').id;
@@ -329,7 +373,8 @@ async function restoreStateFromPG() {
   try {
     const { rows } = await pool.query('SELECT * FROM app_state WHERE id = 1');
     const state = rows[0];
-    if (!state) { console.log('[PG] No saved state found — using seed data'); return; }
+    if (!state) console.log('[PG] No saved state found — using seed data');
+    if (state) {
     if (Array.isArray(state.mesas)      && state.mesas.length      > 0) db.mesas      = state.mesas;
     if (Array.isArray(state.delivery)   && state.delivery.length   > 0) db.delivery   = state.delivery;
     if (Array.isArray(state.productos)  && state.productos.length  > 0) db.productos  = state.productos;
@@ -350,7 +395,26 @@ async function restoreStateFromPG() {
         if (!db.users.find(u => u.email === su.email)) db.users.push(su);
       }
     }
-    console.log(`[PG] State restored — mesas:${db.mesas.length} delivery:${db.delivery.length} productos:${db.productos.length} facturas:${db.facturas.length}`);
+    } // fin if(state)
+    // Etiquetar usuarios de La Isla que no tengan local
+    db.users.forEach(u => { if (!u.super && !u.local_id) u.local_id = DEFAULT_LOCAL; });
+    // Cargar locales y usuarios de locales nuevos (multi-tenant)
+    try {
+      const locRows = (await pool.query('SELECT * FROM locals')).rows;
+      for (const l of locRows) {
+        const ex = db.locals.find(x => x.id === l.id);
+        if (ex) { ex.nombre = l.nombre; ex.biz_cfg = l.biz_cfg || ex.biz_cfg; ex.activo = l.activo !== false; }
+        else db.locals.push({ id: l.id, nombre: l.nombre, activo: l.activo !== false, biz_cfg: l.biz_cfg || {} });
+      }
+      const tenRows = (await pool.query('SELECT local_id, usuarios FROM tenant_state')).rows;
+      for (const t of tenRows) {
+        const users = Array.isArray(t.usuarios) ? t.usuarios : [];
+        users.forEach(u => { if (u && u.email && !db.users.find(x => x.email === u.email)) db.users.push({ ...u, local_id: t.local_id }); });
+        if (!db.tenants[t.local_id]) db.tenants[t.local_id] = emptyTenantState();
+        if (users.length) db.tenants[t.local_id].usuarios = users;
+      }
+    } catch(e) { console.error('[PG] load locals/tenants:', e.message); }
+    console.log(`[PG] State restored — mesas:${db.mesas.length} delivery:${db.delivery.length} locales:${db.locals.length}`);
   } catch(e) {
     console.error('[PG] restoreStateFromPG failed:', e.message);
   }
@@ -438,6 +502,27 @@ function authMiddleware(req, res, next) {
   }
 }
 
+// Decodifica el token si está presente (sin exigirlo) — para resolver el local en rutas abiertas
+function optionalUser(req) {
+  try {
+    const header = req.headers['authorization'] || '';
+    const token  = header.startsWith('Bearer ') ? header.slice(7) : null;
+    return token ? jwt.verify(token, JWT_SECRET) : null;
+  } catch { return null; }
+}
+
+// Reemplaza en memoria los usuarios de un local (preservando supers y otros locales)
+function setLocalUsers(local, users) {
+  db.users = db.users.filter(u => u.super || (u.local_id || DEFAULT_LOCAL) !== local);
+  (users || []).forEach(u => db.users.push({ ...u, local_id: local }));
+}
+
+// Middleware: exige super-admin
+function superOnly(req, res, next) {
+  if (!req.user || !req.user.super) return res.status(403).json({ error: 'Solo super-admin' });
+  next();
+}
+
 // Aplicar auth a /api/* excepto /api/auth/*
 app.use('/api', (req, res, next) => {
   if (req.path.startsWith('/auth')) return next();
@@ -474,12 +559,12 @@ app.post('/api/auth/login', async (req, res) => {
   const ok = await bcrypt.compare(password, user.password);
   if (!ok) return res.status(401).json({ error: 'Credenciales inválidas' });
 
-  const payload = { id: user.id, email: user.email, nombre: user.nombre, rol: user.rol };
+  const payload = { id: user.id, email: user.email, nombre: user.nombre, rol: user.rol, local_id: user.local_id || DEFAULT_LOCAL, super: !!user.super };
   const token   = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY });
 
   res.json({
     token,
-    usuario: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol }
+    usuario: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol, local_id: user.local_id || DEFAULT_LOCAL, super: !!user.super }
   });
 });
 
@@ -1601,12 +1686,21 @@ app.post('/api/qz/sign', (req, res) => {
 // ─────────────────────────────────────────────
 //  STATE PERSISTENCE ROUTES
 // ─────────────────────────────────────────────
-app.get('/api/state', async (_req, res) => {
+app.get('/api/state', async (req, res) => {
+  const local = (optionalUser(req)?.local_id) || DEFAULT_LOCAL;
   try {
     const pool = getPool();
-    if (!pool) return res.json(null);
-    const { rows } = await pool.query('SELECT * FROM app_state WHERE id = 1');
-    res.json(rows[0] || null);
+    if (!pool) {
+      // Sin PG (local/demo): La Isla usa seed (null); locales nuevos usan memoria
+      if (isDefaultLocal(local)) return res.json(null);
+      return res.json(db.tenants[local] || emptyTenantState());
+    }
+    if (isDefaultLocal(local)) {
+      const { rows } = await pool.query('SELECT * FROM app_state WHERE id = 1');
+      return res.json(rows[0] || null);
+    }
+    const { rows } = await pool.query('SELECT * FROM tenant_state WHERE local_id = $1', [local]);
+    return res.json(rows[0] || emptyTenantState());
   } catch(e) { console.error('[state:get]', e.message); res.json(null); }
 });
 
@@ -1622,17 +1716,33 @@ app.get('/api/public/menu', (_req, res) => {
 // Sincroniza solo productos y categorías (usado por admin sin gate de IDs de mesa)
 app.post('/api/catalog', authMiddleware, async (req, res) => {
   const { productos, categorias } = req.body;
-  if (Array.isArray(productos))  db.productos  = productos;
-  if (Array.isArray(categorias)) db.categorias = categorias;
+  const local = localIdOf(req);
+  if (isDefaultLocal(local)) {
+    if (Array.isArray(productos))  db.productos  = productos;
+    if (Array.isArray(categorias)) db.categorias = categorias;
+  } else {
+    if (!db.tenants[local]) db.tenants[local] = emptyTenantState();
+    if (Array.isArray(productos))  db.tenants[local].productos  = productos;
+    if (Array.isArray(categorias)) db.tenants[local].categorias = categorias;
+  }
   try {
     const pool = getPool();
     if (pool) {
-      await pool.query(
-        `INSERT INTO app_state (id, productos, categorias, updated_at)
-         VALUES (1, $1, $2, NOW())
-         ON CONFLICT (id) DO UPDATE SET productos=$1, categorias=$2, updated_at=NOW()`,
-        [JSON.stringify(productos||[]), JSON.stringify(categorias||[])]
-      );
+      if (isDefaultLocal(local)) {
+        await pool.query(
+          `INSERT INTO app_state (id, productos, categorias, updated_at)
+           VALUES (1, $1, $2, NOW())
+           ON CONFLICT (id) DO UPDATE SET productos=$1, categorias=$2, updated_at=NOW()`,
+          [JSON.stringify(productos||[]), JSON.stringify(categorias||[])]
+        );
+      } else {
+        await pool.query(
+          `INSERT INTO tenant_state (local_id, productos, categorias, updated_at)
+           VALUES ($1, $2, $3, NOW())
+           ON CONFLICT (local_id) DO UPDATE SET productos=$2, categorias=$3, updated_at=NOW()`,
+          [local, JSON.stringify(productos||[]), JSON.stringify(categorias||[])]
+        );
+      }
     }
   } catch(e) { console.error('[catalog:post]', e.message); }
   res.json({ ok: true });
@@ -1641,12 +1751,12 @@ app.post('/api/catalog', authMiddleware, async (req, res) => {
 app.post('/api/state', authMiddleware, async (req, res) => {
   try {
     const pool = getPool();
-    if (!pool) return res.json({ ok: true, skipped: true });
+    const local = localIdOf(req);
     const { mesas, delivery, facturas, clientes, usuarios, productos, mozo_historial,
             caja_abierta, caja_inicial, caja_moves, caja_cierres, categorias, biz_cfg } = req.body;
 
-    // Merge users: ensure every user has a valid bcrypt password before saving to PG
-    let mergedUsers = db.users;
+    // Merge users: ensure every user has a valid bcrypt password before saving
+    let mergedUsers;
     if (Array.isArray(usuarios) && usuarios.length > 0) {
       mergedUsers = await Promise.all(usuarios.map(async u => {
         if (u.password && !u.password.startsWith('$2')) {
@@ -1658,37 +1768,121 @@ app.post('/api/state', authMiddleware, async (req, res) => {
         }
         return u;
       })).then(users => users.filter(Boolean));
+    } else {
+      // Sin lista provista: conservar los usuarios actuales de este local
+      mergedUsers = db.users.filter(u => !u.super && (u.local_id || DEFAULT_LOCAL) === local).map(u => ({ ...u }));
     }
 
-    await pool.query(`
-      INSERT INTO app_state (id, mesas, delivery, facturas, clientes, usuarios, productos, mozo_historial,
-        caja_abierta, caja_inicial, caja_moves, caja_cierres, categorias, biz_cfg, updated_at)
-      VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
-      ON CONFLICT (id) DO UPDATE SET
-        mesas=$1, delivery=$2, facturas=$3, clientes=$4, usuarios=$5, productos=$6,
-        mozo_historial=$7, caja_abierta=$8, caja_inicial=$9,
-        caja_moves=$10, caja_cierres=$11, categorias=$12, biz_cfg=$13, updated_at=NOW()
-    `, [
-      JSON.stringify(mesas||[]), JSON.stringify(delivery||[]), JSON.stringify(facturas||[]),
-      JSON.stringify(clientes||[]), JSON.stringify(mergedUsers), JSON.stringify(productos||[]),
-      JSON.stringify(mozo_historial||[]),
-      caja_abierta ?? true, caja_inicial ?? 5000,
-      JSON.stringify(caja_moves||[]), JSON.stringify(caja_cierres||[]),
-      JSON.stringify(categorias||[]), JSON.stringify(biz_cfg||{})
-    ]);
+    // Persistencia: La Isla → app_state(id=1); locales nuevos → tenant_state(local_id)
+    if (pool && isDefaultLocal(local)) {
+      await pool.query(`
+        INSERT INTO app_state (id, mesas, delivery, facturas, clientes, usuarios, productos, mozo_historial,
+          caja_abierta, caja_inicial, caja_moves, caja_cierres, categorias, biz_cfg, updated_at)
+        VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
+        ON CONFLICT (id) DO UPDATE SET
+          mesas=$1, delivery=$2, facturas=$3, clientes=$4, usuarios=$5, productos=$6,
+          mozo_historial=$7, caja_abierta=$8, caja_inicial=$9,
+          caja_moves=$10, caja_cierres=$11, categorias=$12, biz_cfg=$13, updated_at=NOW()
+      `, [
+        JSON.stringify(mesas||[]), JSON.stringify(delivery||[]), JSON.stringify(facturas||[]),
+        JSON.stringify(clientes||[]), JSON.stringify(mergedUsers), JSON.stringify(productos||[]),
+        JSON.stringify(mozo_historial||[]),
+        caja_abierta ?? true, caja_inicial ?? 5000,
+        JSON.stringify(caja_moves||[]), JSON.stringify(caja_cierres||[]),
+        JSON.stringify(categorias||[]), JSON.stringify(biz_cfg||{})
+      ]);
+    } else if (pool) {
+      await pool.query(`
+        INSERT INTO tenant_state (local_id, mesas, delivery, facturas, clientes, usuarios, productos, mozo_historial,
+          caja_abierta, caja_inicial, caja_moves, caja_cierres, categorias, biz_cfg, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW())
+        ON CONFLICT (local_id) DO UPDATE SET
+          mesas=$2, delivery=$3, facturas=$4, clientes=$5, usuarios=$6, productos=$7,
+          mozo_historial=$8, caja_abierta=$9, caja_inicial=$10,
+          caja_moves=$11, caja_cierres=$12, categorias=$13, biz_cfg=$14, updated_at=NOW()
+      `, [
+        local,
+        JSON.stringify(mesas||[]), JSON.stringify(delivery||[]), JSON.stringify(facturas||[]),
+        JSON.stringify(clientes||[]), JSON.stringify(mergedUsers), JSON.stringify(productos||[]),
+        JSON.stringify(mozo_historial||[]),
+        caja_abierta ?? true, caja_inicial ?? 5000,
+        JSON.stringify(caja_moves||[]), JSON.stringify(caja_cierres||[]),
+        JSON.stringify(categorias||[]), JSON.stringify(biz_cfg||{})
+      ]);
+    }
 
-    if (Array.isArray(mesas))      db.mesas      = mesas;
-    if (Array.isArray(delivery))   db.delivery   = delivery;
-    if (Array.isArray(productos))  db.productos  = productos;
-    if (Array.isArray(clientes))   db.clientes   = clientes;
-    if (Array.isArray(categorias)) db.categorias = categorias;
-    if (biz_cfg && typeof biz_cfg === 'object') db.biz_cfg = biz_cfg;
-    db.users = mergedUsers;
+    // Actualizar memoria + usuarios del local (preservando supers y otros locales)
+    setLocalUsers(local, mergedUsers);
+    if (isDefaultLocal(local)) {
+      if (Array.isArray(mesas))      db.mesas      = mesas;
+      if (Array.isArray(delivery))   db.delivery   = delivery;
+      if (Array.isArray(productos))  db.productos  = productos;
+      if (Array.isArray(clientes))   db.clientes   = clientes;
+      if (Array.isArray(categorias)) db.categorias = categorias;
+      if (biz_cfg && typeof biz_cfg === 'object') db.biz_cfg = biz_cfg;
+    } else {
+      db.tenants[local] = { mesas: mesas||[], delivery: delivery||[], facturas: facturas||[],
+        clientes: clientes||[], usuarios: mergedUsers, productos: productos||[],
+        mozo_historial: mozo_historial||[], caja_abierta: caja_abierta ?? true,
+        caja_inicial: caja_inicial ?? 5000, caja_moves: caja_moves||[],
+        caja_cierres: caja_cierres||[], categorias: categorias||[], biz_cfg: biz_cfg||{} };
+      const loc = db.locals.find(l => l.id === local);
+      if (loc && biz_cfg && typeof biz_cfg === 'object') loc.biz_cfg = biz_cfg;
+    }
 
     const savedAt = new Date().toISOString();
     io.emit('state:changed', { updated_at: savedAt });
     res.json({ ok: true });
   } catch(e) { console.error('[state:post]', e.message); res.status(500).json({ error: e.message }); }
+});
+
+// ─────────────────────────────────────────────
+//  SUPER-ADMIN: gestión de locales (multi-tenant)
+// ─────────────────────────────────────────────
+app.get('/api/locals', authMiddleware, superOnly, (_req, res) => {
+  res.json(db.locals.map(l => ({ id: l.id, nombre: l.nombre, activo: l.activo !== false })));
+});
+
+app.post('/api/locals', authMiddleware, superOnly, async (req, res) => {
+  let { id, nombre, adminEmail, adminPassword, biz_cfg } = req.body;
+  id = String(id || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
+        .replace(/[^a-z0-9-]/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'');
+  nombre = String(nombre || '').trim();
+  adminEmail = String(adminEmail || '').trim().toLowerCase();
+  if (!id || !nombre || !adminEmail || !adminPassword)
+    return res.status(400).json({ error: 'Faltan datos: código, nombre, email y contraseña del admin' });
+  if (id === DEFAULT_LOCAL || db.locals.find(l => l.id === id))
+    return res.status(409).json({ error: 'Ya existe un local con ese código' });
+  if (db.users.find(u => u.email === adminEmail))
+    return res.status(409).json({ error: 'Ese email ya está en uso por otro usuario' });
+
+  const local = { id, nombre, activo: true, biz_cfg: biz_cfg || { nombre } };
+  db.locals.push(local);
+  const adminUser = { id: uuidv4(), nombre: `Admin ${nombre}`, email: adminEmail,
+    password: bcrypt.hashSync(adminPassword, 10), rol: 'admin', local_id: id, activo: true,
+    createdAt: new Date().toISOString() };
+  db.users.push(adminUser);
+  db.tenants[id] = emptyTenantState();
+  db.tenants[id].usuarios = [{ ...adminUser }];
+  db.tenants[id].biz_cfg = local.biz_cfg;
+
+  try {
+    const pool = getPool();
+    if (pool) {
+      await pool.query(
+        `INSERT INTO locals (id, nombre, biz_cfg, activo) VALUES ($1,$2,$3,true)
+         ON CONFLICT (id) DO UPDATE SET nombre=$2, biz_cfg=$3`,
+        [id, nombre, JSON.stringify(local.biz_cfg)]
+      );
+      await pool.query(
+        `INSERT INTO tenant_state (local_id, usuarios, biz_cfg, updated_at) VALUES ($1,$2,$3,NOW())
+         ON CONFLICT (local_id) DO UPDATE SET usuarios=$2, biz_cfg=$3, updated_at=NOW()`,
+        [id, JSON.stringify([adminUser]), JSON.stringify(local.biz_cfg)]
+      );
+    }
+  } catch(e) { console.error('[locals:post]', e.message); }
+
+  res.status(201).json({ local: { id, nombre, activo: true }, admin: { email: adminEmail } });
 });
 
 // ─────────────────────────────────────────────

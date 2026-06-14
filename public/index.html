@@ -851,6 +851,9 @@ body.rol-mozo .spk-size-btn:hover{border-color:#059669;background:#ecfdf5}
       <div class="nav-item" data-section="mozostats" data-tooltip="Mis Estadísticas" onclick="navTo('mozostats',this);closeSidebar()" id="navMozoStats" style="display:none">
         <span class="nav-icon">📊</span><span class="nav-text">Mis Estadísticas</span>
       </div>
+      <div class="nav-item" data-section="locales" data-tooltip="Locales" onclick="navTo('locales',this);closeSidebar()" id="navLocales" style="display:none">
+        <span class="nav-icon">🏢</span><span class="nav-text">Locales</span>
+      </div>
       <div class="nav-item" data-section="config" data-tooltip="Configuración" onclick="navTo('config',this);closeSidebar()">
         <span class="nav-icon">⚙️</span><span class="nav-text">Configuración</span>
       </div>
@@ -1262,6 +1265,20 @@ body.rol-mozo .spk-size-btn:hover{border-color:#059669;background:#ecfdf5}
             <thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Último Acceso</th><th>Acciones</th></tr></thead>
             <tbody id="usuariosTbody"></tbody>
           </table></div>
+        </div>
+      </div>
+
+      <!-- LOCALES (SUPER-ADMIN) -->
+      <div class="section" id="sec-locales">
+        <div class="section-header">
+          <h2>🏢 Locales — Super-Admin ResTito</h2>
+          <button class="btn btn-primary btn-sm" onclick="abrirModalNuevoLocal()">+ Nuevo Local</button>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <p style="color:var(--gray);font-size:13px;margin-bottom:12px">Cada local es un cliente con sus datos totalmente separados. Creá el local y su usuario administrador; después el dueño entra con ese email y contraseña.</p>
+            <div id="localesList"></div>
+          </div>
         </div>
       </div>
 
@@ -1793,6 +1810,24 @@ body.rol-mozo .spk-size-btn:hover{border-color:#059669;background:#ecfdf5}
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modalRetiroCaja')">Cancelar</button>
       <button class="btn btn-danger" onclick="guardarRetiroCaja()">💸 Registrar Retiro</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalNuevoLocal">
+  <div class="modal">
+    <div class="modal-header"><h3>🏢 Nuevo Local (Cliente)</h3><button class="modal-close" onclick="closeModal('modalNuevoLocal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>Nombre del local</label><input class="form-control" id="locNombre" placeholder="Ej: Pizzería El Faro" oninput="_locAutoCodigo()"/></div>
+      <div class="form-group"><label>Código (identificador)</label><input class="form-control" id="locCodigo" placeholder="el-faro" style="font-family:monospace"/><small style="color:var(--gray);font-size:11px">Solo minúsculas, números y guiones. No se puede cambiar después.</small></div>
+      <hr style="border:none;border-top:1px solid var(--border);margin:14px 0">
+      <p style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Usuario administrador del local</p>
+      <div class="form-group"><label>Email</label><input class="form-control" id="locAdminEmail" type="email" placeholder="dueño@ellocal.com" autocomplete="off"/></div>
+      <div class="form-group"><label>Contraseña</label><input class="form-control" id="locAdminPass" type="text" placeholder="Contraseña inicial"/></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalNuevoLocal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="crearLocalNuevo()">Crear Local</button>
     </div>
   </div>
 </div>
@@ -2631,20 +2666,37 @@ async function loadStateFromAPI() {
     }
 
     const arr = (v, def=[]) => Array.isArray(v) ? v : def;
+    // Para locales que NO son La Isla, el servidor es la única fuente de verdad
+    // (un local nuevo arranca vacío; no se usa el seed del front).
+    const esTenant = !!(currentUser?.local_id && currentUser.local_id !== 'la-isla');
 
     // Productos y categorías siempre desde PG — es la fuente de verdad.
     // NUNCA pisar PG con localStorage (puede tener fotos eliminadas por quota).
-    if (arr(data.productos).length > 0) {
-      productosData = data.productos;
+    if (esTenant || arr(data.productos).length > 0) {
+      productosData = arr(data.productos);
       try {
         localStorage.setItem('pz_productos', JSON.stringify(productosData));
       } catch(e) {
         try { localStorage.setItem('pz_productos', JSON.stringify(productosData.map(p=>({...p,foto:null})))); } catch(e2) {}
       }
     }
-    if (arr(data.categorias).length > 0) {
-      categoriasData = data.categorias;
+    if (esTenant || arr(data.categorias).length > 0) {
+      categoriasData = arr(data.categorias);
       try { localStorage.setItem('pz_categorias', JSON.stringify(categoriasData)); } catch(e) {}
+    }
+    if (esTenant) {
+      // Estado operacional autoritativo desde el servidor para el local
+      mesasData = arr(data.mesas);
+      deliveryData = arr(data.delivery).map(o => o.fecha ? o : {...o, fecha: '2000-01-01'});
+      facturasData = arr(data.facturas);
+      clientesData = arr(data.clientes);
+      mozoHistorial = arr(data.mozo_historial);
+      if (data.caja_abierta !== null && data.caja_abierta !== undefined) cajaAbierta = data.caja_abierta === true;
+      if (data.caja_inicial) cajaInicial = parseInt(data.caja_inicial) || 5000;
+      cajaMoves = arr(data.caja_moves);
+      cajaCierres = arr(data.caja_cierres);
+      try { localStorage.setItem('pz_saved_at', String(new Date(data.updated_at||Date.now()).getTime())); } catch(e) {}
+      return;
     }
 
     // Para el estado operacional (mesas, delivery, caja) usar timestamp para decidir fuente.
@@ -2789,6 +2841,16 @@ function apiFetch(url, opts={}) {
 // ======= INIT =======
 function initApp() {
   document.getElementById('loginScreen').style.display = 'none';
+  // Multi-local: si cambió el local respecto a la última sesión en este navegador, limpiar caché
+  try {
+    const curLocal = currentUser?.local_id || 'la-isla';
+    const prevLocal = localStorage.getItem('pz_local');
+    if (prevLocal && prevLocal !== curLocal) {
+      ['pz_mesas','pz_delivery','pz_facturas','pz_stock','pz_clientes','pz_usuarios','pz_mozo_historial','pz_caja_abierta','pz_caja_inicial','pz_caja_moves','pz_caja_cierres','pz_categorias','pz_productos','pz_biz_cfg','pz_saved_at','pz_last_section','pz_mostrador_seq']
+        .forEach(k => localStorage.removeItem(k));
+    }
+    localStorage.setItem('pz_local', curLocal);
+  } catch(e) {}
   document.getElementById('app').style.display = 'flex';
   window._currentUserRol = currentUser?.rol || 'admin';
   loadBizConfig();
@@ -2807,6 +2869,8 @@ function initApp() {
   if (tur) tur.textContent = roles[currentUser?.rol] || currentUser?.rol || '';
   // Hide usuarios for non-admin
   if (currentUser?.rol !== 'admin') document.getElementById('navUsuarios').style.display = 'none';
+  // Super-admin de ResTito: mostrar panel de Locales
+  if (currentUser?.super) { const _nl = document.getElementById('navLocales'); if (_nl) _nl.style.display = ''; }
   // Mesa management (create/edit/delete) only for admin and supervisor
   const esAdminRole = ['admin','supervisor'].includes(currentUser?.rol);
   document.getElementById('btnNuevaMesa').style.display = esAdminRole ? '' : 'none';
@@ -3097,9 +3161,9 @@ function navTo(section, el) {
   else document.querySelector(`[data-section="${section}"]`)?.classList.add('active');
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('sec-'+section).classList.add('active');
-  const titles = {dashboard:'Vista Principal',mesas:'Mesas',delivery:'Pedidos',productos:'Productos',stock:'Stock',caja:'Caja',facturacion:'Facturación',clientes:'Clientes',reportes:'Reportes',usuarios:'Usuarios',config:'Configuración',mozostats:'Mis Estadísticas'};
+  const titles = {dashboard:'Vista Principal',mesas:'Mesas',delivery:'Pedidos',productos:'Productos',stock:'Stock',caja:'Caja',facturacion:'Facturación',clientes:'Clientes',reportes:'Reportes',usuarios:'Usuarios',config:'Configuración',mozostats:'Mis Estadísticas',locales:'Locales (Super-Admin)'};
   document.getElementById('topbarTitle').textContent = titles[section] || section;
-  const loaders = {dashboard:loadDashboard,mesas:renderMesas,delivery:renderDelivery,productos:renderProductos,stock:renderStock,caja:renderCaja,facturacion:loadFacturacion,clientes:renderClientes,reportes:renderReportes,usuarios:renderUsuarios,mozostats:renderMozoStats,config:loadPrintConfigUI};
+  const loaders = {dashboard:loadDashboard,mesas:renderMesas,delivery:renderDelivery,productos:renderProductos,stock:renderStock,caja:renderCaja,facturacion:loadFacturacion,clientes:renderClientes,reportes:renderReportes,usuarios:renderUsuarios,mozostats:renderMozoStats,config:loadPrintConfigUI,locales:loadLocales};
   if(loaders[section]) loaders[section]();
   try { localStorage.setItem('pz_last_section', section); } catch(e) {}
 }
@@ -5981,6 +6045,57 @@ function renderReportes() {
     : '';
   document.getElementById('salonVsDelivery').innerHTML = ventas ? (biRows + insight)
     : '<div style="color:#aaa;text-align:center;padding:24px;font-size:13px">Sin ventas registradas en el período</div>';
+}
+
+// ======= LOCALES (SUPER-ADMIN) =======
+function _slugify(s) {
+  return String(s||'').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^a-z0-9-]/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'');
+}
+function _locAutoCodigo() {
+  const cod = document.getElementById('locCodigo');
+  if (cod && !cod.dataset.touched) cod.value = _slugify(document.getElementById('locNombre').value);
+}
+function abrirModalNuevoLocal() {
+  document.getElementById('locNombre').value = '';
+  document.getElementById('locCodigo').value = '';
+  document.getElementById('locCodigo').dataset.touched = '';
+  document.getElementById('locAdminEmail').value = '';
+  document.getElementById('locAdminPass').value = '';
+  document.getElementById('locCodigo').addEventListener('input', function(){ this.dataset.touched='1'; }, { once:true });
+  openModal('modalNuevoLocal');
+}
+async function loadLocales() {
+  const cont = document.getElementById('localesList');
+  cont.innerHTML = '<div style="color:#aaa;padding:16px">Cargando...</div>';
+  try {
+    const res = await apiFetch('/locals');
+    if (!res.ok) { cont.innerHTML = '<div style="color:var(--danger);padding:16px">No autorizado.</div>'; return; }
+    const locales = await res.json();
+    cont.innerHTML = `<table style="width:100%;font-size:13px">
+      <thead><tr><th>Local</th><th>Código</th><th>Estado</th></tr></thead>
+      <tbody>${locales.map(l=>`<tr>
+        <td><strong>${l.nombre||l.id}</strong></td>
+        <td style="font-family:monospace;color:var(--gray)">${l.id}</td>
+        <td>${l.id==='la-isla'?'<span class="badge badge-success">Principal</span>':(l.activo?'<span class="badge badge-success">Activo</span>':'<span class="badge badge-secondary">Inactivo</span>')}</td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+  } catch(e) { cont.innerHTML = '<div style="color:var(--danger);padding:16px">Error al cargar locales.</div>'; }
+}
+async function crearLocalNuevo() {
+  const nombre = document.getElementById('locNombre').value.trim();
+  const id = _slugify(document.getElementById('locCodigo').value);
+  const adminEmail = document.getElementById('locAdminEmail').value.trim().toLowerCase();
+  const adminPassword = document.getElementById('locAdminPass').value;
+  if (!nombre || !id || !adminEmail || !adminPassword) { showToast('Completá todos los campos','error'); return; }
+  try {
+    const res = await apiFetch('/locals', { method:'POST', body: JSON.stringify({ id, nombre, adminEmail, adminPassword, biz_cfg:{ nombre } }) });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.error || 'No se pudo crear','error'); return; }
+    closeModal('modalNuevoLocal');
+    showToast(`Local "${nombre}" creado. Admin: ${adminEmail}`,'success');
+    loadLocales();
+  } catch(e) { showToast('Error de conexión','error'); }
 }
 
 // ======= USUARIOS =======
