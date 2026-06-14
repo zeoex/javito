@@ -647,7 +647,7 @@
     fetch('/api/public/menu?local=' + encodeURIComponent(_local)).then(function(r){return r.json();}).then(function(d){
       var biz = (d && d.biz_cfg) || {};
       if (biz.nombre) { var bn=document.querySelector('.brand-name'); if(bn) bn.textContent=biz.nombre; document.title=biz.nombre; }
-      if (biz.logo) { var svg=document.querySelector('.brand-icon-svg'); if(svg){ var img=document.createElement('img'); img.src=biz.logo; img.alt=''; img.style.cssText='width:44px;height:44px;border-radius:12px;object-fit:cover'; svg.parentNode.replaceChild(img, svg); } }
+      if (biz.logo) { var svg=document.querySelector('.brand-icon-svg'); if(svg){ var img=document.createElement('img'); img.src=biz.logo; img.alt=''; img.style.cssText='max-width:64px;max-height:48px;width:auto;height:auto;object-fit:contain;border-radius:10px'; svg.parentNode.replaceChild(img, svg); } }
     }).catch(function(){});
   }
   var grid = document.getElementById('tileGrid');

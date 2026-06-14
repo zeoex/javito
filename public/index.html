@@ -772,7 +772,7 @@ body.rol-mozo .spk-size-btn:hover{border-color:#059669;background:#ecfdf5}
 
   <div class="login-brand">
     <div class="login-module-label" id="loginTitle">Módulo Administración</div>
-    <div class="login-app-name">Res<span>Tito</span></div>
+    <div class="login-app-name" id="loginAppName">Res<span>Tito</span></div>
   </div>
 
   <div class="login-card">
@@ -3169,9 +3169,10 @@ function initApp() {
     fetch('/api/public/menu?local=' + encodeURIComponent(_pl)).then(r=>r.json()).then(d=>{
       const biz = (d && d.biz_cfg) || {};
       const nombre = biz.nombre || _pl;
-      const lt = document.getElementById('loginTitle'); if (lt) lt.textContent = nombre + ' · ' + _modLabel;
+      const lt = document.getElementById('loginTitle'); if (lt) lt.textContent = _modLabel;
+      const an = document.getElementById('loginAppName'); if (an) an.textContent = nombre;
       document.title = nombre + ' · ' + _modLabel;
-      if (biz.logo) { const le2 = document.getElementById('loginEmoji'); if (le2) { le2.innerHTML = `<img src="${biz.logo}" alt="" style="width:88px;height:88px;object-fit:cover;border-radius:20px;display:block">`; le2.style.fontSize = '0'; } }
+      if (biz.logo) { const le2 = document.getElementById('loginEmoji'); if (le2) { le2.innerHTML = `<img src="${biz.logo}" alt="" style="max-width:120px;max-height:96px;width:auto;height:auto;object-fit:contain;border-radius:14px;display:block">`; le2.style.fontSize = '0'; } }
     }).catch(()=>{});
   }
 })();

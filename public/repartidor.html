@@ -1721,7 +1721,7 @@ const REPARTIDOR_LOCAL = (location.pathname.match(/^\/([^\/]+)\/repartidor/) || 
     var app = document.getElementById('repLoginApp'); if (app) app.textContent = nombre;
     var ti = document.getElementById('repLoginTitle'); if (ti) ti.textContent = 'Repartidor';
     document.title = nombre + ' · Repartidor';
-    if (biz.logo) { var lg = document.getElementById('repLoginLogo'); if (lg) lg.src = biz.logo; }
+    if (biz.logo) { var lg = document.getElementById('repLoginLogo'); if (lg) { lg.src = biz.logo; lg.style.cssText += ';object-fit:contain;width:auto;height:auto;max-width:120px;max-height:96px'; } }
   }).catch(function(){});
 })();
 
