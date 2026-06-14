@@ -587,6 +587,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
     <input type="text" class="confirm-form-input" id="confirmNombre" placeholder="Ej: Juan Pérez" autocomplete="name" oninput="checkReady()" onblur="checkNameError()"/>
     <div id="nameError" style="display:none;color:#f87171;font-size:12px;margin-top:4px;margin-bottom:2px">⚠ Completá tu nombre y apellido</div>
 
+    <label class="confirm-form-label" style="margin-top:12px">WhatsApp <span style="font-weight:400;opacity:.7">(sin el 0 y sin el 15)</span></label>
+    <input type="tel" inputmode="numeric" class="confirm-form-input" id="confirmWhatsapp" placeholder="Ej: 3624857011" autocomplete="tel" maxlength="13" oninput="onWspInput()" onblur="checkWspError()"/>
+    <div id="wspError" style="display:none;color:#f87171;font-size:12px;margin-top:4px;margin-bottom:2px">⚠ Ingresá tu WhatsApp sin el 0 y sin el 15 (ej: 3624857011)</div>
+
     <label class="confirm-glow-label">✨ Copiá el alias o CVU/CBU y envianos el comprobante para confirmar tu pedido ✨</label>
     <div class="confirm-transfer-box" id="confirmTransferBox"></div>
 
@@ -705,7 +709,7 @@ function checkReady() {
   const hasPayment = aliasCopied || cbuCopied || (!bizAlias && !bizCbu);
   const hasMode = !!modoEnvio;
   const deliveryOk = modoEnvio !== 'delivery' || (locationOk && !coverageExceeded);
-  const ok = nombre.length > 0 && hasPayment && hasMode && deliveryOk;
+  const ok = nombre.length > 0 && wspValid().ok && hasPayment && hasMode && deliveryOk;
   const btn = document.getElementById('btnWsp');
   if (btn) {
     btn.disabled = !ok;
@@ -718,6 +722,31 @@ function checkNameError() {
   const nombre = (document.getElementById('confirmNombre')?.value || '').trim();
   const err = document.getElementById('nameError');
   if (err) err.style.display = nombre ? 'none' : '';
+}
+
+/* ─── WhatsApp del cliente (sin 0 y sin 15) ─── */
+function digitsOnly(s) { return (s || '').replace(/\D/g, ''); }
+function wspValid() {
+  const d = digitsOnly(document.getElementById('confirmWhatsapp')?.value || '');
+  if (!d) return { ok: false };
+  if (d[0] === '0') return { ok: false, msg: 'Sacá el 0 del principio (ej: 3624857011)' };
+  if (d.startsWith('15')) return { ok: false, msg: 'Sacá el 15 (ej: 3624857011)' };
+  if (d.length < 8 || d.length > 12) return { ok: false, msg: 'Revisá tu número: código de área + número, sin 0 ni 15' };
+  return { ok: true, value: d };
+}
+function onWspInput() {
+  const el = document.getElementById('confirmWhatsapp');
+  if (el) el.value = digitsOnly(el.value);
+  checkReady();
+  const err = document.getElementById('wspError');
+  if (err && wspValid().ok) err.style.display = 'none';
+}
+function checkWspError() {
+  const v = wspValid();
+  const err = document.getElementById('wspError');
+  if (!err) return;
+  if (v.ok) { err.style.display = 'none'; }
+  else { err.style.display = ''; err.textContent = '⚠ ' + (v.msg || 'Ingresá tu WhatsApp sin el 0 y sin el 15 (ej: 3624857011)'); }
 }
 
 /* ─── Render card ─── */
@@ -1145,6 +1174,13 @@ function enviarWhatsApp() {
     document.getElementById('confirmNombre').focus();
     return;
   }
+  const wsp = wspValid();
+  if (!wsp.ok) {
+    checkWspError();
+    document.getElementById('confirmWhatsapp').focus();
+    return;
+  }
+  const telefonoCliente = wsp.value;
   if (!modoEnvio) { showToast('Elegí el modo de envío'); return; }
   if (coverageExceeded) { showToast('Tu dirección excede la cobertura de envío'); return; }
 
@@ -1186,7 +1222,7 @@ function enviarWhatsApp() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       local: (location.pathname.match(/^\/([^\/]+)\/carta/)||[])[1] || new URLSearchParams(location.search).get('local') || 'la-isla',
-      cliente: { nombre, telefono: '', direccion },
+      cliente: { nombre, telefono: telefonoCliente, direccion },
       items: cart.map(i => ({ nombre: i.nombre, qty: i.qty, precio: i.precio, size: i.size || null, nota: i.nota || '' })),
       total: totalFinal,
       metodo_pago: 'Transferencia',
