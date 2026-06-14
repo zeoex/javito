@@ -1,6 +1,6 @@
 {
   "appId": "com.restito.repartidor",
-  "appName": "ResTito Repartidor",
+  "appName": "Delivery",
   "webDir": "www",
   "server": {
     "url": "https://restito-production.up.railway.app/la-isla/repartidor",
