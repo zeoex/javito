@@ -1942,6 +1942,31 @@ app.post('/api/users', authMiddleware, async (req, res) => {
   res.status(201).json({ id: user.id, nombre, email, rol, local_id: targetLocal });
 });
 
+// Lista de administradores de cada local (solo super-admin)
+app.get('/api/admins', authMiddleware, superOnly, (_req, res) => {
+  const locName = Object.fromEntries(db.locals.map(l => [l.id, l.nombre]));
+  const list = db.users
+    .filter(u => !u.super && u.rol === 'admin')
+    .map(u => ({ id: u.id, nombre: u.nombre, email: u.email, local_id: u.local_id || DEFAULT_LOCAL,
+                 local: locName[u.local_id] || u.local_id || DEFAULT_LOCAL, activo: u.activo !== false }));
+  res.json(list);
+});
+
+// Eliminar usuario (super: cualquiera; admin: solo de su local). Nunca al super.
+app.delete('/api/users/:id', authMiddleware, async (req, res) => {
+  const u = db.users.find(x => String(x.id) === String(req.params.id));
+  if (!u) return res.status(404).json({ error: 'Usuario no encontrado' });
+  if (u.super) return res.status(403).json({ error: 'No se puede eliminar el super-admin' });
+  if (!req.user.super) {
+    if (!['admin','supervisor'].includes(req.user.rol)) return res.status(403).json({ error: 'No autorizado' });
+    if ((u.local_id || DEFAULT_LOCAL) !== (req.user.local_id || DEFAULT_LOCAL)) return res.status(403).json({ error: 'Solo usuarios de tu local' });
+  }
+  const local = u.local_id || DEFAULT_LOCAL;
+  db.users = db.users.filter(x => String(x.id) !== String(req.params.id));
+  await persistLocalUsers(local);
+  res.json({ ok: true });
+});
+
 // ─────────────────────────────────────────────
 //  LLAMADOR ROUTES
 // ─────────────────────────────────────────────

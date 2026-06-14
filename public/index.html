@@ -1262,7 +1262,7 @@ body.rol-mozo .spk-size-btn:hover{border-color:#059669;background:#ecfdf5}
         </div>
         <div class="card">
           <div class="table-wrap"><table>
-            <thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Último Acceso</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>Nombre</th><th>Email</th><th id="usrColRol">Rol</th><th>Estado</th><th>Último Acceso</th><th>Acciones</th></tr></thead>
             <tbody id="usuariosTbody"></tbody>
           </table></div>
         </div>
@@ -6114,8 +6114,35 @@ async function crearLocalNuevo() {
 }
 
 // ======= USUARIOS =======
-function renderUsuarios() {
+async function renderUsuarios() {
   const roles = {admin:'Administrador',mozo:'Mozo',cajero:'Cajero',cocina:'Cocina',repartidor:'🛵 Repartidor'};
+  const h2  = document.querySelector('#sec-usuarios .section-header h2');
+  const btn = document.querySelector('#sec-usuarios .section-header button');
+  const colRol = document.getElementById('usrColRol');
+
+  // SUPER-ADMIN: gestiona SOLO los administradores de cada local
+  if (currentUser?.super) {
+    if (h2) h2.textContent = '👤 Administradores de Locales';
+    if (btn) btn.textContent = '+ Nuevo Administrador';
+    if (colRol) colRol.textContent = 'Local';
+    let admins = [];
+    try { const r = await apiFetch('/admins'); if (r.ok) admins = await r.json(); } catch(e) {}
+    document.getElementById('usuariosTbody').innerHTML = admins.length ? admins.map(u=>`
+      <tr>
+        <td><strong>${u.nombre}</strong></td>
+        <td>${u.email}</td>
+        <td><span class="tag">🏢 ${u.local}</span></td>
+        <td><span class="badge ${u.activo?'badge-success':'badge-secondary'}">${u.activo?'Activo':'Inactivo'}</span></td>
+        <td style="font-size:12px">-</td>
+        <td><button class="btn btn-danger btn-sm" onclick="eliminarUsuarioSuper('${u.id}','${u.nombre}')">🗑️</button></td>
+      </tr>`).join('') : '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:20px">Sin administradores. Creá uno con "+ Nuevo Administrador".</td></tr>';
+    return;
+  }
+
+  // ADMIN DE LOCAL: gestiona los usuarios de su propio local
+  if (h2) h2.textContent = '👤 Usuarios';
+  if (btn) btn.textContent = '+ Nuevo Usuario';
+  if (colRol) colRol.textContent = 'Rol';
   document.getElementById('usuariosTbody').innerHTML = usuariosData.map(u=>`
     <tr>
       <td><strong>${u.nombre}</strong></td>
@@ -6131,6 +6158,26 @@ function renderUsuarios() {
     </tr>`).join('');
 }
 
+// Opciones de rol según quién crea: super → solo Administrador; admin de local → su staff (sin admin)
+function _setUsrRolOptions(incluirRol) {
+  const sel = document.getElementById('usrRol');
+  const labels = {admin:'Administrador',mozo:'Mozo',cajero:'Cajero',cocina:'Cocina',repartidor:'Repartidor'};
+  let roles = currentUser?.super ? ['admin'] : ['mozo','cajero','cocina','repartidor'];
+  if (incluirRol && !roles.includes(incluirRol)) roles = [incluirRol, ...roles];
+  sel.innerHTML = roles.map(r=>`<option value="${r}">${labels[r]||r}</option>`).join('');
+}
+
+async function eliminarUsuarioSuper(id, nombre) {
+  if (!confirm(`¿Eliminar al administrador "${nombre}"?`)) return;
+  try {
+    const res = await apiFetch('/users/'+id, { method:'DELETE' });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.error || 'No se pudo eliminar','error'); return; }
+    showToast('Administrador eliminado','success');
+    renderUsuarios();
+  } catch(e) { showToast('Error de conexión','error'); }
+}
+
 function editarUsuario(id) {
   const u = usuariosData.find(x=>String(x.id)===String(id));
   if(!u) return;
@@ -6140,6 +6187,7 @@ function editarUsuario(id) {
   document.getElementById('usrEmail').value = u.email;
   document.getElementById('usrPass').value = '';
   document.getElementById('usrPassLabel').textContent = 'Contraseña (dejar vacío para no cambiar)';
+  _setUsrRolOptions(u.rol);
   document.getElementById('usrRol').value = u.rol;
   document.getElementById('usrLocalGrp').style.display = 'none'; // el local no se cambia al editar
   document.getElementById('btnGuardarUsuario').textContent = 'Guardar';
@@ -6192,35 +6240,36 @@ async function guardarUsuario() {
     return;
   }
   if(!pass){ showToast('Ingresá una contraseña','error'); return; }
-  const viewLocal = currentUser?.local_id || 'la-isla';
-  const targetLocal = currentUser?.super ? (document.getElementById('usrLocal').value || 'la-isla') : viewLocal;
-  if (targetLocal === viewLocal) {
-    // Usuario del local que estoy viendo → flujo normal (se persiste con el estado del local)
-    usuariosData.push({id:Date.now(),nombre,email,password:pass,rol,local_id:targetLocal,activo:true,ultimo:'-'});
-    closeModal('modalUsuario');
-    saveState(); renderUsuarios();
-    showToast('Usuario creado','success');
-  } else {
-    // Super-admin crea usuario para OTRO local → endpoint dedicado
+  // Super-admin: crea ADMINISTRADORES de locales → siempre vía endpoint dedicado
+  if (currentUser?.super) {
+    const targetLocal = document.getElementById('usrLocal').value || 'la-isla';
     try {
-      const res = await apiFetch('/users', { method:'POST', body: JSON.stringify({ nombre, email, password:pass, rol, local_id: targetLocal }) });
+      const res = await apiFetch('/users', { method:'POST', body: JSON.stringify({ nombre, email, password:pass, rol:'admin', local_id: targetLocal }) });
       const data = await res.json();
       if (!res.ok) { showToast(data.error || 'No se pudo crear','error'); return; }
       closeModal('modalUsuario');
       const locName = (_localesUsuario.find(l=>l.id===targetLocal)?.nombre) || targetLocal;
-      showToast(`Usuario creado en ${locName}`,'success');
+      showToast(`Administrador creado en ${locName}`,'success');
+      renderUsuarios();
     } catch(e) { showToast('Error de conexión','error'); }
+    return;
   }
+  // Admin de local: crea usuarios de SU local (mozos, repartidores, cajeros, cocina)
+  usuariosData.push({id:Date.now(),nombre,email,password:pass,rol,local_id:(currentUser?.local_id||'la-isla'),activo:true,ultimo:'-'});
+  closeModal('modalUsuario');
+  saveState(); renderUsuarios();
+  showToast('Usuario creado','success');
 }
 
 function _resetModalUsuario() {
   document.getElementById('usrEditId').value='';
-  document.getElementById('modalUsuarioTitle').textContent='Nuevo Usuario';
+  document.getElementById('modalUsuarioTitle').textContent = currentUser?.super ? 'Nuevo Administrador' : 'Nuevo Usuario';
   document.getElementById('usrNombre').value='';
   document.getElementById('usrEmail').value='';
   document.getElementById('usrPass').value='';
   document.getElementById('usrPassLabel').textContent='Contraseña';
-  document.getElementById('usrRol').value='mozo';
+  _setUsrRolOptions();
+  document.getElementById('usrRol').value = currentUser?.super ? 'admin' : 'mozo';
   document.getElementById('btnGuardarUsuario').textContent='Crear';
   _cargarLocalesUsuario();
 }
