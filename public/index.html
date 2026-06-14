@@ -4572,8 +4572,9 @@ function _adminLocal() {
   return (location.pathname.match(/^\/([^\/]+)\/(admin|mozo)/) || [])[1] || localStorage.getItem('pz_local') || 'la-isla';
 }
 
-// Avisar al cliente por WhatsApp el estado actual de su pedido.
-// En "en camino" adjunta el MISMO link de seguimiento en vivo que usa el repartidor.
+// Avisar al cliente por WhatsApp el estado de su pedido.
+// Desde la PRIMERA instancia ya incluye el link de seguimiento en vivo (el mismo que usa
+// el repartidor); el cliente lo abre y verá "esperando al repartidor" hasta que arranque.
 async function avisarEstadoWhatsApp(id) {
   const o = (typeof deliveryData !== 'undefined' ? deliveryData : []).find(d => String(d.id) === String(id));
   if (!o) return;
@@ -4582,11 +4583,14 @@ async function avisarEstadoWhatsApp(id) {
   const nom = o.cliente?.nombre ? ' ' + String(o.cliente.nombre).split(' ')[0] : '';
   const num = o.numero ? ' ' + o.numero : '';
   const est = o.estado;
+  const esDelivery = !!((o.lat_cliente && o.lon_cliente) || o.modo_envio === 'delivery' || o.origen === 'web');
 
-  if (est === 'en_camino') {
-    // Abrir la ventana DENTRO del gesto del click para evitar el bloqueo de pop-ups
-    const win = window.open('about:blank', '_blank');
-    let link = '';
+  // Abrir la ventana DENTRO del gesto del click para evitar el bloqueo de pop-ups
+  const win = window.open('about:blank', '_blank');
+
+  // Asegurar/reutilizar la sesión de seguimiento del pedido (mismo trackId que el repartidor)
+  let link = '';
+  if (esDelivery && est !== 'entregado') {
     try {
       const dest = (o.lat_cliente && o.lon_cliente)
         ? { lat: Number(o.lat_cliente), lng: Number(o.lon_cliente), address: o.direccion || '' } : null;
@@ -4601,17 +4605,18 @@ async function avisarEstadoWhatsApp(id) {
       const j = await r.json();
       if (j && j.trackId) link = location.origin + '/t/' + j.trackId;
     } catch (e) {}
-    const msg = `Hola${nom}! 🛵 Tu pedido${num} está en camino.` + (link ? ` Seguilo en vivo acá: ${link}` : '');
-    const url = `https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`;
-    if (win) win.location.href = url; else window.open(url, '_blank');
-    return;
   }
 
-  let msg;
-  if (est === 'listo') msg = `Hola${nom}! ✅ Tu pedido${num} ya está listo${o.modo_envio === 'delivery' || o.origen === 'web' ? ' para salir' : ' para retirar'}.`;
-  else if (est === 'entregado') msg = `Hola${nom}! 🙌 Tu pedido${num} fue entregado. ¡Gracias por elegirnos!`;
-  else msg = `Hola${nom}! 👨‍🍳 Estamos preparando tu pedido${num}. Te avisamos cuando esté listo.`;
-  window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`, '_blank');
+  let estadoTxt;
+  if (est === 'en_camino') estadoTxt = `🛵 Tu pedido${num} está en camino.`;
+  else if (est === 'listo') estadoTxt = `✅ Tu pedido${num} ya está listo${esDelivery ? ' y sale en breve' : ' para retirar'}.`;
+  else if (est === 'entregado') estadoTxt = `🙌 Tu pedido${num} fue entregado. ¡Gracias por elegirnos!`;
+  else estadoTxt = `👨‍🍳 ¡Recibimos tu pedido${num}! Ya lo estamos preparando.`;
+
+  let msg = `Hola${nom}! ${estadoTxt}`;
+  if (link) msg += ` Seguí tu pedido en vivo acá: ${link}`;
+  const url = `https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`;
+  if (win) win.location.href = url; else window.open(url, '_blank');
 }
 
 let _repartidoresList = [];
