@@ -1881,8 +1881,6 @@ body.rol-mozo .spk-size-btn:hover{border-color:#059669;background:#ecfdf5}
         <select class="form-control" id="usrRol">
           <option value="admin">Administrador</option>
           <option value="mozo">Mozo</option>
-          <option value="cajero">Cajero</option>
-          <option value="cocina">Cocina</option>
           <option value="repartidor">Repartidor</option>
         </select>
       </div>
@@ -6158,11 +6156,11 @@ async function renderUsuarios() {
     </tr>`).join('');
 }
 
-// Opciones de rol según quién crea: super → solo Administrador; admin de local → su staff (sin admin)
+// Opciones de rol según quién crea: super → solo Administrador; admin de local → Administrador/Mozo/Repartidor (de su local)
 function _setUsrRolOptions(incluirRol) {
   const sel = document.getElementById('usrRol');
-  const labels = {admin:'Administrador',mozo:'Mozo',cajero:'Cajero',cocina:'Cocina',repartidor:'Repartidor'};
-  let roles = currentUser?.super ? ['admin'] : ['mozo','cajero','cocina','repartidor'];
+  const labels = {admin:'Administrador',mozo:'Mozo',repartidor:'Repartidor',cajero:'Cajero',cocina:'Cocina'};
+  let roles = currentUser?.super ? ['admin'] : ['admin','mozo','repartidor'];
   if (incluirRol && !roles.includes(incluirRol)) roles = [incluirRol, ...roles];
   sel.innerHTML = roles.map(r=>`<option value="${r}">${labels[r]||r}</option>`).join('');
 }
