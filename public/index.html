@@ -4318,6 +4318,9 @@ function _renderHistorialDlvCard(o) {
         ${o.direccion?`<div style="font-size:11px;color:var(--gray)">📍 ${o.direccion}</div>`:''}
         ${gpsLink}${envioStr}${repStr}${notaStr}
       </div>
+      ${['admin','supervisor'].includes(currentUser?.rol) ? `<div style="margin-top:10px;display:flex;justify-content:flex-end">
+        <button class="btn btn-danger btn-sm" onclick="eliminarPedidoHistorial(${o.id})">🗑️ Eliminar pedido</button>
+      </div>` : ''}
     </div>
   </div>`;
 }
@@ -4329,6 +4332,41 @@ function _toggleHistDlv(uid) {
   const open = el.style.display === 'none';
   el.style.display = open ? 'block' : 'none';
   if (arr) arr.textContent = open ? '▲' : '▼';
+}
+
+// Verifica la contraseña del usuario actual contra el backend (login). Sin backend, acepta las demo.
+async function verificarPasswordActual(pass) {
+  if (!pass) return false;
+  const email = currentUser?.email;
+  if (!email) return (pass === 'admin123' || pass === 'super123');
+  try {
+    const res = await fetch('/api/auth/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password: pass })
+    });
+    return res.ok;
+  } catch(e) {
+    return (pass === 'admin123' || pass === 'super123');
+  }
+}
+
+// Elimina un pedido del historial — con advertencia + confirmación por contraseña
+async function eliminarPedidoHistorial(id) {
+  const o = deliveryData.find(x => String(x.id) === String(id));
+  if (!o) return;
+  if (!['admin','supervisor'].includes(currentUser?.rol)) { showToast('Solo un administrador puede eliminar pedidos','error'); return; }
+  if (!confirm(`⚠️ ATENCIÓN\n\nVas a ELIMINAR de forma permanente el pedido ${o.numero} de ${o.cliente?.nombre || '—'} ($${Number(o.total||0).toLocaleString('es-AR')}).\n\nEsta acción NO se puede deshacer. ¿Continuar?`)) return;
+  const pass = prompt('🔒 Para confirmar la eliminación, ingresá tu contraseña:');
+  if (pass === null) return;                 // canceló el prompt
+  if (!pass.trim()) { showToast('Contraseña requerida — no se eliminó nada','error'); return; }
+  const ok = await verificarPasswordActual(pass.trim());
+  if (!ok) { showToast('Contraseña incorrecta — no se eliminó nada','error'); return; }
+  deliveryData = deliveryData.filter(x => String(x.id) !== String(id));
+  saveState();
+  renderHistorialDelivery();
+  renderDelivery();
+  loadDashboard();
+  showToast(`Pedido ${o.numero} eliminado`,'success');
 }
 
 function renderDeliveryCard(o,stage) {
