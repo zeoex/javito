@@ -1,0 +1,40 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ResTito">
+  <defs>
+    <linearGradient id="tile" x1="34" y1="20" x2="226" y2="240" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8b5cf6"/>
+      <stop offset=".55" stop-color="#7c3aed"/>
+      <stop offset="1" stop-color="#5b21b6"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(74 56) rotate(48) scale(176)">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".30"/>
+      <stop offset=".5" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="dome" x1="92" y1="118" x2="150" y2="190" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#efe9fb"/>
+    </linearGradient>
+    <linearGradient id="knob" x1="116" y1="92" x2="140" y2="118" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fcd34d"/>
+      <stop offset="1" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+
+  <!-- tile -->
+  <rect x="8" y="8" width="240" height="240" rx="58" fill="url(#tile)"/>
+  <rect x="8" y="8" width="240" height="240" rx="58" fill="url(#glow)"/>
+  <rect x="8.5" y="8.5" width="239" height="239" rx="57.5" stroke="#ffffff" stroke-opacity=".16"/>
+
+  <!-- aroma sparkles -->
+  <path d="M183 92c1.3 5.6 2.9 7.2 8.5 8.5-5.6 1.3-7.2 2.9-8.5 8.5-1.3-5.6-2.9-7.2-8.5-8.5 5.6-1.3 7.2-2.9 8.5-8.5Z" fill="#fcd34d" fill-opacity=".9"/>
+  <path d="M196 118c.8 3.3 1.7 4.2 5 5-3.3.8-4.2 1.7-5 5-.8-3.3-1.7-4.2-5-5 3.3-.8 4.2-1.7 5-5Z" fill="#fbbf24" fill-opacity=".75"/>
+
+  <!-- cloche -->
+  <rect x="52" y="180" width="152" height="20" rx="10" fill="url(#dome)"/>
+  <path d="M68 182a60 60 0 0 1 120 0Z" fill="url(#dome)"/>
+  <!-- dome soft inner contour -->
+  <path d="M84 182a44 44 0 0 1 88 0" stroke="#7c3aed" stroke-opacity=".10" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <!-- handle -->
+  <rect x="121" y="108" width="14" height="22" rx="7" fill="url(#dome)"/>
+  <circle cx="128" cy="106" r="13" fill="url(#knob)"/>
+  <circle cx="123.5" cy="101.5" r="3.6" fill="#fff" fill-opacity=".55"/>
+</svg>

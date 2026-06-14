@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--vio:#7c3aed;--vio2:#9d6bff;--amber:#f59e0b;--amber2:#fcd34d;--cream:#FBF5EA;--ink:#160c2e}
+  .page{width:1200px;background:radial-gradient(900px 600px at 80% -6%,rgba(124,58,237,.5),transparent 60%),radial-gradient(700px 500px at 0% 30%,rgba(245,158,11,.12),transparent 55%),#0d0820;color:var(--cream);font-family:'Inter',sans-serif;position:relative;overflow:hidden}
+  .page::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.05;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .pad{padding:74px 84px}
+  .mono{font-family:'JetBrains Mono',monospace;letter-spacing:3px;text-transform:uppercase;font-size:12px;color:var(--vio2)}
+  .rule{height:1px;background:linear-gradient(90deg,rgba(196,181,253,.4),transparent);margin:18px 0 0}
+  .head{display:flex;justify-content:space-between;align-items:center}
+  /* hero lockup */
+  .hero{display:flex;align-items:center;gap:46px;margin:84px 0 70px}
+  .seal{filter:drop-shadow(0 30px 50px rgba(8,4,20,.6))}
+  .wm{font-family:'Fraunces',serif;font-weight:600;font-size:128px;line-height:.9;letter-spacing:-2px;font-optical-sizing:auto}
+  .wm .a{color:#fff}.wm .b{color:var(--amber2)}
+  .tag{font-family:'JetBrains Mono',monospace;letter-spacing:6px;text-transform:uppercase;font-size:14px;color:#cbb9f2;margin-top:18px}
+  /* sections */
+  .sec-l{font-family:'JetBrains Mono',monospace;letter-spacing:3px;text-transform:uppercase;font-size:11px;color:#8a7fb0;margin-bottom:18px}
+  .grid2{display:grid;grid-template-columns:1.25fr 1fr;gap:26px;margin-bottom:26px}
+  .card{border:1px solid rgba(167,139,250,.22);border-radius:22px;padding:34px;background:rgba(124,58,237,.06)}
+  .card.dark{background:linear-gradient(160deg,#1a1138,#120a28)}
+  .card.light{background:linear-gradient(160deg,#FBF5EA,#f1e6d2)}
+  /* horizontal lockup */
+  .lock{display:flex;align-items:center;gap:22px}
+  .lock .lw{font-family:'Fraunces',serif;font-weight:600;font-size:56px;letter-spacing:-1px}
+  .lock.on-dark .lw .a{color:#fff}.lock.on-dark .lw .b{color:var(--amber2)}
+  .lock.on-light .lw .a{color:#2b1a42}.lock.on-light .lw .b{color:#b7831f}
+  .lock .lt{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:3px;text-transform:uppercase;color:#8a7fb0;margin-top:6px}
+  .lock.on-light .lt{color:#8a7256}
+  /* scalability */
+  .scal{display:flex;align-items:flex-end;gap:30px;margin-top:6px}
+  .scal .it{text-align:center}
+  .scal .it .mono{display:block;margin-top:12px;letter-spacing:2px;font-size:10px;color:#8a7fb0}
+  /* color chord */
+  .sw{display:flex;gap:0;border-radius:18px;overflow:hidden;border:1px solid rgba(167,139,250,.22)}
+  .sw div{flex:1;height:120px;display:flex;flex-direction:column;justify-content:flex-end;padding:14px}
+  .sw .nm{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1px}
+  .sw .hx{font-family:'JetBrains Mono',monospace;font-size:11px;opacity:.7;margin-top:2px}
+  .footer{display:flex;justify-content:space-between;align-items:center;margin-top:46px;padding-top:22px;border-top:1px solid rgba(167,139,250,.18)}
+</style></head>
+<body>
+<div class="page" id="page"><div class="pad">
+
+  <div class="head">
+    <div class="mono">ResTito · Identidad de Marca</div>
+    <div class="mono" style="color:#8a7fb0">Servicio Cálido — 2026</div>
+  </div>
+  <div class="rule"></div>
+
+  <!-- HERO LOCKUP -->
+  <div class="hero">
+    <div class="seal" id="bigseal"></div>
+    <div>
+      <div class="wm"><span class="a">Res</span><span class="b">Tito</span></div>
+      <div class="tag">Sistema de gestión gastronómica</div>
+    </div>
+  </div>
+
+  <!-- LOCKUPS -->
+  <div class="sec-l">Lockups</div>
+  <div class="grid2">
+    <div class="card dark">
+      <div class="lock on-dark">
+        <span class="ls" data-sz="64"></span>
+        <div><div class="lw"><span class="a">Res</span><span class="b">Tito</span></div><div class="lt">Horizontal · sobre fondo oscuro</div></div>
+      </div>
+    </div>
+    <div class="card light">
+      <div class="lock on-light">
+        <span class="ls" data-sz="64"></span>
+        <div><div class="lw"><span class="a">Res</span><span class="b">Tito</span></div><div class="lt">Horizontal · sobre fondo claro</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCALABILITY + COLOR -->
+  <div class="grid2">
+    <div class="card">
+      <div class="sec-l" style="margin-bottom:22px">El sello — escalable</div>
+      <div class="scal">
+        <div class="it"><span class="ls" data-sz="96"></span><span class="mono">96px</span></div>
+        <div class="it"><span class="ls" data-sz="56"></span><span class="mono">56px</span></div>
+        <div class="it"><span class="ls" data-sz="32"></span><span class="mono">32px</span></div>
+        <div class="it"><span class="ls" data-sz="20"></span><span class="mono">favicon</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec-l" style="margin-bottom:22px">Acorde cromático</div>
+      <div class="sw">
+        <div style="background:#7c3aed"><span class="nm" style="color:#fff">Violeta</span><span class="hx" style="color:#fff">#7C3AED</span></div>
+        <div style="background:#f59e0b"><span class="nm" style="color:#2b1500">Ámbar</span><span class="hx" style="color:#2b1500">#F59E0B</span></div>
+        <div style="background:#FBF5EA"><span class="nm" style="color:#2b1a42">Crema</span><span class="hx" style="color:#2b1a42">#FBF5EA</span></div>
+        <div style="background:#160c2e"><span class="nm" style="color:#fff">Tinta</span><span class="hx" style="color:#cbb9f2">#160C2E</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="mono" style="color:#8a7fb0">Resistencia · Chaco</div>
+    <div class="mono" style="color:var(--amber2)">Warmth, served with precision</div>
+  </div>
+
+</div></div>
+
+<script>
+  // Inyecta el sello SVG en cada slot al tamaño pedido
+  fetch('/brand/restito-icon.svg').then(r=>r.text()).then(svg=>{
+    function place(el,sz){ el.innerHTML=svg; const s=el.querySelector('svg'); s.setAttribute('width',sz); s.setAttribute('height',sz); }
+    place(document.getElementById('bigseal'),176);
+    document.querySelectorAll('.ls').forEach(el=>place(el, +el.dataset.sz));
+  });
+</script>
+</body></html>
