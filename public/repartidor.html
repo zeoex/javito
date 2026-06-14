@@ -1529,6 +1529,7 @@
     <div class="login-error" id="login-error"></div>
     <div class="login-hint">Ingresá con tu email y contraseña creados en Admin → Usuarios</div>
 
+    <div id="install-block">
     <div style="display:flex;gap:10px;margin-top:16px">
       <a id="login-apk" href="https://github.com/zeoex/javito/releases/latest/download/restito-repartidor.apk"
         style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;box-sizing:border-box;background:rgba(61,220,132,.10);border:1.5px solid rgba(61,220,132,.55);color:#128c4b;border-radius:12px;padding:11px 8px;font-weight:700;font-size:12px;text-decoration:none;cursor:pointer" title="Descargar la app (.apk) para Android">
@@ -1542,6 +1543,7 @@
       </button>
     </div>
     <div style="font-size:10.5px;color:#9ca3af;text-align:center;margin-top:7px;line-height:1.5">Android: descargá la app · iPhone: acceso directo</div>
+    </div><!-- /install-block -->
   </div>
 
 </div>
@@ -2590,8 +2592,11 @@ function pwaInstaller(appName, btnColor){
   window.isStandalonePWA = standalone;
 }
 pwaInstaller('Repartidor', 'linear-gradient(135deg,#dc2626,#f87171)');
-// Ocultar el botón "Instalar app" del login si ya está instalada (modo standalone)
-if (window.isStandalonePWA) { var _ib=document.getElementById('login-install'); if(_ib) _ib.style.display='none'; }
+// Dentro de la app (APK/Capacitor) o ya instalada (standalone): ocultar los botones de instalación
+(function(){
+  var native = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+  if (native || window.isStandalonePWA) { var blk = document.getElementById('install-block'); if (blk) blk.style.display = 'none'; }
+})();
 </script>
 </body>
 </html>
