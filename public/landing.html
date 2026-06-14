@@ -17,6 +17,14 @@
   .btn:hover{transform:translateY(-2px)}
   .btn-amber{background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff;box-shadow:0 8px 24px rgba(245,158,11,.35)}
   .btn-ghost{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.18)}
+  /* Botones de contacto con resplandor pulsante */
+  .btn-wpp{background:linear-gradient(135deg,#25d366,#128c4b);color:#fff}
+  .btn-mail{background:rgba(255,255,255,.14);color:#fff;border:1.5px solid rgba(255,255,255,.4)}
+  @keyframes glowWpp{0%,100%{box-shadow:0 0 0 0 rgba(37,211,102,.45),0 8px 22px rgba(37,211,102,.35)}50%{box-shadow:0 0 30px 7px rgba(37,211,102,.75),0 10px 30px rgba(37,211,102,.55)}}
+  @keyframes glowMail{0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,.35)}50%{box-shadow:0 0 28px 6px rgba(251,191,36,.7)}}
+  .glow-wpp{animation:glowWpp 1.7s ease-in-out infinite}
+  .glow-mail{animation:glowMail 1.7s ease-in-out infinite}
+  @media (prefers-reduced-motion:reduce){.glow-wpp,.glow-mail{animation:none}}
   /* NAV */
   nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(10px);background:rgba(15,10,30,.7);border-bottom:1px solid rgba(167,139,250,.15)}
   nav .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
@@ -146,9 +154,9 @@
   <div class="cta-band">
     <h2>📩 Empezá a vender más con ResTito</h2>
     <p>Demostración gratis y puesta en marcha el mismo día.</p>
-    <div style="position:relative;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-      <a href="https://wa.me/5493624857011?text=%C2%A1Hola!%20Me%20interesa%20ResTito%20para%20mi%20negocio.%20%C2%BFMe%20pas%C3%A1s%20m%C3%A1s%20informaci%C3%B3n%3F" target="_blank" class="btn btn-amber" id="ctaContacto">📱 WhatsApp 362 4857011</a>
-      <a href="mailto:zeoextreme@gmail.com?subject=Demo%20ResTito" class="btn btn-ghost">✉️ zeoextreme@gmail.com</a>
+    <div style="position:relative;display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+      <a href="https://wa.me/5493624857011?text=%C2%A1Hola!%20Me%20interesa%20ResTito%20para%20mi%20negocio.%20%C2%BFMe%20pas%C3%A1s%20m%C3%A1s%20informaci%C3%B3n%3F" target="_blank" class="btn btn-wpp glow-wpp" id="ctaContacto">📱 WhatsApp 362 4857011</a>
+      <a href="mailto:zeoextreme@gmail.com?subject=Demo%20ResTito" class="btn btn-mail glow-mail">✉️ zeoextreme@gmail.com</a>
     </div>
   </div>
 </div></section>
