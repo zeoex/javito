@@ -1052,7 +1052,6 @@ body.rol-mozo .spk-size-btn:hover{border-color:#059669;background:#ecfdf5}
         <div class="tabs" id="mesasTabs">
           <div class="tab active" id="tabSalon" onclick="switchTab('salon')">🏠 Salón</div>
           <div class="tab" id="tabVereda" onclick="switchTab('vereda')">🌿 Vereda</div>
-          <div class="tab" id="tabMostrador" onclick="switchTab('mostrador')" style="display:none">🧾 Mostrador</div>
         </div>
         <div class="mesas-grid" id="mesasGrid"></div>
       </div>
@@ -1525,7 +1524,7 @@ body.rol-mozo .spk-size-btn:hover{border-color:#059669;background:#ecfdf5}
     <div class="modal-header"><h3 id="modalNuevaMesaTitle">Nueva Mesa</h3><button class="modal-close" onclick="closeModal('modalNuevaMesa')">✕</button></div>
     <div class="modal-body">
       <div class="form-group"><label>Ubicación</label>
-        <select class="form-control" id="nuevaMesaZona" onchange="onNuevaMesaZonaChange()"><option value="salon">Salón</option><option value="vereda">Vereda</option><option value="mostrador">Mostrador</option></select>
+        <select class="form-control" id="nuevaMesaZona" onchange="onNuevaMesaZonaChange()"><option value="salon">Salón</option><option value="vereda">Vereda</option></select>
       </div>
       <div class="form-group" id="grpNuevaMesaNombre" style="display:none"><label>Nombre del mostrador</label><input class="form-control" id="nuevaMesaNombre" type="text" placeholder="Mostrador" value="Mostrador"/></div>
       <div class="form-group" id="grpNuevaMesaNum"><label>Número de Mesa</label><input class="form-control" id="nuevaMesaNum" type="number" placeholder="Ej: 13"/></div>
@@ -1547,7 +1546,7 @@ body.rol-mozo .spk-size-btn:hover{border-color:#059669;background:#ecfdf5}
       <div class="form-group" id="grpEditMesaNum"><label>Número de Mesa</label><input class="form-control" id="editMesaNum" type="number" min="1"/></div>
       <div class="form-group" id="grpEditMesaCap"><label>Capacidad (personas)</label><input class="form-control" id="editMesaCap" type="number" min="1" max="20"/></div>
       <div class="form-group"><label>Ubicación</label>
-        <select class="form-control" id="editMesaZona" onchange="onEditMesaZonaChange()"><option value="salon">Salón</option><option value="vereda">Vereda</option><option value="mostrador">Mostrador</option></select>
+        <select class="form-control" id="editMesaZona" onchange="onEditMesaZonaChange()"><option value="salon">Salón</option><option value="vereda">Vereda</option></select>
       </div>
     </div>
     <div class="modal-footer">
