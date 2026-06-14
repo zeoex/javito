@@ -486,7 +486,7 @@ app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 const noCache = (res) => { res.setHeader('Cache-Control','no-cache, no-store, must-revalidate'); res.setHeader('Pragma','no-cache'); res.setHeader('Expires','0'); };
 // Role-specific routes must be registered BEFORE express.static to override index.html default
-app.get('/', (_req, res) => { noCache(res); res.sendFile(path.join(__dirname, 'public', 'portal.html')); });
+app.get('/', (_req, res) => { noCache(res); res.sendFile(path.join(__dirname, 'public', 'landing.html')); });
 app.get('/portal', (_req, res) => { noCache(res); res.sendFile(path.join(__dirname, 'public', 'portal.html')); });
 app.get('/admin', (_req, res) => { noCache(res); res.sendFile(path.join(__dirname, 'public', 'index.html')); });
 app.get('/mozo',  (_req, res) => { noCache(res); res.sendFile(path.join(__dirname, 'public', 'index.html')); });

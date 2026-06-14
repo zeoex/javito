@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>ResTito — Sistema de gestión para restaurantes y pizzerías</title>
+<meta name="description" content="ResTito: el sistema todo-en-uno para tu restaurante o pizzería. Mesas, mostrador, delivery, cocina, caja y reportes en tiempo real. Sin instalar nada."/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--vio:#7c3aed;--vio2:#a78bfa;--amber:#f59e0b;--dark:#0f0a1e;--ink:#1f2937}
+  html{scroll-behavior:smooth}
+  body{font-family:'Inter',-apple-system,Segoe UI,Roboto,sans-serif;color:#e7e5f0;background:#0f0a1e;line-height:1.6;overflow-x:hidden}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 22px}
+  a{text-decoration:none;color:inherit}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:14px 26px;border-radius:999px;font-weight:800;font-size:15px;cursor:pointer;border:none;transition:transform .15s,box-shadow .15s}
+  .btn:hover{transform:translateY(-2px)}
+  .btn-amber{background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff;box-shadow:0 8px 24px rgba(245,158,11,.35)}
+  .btn-ghost{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.18)}
+  /* NAV */
+  nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(10px);background:rgba(15,10,30,.7);border-bottom:1px solid rgba(167,139,250,.15)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:20px}
+  .brand .logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#4c1d95,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:20px}
+  .navlinks{display:flex;gap:26px;align-items:center;font-size:14px;font-weight:600;color:#c4b5fd}
+  .navlinks a:hover{color:#fff}
+  @media(max-width:760px){.navlinks{display:none}}
+  /* HERO */
+  .hero{position:relative;padding:80px 0 70px;text-align:center;overflow:hidden}
+  .hero::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:900px;height:600px;background:radial-gradient(ellipse,rgba(124,58,237,.45),transparent 60%);z-index:0}
+  .hero .wrap{position:relative;z-index:1}
+  .tagpill{display:inline-block;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);color:#fcd34d;font-weight:700;font-size:13px;padding:6px 16px;border-radius:999px;margin-bottom:24px}
+  .hero h1{font-size:54px;font-weight:900;line-height:1.07;letter-spacing:-1px;margin-bottom:20px}
+  .hero h1 .hl{background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p.sub{font-size:19px;color:#c4b5fd;max-width:680px;margin:0 auto 34px}
+  .hero .cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  @media(max-width:600px){.hero h1{font-size:36px}.hero p.sub{font-size:16px}}
+  /* STATS */
+  .stats{display:flex;gap:30px;justify-content:center;flex-wrap:wrap;margin-top:54px}
+  .stat{text-align:center}
+  .stat .n{font-size:30px;font-weight:900;color:#fff}
+  .stat .l{font-size:12px;color:#a78bfa;text-transform:uppercase;letter-spacing:1px;font-weight:700}
+  /* SECTIONS */
+  section{padding:70px 0}
+  .sec-title{text-align:center;margin-bottom:46px}
+  .sec-title h2{font-size:36px;font-weight:900;color:#fff;letter-spacing:-.5px}
+  .sec-title p{color:#a78bfa;font-size:16px;margin-top:8px}
+  /* VALUE */
+  .vals{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  @media(max-width:760px){.vals{grid-template-columns:1fr}}
+  .val{background:linear-gradient(180deg,rgba(124,58,237,.12),rgba(124,58,237,.03));border:1px solid rgba(167,139,250,.2);border-radius:18px;padding:26px}
+  .val .ic{font-size:34px;margin-bottom:12px}
+  .val h3{font-size:19px;font-weight:800;color:#fff;margin-bottom:8px}
+  .val p{color:#c4b5fd;font-size:14px}
+  /* FEATURES */
+  .feats{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  @media(max-width:760px){.feats{grid-template-columns:1fr}}
+  .feat{display:flex;gap:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:18px 20px}
+  .feat .fi{font-size:26px;flex-shrink:0}
+  .feat h4{font-size:16px;font-weight:800;color:#fff}
+  .feat p{color:#a78bfa;font-size:13px;margin-top:2px}
+  /* HOW */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;counter-reset:s}
+  @media(max-width:760px){.steps{grid-template-columns:1fr}}
+  .step{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:26px;position:relative}
+  .step::before{counter-increment:s;content:counter(s);position:absolute;top:-16px;left:24px;width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a78bfa);display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff}
+  .step h4{font-size:17px;font-weight:800;color:#fff;margin:10px 0 6px}
+  .step p{color:#c4b5fd;font-size:14px}
+  /* CTA */
+  .cta-band{background:linear-gradient(135deg,#4c1d95,#7c3aed);border-radius:28px;padding:54px 34px;text-align:center;position:relative;overflow:hidden}
+  .cta-band::after{content:'';position:absolute;right:-80px;bottom:-80px;width:280px;height:280px;background:rgba(245,158,11,.25);border-radius:50%}
+  .cta-band h2{font-size:34px;font-weight:900;color:#fff;position:relative}
+  .cta-band p{color:#ede9fe;font-size:17px;margin:12px 0 28px;position:relative}
+  .cta-band .btn{position:relative}
+  /* FOOTER */
+  footer{padding:40px 0;text-align:center;color:#6d6a85;font-size:13px;border-top:1px solid rgba(167,139,250,.12);margin-top:30px}
+  footer .brand{justify-content:center;margin-bottom:10px;color:#a78bfa}
+</style>
+</head>
+<body>
+
+<nav><div class="wrap">
+  <div class="brand"><span class="logo">🍴</span> ResTito</div>
+  <div class="navlinks">
+    <a href="#funciones">Funciones</a>
+    <a href="#como">Cómo funciona</a>
+    <a href="#precios">Precios</a>
+    <a href="#contacto" class="btn btn-amber" style="padding:9px 20px;font-size:14px">Pedir demo</a>
+  </div>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <span class="tagpill">⚡ Sin instalar nada · En la nube · Tiempo real</span>
+  <h1>El sistema de gestión <span class="hl">todo‑en‑uno</span><br/>para tu restaurante o pizzería</h1>
+  <p class="sub">Mesas, mostrador, delivery, cocina, caja y reportes — todo conectado y al instante, desde el celular, la tablet o la PC. Vendé más y trabajá más rápido.</p>
+  <div class="cta">
+    <a href="#contacto" class="btn btn-amber">🚀 Empezar ahora</a>
+    <a href="#funciones" class="btn btn-ghost">Ver funciones</a>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="n">6+</div><div class="l">Módulos integrados</div></div>
+    <div class="stat"><div class="n">100%</div><div class="l">En tiempo real</div></div>
+    <div class="stat"><div class="n">0</div><div class="l">Instalación</div></div>
+  </div>
+</div></header>
+
+<section><div class="wrap">
+  <div class="vals">
+    <div class="val"><div class="ic">🚀</div><h3>Súper rápido</h3><p>Tomá pedidos en segundos con botones por categoría y producto. Atajo F8 para cargar al instante.</p></div>
+    <div class="val"><div class="ic">🛵</div><h3>Delivery con GPS</h3><p>Pegás la ubicación de Google Maps y el repartidor navega directo, sin perder tiempo.</p></div>
+    <div class="val"><div class="ic">🧠</div><h3>Decisiones con datos</h3><p>Reportes con inteligencia de negocios: sabé qué canal y qué producto te dan más.</p></div>
+  </div>
+</div></section>
+
+<section id="funciones"><div class="wrap">
+  <div class="sec-title"><h2>Todo lo que tu local necesita</h2><p>Reemplaza planillas, cuadernos y apps sueltas.</p></div>
+  <div class="feats">
+    <div class="feat"><div class="fi">🪑</div><div><h4>Mesas (Salón y Vereda)</h4><p>Abrí, cargá el pedido y cobrá. Vista para mozos mobile-first.</p></div></div>
+    <div class="feat"><div class="fi">🧾</div><div><h4>Mostrador y Delivery</h4><p>Toma de pedidos express con selector y carrito en vivo.</p></div></div>
+    <div class="feat"><div class="fi">👨‍🍳</div><div><h4>Pantalla de Cocina</h4><p>Las comandas llegan solas y en tiempo real. Cero papelitos.</p></div></div>
+    <div class="feat"><div class="fi">💵</div><div><h4>Caja y Facturación</h4><p>Cobros, medios de pago, recargos y arqueo de caja al instante.</p></div></div>
+    <div class="feat"><div class="fi">📲</div><div><h4>Menú Online / Carta QR</h4><p>Tus clientes piden desde el celular y entra directo al panel.</p></div></div>
+    <div class="feat"><div class="fi">📊</div><div><h4>Reportes por canal</h4><p>Mesas vs Mostrador vs Delivery: ventas, ticket promedio y top productos.</p></div></div>
+  </div>
+</div></section>
+
+<section id="como"><div class="wrap">
+  <div class="sec-title"><h2>Cómo funciona</h2><p>En marcha el mismo día.</p></div>
+  <div class="steps">
+    <div class="step"><h4>Te damos de alta</h4><p>Creamos tu local y cargamos tu menú. Listo para usar.</p></div>
+    <div class="step"><h4>Tu equipo entra</h4><p>Admin, mozos y repartidores con su usuario, cada uno con lo suyo.</p></div>
+    <div class="step"><h4>Vendés más</h4><p>Pedidos más rápidos, cocina sincronizada y reportes que te guían.</p></div>
+  </div>
+</div></section>
+
+<section id="precios"><div class="wrap">
+  <div class="sec-title"><h2>Simple y accesible</h2><p>Un abono mensual, sin sorpresas.</p></div>
+  <div style="max-width:460px;margin:0 auto;background:linear-gradient(180deg,rgba(245,158,11,.12),rgba(124,58,237,.06));border:1px solid rgba(245,158,11,.35);border-radius:22px;padding:34px;text-align:center">
+    <div style="font-size:13px;font-weight:800;color:#fcd34d;text-transform:uppercase;letter-spacing:1px">Plan Pro</div>
+    <div style="font-size:18px;color:#c4b5fd;margin-top:14px">Todos los módulos · Soporte · Actualizaciones</div>
+    <div style="margin-top:18px"><a href="#contacto" class="btn btn-amber">Consultar precio</a></div>
+  </div>
+</div></section>
+
+<section id="contacto"><div class="wrap">
+  <div class="cta-band">
+    <h2>📩 Empezá a vender más con ResTito</h2>
+    <p>Demostración gratis y puesta en marcha el mismo día.</p>
+    <a href="#" class="btn btn-amber" id="ctaContacto">Contactar por WhatsApp</a>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  <div class="brand"><span class="logo" style="width:30px;height:30px;font-size:16px">🍴</span> ResTito</div>
+  Sistema de gestión gastronómica · © <span id="yr"></span>
+</div></footer>
+
+<script>
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  // CTA WhatsApp (configurable): cambiar el número por el real
+  var WPP = ''; // ej: '5491122334455'
+  var c = document.getElementById('ctaContacto');
+  if (WPP) c.href = 'https://wa.me/' + WPP + '?text=' + encodeURIComponent('Hola! Quiero una demo de ResTito');
+  else c.href = 'mailto:bear_japy@hotmail.com?subject=Demo%20ResTito';
+</script>
+</body>
+</html>
