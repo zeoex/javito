@@ -1528,6 +1528,11 @@
 
     <div class="login-error" id="login-error"></div>
     <div class="login-hint">Ingresá con tu email y contraseña creados en Admin → Usuarios</div>
+
+    <button type="button" id="login-install" onclick="if(window.showPwaInstall)window.showPwaInstall()"
+      style="margin-top:16px;width:100%;background:rgba(220,38,38,.07);border:1.5px solid rgba(220,38,38,.35);color:#b91c1c;border-radius:12px;padding:13px;font-weight:700;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+      📲 Instalar app en este teléfono
+    </button>
   </div>
 
 </div>
@@ -2100,6 +2105,25 @@ function buildOrderCard(p) {
 // trackSessions[orderId] = { trackId, watchId, lastSent, lastPos }
 const trackSessions = {};
 
+// Wake Lock: mantiene la pantalla activa mientras se comparte ubicación (evita que el GPS se pause)
+let _wakeLock = null;
+async function acquireWakeLock() {
+  try {
+    if ('wakeLock' in navigator && !_wakeLock) {
+      _wakeLock = await navigator.wakeLock.request('screen');
+      _wakeLock.addEventListener('release', () => { _wakeLock = null; });
+    }
+  } catch (e) {}
+}
+function releaseWakeLock() {
+  // Solo liberar si no quedan viajes activos
+  if (Object.keys(trackSessions).length === 0 && _wakeLock) { try { _wakeLock.release(); } catch (e) {} _wakeLock = null; }
+}
+// Re-adquirir el wake lock al volver a la app (Android lo suelta al cambiar de pestaña)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && Object.keys(trackSessions).length > 0) acquireWakeLock();
+});
+
 function _digitsTel(t) {
   let d = String(t || '').replace(/\D/g, '');
   if (!d) return '';
@@ -2133,6 +2157,7 @@ async function startTracking(p) {
 
   const sess = { trackId, watchId: null, lastSent: 0, lastPos: null };
   trackSessions[p.id] = sess;
+  acquireWakeLock();
 
   if (navigator.geolocation) {
     sess.watchId = navigator.geolocation.watchPosition(function (pos) {
@@ -2165,6 +2190,7 @@ function stopTracking(orderId) {
   if (sess.watchId != null && navigator.geolocation) navigator.geolocation.clearWatch(sess.watchId);
   fetch('/api/track/' + sess.trackId + '/done', { method: 'POST' }).catch(function () {});
   delete trackSessions[orderId];
+  releaseWakeLock();
 }
 
 function _haversineM(a, b) {
@@ -2505,8 +2531,12 @@ function pwaInstaller(appName, btnColor){
   window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); dp=e; if(wantInstall) card(); });
   window.addEventListener('appinstalled', close);
   if (wantInstall && !standalone) setTimeout(card, 500);
+  window.showPwaInstall = card;
+  window.isStandalonePWA = standalone;
 }
 pwaInstaller('Repartidor', 'linear-gradient(135deg,#dc2626,#f87171)');
+// Ocultar el botón "Instalar app" del login si ya está instalada (modo standalone)
+if (window.isStandalonePWA) { var _ib=document.getElementById('login-install'); if(_ib) _ib.style.display='none'; }
 </script>
 </body>
 </html>

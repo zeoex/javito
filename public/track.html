@@ -66,8 +66,9 @@
   @keyframes sp{to{transform:rotate(360deg)}}
   /* markers */
   .moto-ic{background:none;border:none}
-  .moto-rot{width:48px;height:48px;display:grid;place-items:center;transition:transform .9s linear}
+  .moto-rot{width:48px;height:48px;display:grid;place-items:center}
   .moto-em{width:42px;height:42px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:24px;box-shadow:0 6px 16px rgba(28,19,48,.4);border:3px solid var(--vio)}
+  .moto-em .g{display:block;line-height:1;transition:transform .35s ease}
   .moto-pulse{position:absolute;inset:-10px;border-radius:50%;background:rgba(124,58,237,.25);animation:mp 2s ease-out infinite;z-index:-1}
   @keyframes mp{0%{transform:scale(.5);opacity:.7}100%{transform:scale(1.4);opacity:0}}
   .dest-ic{background:none;border:none}
@@ -75,7 +76,7 @@
   .dest-pin .p{width:34px;height:34px;border-radius:50% 50% 50% 0;background:var(--amber);transform:rotate(-45deg);position:absolute;left:3px;top:0;box-shadow:0 6px 14px rgba(245,158,11,.5);display:grid;place-items:center}
   .dest-pin .p svg{transform:rotate(45deg);width:16px;height:16px;color:#fff}
   .leaflet-control-attribution{font-size:9px;opacity:.6}
-  @media(prefers-reduced-motion:reduce){.moto-rot{transition:none}.moto-pulse,.pill .dot{animation:none}}
+  @media(prefers-reduced-motion:reduce){.moto-em .g{transition:none}.moto-pulse,.pill .dot{animation:none}}
 </style>
 </head>
 <body>
@@ -152,7 +153,7 @@
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19, attribution: '© OpenStreetMap'
       }).addTo(map);
-      motoIcon = L.divIcon({ className:'moto-ic', html:'<div class="moto-rot"><div class="moto-pulse"></div><div class="moto-em">🛵</div></div>', iconSize:[48,48], iconAnchor:[24,24] });
+      motoIcon = L.divIcon({ className:'moto-ic', html:'<div class="moto-rot"><div class="moto-pulse"></div><div class="moto-em"><span class="g">🛵</span></div></div>', iconSize:[48,48], iconAnchor:[24,24] });
       destIcon = L.divIcon({ className:'dest-ic', html:'<div class="dest-pin"><div class="p"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></div></div>', iconSize:[40,40], iconAnchor:[20,38] });
     } catch(e) { HAS_MAP=false; }
   }
@@ -198,10 +199,13 @@
     return 'Llega en ~'+m+' min';
   }
 
-  function rotateIcon(deg){
+  // La motito siempre va horizontal; solo se espeja según vaya hacia la derecha o izquierda.
+  var _facing = -1; // -1 = mira a la izquierda (orientación por defecto del emoji 🛵)
+  function faceMoto(dir){
+    if(dir) _facing = dir; // dir: 1 = derecha, -1 = izquierda
     if(!motoMarker || !motoMarker._icon) return;
-    var r=motoMarker._icon.querySelector('.moto-rot');
-    if(r) r.style.transform='rotate('+deg+'deg)';
+    var g=motoMarker._icon.querySelector('.moto-em .g');
+    if(g) g.style.transform = _facing===1 ? 'scaleX(-1)' : 'scaleX(1)';
   }
 
   function animateTo(target){
@@ -254,11 +258,12 @@
   function onPos(pos){
     if(!pos || typeof pos.lat!=='number') return;
     var p=[pos.lat,pos.lng];
-    var deg = (typeof pos.heading==='number' && pos.heading>=0) ? pos.heading : (lastPos?bearing(lastPos,p):0);
+    // Dirección horizontal: si se mueve hacia el este (lng aumenta) mira a la derecha
+    var dLng = lastPos ? (p[1]-lastPos[1]) : 0;
+    if(Math.abs(dLng) > 0.00002) faceMoto(dLng>0 ? 1 : -1); else faceMoto();
     show($('ovWait'), false);
     $('pillTxt').textContent='En vivo';
     animateTo(p);
-    rotateIcon(deg);
     lastPos=p;
     if(firstFix){ firstFix=false; fitView(); }
     drawRoute();
