@@ -597,6 +597,7 @@ function superOnly(req, res, next) {
 app.use('/api', (req, res, next) => {
   if (req.path.startsWith('/auth')) return next();
   if (req.path === '/state' && req.method === 'GET') return next();
+  if (req.path === '/manifest' && req.method === 'GET') return next();
   if (req.path.startsWith('/qz/')) return next();
   // Repartidor accesses these without admin JWT (has its own auth)
   if (req.path === '/delivery/activos' && req.method === 'GET') return next();
@@ -1738,6 +1739,34 @@ app.get('/api/state', async (req, res) => {
     const { rows } = await pool.query('SELECT * FROM tenant_state WHERE local_id = $1', [local]);
     return res.json(rows[0] || emptyTenantState());
   } catch(e) { console.error('[state:get]', e.message); res.json(null); }
+});
+
+// Manifest PWA dinámico por local + rol → la app instalada abre /<local>/<rol>
+app.get('/api/manifest', (req, res) => {
+  const local = req.query.local || DEFAULT_LOCAL;
+  const role  = ['admin','mozo','repartidor','cocina'].includes(req.query.role) ? req.query.role : 'admin';
+  const loc = db.locals.find(l => l.id === local);
+  const bizName = (loc && loc.biz_cfg && loc.biz_cfg.nombre) || (loc && loc.nombre) || local;
+  const cfg = {
+    mozo:       { label:'Mozo',       icon:'/icon-mozo.svg',       theme:'#1d3557', bg:'#0d1b2a' },
+    admin:      { label:'Admin',      icon:'/icon-admin.svg',      theme:'#7c3aed', bg:'#3b0764' },
+    repartidor: { label:'Repartidor', icon:'/icon-repartidor.svg', theme:'#e63946', bg:'#0d1117' },
+    cocina:     { label:'Cocina',     icon:'/icon-cocina.svg',     theme:'#0f172a', bg:'#0f172a' },
+  }[role];
+  res.set('Content-Type', 'application/manifest+json');
+  res.json({
+    name: `${bizName} — ${cfg.label}`,
+    short_name: bizName,
+    description: `${cfg.label} · ${bizName}`,
+    start_url: `/${local}/${role}`,
+    scope: `/${local}/`,
+    display: 'standalone', orientation: 'portrait',
+    background_color: cfg.bg, theme_color: cfg.theme, lang: 'es',
+    icons: [
+      { src: cfg.icon, sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+      { src: cfg.icon, sizes: 'any', type: 'image/svg+xml', purpose: 'maskable' }
+    ]
+  });
 });
 
 // Endpoint público para menú QR y menú online — por local (?local=)

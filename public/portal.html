@@ -642,8 +642,18 @@
   var _m = location.pathname.match(/^\/([^\/]+)\/?$/);
   var _local = (_m && _m[1] && _m[1] !== 'portal') ? _m[1] : null;
   if (_local) {
-    var _map = {'/admin':'/'+_local+'/admin','/mozo':'/'+_local+'/mozo','/cocina.html':'/'+_local+'/cocina','/repartidor.html':'/'+_local+'/repartidor','/carta.html':'/'+_local+'/carta','/menu.html':'/'+_local+'/menu'};
-    Array.prototype.forEach.call(document.querySelectorAll('a.tile'), function(a){ var h=a.getAttribute('href'); if(_map[h]) a.setAttribute('href', _map[h]); });
+    function _set(sel, href, label, sub){
+      var a=document.querySelector('a.tile.'+sel); if(!a) return;
+      a.setAttribute('href', href);
+      var l=a.querySelector('.tile-label'); if(l&&label) l.textContent=label;
+      var s=a.querySelector('.tile-sub'); if(s&&sub!==undefined) s.textContent=sub;
+    }
+    _set('admin','/'+_local+'/admin','Iniciar sesión','Panel de administración');
+    _set('mozo','/'+_local+'/mozo?install=1','Instalar Mozo','App para mozos');
+    _set('cocina','/'+_local+'/cocina?install=1','Instalar Cocina','Pantalla de comandas');
+    _set('rep','/'+_local+'/repartidor?install=1','Instalar Repartidor','App de delivery');
+    _set('menuqr','/'+_local+'/menu','Carta QR / Menú digital','Menú para los clientes');
+    var _cartaTile=document.querySelector('a.tile.carta'); if(_cartaTile) _cartaTile.style.display='none';
     fetch('/api/public/menu?local=' + encodeURIComponent(_local)).then(function(r){return r.json();}).then(function(d){
       var biz = (d && d.biz_cfg) || {};
       if (biz.nombre) { var bn=document.querySelector('.brand-name'); if(bn) bn.textContent=biz.nombre; document.title=biz.nombre; }

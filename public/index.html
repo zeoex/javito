@@ -14,11 +14,20 @@
 <link rel="apple-touch-icon" href="/icon-mozo.svg" id="pwaIcon"/>
 <script>
 (function(){
-  const isAdmin = window.location.pathname.startsWith('/admin');
-  if (isAdmin) {
+  const p = window.location.pathname;
+  // Detectar local y rol desde la URL (/<local>/admin o /<local>/mozo, o /admin /mozo)
+  const seg = p.match(/^\/([^\/]+)\/(admin|mozo)\/?$/);
+  const local = seg ? seg[1] : null;
+  const role  = seg ? seg[2] : (p.startsWith('/admin') ? 'admin' : 'mozo');
+  if (local) {
+    // Manifest dinámico por local → la app instalada abre /<local>/<rol>
+    document.getElementById('pwaManifest').href = '/api/manifest?local=' + encodeURIComponent(local) + '&role=' + role;
+  } else if (role === 'admin') {
     document.getElementById('pwaManifest').href = '/manifest-admin.json';
-    document.getElementById('pwaTheme').content   = '#7c3aed';
-    document.getElementById('pwaIcon').href        = '/icon-admin.svg';
+  }
+  if (role === 'admin') {
+    document.getElementById('pwaTheme').content = '#7c3aed';
+    document.getElementById('pwaIcon').href     = '/icon-admin.svg';
   }
 })();
 </script>
@@ -7432,6 +7441,29 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   });
 }
+
+// ======= INSTALAR APP (PWA) — solo para el módulo Mozo =======
+(function(){
+  if (!/\/mozo\/?$/.test(location.pathname)) return; // solo mozo
+  let dp = null;
+  const wantInstall = new URLSearchParams(location.search).get('install') === '1';
+  function instrucciones(){
+    alert('Para instalar la app del Mozo:\n\n• Android (Chrome): menú ⋮ → "Instalar app".\n• iPhone (Safari): botón Compartir → "Agregar a inicio".');
+  }
+  function doInstall(){
+    if (dp) { dp.prompt(); dp.userChoice.finally(()=>{ dp=null; const x=document.getElementById('pwaInstallBtn'); if(x) x.remove(); }); }
+    else instrucciones();
+  }
+  function showBtn(){
+    if (document.getElementById('pwaInstallBtn')) return;
+    const b=document.createElement('button'); b.id='pwaInstallBtn'; b.textContent='📲 Instalar app';
+    b.style.cssText='position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:99999;background:linear-gradient(135deg,#059669,#34d399);color:#fff;border:none;border-radius:999px;padding:13px 26px;font-weight:800;font-size:15px;box-shadow:0 8px 24px rgba(5,150,105,.5);cursor:pointer';
+    b.onclick=doInstall; document.body.appendChild(b);
+  }
+  window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); dp=e; if(wantInstall) doInstall(); else showBtn(); });
+  window.addEventListener('appinstalled', ()=>{ const x=document.getElementById('pwaInstallBtn'); if(x) x.remove(); });
+  if (wantInstall) setTimeout(()=>{ if(!dp && !window.matchMedia('(display-mode: standalone)').matches) instrucciones(); }, 1600);
+})();
 </script>
 </body>
 </html>

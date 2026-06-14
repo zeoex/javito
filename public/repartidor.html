@@ -8,10 +8,13 @@
 <meta name="apple-mobile-web-app-title" content="RT Delivery"/>
 <title>Repartidor - ResTito</title>
 <!-- PWA -->
-<link rel="manifest" href="/manifest-repartidor.json"/>
+<link rel="manifest" href="/manifest-repartidor.json" id="repManifest"/>
 <meta name="theme-color" content="#dc2626"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <link rel="apple-touch-icon" href="/icon-repartidor.svg"/>
+<script>
+(function(){ var m=location.pathname.match(/^\/([^\/]+)\/repartidor/); if(m){ var l=document.getElementById('repManifest'); if(l) l.href='/api/manifest?local='+encodeURIComponent(m[1])+'&role=repartidor'; } })();
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
 <style>
@@ -2357,6 +2360,23 @@ if ('serviceWorker' in navigator) {
     setTimeout(repClock, 1000);
   })();
 }
+
+// ======= INSTALAR APP (PWA) =======
+(function(){
+  let dp = null;
+  const wantInstall = new URLSearchParams(location.search).get('install') === '1';
+  function instrucciones(){ alert('Para instalar la app del Repartidor:\n\n• Android (Chrome): menú ⋮ → "Instalar app".\n• iPhone (Safari): botón Compartir → "Agregar a inicio".'); }
+  function doInstall(){ if (dp) { dp.prompt(); dp.userChoice.finally(()=>{ dp=null; var x=document.getElementById('pwaInstallBtn'); if(x) x.remove(); }); } else instrucciones(); }
+  function showBtn(){
+    if (document.getElementById('pwaInstallBtn')) return;
+    var b=document.createElement('button'); b.id='pwaInstallBtn'; b.textContent='📲 Instalar app';
+    b.style.cssText='position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:99999;background:linear-gradient(135deg,#dc2626,#f87171);color:#fff;border:none;border-radius:999px;padding:13px 26px;font-weight:800;font-size:15px;box-shadow:0 8px 24px rgba(220,38,38,.5);cursor:pointer';
+    b.onclick=doInstall; document.body.appendChild(b);
+  }
+  window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); dp=e; if(wantInstall) doInstall(); else showBtn(); });
+  window.addEventListener('appinstalled', ()=>{ var x=document.getElementById('pwaInstallBtn'); if(x) x.remove(); });
+  if (wantInstall) setTimeout(()=>{ if(!dp && !window.matchMedia('(display-mode: standalone)').matches) instrucciones(); }, 1600);
+})();
 </script>
 </body>
 </html>
