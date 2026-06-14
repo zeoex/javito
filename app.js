@@ -535,6 +535,26 @@ function setLocalUsers(local, users) {
   (users || []).forEach(u => db.users.push({ ...u, local_id: local }));
 }
 
+// Persiste en PG los usuarios actuales (en memoria) de un local
+async function persistLocalUsers(local) {
+  const users = db.users.filter(u => !u.super && (u.local_id || DEFAULT_LOCAL) === local);
+  if (!isDefaultLocal(local)) {
+    if (!db.tenants[local]) db.tenants[local] = emptyTenantState();
+    db.tenants[local].usuarios = users;
+  }
+  const pool = getPool();
+  if (!pool) return;
+  try {
+    if (isDefaultLocal(local)) {
+      await pool.query(`INSERT INTO app_state (id, usuarios, updated_at) VALUES (1, $1, NOW())
+        ON CONFLICT (id) DO UPDATE SET usuarios=$1, updated_at=NOW()`, [JSON.stringify(users)]);
+    } else {
+      await pool.query(`INSERT INTO tenant_state (local_id, usuarios, updated_at) VALUES ($1, $2, NOW())
+        ON CONFLICT (local_id) DO UPDATE SET usuarios=$2, updated_at=NOW()`, [local, JSON.stringify(users)]);
+    }
+  } catch(e) { console.error('[persistLocalUsers]', e.message); }
+}
+
 // Middleware: exige super-admin
 function superOnly(req, res, next) {
   if (!req.user || !req.user.super) return res.status(403).json({ error: 'Solo super-admin' });
@@ -1901,6 +1921,25 @@ app.post('/api/locals', authMiddleware, superOnly, async (req, res) => {
   } catch(e) { console.error('[locals:post]', e.message); }
 
   res.status(201).json({ local: { id, nombre, activo: true }, admin: { email: adminEmail } });
+});
+
+// Crear un usuario asignado a un local concreto (super elige cualquiera; admin solo el suyo)
+app.post('/api/users', authMiddleware, async (req, res) => {
+  if (!req.user.super && !['admin','supervisor'].includes(req.user.rol))
+    return res.status(403).json({ error: 'No autorizado' });
+  let { nombre, email, password, rol, local_id } = req.body;
+  nombre = String(nombre || '').trim();
+  email = String(email || '').trim().toLowerCase();
+  rol = rol || 'mozo';
+  const targetLocal = req.user.super ? (local_id || DEFAULT_LOCAL) : (req.user.local_id || DEFAULT_LOCAL);
+  if (!nombre || !email || !password) return res.status(400).json({ error: 'Faltan nombre, email o contraseña' });
+  if (!db.locals.find(l => l.id === targetLocal)) return res.status(404).json({ error: 'Local inexistente' });
+  if (db.users.find(u => u.email === email)) return res.status(409).json({ error: 'Ese email ya está en uso' });
+  const user = { id: uuidv4(), nombre, email, password: bcrypt.hashSync(password, 10), rol,
+    local_id: targetLocal, activo: true, createdAt: new Date().toISOString() };
+  db.users.push(user);
+  await persistLocalUsers(targetLocal);
+  res.status(201).json({ id: user.id, nombre, email, rol, local_id: targetLocal });
 });
 
 // ─────────────────────────────────────────────

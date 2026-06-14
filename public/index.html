@@ -1874,7 +1874,10 @@ body.rol-mozo .spk-size-btn:hover{border-color:#059669;background:#ecfdf5}
       <div class="form-group"><label>Nombre</label><input class="form-control" id="usrNombre" placeholder="Carlos López"/></div>
       <div class="form-group"><label>Email</label><input class="form-control" id="usrEmail" placeholder="carlos@restito.com"/></div>
       <div class="form-group"><label id="usrPassLabel">Contraseña</label><input class="form-control" id="usrPass" type="password" placeholder="••••••••"/></div>
-      <div class="form-group"><label>Rol</label>
+      <div class="form-group" id="usrLocalGrp" style="display:none"><label>Local</label>
+        <select class="form-control" id="usrLocal"></select>
+      </div>
+      <div class="form-group"><label>Rol (permisos)</label>
         <select class="form-control" id="usrRol">
           <option value="admin">Administrador</option>
           <option value="mozo">Mozo</option>
@@ -6126,6 +6129,7 @@ function editarUsuario(id) {
   document.getElementById('usrPass').value = '';
   document.getElementById('usrPassLabel').textContent = 'Contraseña (dejar vacío para no cambiar)';
   document.getElementById('usrRol').value = u.rol;
+  document.getElementById('usrLocalGrp').style.display = 'none'; // el local no se cambia al editar
   document.getElementById('btnGuardarUsuario').textContent = 'Guardar';
   openModal('modalUsuario');
 }
@@ -6144,7 +6148,23 @@ function deleteUsuario(id) {
   showToast('Usuario eliminado');
 }
 
-function guardarUsuario() {
+let _localesUsuario = []; // cache de locales (solo super-admin)
+async function _cargarLocalesUsuario() {
+  const grp = document.getElementById('usrLocalGrp');
+  const sel = document.getElementById('usrLocal');
+  if (!currentUser?.super) { grp.style.display = 'none'; return; }
+  grp.style.display = '';
+  try {
+    if (!_localesUsuario.length) {
+      const res = await apiFetch('/locals');
+      if (res.ok) _localesUsuario = await res.json();
+    }
+  } catch(e) {}
+  if (!_localesUsuario.length) _localesUsuario = [{ id:'la-isla', nombre:'La Isla' }];
+  sel.innerHTML = _localesUsuario.map(l => `<option value="${l.id}">${l.nombre||l.id}</option>`).join('');
+}
+
+async function guardarUsuario() {
   const nombre=document.getElementById('usrNombre').value.trim();
   const email=document.getElementById('usrEmail').value.trim();
   const pass=document.getElementById('usrPass').value;
@@ -6157,12 +6177,27 @@ function guardarUsuario() {
     closeModal('modalUsuario');
     saveState(); renderUsuarios();
     showToast('Usuario actualizado','success');
-  } else {
-    if(!pass){ showToast('Ingresá una contraseña','error'); return; }
-    usuariosData.push({id:Date.now(),nombre,email,password:pass,rol,activo:true,ultimo:'-'});
+    return;
+  }
+  if(!pass){ showToast('Ingresá una contraseña','error'); return; }
+  const viewLocal = currentUser?.local_id || 'la-isla';
+  const targetLocal = currentUser?.super ? (document.getElementById('usrLocal').value || 'la-isla') : viewLocal;
+  if (targetLocal === viewLocal) {
+    // Usuario del local que estoy viendo → flujo normal (se persiste con el estado del local)
+    usuariosData.push({id:Date.now(),nombre,email,password:pass,rol,local_id:targetLocal,activo:true,ultimo:'-'});
     closeModal('modalUsuario');
     saveState(); renderUsuarios();
     showToast('Usuario creado','success');
+  } else {
+    // Super-admin crea usuario para OTRO local → endpoint dedicado
+    try {
+      const res = await apiFetch('/users', { method:'POST', body: JSON.stringify({ nombre, email, password:pass, rol, local_id: targetLocal }) });
+      const data = await res.json();
+      if (!res.ok) { showToast(data.error || 'No se pudo crear','error'); return; }
+      closeModal('modalUsuario');
+      const locName = (_localesUsuario.find(l=>l.id===targetLocal)?.nombre) || targetLocal;
+      showToast(`Usuario creado en ${locName}`,'success');
+    } catch(e) { showToast('Error de conexión','error'); }
   }
 }
 
@@ -6175,6 +6210,7 @@ function _resetModalUsuario() {
   document.getElementById('usrPassLabel').textContent='Contraseña';
   document.getElementById('usrRol').value='mozo';
   document.getElementById('btnGuardarUsuario').textContent='Crear';
+  _cargarLocalesUsuario();
 }
 
 // ======= MOZO STATS =======
