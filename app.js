@@ -157,6 +157,23 @@ function emptyTenantState() {
            mozo_historial: [], caja_abierta: true, caja_inicial: 5000, caja_moves: [],
            caja_cierres: [], categorias: [], biz_cfg: {} };
 }
+// Sala de Socket.io por local + emisión dirigida (aísla el tiempo real entre locales)
+function roomOf(local) { return 'L:' + (local || DEFAULT_LOCAL); }
+function bcast(local, ev, data) { io.to(roomOf(local)).emit(ev, data); }
+// Local a partir de una request (autenticada o con token opcional, o ?local=)
+function reqLocal(req) {
+  if (req && req.user && req.user.local_id) return req.user.local_id;
+  const u = optionalUser(req);
+  if (u && u.local_id) return u.local_id;
+  const q = req && (req.query?.local || (req.body && req.body.local));
+  return q || DEFAULT_LOCAL;
+}
+function comandasDeLocal(local) {
+  return db.comandas.filter(c => (c.local || DEFAULT_LOCAL) === (local || DEFAULT_LOCAL));
+}
+function deliveryDeLocal(local) {
+  return isDefaultLocal(local) ? db.delivery : ((db.tenants[local] && db.tenants[local].delivery) || []);
+}
 
 // ─────────────────────────────────────────────
 //  SEED DATA
@@ -455,7 +472,8 @@ function emitDashboardStats() {
     comandasPendientes: db.comandas.filter(c => c.estado === 'pendiente').length,
     timestamp: new Date().toISOString()
   };
-  io.emit('dashboard:stats', stats);
+  // Stats se calculan desde el estado de La Isla (db.*) → emitir solo a su sala
+  bcast(DEFAULT_LOCAL, 'dashboard:stats', stats);
   return stats;
 }
 
@@ -615,7 +633,7 @@ app.post('/api/mesas/:id/abrir', (req, res) => {
   mesa.consumo = 0;
   mesa.pedidos = [];
 
-  io.emit('mesa:update', mesa);
+  bcast(reqLocal(req), 'mesa:update', mesa);
   emitDashboardStats();
   res.json(mesa);
 });
@@ -630,7 +648,7 @@ app.post('/api/mesas/:id/cerrar', (req, res) => {
   mesa.consumo = 0;
   mesa.pedidos = [];
 
-  io.emit('mesa:update', mesa);
+  bcast(reqLocal(req), 'mesa:update', mesa);
   emitDashboardStats();
   res.json({ message: 'Mesa cerrada', mesa });
 });
@@ -670,8 +688,8 @@ app.post('/api/mesas/:id/pedido', (req, res) => {
   };
   db.comandas.push(comanda);
 
-  io.emit('mesa:update', mesa);
-  io.emit('comanda:nueva', comanda);
+  bcast(reqLocal(req), 'mesa:update', mesa);
+  bcast(reqLocal(req), 'comanda:nueva', comanda);
   emitDashboardStats();
   res.json({ mesa, item, comanda });
 });
@@ -686,7 +704,7 @@ app.delete('/api/mesas/:id/pedido/:itemId', (req, res) => {
   mesa.pedidos.splice(idx, 1);
   mesa.consumo = calcularTotal(mesa.pedidos);
 
-  io.emit('mesa:update', mesa);
+  bcast(reqLocal(req), 'mesa:update', mesa);
   res.json({ message: 'Ítem eliminado', mesa });
 });
 
@@ -710,8 +728,8 @@ app.post('/api/mesas/:id/transferir', (req, res) => {
   origen.consumo = 0;
   origen.pedidos = [];
 
-  io.emit('mesa:update', origen);
-  io.emit('mesa:update', destino);
+  bcast(reqLocal(req), 'mesa:update', origen);
+  bcast(reqLocal(req), 'mesa:update', destino);
   emitDashboardStats();
   res.json({ origen, destino });
 });
@@ -731,11 +749,11 @@ app.post('/api/mesas/unir', (req, res) => {
     mesas[i].apertura = null;
     mesas[i].consumo = 0;
     mesas[i].pedidos = [];
-    io.emit('mesa:update', mesas[i]);
+    bcast(reqLocal(req), 'mesa:update', mesas[i]);
   }
   principal.consumo = calcularTotal(principal.pedidos);
 
-  io.emit('mesa:update', principal);
+  bcast(reqLocal(req), 'mesa:update', principal);
   emitDashboardStats();
   res.json({ message: 'Mesas unidas', principal, liberadas: mesas.slice(1) });
 });
@@ -763,7 +781,7 @@ app.post('/api/mesas', authMiddleware, (req, res) => {
     tiempo: null, consumo: 0, pedido: [], pedidos: []
   };
   db.mesas.push(mesa);
-  io.emit('mesa:update', mesa);
+  bcast(reqLocal(req), 'mesa:update', mesa);
   res.status(201).json(mesa);
 });
 
@@ -774,7 +792,7 @@ app.delete('/api/mesas/:id', authMiddleware, (req, res) => {
   const mesa = db.mesas[idx];
   if (mesa.estado !== 'libre') return res.status(400).json({ error: 'Solo se pueden eliminar mesas libres' });
   db.mesas.splice(idx, 1);
-  io.emit('mesa:deleted', { id: req.params.id });
+  bcast(reqLocal(req), 'mesa:deleted', { id: req.params.id });
   emitDashboardStats();
   res.json({ message: 'Mesa eliminada', id: req.params.id });
 });
@@ -786,7 +804,7 @@ app.patch('/api/mesas/:id', authMiddleware, (req, res) => {
   ['numero','estado','mozo','tiempo','pedido','zona','capacidad','mozoid','apertura','consumo','nombre','cliente','personas'].forEach(k => {
     if (req.body[k] !== undefined) mesa[k] = req.body[k];
   });
-  io.emit('mesa:update', mesa);
+  bcast(reqLocal(req), 'mesa:update', mesa);
   emitDashboardStats();
   res.json(mesa);
 });
@@ -812,8 +830,8 @@ app.post('/api/print', (req, res) => {
   };
   db.printJobs.push(job);
   if (db.printJobs.length > 200) db.printJobs.shift();
-  io.emit('print:job', job);
-  io.emit('print:queue:update', _pendingJobs());
+  bcast(reqLocal(req), 'print:job', job);
+  bcast(reqLocal(req), 'print:queue:update', _pendingJobs());
   res.status(201).json({ ok: true, jobId: job.id });
 });
 
@@ -830,7 +848,7 @@ app.patch('/api/print/:id', authMiddleware, (req, res) => {
   const job = db.printJobs.find(j => j.id === req.params.id);
   if (!job) return res.status(404).json({ error: 'Job no encontrado' });
   if (req.body.status) job.status = req.body.status;
-  io.emit('print:queue:update', _pendingJobs());
+  bcast(reqLocal(req), 'print:queue:update', _pendingJobs());
   res.json(job);
 });
 
@@ -838,7 +856,7 @@ app.patch('/api/print/:id', authMiddleware, (req, res) => {
 setInterval(() => {
   const before = db.printJobs.length;
   db.printJobs = db.printJobs.filter(j => new Date(j.expiresAt || '2099').getTime() > Date.now());
-  if (db.printJobs.length !== before) io.emit('print:queue:update', _pendingJobs());
+  if (db.printJobs.length !== before) bcast(reqLocal(req), 'print:queue:update', _pendingJobs());
 }, 5 * 60 * 1000);
 
 // ─────────────────────────────────────────────
@@ -950,8 +968,8 @@ app.post('/api/pedidos', (req, res) => {
   };
   db.comandas.push(comanda);
 
-  io.emit('pedido:nuevo',   pedido);
-  io.emit('comanda:nueva', comanda);
+  bcast(reqLocal(req), 'pedido:nuevo', pedido);
+  bcast(reqLocal(req), 'comanda:nueva', comanda);
   emitDashboardStats();
   res.status(201).json({ pedido, comanda });
 });
@@ -963,7 +981,7 @@ app.put('/api/pedidos/:id/estado', (req, res) => {
   pedido.estado    = req.body.estado || pedido.estado;
   pedido.updatedAt = new Date().toISOString();
 
-  io.emit('pedido:update', pedido);
+  bcast(reqLocal(req), 'pedido:update', pedido);
   emitDashboardStats();
   res.json(pedido);
 });
@@ -988,7 +1006,7 @@ app.post('/api/pedidos/:id/pagar', (req, res) => {
       monto:    pedido.total,
       fecha:    new Date().toISOString()
     });
-    io.emit('caja:update', caja);
+    bcast(reqLocal(req), 'caja:update', caja);
   }
 
   // Liberar mesa si corresponde
@@ -1000,7 +1018,7 @@ app.post('/api/pedidos/:id/pagar', (req, res) => {
       mesa.apertura = null;
       mesa.consumo = 0;
       mesa.pedidos = [];
-      io.emit('mesa:update', mesa);
+      bcast(reqLocal(req), 'mesa:update', mesa);
     }
   }
 
@@ -1020,7 +1038,7 @@ app.post('/api/pedidos/:id/pagar', (req, res) => {
   };
   db.facturas.push(factura);
 
-  io.emit('pedido:update', pedido);
+  bcast(reqLocal(req), 'pedido:update', pedido);
   emitDashboardStats();
   res.json({ pedido, factura });
 });
@@ -1066,7 +1084,7 @@ app.post('/api/delivery', (req, res) => {
   };
 
   db.delivery.push(envio);
-  io.emit('delivery:update', envio);
+  bcast(reqLocal(req), 'delivery:update', envio);
   emitDashboardStats();
   res.status(201).json(envio);
 });
@@ -1113,7 +1131,7 @@ app.post('/api/web/pedido', async (req, res) => {
   }
 
   // Notificar al panel admin en tiempo real
-  io.emit('delivery:update', pedido);
+  bcast(reqLocal(req), 'delivery:update', pedido);
   res.status(201).json(pedido);
 });
 
@@ -1133,7 +1151,7 @@ app.put('/api/delivery/:id/costo-envio', async (req, res) => {
       }
     } catch(e) { console.error('[delivery:costo-envio]', e.message); }
   }
-  io.emit('delivery:update', { id: targetId, costo_envio });
+  bcast(reqLocal(req), 'delivery:update', { id: targetId, costo_envio });
   res.json({ ok: true });
 });
 
@@ -1160,7 +1178,7 @@ app.put('/api/delivery/:id/repartidor', async (req, res) => {
       }
     } catch(e) { console.error('[delivery:repartidor]', e.message); }
   }
-  io.emit('delivery:update', { id: targetId, repartidorId, repartidorNombre });
+  bcast(reqLocal(req), 'delivery:update', { id: targetId, repartidorId, repartidorNombre });
   res.json({ ok: true, repartidorNombre });
 });
 
@@ -1193,7 +1211,7 @@ app.put('/api/delivery/:id/estado', async (req, res) => {
   }
 
   const out = result || { id: targetId, estado: nuevoEstado };
-  io.emit('delivery:update', out);
+  bcast(reqLocal(req), 'delivery:update', out);
 
   // Trigger llamado when delivery is ready for pickup
   if (nuevoEstado === 'listo') {
@@ -1206,7 +1224,7 @@ app.put('/api/delivery/:id/estado', async (req, res) => {
       creadoAt: new Date().toISOString(), reconocidoAt: null
     };
     db.llamados.push(llamado);
-    io.emit('llamado:delivery', llamado);
+    bcast(reqLocal(req), 'llamado:delivery', llamado);
   }
 
   emitDashboardStats();
@@ -1220,6 +1238,7 @@ app.put('/api/delivery/:id/estado', async (req, res) => {
 app.post('/api/cocina/comanda', (req, res) => {
   const { mesa, mozo, items, tipo, cliente, upsert } = req.body;
   if (!mesa || !items?.length) return res.status(400).json({ error: 'mesa e items requeridos' });
+  const local = reqLocal(req);
 
   const mesaNum = (typeof mesa === 'object') ? (mesa.numero ?? mesa.id) : mesa;
   const mesaId  = (typeof mesa === 'object') ? (mesa.id ?? null) : null;
@@ -1232,15 +1251,15 @@ app.post('/api/cocina/comanda', (req, res) => {
     nota:     i.nota || ''
   });
 
-  // Upsert: replace items of existing pendiente comanda for same mesa
+  // Upsert: replace items of existing pendiente comanda for same mesa (del mismo local)
   if (upsert) {
     const existing = db.comandas.find(c =>
-      c.estado === 'pendiente' && String(c.mesa) === String(mesaNum)
+      c.estado === 'pendiente' && String(c.mesa) === String(mesaNum) && (c.local || DEFAULT_LOCAL) === local
     );
     if (existing) {
       existing.items = items.map(normalize);
       existing.mozo  = mozo || existing.mozo;
-      io.emit('comanda:replace', existing);
+      bcast(local, 'comanda:replace', existing);
       return res.json(existing);
     }
   }
@@ -1249,6 +1268,7 @@ app.post('/api/cocina/comanda', (req, res) => {
     id:        uuidv4(),
     numero:    db.comandas.length + 1,
     tipo:      tipoFinal,
+    local,
     mesa:      mesaNum,
     mesaId,
     mozo:      mozo || '',
@@ -1259,13 +1279,13 @@ app.post('/api/cocina/comanda', (req, res) => {
   };
   db.comandas.push(comanda);
   if (db.comandas.length > 500) db.comandas.shift();
-  io.emit('comanda:nueva', comanda);
+  bcast(local, 'comanda:nueva', comanda);
   res.json(comanda);
 });
 
 app.get('/api/cocina/comandas', (req, res) => {
-  const { estado } = req.query;
-  let lista = db.comandas;
+  const { estado, local } = req.query;
+  let lista = comandasDeLocal(local || DEFAULT_LOCAL);
   if (estado) lista = lista.filter(c => c.estado === estado);
   res.json(lista.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)));
 });
@@ -1276,18 +1296,19 @@ app.put('/api/cocina/comandas/:id/estado', (req, res) => {
 
   comanda.estado = req.body.estado || comanda.estado;
 
+  const cl = comanda.local || DEFAULT_LOCAL;
   // Si la comanda es de un pedido, actualizar el pedido también
   if (comanda.pedidoId) {
     const pedido = db.pedidos.find(p => p.id === comanda.pedidoId);
     if (pedido && comanda.estado === 'lista') {
       pedido.estado    = 'listo';
       pedido.updatedAt = new Date().toISOString();
-      io.emit('pedido:update', pedido);
+      bcast(cl, 'pedido:update', pedido);
     }
   }
 
-  io.emit('cocina:update', comanda);
-  emitDashboardStats();
+  bcast(cl, 'cocina:update', comanda);
+  if (isDefaultLocal(cl)) emitDashboardStats();
   res.json(comanda);
 });
 
@@ -1325,7 +1346,7 @@ app.post('/api/caja/abrir', (req, res) => {
   };
 
   db.caja.push(caja);
-  io.emit('caja:update', caja);
+  bcast(reqLocal(req), 'caja:update', caja);
   res.status(201).json(caja);
 });
 
@@ -1338,7 +1359,7 @@ app.post('/api/caja/cerrar', (req, res) => {
   caja.saldoFinal = saldoFinal;
   caja.estado     = 'cerrada';
 
-  io.emit('caja:update', caja);
+  bcast(reqLocal(req), 'caja:update', caja);
   res.json(caja);
 });
 
@@ -1358,7 +1379,7 @@ app.post('/api/caja/movimiento', (req, res) => {
   };
 
   caja.movimientos.push(movimiento);
-  io.emit('caja:update', caja);
+  bcast(reqLocal(req), 'caja:update', caja);
   res.json(movimiento);
 });
 
@@ -1517,80 +1538,78 @@ app.get('/api/facturas/:id', (req, res) => {
 //  WEBSOCKET
 // ─────────────────────────────────────────────
 io.on('connection', (socket) => {
-  console.log(`[WS] Cliente conectado: ${socket.id}`);
+  const L = (socket.handshake.query && socket.handshake.query.local) || DEFAULT_LOCAL;
+  socket.data.local = L;
+  socket.join(roomOf(L));
+  console.log(`[WS] Cliente conectado: ${socket.id} (local: ${L})`);
 
   socket.on('join:room', (room) => {
     socket.join(room);
-    console.log(`[WS] ${socket.id} se unió a sala: ${room}`);
-
-    // Enviar estado actual según la sala
+    // Enviar estado actual según la sala (filtrado por el local del socket)
     if (room === 'cocina') {
-      socket.emit('cocina:init', db.comandas.filter(c => c.estado !== 'entregada'));
+      socket.emit('cocina:init', comandasDeLocal(L).filter(c => c.estado !== 'entregada'));
     } else if (room === 'dashboard') {
-      socket.emit('dashboard:stats', emitDashboardStats());
+      if (isDefaultLocal(L)) socket.emit('dashboard:stats', emitDashboardStats());
     } else if (room === 'delivery') {
-      socket.emit('delivery:init', db.delivery.filter(d => !['entregado', 'cancelado'].includes(d.estado)));
+      socket.emit('delivery:init', deliveryDeLocal(L).filter(d => !['entregado', 'cancelado'].includes(d.estado)));
     }
   });
 
-  // Client broadcasts a mesa change → relay to all other clients
+  // Client broadcasts a mesa change → relay solo a clientes del mismo local
   socket.on('client:mesa:update', (mesa) => {
-    // Keep server in-memory state in sync so PATCH calls work correctly
-    if (mesa && mesa.id) {
+    if (isDefaultLocal(L) && mesa && mesa.id) {
       const idx = db.mesas.findIndex(m => String(m.id) === String(mesa.id));
-      if (idx >= 0) {
-        db.mesas[idx] = { ...db.mesas[idx], ...mesa };
-      }
+      if (idx >= 0) db.mesas[idx] = { ...db.mesas[idx], ...mesa };
     }
-    socket.broadcast.emit('mesa:update', mesa);
+    socket.to(roomOf(L)).emit('mesa:update', mesa);
   });
 
   // Repartidor updates delivery status
   socket.on('delivery:status', async ({ id, estado }) => {
-    // Update in-memory
-    const inMem = db.delivery.find(d => String(d.id) === String(id));
-    if (inMem) {
-      inMem.estado = estado;
-      if (estado === 'entregado') inMem.entregado_at = new Date().toISOString();
+    let out = { id, estado };
+    if (isDefaultLocal(L)) {
+      const inMem = db.delivery.find(d => String(d.id) === String(id));
+      if (inMem) {
+        inMem.estado = estado;
+        if (estado === 'entregado') inMem.entregado_at = new Date().toISOString();
+        out = inMem;
+      }
+      const pool = getPool();
+      if (pool) {
+        try {
+          const { rows } = await pool.query('SELECT delivery FROM app_state WHERE id = 1');
+          const list = rows[0]?.delivery || [];
+          const idx = list.findIndex(d => String(d.id) === String(id));
+          if (idx >= 0) {
+            list[idx] = { ...list[idx], estado };
+            if (estado === 'entregado') list[idx].entregado_at = new Date().toISOString();
+            await pool.query('UPDATE app_state SET delivery=$1, updated_at=NOW() WHERE id=1', [JSON.stringify(list)]);
+          }
+        } catch(e) { console.error('[ws:delivery:status]', e.message); }
+      }
     }
-    // Persist to PostgreSQL so admin panel stays in sync
-    const pool = getPool();
-    if (pool) {
-      try {
-        const { rows } = await pool.query('SELECT delivery FROM app_state WHERE id = 1');
-        const list = rows[0]?.delivery || [];
-        const idx = list.findIndex(d => String(d.id) === String(id));
-        if (idx >= 0) {
-          list[idx] = { ...list[idx], estado };
-          if (estado === 'entregado') list[idx].entregado_at = new Date().toISOString();
-          await pool.query('UPDATE app_state SET delivery=$1, updated_at=NOW() WHERE id=1', [JSON.stringify(list)]);
-        }
-      } catch(e) { console.error('[ws:delivery:status]', e.message); }
-    }
-    const out = inMem || { id, estado };
-    io.emit('delivery:update', out);
-    console.log(`[WS] delivery:status id=${id} → ${estado}`);
+    bcast(L, 'delivery:update', out);
   });
 
   // Kitchen updates comanda state — relay + sync delivery + trigger llamado when ready
   socket.on('comanda:update', ({ id, estado }) => {
     const comanda = db.comandas.find(c => String(c.id) === String(id));
+    const cl = (comanda && comanda.local) || L;
     if (comanda) {
       if (estado === 'entregado') db.comandas = db.comandas.filter(c => String(c.id) !== String(id));
       else comanda.estado = estado;
     }
-    socket.broadcast.emit('comanda:update', { id, estado });
+    bcast(cl, 'comanda:update', { id, estado });
 
-    // Sync delivery order state when cocina advances a delivery comanda
-    if (comanda && comanda.tipo === 'delivery') {
+    // Sync delivery order state when cocina advances a delivery comanda (solo La Isla por ahora)
+    if (comanda && comanda.tipo === 'delivery' && isDefaultLocal(cl)) {
       const estadoMap = { preparacion: 'en_cocina', listo: 'listo' };
       const nuevoEstadoDelivery = estadoMap[estado];
       if (nuevoEstadoDelivery) {
         const delivery = db.delivery.find(d => String(d.numero) === String(comanda.mesa));
         if (delivery) {
           delivery.estado = nuevoEstadoDelivery;
-          io.emit('delivery:update', delivery);
-          // Persist to PostgreSQL async
+          bcast(cl, 'delivery:update', delivery);
           (async () => {
             const pool = getPool();
             if (!pool) return;
@@ -1610,7 +1629,7 @@ io.on('connection', (socket) => {
     if (estado === 'listo' && comanda && comanda.tipo !== 'delivery') {
       const mesa = db.mesas.find(m => String(m.id) === String(comanda.mesaId) || m.numero === comanda.mesa);
       const llamado = {
-        id: uuidv4(), tipo: 'mesa',
+        id: uuidv4(), tipo: 'mesa', local: cl,
         mesaNumero: comanda.mesa, mesaId: mesa?.id || null,
         mozo: comanda.mozo || mesa?.mozo || null,
         mozoid: mesa?.mozoid || null,
@@ -1620,18 +1639,19 @@ io.on('connection', (socket) => {
         creadoAt: new Date().toISOString(), reconocidoAt: null
       };
       db.llamados.push(llamado);
-      io.emit('llamado:mesa', llamado);
-      console.log(`[LLAMADO] Mesa #${comanda.mesa} lista — Mozo: ${comanda.mozo || '-'}`);
+      bcast(cl, 'llamado:mesa', llamado);
     }
   });
 
-  // Admin broadcasts a full delivery object to all clients (new orders or state changes)
+  // Admin broadcasts a full delivery object → solo a su local
   socket.on('delivery:broadcast', (pedido) => {
     if (!pedido || !pedido.id) return;
-    const exists = db.delivery.find(d => String(d.id) === String(pedido.id));
-    if (!exists) db.delivery.push(pedido);
-    else Object.assign(exists, pedido);
-    io.emit('delivery:update', pedido);
+    if (isDefaultLocal(L)) {
+      const exists = db.delivery.find(d => String(d.id) === String(pedido.id));
+      if (!exists) db.delivery.push(pedido);
+      else Object.assign(exists, pedido);
+    }
+    bcast(L, 'delivery:update', pedido);
   });
 
   // Mozo/repartidor acknowledges a llamado
@@ -1640,13 +1660,11 @@ io.on('connection', (socket) => {
     if (llamado) {
       llamado.estado = 'reconocido';
       llamado.reconocidoAt = new Date().toISOString();
-      io.emit('llamado:update', llamado);
+      bcast(llamado.local || L, 'llamado:update', llamado);
     }
   });
 
-  socket.on('disconnect', () => {
-    console.log(`[WS] Cliente desconectado: ${socket.id}`);
-  });
+  socket.on('disconnect', () => {});
 });
 
 // ─────────────────────────────────────────────
@@ -1831,7 +1849,7 @@ app.post('/api/state', authMiddleware, async (req, res) => {
     }
 
     const savedAt = new Date().toISOString();
-    io.emit('state:changed', { updated_at: savedAt });
+    bcast(local, 'state:changed', { updated_at: savedAt });
     res.json({ ok: true });
   } catch(e) { console.error('[state:post]', e.message); res.status(500).json({ error: e.message }); }
 });
@@ -1888,23 +1906,25 @@ app.post('/api/locals', authMiddleware, superOnly, async (req, res) => {
 // ─────────────────────────────────────────────
 //  LLAMADOR ROUTES
 // ─────────────────────────────────────────────
-app.get('/api/llamados', authMiddleware, (_req, res) => {
+app.get('/api/llamados', authMiddleware, (req, res) => {
   const cutoff = Date.now() - 2 * 60 * 60 * 1000;
-  res.json(db.llamados.filter(l => new Date(l.creadoAt).getTime() > cutoff));
+  const L = reqLocal(req);
+  res.json(db.llamados.filter(l => new Date(l.creadoAt).getTime() > cutoff && (l.local || DEFAULT_LOCAL) === L));
 });
 
 app.post('/api/llamados/mesa', authMiddleware, (req, res) => {
   const { mesaNumero, mesaId, mozo, mozoid, nota } = req.body;
   if (!mesaNumero) return res.status(400).json({ error: 'mesaNumero requerido' });
+  const L = reqLocal(req);
   const llamado = {
-    id: uuidv4(), tipo: 'mesa',
+    id: uuidv4(), tipo: 'mesa', local: L,
     mesaNumero, mesaId: mesaId || null, mozo: mozo || null, mozoid: mozoid || null,
     nota: nota || null, items: [],
     estado: 'activo', recallCount: 0,
     creadoAt: new Date().toISOString(), reconocidoAt: null
   };
   db.llamados.push(llamado);
-  io.emit('llamado:mesa', llamado);
+  bcast(L, 'llamado:mesa', llamado);
   res.status(201).json(llamado);
 });
 
@@ -1915,7 +1935,7 @@ app.post('/api/llamados/:id/recall', authMiddleware, (req, res) => {
   llamado.reconocidoAt = null;
   llamado.recallCount = (llamado.recallCount || 0) + 1;
   const event = llamado.tipo === 'delivery' ? 'llamado:delivery' : 'llamado:mesa';
-  io.emit(event, llamado);
+  bcast(llamado.local || reqLocal(req), event, llamado);
   res.json(llamado);
 });
 
@@ -1924,7 +1944,7 @@ app.patch('/api/llamados/:id', authMiddleware, (req, res) => {
   if (!llamado) return res.status(404).json({ error: 'Llamado no encontrado' });
   if (req.body.estado) llamado.estado = req.body.estado;
   if (req.body.reconocidoAt) llamado.reconocidoAt = req.body.reconocidoAt;
-  io.emit('llamado:update', llamado);
+  bcast(llamado.local || reqLocal(req), 'llamado:update', llamado);
   res.json(llamado);
 });
 

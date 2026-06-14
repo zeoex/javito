@@ -411,6 +411,8 @@ let dragId = null;
 let nextId = 10;
 let nextNumero = 5;
 let socket = null;
+// Local de esta pantalla de cocina (?local=...) — aísla las comandas por local
+const COCINA_LOCAL = new URLSearchParams(location.search).get('local') || 'la-isla';
 
 /* ── AUDIO ──────────────────────────────────────────────────────────────────── */
 function beep(type) {
@@ -667,7 +669,7 @@ function showToast(msg, color) {
 /* ── POLLING FALLBACK (every 45s) — catches missed socket events ────────────── */
 setInterval(() => {
   if (!socket || !socket.connected) return;
-  fetch('/api/cocina/comandas')
+  fetch('/api/cocina/comandas?local=' + encodeURIComponent(COCINA_LOCAL))
     .then(r => r.json())
     .then(data => {
       if (!Array.isArray(data)) return;
@@ -705,7 +707,7 @@ setInterval(() => {
 function initSocket() {
   try {
     if (typeof io === 'undefined') return;
-    socket = io({ transports: ['polling', 'websocket'] });
+    socket = io({ query: { local: COCINA_LOCAL }, transports: ['polling', 'websocket'] });
 
     socket.on('connect', () => {
       const badge = document.getElementById('conn-badge');
@@ -713,7 +715,7 @@ function initSocket() {
       document.getElementById('conn-text').textContent = 'EN VIVO';
       showToast('Conectado al servidor en vivo', 'green');
       // Re-fetch on (re)connect to catch any missed events
-      fetch('/api/cocina/comandas')
+      fetch('/api/cocina/comandas?local=' + encodeURIComponent(COCINA_LOCAL))
         .then(r => r.json())
         .then(data => {
           if (Array.isArray(data)) {
@@ -765,7 +767,7 @@ function initSocket() {
 
 /* ── INIT ───────────────────────────────────────────────────────────────────── */
 // Fetch from API immediately (no socket needed)
-fetch('/api/cocina/comandas')
+fetch('/api/cocina/comandas?local=' + encodeURIComponent(COCINA_LOCAL))
   .then(r => r.json())
   .then(data => {
     if (Array.isArray(data)) {

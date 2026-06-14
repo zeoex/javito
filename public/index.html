@@ -2913,7 +2913,7 @@ function initApp() {
   setInterval(updateClock, 1000);
   // Socket
   try {
-    socket = io({ transports: ['polling', 'websocket'] });
+    socket = io({ query: { local: (currentUser && currentUser.local_id) || 'la-isla' }, transports: ['polling', 'websocket'] });
     socket.on('dashboard:stats', updateDashboardStats);
     socket.on('mesa:update', (updatedMesa) => {
       if (updatedMesa && updatedMesa.id) {
