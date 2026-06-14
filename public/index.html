@@ -3343,6 +3343,19 @@ function updateMostradorTabVisibility() {
   tab.style.display = esAdmin ? '' : 'none';
 }
 
+// Limpieza única: elimina mesas huérfanas de la antigua sección "Mostrador" (descontinuada).
+// Se autoejecuta al renderizar; una vez que no quedan, no vuelve a actuar.
+function _limpiarMostradorMesas() {
+  const orphan = mesasData.filter(m => m.zona === 'mostrador');
+  if (!orphan.length) return;
+  mesasData = mesasData.filter(m => m.zona !== 'mostrador');
+  if (['admin','supervisor'].includes(currentUser?.rol)) {
+    orphan.forEach(m => apiFetch(`/mesas/${m.id}`, { method:'DELETE' }).catch(()=>{}));
+    saveState();
+    showToast(`Limpieza: se eliminó ${orphan.length} mesa(s) de mostrador en desuso`, 'info');
+  }
+}
+
 function onNuevaMesaZonaChange() {
   const esMost = document.getElementById('nuevaMesaZona').value === 'mostrador';
   document.getElementById('grpNuevaMesaNombre').style.display = esMost ? '' : 'none';
@@ -3377,7 +3390,7 @@ function tiempoToMins(t) {
 }
 
 function renderMesas() {
-  updateMostradorTabVisibility();
+  _limpiarMostradorMesas();
   const filtered = mesasData.filter(m=>m.zona===currentMesaTab);
   const el = document.getElementById('mesasGrid');
   el.classList.remove('mesas-grid-mozo');
