@@ -73,15 +73,18 @@
   .hero p.sub{font-size:19px;color:var(--muted);max-width:540px;margin-bottom:30px}
   @media(max-width:900px){.hero p.sub{margin-left:auto;margin-right:auto}}
   .hero .cta{display:flex;gap:14px;flex-wrap:wrap}
+  .hero .cta .btn{min-width:178px;justify-content:center}
   @media(max-width:900px){.hero .cta{justify-content:center}}
+  @media(max-width:420px){.hero .cta .btn{flex:1 1 100%}}
   .trust{display:flex;gap:24px;margin-top:30px;flex-wrap:wrap;font-size:13px;color:var(--muted);font-weight:600}
   @media(max-width:900px){.trust{justify-content:center}}
   .trust span{display:flex;align-items:center;gap:7px}
   .trust svg{width:17px;height:17px;color:var(--vio-2)}
   /* hero live-tracking map */
-  .stage{position:relative;justify-self:center;width:min(420px,94vw)}
+  .stage{position:relative;justify-self:center;width:min(420px,100%)}
   .stage::before{content:'';position:absolute;inset:-46px -34px;background:radial-gradient(circle at 60% 40%,rgba(124,58,237,.45),transparent 65%);filter:blur(12px);z-index:0}
-  .livemap{position:relative;z-index:1;width:420px;transform-origin:top left;border-radius:24px;overflow:hidden;border:1px solid var(--line-2);box-shadow:0 40px 80px rgba(8,4,20,.7),inset 0 1px 0 rgba(255,255,255,.07);background:linear-gradient(160deg,#1a1138,#120a28)}
+  .lmwrap{position:relative;z-index:1;width:100%}
+  .livemap{position:absolute;top:0;left:0;width:420px;transform-origin:top left;border-radius:24px;overflow:hidden;border:1px solid var(--line-2);box-shadow:0 40px 80px rgba(8,4,20,.7),inset 0 1px 0 rgba(255,255,255,.07);background:linear-gradient(160deg,#1a1138,#120a28)}
   .livemap .canvas{position:relative;width:420px;height:386px}
   .livemap .grid{position:absolute;inset:0;width:100%;height:100%}
   .livemap .route{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
@@ -191,6 +194,8 @@
   .cta-band h2{font-size:clamp(28px,4.2vw,40px);color:#fff}
   .cta-band p{color:#ede9fe;font-size:16.5px;margin:14px auto 28px;max-width:480px}
   .cta-band .cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  .cta-band .cta .btn{min-width:260px;justify-content:center}
+  @media(max-width:480px){.cta-band .cta .btn{min-width:0;width:100%}}
   .btn-wpp{background:linear-gradient(135deg,#2ee676,#128c4b);color:#fff}
   .btn-mail{background:rgba(255,255,255,.14);color:#fff;border:1.5px solid rgba(255,255,255,.45)}
   .btn-mail:hover{background:#fff;color:#4c1d95;border-color:#fff}
@@ -238,7 +243,7 @@
     </div>
   </div>
   <div class="stage">
-    <div class="livemap">
+    <div class="lmwrap"><div class="livemap">
       <div class="canvas">
         <svg class="grid" viewBox="0 0 420 386" preserveAspectRatio="none" aria-hidden="true">
           <defs>
@@ -258,7 +263,7 @@
           <path d="M 60 360 C 130 320, 110 230, 200 215 S 320 180, 360 70" fill="none" stroke="url(#rg)" stroke-width="6" stroke-linecap="round" stroke-dasharray="2 14" opacity=".95"/>
         </svg>
         <span class="startdot"></span>
-        <div class="pin"><div class="p"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></div><span class="lbl">Tu casa</span></div>
+        <div class="pin"><div class="p"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></div></div>
         <div class="moto"><span class="ring"></span><span class="em">🛵</span></div>
         <div class="topbar">
           <div class="av">🛵</div>
@@ -270,7 +275,7 @@
           <div class="min"><b>8</b><span>min</span></div>
         </div>
       </div>
-    </div>
+    </div></div>
   </div>
 </div></header>
 
@@ -332,7 +337,7 @@
       </ul>
     </div>
     <div class="stage" style="justify-self:center">
-      <div class="livemap">
+      <div class="lmwrap"><div class="livemap">
         <div class="canvas">
           <svg class="grid" viewBox="0 0 420 386" preserveAspectRatio="none" aria-hidden="true">
             <defs><linearGradient id="rg2" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#9d6bff"/><stop offset="1" stop-color="#34d399"/></linearGradient></defs>
@@ -346,7 +351,7 @@
             <path d="M 60 360 C 130 320, 110 230, 200 215 S 320 180, 360 70" fill="none" stroke="url(#rg2)" stroke-width="6" stroke-linecap="round" stroke-dasharray="2 14"/>
           </svg>
           <span class="startdot"></span>
-          <div class="pin"><div class="p"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></div><span class="lbl">Tu casa</span></div>
+          <div class="pin"><div class="p"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></div></div>
           <div class="moto"><span class="ring"></span><span class="em">🛵</span></div>
           <div class="topbar">
             <div class="av">🛵</div>
@@ -358,7 +363,7 @@
             <div class="min"><b>8</b><span>min</span></div>
           </div>
         </div>
-      </div>
+      </div></div>
     </div>
   </div>
 </div></section>
@@ -451,10 +456,11 @@
   // ===== Escalar el mapa en vivo para alinear motito + ruta en cualquier ancho =====
   function fitLivemaps(){
     document.querySelectorAll('.stage').forEach(function(st){
-      var lm = st.querySelector('.livemap'); if(!lm) return;
+      var lm = st.querySelector('.livemap'); var wrap = st.querySelector('.lmwrap');
+      if(!lm || !wrap) return;
       var s = Math.min(1, st.clientWidth / 420);
       lm.style.transform = 'scale('+s+')';
-      st.style.height = (lm.offsetHeight * s) + 'px';
+      wrap.style.height = (lm.offsetHeight * s) + 'px';
     });
   }
   fitLivemaps();
