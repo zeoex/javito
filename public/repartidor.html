@@ -1529,9 +1529,14 @@
     <div class="login-error" id="login-error"></div>
     <div class="login-hint">Ingresá con tu email y contraseña creados en Admin → Usuarios</div>
 
+    <a id="login-apk" href="https://github.com/zeoex/javito/releases/latest/download/restito-repartidor.apk"
+      style="margin-top:16px;width:100%;box-sizing:border-box;background:linear-gradient(135deg,#dc2626,#b91c1c);border:none;color:#fff;border-radius:12px;padding:14px;font-weight:800;font-size:14.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;box-shadow:0 6px 18px rgba(220,38,38,.35)">
+      📥 Descargar app Android (.apk)
+    </a>
+    <div style="font-size:11px;color:#9ca3af;text-align:center;margin-top:7px;line-height:1.5">Recomendada: sigue compartiendo tu ubicación con la pantalla apagada.</div>
     <button type="button" id="login-install" onclick="if(window.showPwaInstall)window.showPwaInstall()"
-      style="margin-top:16px;width:100%;background:rgba(220,38,38,.07);border:1.5px solid rgba(220,38,38,.35);color:#b91c1c;border-radius:12px;padding:13px;font-weight:700;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
-      📲 Instalar app en este teléfono
+      style="margin-top:10px;width:100%;background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.25);color:#b91c1c;border-radius:12px;padding:11px;font-weight:600;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+      📲 o instalar acceso rápido (web)
     </button>
   </div>
 
@@ -2155,39 +2160,83 @@ async function startTracking(p) {
   } catch (e) { console.warn('[track] start error', e); }
   if (!trackId) { showToast('⚠️ No se pudo iniciar el seguimiento'); return null; }
 
-  const sess = { trackId, watchId: null, lastSent: 0, lastPos: null };
+  const sess = { trackId, watchId: null, geoHandle: null, lastSent: 0, lastPos: null };
   trackSessions[p.id] = sess;
   acquireWakeLock();
 
+  sess.geoHandle = await startGeoWatch(function (c) {
+    const now = Date.now();
+    // Throttle: enviar como máximo cada 4s o si se movió +15m
+    const moved = sess.lastPos ? _haversineM(sess.lastPos, [c.latitude, c.longitude]) : Infinity;
+    if (now - sess.lastSent < 4000 && moved < 15) return;
+    sess.lastSent = now; sess.lastPos = [c.latitude, c.longitude];
+    fetch('/api/track/' + trackId + '/pos', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        lat: c.latitude, lng: c.longitude,
+        heading: (typeof c.heading === 'number' && !isNaN(c.heading)) ? c.heading : null,
+        speed: (typeof c.speed === 'number' && !isNaN(c.speed)) ? c.speed : null,
+        acc: c.accuracy || null,
+      })
+    }).catch(function () {});
+  });
+  return sess;
+}
+
+/* ── Geolocalización: usa el plugin nativo (segundo plano) si corre dentro de la app, o el navegador ── */
+async function startGeoWatch(cb) {
+  const Cap = window.Capacitor;
+  const isNative = Cap && typeof Cap.isNativePlatform === 'function' && Cap.isNativePlatform();
+  if (isNative && Cap.registerPlugin) {
+    try {
+      const BG = Cap.registerPlugin('BackgroundGeolocation');
+      const id = await BG.addWatcher({
+        backgroundTitle: 'ResTito Repartidor',
+        backgroundMessage: 'Compartiendo tu ubicación con el cliente',
+        requestPermissions: true,
+        stale: false,
+        distanceFilter: 12
+      }, function (location, error) {
+        if (error) {
+          if (error.code === 'NOT_AUTHORIZED') showToast('⚠️ Activá los permisos de ubicación');
+          return;
+        }
+        if (location) cb({
+          latitude: location.latitude, longitude: location.longitude,
+          heading: (typeof location.bearing === 'number') ? location.bearing : null,
+          speed: (typeof location.speed === 'number') ? location.speed : null,
+          accuracy: location.accuracy || null
+        });
+      });
+      return { type: 'bg', id, BG };
+    } catch (e) { console.warn('[geo] plugin nativo no disponible, uso navegador', e); }
+  }
   if (navigator.geolocation) {
-    sess.watchId = navigator.geolocation.watchPosition(function (pos) {
+    const wid = navigator.geolocation.watchPosition(function (pos) {
       const c = pos.coords;
-      const now = Date.now();
-      // Throttle: enviar como máximo cada 4s o si se movió +15m
-      const moved = sess.lastPos ? _haversineM(sess.lastPos, [c.latitude, c.longitude]) : Infinity;
-      if (now - sess.lastSent < 4000 && moved < 15) return;
-      sess.lastSent = now; sess.lastPos = [c.latitude, c.longitude];
-      fetch('/api/track/' + trackId + '/pos', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lat: c.latitude, lng: c.longitude,
-          heading: (typeof c.heading === 'number' && !isNaN(c.heading)) ? c.heading : null,
-          speed: (typeof c.speed === 'number' && !isNaN(c.speed)) ? c.speed : null,
-          acc: c.accuracy || null,
-        })
-      }).catch(function () {});
+      cb({
+        latitude: c.latitude, longitude: c.longitude,
+        heading: (typeof c.heading === 'number' && !isNaN(c.heading)) ? c.heading : null,
+        speed: (typeof c.speed === 'number' && !isNaN(c.speed)) ? c.speed : null,
+        accuracy: c.accuracy || null
+      });
     }, function (err) {
-      console.warn('[track] geo error', err && err.message);
       if (err && err.code === 1) showToast('⚠️ Activá la ubicación para el seguimiento');
     }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 });
+    return { type: 'web', id: wid };
   }
-  return sess;
+  return null;
+}
+function stopGeoWatch(h) {
+  if (!h) return;
+  if (h.type === 'bg' && h.BG) { try { h.BG.removeWatcher({ id: h.id }); } catch (e) {} }
+  else if (h.type === 'web' && navigator.geolocation) { navigator.geolocation.clearWatch(h.id); }
 }
 
 function stopTracking(orderId) {
   const sess = trackSessions[orderId];
   if (!sess) return;
-  if (sess.watchId != null && navigator.geolocation) navigator.geolocation.clearWatch(sess.watchId);
+  stopGeoWatch(sess.geoHandle);
   fetch('/api/track/' + sess.trackId + '/done', { method: 'POST' }).catch(function () {});
   delete trackSessions[orderId];
   releaseWakeLock();

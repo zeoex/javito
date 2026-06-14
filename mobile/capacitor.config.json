@@ -1,0 +1,16 @@
+{
+  "appId": "com.restito.repartidor",
+  "appName": "ResTito Repartidor",
+  "webDir": "www",
+  "server": {
+    "url": "https://restito-production.up.railway.app/la-isla/repartidor",
+    "androidScheme": "https",
+    "cleartext": false,
+    "allowNavigation": [
+      "restito-production.up.railway.app"
+    ]
+  },
+  "android": {
+    "backgroundColor": "#0b0716"
+  }
+}
