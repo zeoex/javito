@@ -608,7 +608,7 @@
       <span class="tile-arrow" aria-hidden="true">→</span>
     </a>
 
-    <a href="/carta.html" class="tile carta" aria-label="Menú Online — Pedidos desde casa">
+    <a href="/menu.html" class="tile carta" aria-label="Menú Online — Pedidos desde casa">
       <div class="tile-icon-wrap"><div class="tile-icon"><img src="/icon-carta.svg" alt="" loading="eager"/></div></div>
       <div class="tile-body">
         <span class="tile-label">Menú Online</span>
@@ -617,11 +617,11 @@
       <span class="tile-arrow" aria-hidden="true">→</span>
     </a>
 
-    <a href="/menu.html" class="tile menuqr" aria-label="Carta QR — Escaner en el local">
+    <a href="/carta.html" class="tile menuqr" aria-label="Carta QR — Escaneá en la mesa">
       <div class="tile-icon-wrap"><div class="tile-icon"><img src="/icon-menuqr.svg" alt="" loading="eager"/></div></div>
       <div class="tile-body">
         <span class="tile-label">Carta QR</span>
-        <span class="tile-sub">Escaner en el local</span>
+        <span class="tile-sub">Escaneá en la mesa</span>
       </div>
       <span class="tile-arrow" aria-hidden="true">→</span>
     </a>
@@ -652,8 +652,8 @@
     _set('mozo','/'+_local+'/mozo?install=1','Instalar Mozo','App para mozos');
     _set('cocina','/'+_local+'/cocina?install=1','Instalar Cocina','Pantalla de comandas');
     _set('rep','/'+_local+'/repartidor?install=1','Instalar Repartidor','App de delivery');
-    _set('menuqr','/'+_local+'/menu','Carta QR / Menú digital','Menú para los clientes');
-    var _cartaTile=document.querySelector('a.tile.carta'); if(_cartaTile) _cartaTile.style.display='none';
+    _set('carta','/'+_local+'/menu','Menú Online','Pedí desde tu casa');
+    _set('menuqr','/'+_local+'/carta','Carta QR','Escaneá en la mesa');
     fetch('/api/public/menu?local=' + encodeURIComponent(_local)).then(function(r){return r.json();}).then(function(d){
       var biz = (d && d.biz_cfg) || {};
       if (biz.nombre) { var bn=document.querySelector('.brand-name'); if(bn) bn.textContent=biz.nombre; document.title=biz.nombre; }
