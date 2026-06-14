@@ -1750,6 +1750,8 @@ let socket = null;
 // Local de este repartidor: /<local>/repartidor  o  ?local=...
 const REPARTIDOR_LOCAL = (location.pathname.match(/^\/([^\/]+)\/repartidor/) || [])[1]
   || new URLSearchParams(location.search).get('local') || 'la-isla';
+// La APK de descarga es la de este local (cada local tiene su propio ícono/app)
+(function(){ var a=document.getElementById('login-apk'); if(a) a.href='https://github.com/zeoex/javito/releases/latest/download/restito-'+REPARTIDOR_LOCAL+'.apk'; })();
 // Branding del login con el logo y nombre del local
 (function(){
   fetch('/api/public/menu?local=' + encodeURIComponent(REPARTIDOR_LOCAL)).then(function(r){return r.json();}).then(function(d){

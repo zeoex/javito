@@ -2,6 +2,11 @@ name: Build Repartidor APK
 
 on:
   workflow_dispatch:
+    inputs:
+      local:
+        description: "Slug del local (ej: la-isla)"
+        required: true
+        default: "la-isla"
   push:
     paths:
       - "mobile/**"
@@ -9,6 +14,10 @@ on:
 
 permissions:
   contents: write
+
+env:
+  LOCAL: ${{ github.event.inputs.local || 'la-isla' }}
+  ORIGIN: https://restito-production.up.railway.app
 
 jobs:
   build:
@@ -37,6 +46,12 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Preparar local (nombre, logo, appId)
+        run: node scripts/prepare-local.mjs
+
+      - name: Generar íconos desde el logo
+        run: node scripts/make-icons.mjs
+
       - name: Add Android platform
         run: npx cap add android
 
@@ -46,6 +61,9 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
+      - name: Aplicar íconos (mipmaps + adaptativos)
+        run: npx capacitor-assets generate --android
+
       - name: Build debug APK
         run: |
           cd android
@@ -53,18 +71,18 @@ jobs:
           ./gradlew assembleDebug --no-daemon
 
       - name: Rename APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk restito-repartidor.apk
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk "restito-${LOCAL}.apk"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: restito-repartidor-apk
-          path: mobile/restito-repartidor.apk
+          name: restito-${{ env.LOCAL }}-apk
+          path: mobile/restito-${{ env.LOCAL }}.apk
 
       - name: Publish to Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: app-repartidor
-          name: ResTito Repartidor (APK)
+          name: ResTito Repartidor (APKs por local)
           make_latest: true
-          files: mobile/restito-repartidor.apk
+          files: mobile/restito-${{ env.LOCAL }}.apk

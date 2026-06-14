@@ -8,14 +8,16 @@ App nativa para el repartidor. Envuelve la web (`/<local>/repartidor`) y agrega
 ## Cómo se genera la APK
 
 ### Opción A — GitHub Actions (recomendada, sin instalar nada)
-1. En GitHub → pestaña **Actions** → workflow **"Build Repartidor APK"** → **Run workflow**.
-2. Al terminar, la APK queda:
-   - como **artifact** del run (`restito-repartidor-apk`), y
-   - publicada en un **Release** (tag `app-repartidor`) como `restito-repartidor.apk`.
-3. El login del repartidor enlaza a:
-   `https://github.com/zeoex/javito/releases/latest/download/restito-repartidor.apk`
-   > Para que ese enlace sea descargable sin login, el repo debe ser público,
-   > o bien subí la APK a un hosting propio y cambiá el link en `public/repartidor.html`.
+**Una APK por local**, con el **logo del local como ícono** y su nombre.
+1. En GitHub → pestaña **Actions** → workflow **"Build Repartidor APK"** → **Run workflow**
+   e ingresá el **slug del local** (ej: `la-isla`). En push se compila `la-isla` por defecto.
+2. El build trae el logo y nombre del local desde `/api/public/menu?local=<slug>`,
+   genera los íconos (mipmaps + adaptativos) y compila.
+3. Al terminar, la APK queda publicada en el **Release** (tag `app-repartidor`) como
+   `restito-<slug>.apk` (varias APKs conviven en el mismo release).
+4. El login de cada local enlaza automáticamente a la suya:
+   `https://github.com/zeoex/javito/releases/latest/download/restito-<slug>.apk`
+   > El repo es público, así que el enlace descarga sin login.
 
 ### Opción B — Local (necesitás JDK 17 + Android SDK)
 ```bash
