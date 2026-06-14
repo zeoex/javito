@@ -521,6 +521,8 @@ app.get('/:local/:page', (req, res, next) => {
   noCache(res);
   res.sendFile(path.join(__dirname, 'public', file));
 });
+// Acceso super-admin: /zeoex → login del panel central (no muestra funciones de local)
+app.get('/zeoex', (_req, res) => res.redirect('/zeoex/admin'));
 // Portal por local: /<local>  → portal branded del local (acceso a todas las funciones)
 app.get('/:local', (req, res, next) => {
   if (req.params.local.includes('.')) return next(); // dejar pasar archivos

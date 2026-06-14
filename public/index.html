@@ -3132,13 +3132,23 @@ function initApp() {
     '/mozo':  { iconSrc:'/icon-mozo.svg',  title:'Módulo Mozo',           email:'carlos@restito.com', pass:'mozo123',  hint:'Mozo: carlos@restito.com / mozo123', accent:'#059669', accentL:'#34d399' },
     '/admin': { iconSrc:'/icon-admin.svg', title:'Módulo Administración', email:'admin@restito.com',  pass:'admin123', hint:'Admin: admin@restito.com / admin123',  accent:'#7c3aed', accentL:'#a78bfa' },
   };
-  const cfg = roles[path] || { iconSrc:'/icon-admin.svg', title:'Módulo Administración', email:'admin@restito.com', pass:'admin123', hint:'Admin: admin@restito.com / admin123', accent:'#7c3aed', accentL:'#a78bfa' };
+  // Super-admin: /zeoex/admin → estilo distintivo (corona + dorado)
+  const _seg = path.match(/^\/([^\/]+)\/(admin|mozo)\/?$/);
+  const esSuper = !!(_seg && _seg[1] === 'zeoex');
+  let cfg = roles[path] || roles['/' + ((_seg && _seg[2]) || 'admin')] || { iconSrc:'/icon-admin.svg', title:'Módulo Administración', accent:'#7c3aed', accentL:'#a78bfa' };
+  if (esSuper) cfg = { super:true, title:'Acceso Super‑Admin', accent:'#f59e0b', accentL:'#fbbf24' };
   const le = document.getElementById('loginEmoji');
   if (le) {
-    le.innerHTML = `<img src="${cfg.iconSrc}" alt="icon" style="width:88px;height:88px;object-fit:contain;border-radius:20px;display:block">`;
-    le.style.fontSize = '0';
+    if (esSuper) { le.textContent = '👑'; le.style.fontSize = '64px'; }
+    else { le.innerHTML = `<img src="${cfg.iconSrc}" alt="icon" style="width:88px;height:88px;object-fit:contain;border-radius:20px;display:block">`; le.style.fontSize = '0'; }
   }
   document.getElementById('loginTitle').textContent   = cfg.title;
+  if (esSuper && !document.getElementById('loginSuperBadge')) {
+    const _b = document.createElement('div'); _b.id = 'loginSuperBadge';
+    _b.textContent = '🛡️ ResTito · Administración central';
+    _b.style.cssText = 'margin-top:6px;font-size:11px;font-weight:800;letter-spacing:.6px;color:#f59e0b;text-transform:uppercase';
+    document.getElementById('loginTitle').insertAdjacentElement('afterend', _b);
+  }
   // Prefill si el usuario eligió "Recordar contraseña"
   let _savedCreds = null;
   try { _savedCreds = JSON.parse(localStorage.getItem(path === '/mozo' ? 'pz_remember_mozo' : 'pz_remember_admin') || 'null'); } catch(e) {}
