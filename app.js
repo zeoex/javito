@@ -536,19 +536,23 @@ app.get('/:local', (req, res, next) => {
 //  SEGUIMIENTO DE PEDIDO EN VIVO (live tracking)
 //  El repartidor comparte su GPS; el cliente lo ve por una URL pública.
 // ─────────────────────────────────────────────
-const liveTracks = {}; // trackId -> { orderId, local, dest, customer, driver, pos, status, startedAt, updatedAt }
+const liveTracks = {}; // trackId -> { orderId, local, dest, customer, driver, pos, status, startedAt, updatedAt, deliveredAt }
+const LINK_TTL_AFTER_DONE = 5 * 60e3; // el enlace vive 5 min tras "Entregado"
 function genTrackId() {
   return Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 6);
 }
-// Limpieza: descarta sesiones entregadas hace +2h o inactivas +6h
+function isExpired(t) {
+  return !!(t && t.status === 'delivered' && t.deliveredAt && (Date.now() - t.deliveredAt) > LINK_TTL_AFTER_DONE);
+}
+// Limpieza: descarta sesiones expiradas o inactivas hace mucho
 setInterval(() => {
   const now = Date.now();
   for (const k of Object.keys(liveTracks)) {
     const t = liveTracks[k];
     const age = now - (t.updatedAt || t.startedAt || now);
-    if ((t.status === 'delivered' && age > 2 * 3600e3) || age > 6 * 3600e3) delete liveTracks[k];
+    if (isExpired(t) || age > 6 * 3600e3) delete liveTracks[k];
   }
-}, 30 * 60e3).unref?.();
+}, 60e3).unref?.();
 
 // El repartidor inicia (o reutiliza) una sesión de seguimiento para un pedido
 app.post('/api/track/start', (req, res) => {
@@ -573,6 +577,7 @@ app.post('/api/track/start', (req, res) => {
 app.post('/api/track/:id/pos', (req, res) => {
   const t = liveTracks[req.params.id];
   if (!t) return res.status(404).json({ error: 'sesión no encontrada' });
+  if (t.status === 'delivered') return res.json({ ok: true, done: true });
   const { lat, lng, heading, speed, acc } = req.body || {};
   if (typeof lat !== 'number' || typeof lng !== 'number') return res.status(400).json({ error: 'lat/lng requeridos' });
   t.pos = { lat, lng, heading: (typeof heading === 'number' ? heading : null), speed: (typeof speed === 'number' ? speed : null), acc: acc || null, ts: Date.now() };
@@ -581,18 +586,31 @@ app.post('/api/track/:id/pos', (req, res) => {
   res.json({ ok: true });
 });
 
-// El repartidor marca el pedido como entregado
+// El repartidor marca el pedido como entregado → el enlace vive 5 min más
 app.post('/api/track/:id/done', (req, res) => {
-  const t = liveTracks[req.params.id];
-  if (t) { t.status = 'delivered'; t.updatedAt = Date.now(); io.to('T:' + req.params.id).emit('track:done', {}); }
+  const id = req.params.id;
+  const t = liveTracks[id];
+  if (t && t.status !== 'delivered') {
+    t.status = 'delivered';
+    t.deliveredAt = Date.now();
+    t.updatedAt = t.deliveredAt;
+    const expiresAt = t.deliveredAt + LINK_TTL_AFTER_DONE;
+    io.to('T:' + id).emit('track:done', { expiresAt });
+    // A los 5 min: avisar que el enlace expiró y borrar la sesión
+    setTimeout(() => {
+      if (liveTracks[id]) { io.to('T:' + id).emit('track:expired', {}); delete liveTracks[id]; }
+    }, LINK_TTL_AFTER_DONE + 1000).unref?.();
+  }
   res.json({ ok: true });
 });
 
 // El cliente consulta el estado actual (carga inicial + fallback de polling)
 app.get('/api/track/:id', (req, res) => {
   const t = liveTracks[req.params.id];
-  if (!t) return res.status(404).json({ error: 'no existe' });
+  if (!t || isExpired(t)) return res.status(410).json({ error: 'expirado', expired: true });
   res.json({
+    deliveredAt: t.deliveredAt || null,
+    expiresAt: t.deliveredAt ? (t.deliveredAt + LINK_TTL_AFTER_DONE) : null,
     orderId: t.orderId,
     dest: t.dest || null,
     customer: { nombre: (t.customer && t.customer.nombre) || null },

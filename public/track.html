@@ -128,6 +128,12 @@
   <div class="em">🎉</div>
   <h2>¡Pedido entregado!</h2>
   <p>Que lo disfrutes. ¡Gracias por tu compra!</p>
+  <p id="ovCountdown" style="margin-top:14px;font-size:13px;color:#8a7fb0"></p>
+</div>
+<div class="overlay" id="ovExpired">
+  <div class="em">🔒</div>
+  <h2>Enlace no disponible</h2>
+  <p>El seguimiento de este pedido finalizó. ¡Gracias por tu compra!</p>
 </div>
 
 <script src="/vendor/leaflet/leaflet.js"></script>
@@ -262,11 +268,36 @@
     }
   }
 
-  function onDone(){
+  var expireTimer=null, cdTimer=null;
+  function onExpired(){
+    status='expired';
+    if(expireTimer) clearTimeout(expireTimer);
+    if(cdTimer) clearInterval(cdTimer);
+    show($('ovWait'), false); show($('ovDone'), false);
+    show($('ovExpired'), true);
+  }
+  function startExpiry(expiresAt){
+    if(!expiresAt) return;
+    if(expireTimer) clearTimeout(expireTimer);
+    if(cdTimer) clearInterval(cdTimer);
+    var tick=function(){
+      var left=Math.max(0, Math.round((expiresAt-Date.now())/1000));
+      if(left<=0){ onExpired(); return; }
+      var m=Math.floor(left/60), s=left%60;
+      $('ovCountdown').textContent='Este enlace se cerrará en '+m+':'+(s<10?'0':'')+s;
+    };
+    tick();
+    cdTimer=setInterval(tick,1000);
+    expireTimer=setTimeout(onExpired, Math.max(0, expiresAt-Date.now()));
+  }
+
+  function onDone(expiresAt){
+    if(status==='expired') return;
     status='delivered';
     $('stepCamino').classList.remove('active'); $('stepCamino').classList.add('done');
     $('stepEntregado').classList.add('active');
     show($('ovDone'), true);
+    startExpiry(expiresAt || (Date.now()+5*60e3));
   }
 
   function applyState(s){
@@ -274,15 +305,17 @@
     if(s.driver && s.driver.nombre) $('greet').textContent='Tu pedido con '+s.driver.nombre;
     if(s.customer && s.customer.nombre) $('greet').textContent='Hola '+s.customer.nombre+', seguí tu pedido';
     if(s.dest) setDest(s.dest);
-    if(s.status==='delivered'){ onDone(); }
+    if(s.status==='delivered'){ onDone(s.expiresAt); }
     if(s.pos) onPos(s.pos);
   }
 
   // Carga inicial
   fetch('/api/track/'+encodeURIComponent(TRACK_ID)).then(function(r){
+    if(r.status===410) { onExpired(); throw new Error('expired'); }
     if(!r.ok) throw new Error('404');
     return r.json();
-  }).then(applyState).catch(function(){
+  }).then(applyState).catch(function(e){
+    if(e && e.message==='expired') return;
     $('ovWait').querySelector('h2').textContent='Pedido no encontrado';
     $('ovWait').querySelector('p').textContent='Es posible que el enlace haya expirado o que el pedido ya fue entregado.';
     $('ovWait').querySelector('.spin').style.display='none';
@@ -293,14 +326,18 @@
     var socket=io({ transports:['polling','websocket'] });
     socket.on('connect', function(){ socket.emit('join:room', 'T:'+TRACK_ID); });
     socket.on('track:pos', onPos);
-    socket.on('track:done', onDone);
+    socket.on('track:done', function(d){ onDone(d && d.expiresAt); });
+    socket.on('track:expired', onExpired);
   }catch(e){}
 
   // Fallback de polling cada 10s por si se cae el socket
-  setInterval(function(){
-    if(status==='delivered') return;
-    fetch('/api/track/'+encodeURIComponent(TRACK_ID)).then(function(r){return r.ok?r.json():null;}).then(function(s){
-      if(s){ if(s.status==='delivered'){onDone();return;} if(s.pos) onPos(s.pos); if(s.dest&&!dest) setDest(s.dest); }
+  var poll=setInterval(function(){
+    if(status==='delivered' || status==='expired') return;
+    fetch('/api/track/'+encodeURIComponent(TRACK_ID)).then(function(r){
+      if(r.status===410){ onExpired(); return null; }
+      return r.ok?r.json():null;
+    }).then(function(s){
+      if(s){ if(s.status==='delivered'){onDone(s.expiresAt);return;} if(s.pos) onPos(s.pos); if(s.dest&&!dest) setDest(s.dest); }
     }).catch(function(){});
   }, 10000);
 })();
