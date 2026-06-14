@@ -1185,6 +1185,7 @@ function enviarWhatsApp() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
+      local: (location.pathname.match(/^\/([^\/]+)\/carta/)||[])[1] || new URLSearchParams(location.search).get('local') || 'la-isla',
       cliente: { nombre, telefono: '', direccion },
       items: cart.map(i => ({ nombre: i.nombre, qty: i.qty, precio: i.precio, size: i.size || null, nota: i.nota || '' })),
       total: totalFinal,

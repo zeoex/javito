@@ -1710,6 +1710,9 @@ let currentDriver = null;
 let pedidos = [];
 let disponible = true;
 let socket = null;
+// Local de este repartidor: /<local>/repartidor  o  ?local=...
+const REPARTIDOR_LOCAL = (location.pathname.match(/^\/([^\/]+)\/repartidor/) || [])[1]
+  || new URLSearchParams(location.search).get('local') || 'la-isla';
 
 /* ── AUTH ────────────────────────────────────────── */
 async function handleLogin() {
@@ -1818,7 +1821,7 @@ async function bootApp() {
 
   // Load real deliveries from API; fall back to demo data if unreachable
   try {
-    const res = await fetch('/api/delivery/activos');
+    const res = await fetch('/api/delivery/activos?local='+REPARTIDOR_LOCAL);
     if (res.ok) {
       const data = await res.json();
       pedidos = Array.isArray(data) ? data : JSON.parse(JSON.stringify(PEDIDOS_DEMO));
@@ -1837,7 +1840,7 @@ async function bootApp() {
 /* ── SOCKET ──────────────────────────────────────── */
 function initSocket() {
   try {
-    socket = io({ transports: ['polling', 'websocket'] });
+    socket = io({ query: { local: REPARTIDOR_LOCAL }, transports: ['polling', 'websocket'] });
 
     socket.on('connect', async () => {
       console.log('[socket] conectado', socket.id);
@@ -1849,7 +1852,7 @@ function initSocket() {
       if (text)  { text.textContent = 'ONLINE'; }
       // Reload delivery list to sync any changes missed during disconnect
       try {
-        const res = await fetch('/api/delivery/activos');
+        const res = await fetch('/api/delivery/activos?local='+REPARTIDOR_LOCAL);
         if (res.ok) {
           const fresh = await res.json();
           if (Array.isArray(fresh)) { pedidos = fresh; renderOrders(); }
@@ -2064,7 +2067,7 @@ function iniciarViaje(id) {
   p.estado = 'en_camino';
   renderOrders();
   showToast('🛵 Viaje iniciado hacia ' + p.cliente.nombre);
-  fetch('/api/delivery/' + id + '/estado', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ estado: 'en_camino' }) })
+  fetch('/api/delivery/' + id + '/estado', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ estado: 'en_camino', local: REPARTIDOR_LOCAL }) })
     .catch(() => { if (socket) socket.emit('delivery:status', { id, estado: 'en_camino' }); });
 }
 
@@ -2091,7 +2094,7 @@ function marcarEntregado(id) {
   renderOrders();
   renderHistory();
   showToast('✅ Pedido #' + p.numero + ' entregado!');
-  fetch('/api/delivery/' + id + '/estado', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ estado: 'entregado' }) })
+  fetch('/api/delivery/' + id + '/estado', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ estado: 'entregado', local: REPARTIDOR_LOCAL }) })
     .catch(() => { if (socket) socket.emit('delivery:status', { id, estado: 'entregado' }); });
 }
 

@@ -174,6 +174,21 @@ function comandasDeLocal(local) {
 function deliveryDeLocal(local) {
   return isDefaultLocal(local) ? db.delivery : ((db.tenants[local] && db.tenants[local].delivery) || []);
 }
+// Lee/escribe la lista de delivery de un local (PG-aware: La Isla=app_state, otros=tenant_state)
+async function getDeliveryList(local) {
+  const pool = getPool();
+  if (!pool) return deliveryDeLocal(local);
+  if (isDefaultLocal(local)) { const { rows } = await pool.query('SELECT delivery FROM app_state WHERE id = 1'); return rows[0]?.delivery || []; }
+  const { rows } = await pool.query('SELECT delivery FROM tenant_state WHERE local_id = $1', [local]); return rows[0]?.delivery || [];
+}
+async function setDeliveryList(local, list) {
+  if (isDefaultLocal(local)) db.delivery = list;
+  else { if (!db.tenants[local]) db.tenants[local] = emptyTenantState(); db.tenants[local].delivery = list; }
+  const pool = getPool();
+  if (!pool) return;
+  if (isDefaultLocal(local)) await pool.query('UPDATE app_state SET delivery=$1, updated_at=NOW() WHERE id=1', [JSON.stringify(list)]);
+  else await pool.query('INSERT INTO tenant_state (local_id, delivery, updated_at) VALUES ($1,$2,NOW()) ON CONFLICT (local_id) DO UPDATE SET delivery=$2, updated_at=NOW()', [local, JSON.stringify(list)]);
+}
 
 // ─────────────────────────────────────────────
 //  SEED DATA
@@ -626,9 +641,10 @@ app.post('/api/auth/logout', (_req, res) => {
   res.json({ message: 'Sesión cerrada correctamente' });
 });
 
-// Lista de repartidores activos (para el panel admin — sin auth)
+// Lista de repartidores activos del local (para el panel admin)
 app.get('/api/repartidores', (req, res) => {
-  const lista = db.users.filter(u => u.rol === 'repartidor' && u.activo)
+  const local = reqLocal(req);
+  const lista = db.users.filter(u => u.rol === 'repartidor' && u.activo && (u.local_id || DEFAULT_LOCAL) === local)
     .map(u => ({ id: u.id, nombre: u.nombre, telefono: u.telefono || '' }));
   res.json(lista);
 });
@@ -647,7 +663,7 @@ app.post('/api/repartidores/login', async (req, res) => {
     ok = (user.password === password);
   }
   if (!ok) return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
-  res.json({ id: user.id, nombre: user.nombre, email: user.email, telefono: user.telefono || '' });
+  res.json({ id: user.id, nombre: user.nombre, email: user.email, telefono: user.telefono || '', local_id: user.local_id || DEFAULT_LOCAL });
 });
 
 // ─────────────────────────────────────────────
@@ -1085,16 +1101,13 @@ app.get('/api/delivery', (_req, res) => {
   res.json(db.delivery.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
 });
 
-app.get('/api/delivery/activos', async (_req, res) => {
-  const pool = getPool();
-  if (pool) {
-    try {
-      const { rows } = await pool.query('SELECT delivery FROM app_state WHERE id = 1');
-      const list = rows[0]?.delivery || [];
-      return res.json(list.filter(d => !['entregado', 'cancelado'].includes(d.estado)));
-    } catch(e) { console.error('[delivery:activos]', e.message); }
-  }
-  res.json(db.delivery.filter(d => !['entregado', 'cancelado'].includes(d.estado)));
+app.get('/api/delivery/activos', async (req, res) => {
+  const local = reqLocal(req);
+  try {
+    const list = await getDeliveryList(local);
+    return res.json(list.filter(d => !['entregado', 'cancelado'].includes(d.estado)));
+  } catch(e) { console.error('[delivery:activos]', e.message); }
+  res.json(deliveryDeLocal(local).filter(d => !['entregado', 'cancelado'].includes(d.estado)));
 });
 
 app.post('/api/delivery', (req, res) => {
@@ -1154,19 +1167,16 @@ app.post('/api/web/pedido', async (req, res) => {
     lon_cliente: lon_cliente || null
   };
 
-  // Persistir en PostgreSQL directamente para que el admin lo vea aunque no esté conectado
-  const pool = getPool();
-  if (pool) {
-    try {
-      const { rows } = await pool.query('SELECT delivery FROM app_state WHERE id = 1');
-      const list = rows[0]?.delivery || [];
-      list.unshift(pedido);
-      await pool.query('UPDATE app_state SET delivery=$1, updated_at=NOW() WHERE id=1', [JSON.stringify(list)]);
-    } catch(e) { console.error('[web:pedido]', e.message); }
-  }
+  // Persistir en el local correcto (?local= o body.local), para que el admin de ese local lo vea
+  const local = reqLocal(req);
+  try {
+    const list = await getDeliveryList(local);
+    list.unshift(pedido);
+    await setDeliveryList(local, list);
+  } catch(e) { console.error('[web:pedido]', e.message); }
 
-  // Notificar al panel admin en tiempo real
-  bcast(reqLocal(req), 'delivery:update', pedido);
+  // Notificar al panel admin del local en tiempo real
+  bcast(local, 'delivery:update', pedido);
   res.status(201).json(pedido);
 });
 
@@ -1174,19 +1184,13 @@ app.post('/api/web/pedido', async (req, res) => {
 app.put('/api/delivery/:id/costo-envio', async (req, res) => {
   const targetId = req.params.id;
   const { costo_envio } = req.body;
-  const pool = getPool();
-  if (pool) {
-    try {
-      const { rows } = await pool.query('SELECT delivery FROM app_state WHERE id = 1');
-      const list = rows[0]?.delivery || [];
-      const idx = list.findIndex(d => String(d.id) === String(targetId));
-      if (idx >= 0) {
-        list[idx].costo_envio = costo_envio;
-        await pool.query('UPDATE app_state SET delivery=$1, updated_at=NOW() WHERE id=1', [JSON.stringify(list)]);
-      }
-    } catch(e) { console.error('[delivery:costo-envio]', e.message); }
-  }
-  bcast(reqLocal(req), 'delivery:update', { id: targetId, costo_envio });
+  const local = reqLocal(req);
+  try {
+    const list = await getDeliveryList(local);
+    const idx = list.findIndex(d => String(d.id) === String(targetId));
+    if (idx >= 0) { list[idx].costo_envio = costo_envio; await setDeliveryList(local, list); }
+  } catch(e) { console.error('[delivery:costo-envio]', e.message); }
+  bcast(local, 'delivery:update', { id: targetId, costo_envio });
   res.json({ ok: true });
 });
 
@@ -1194,64 +1198,41 @@ app.put('/api/delivery/:id/costo-envio', async (req, res) => {
 app.put('/api/delivery/:id/repartidor', async (req, res) => {
   const targetId = req.params.id;
   const { repartidorId } = req.body;
+  const local = reqLocal(req);
   const repartidor = db.users.find(u => u.id === repartidorId && u.rol === 'repartidor');
   const repartidorNombre = repartidor?.nombre || null;
-
-  const inMem = db.delivery.find(d => String(d.id) === String(targetId));
-  if (inMem) { inMem.repartidorId = repartidorId; inMem.repartidorNombre = repartidorNombre; }
-
-  const pool = getPool();
-  if (pool) {
-    try {
-      const { rows } = await pool.query('SELECT delivery FROM app_state WHERE id = 1');
-      const list = rows[0]?.delivery || [];
-      const idx = list.findIndex(d => String(d.id) === String(targetId));
-      if (idx >= 0) {
-        list[idx].repartidorId = repartidorId;
-        list[idx].repartidorNombre = repartidorNombre;
-        await pool.query('UPDATE app_state SET delivery=$1, updated_at=NOW() WHERE id=1', [JSON.stringify(list)]);
-      }
-    } catch(e) { console.error('[delivery:repartidor]', e.message); }
-  }
-  bcast(reqLocal(req), 'delivery:update', { id: targetId, repartidorId, repartidorNombre });
+  try {
+    const list = await getDeliveryList(local);
+    const idx = list.findIndex(d => String(d.id) === String(targetId));
+    if (idx >= 0) { list[idx].repartidorId = repartidorId; list[idx].repartidorNombre = repartidorNombre; await setDeliveryList(local, list); }
+  } catch(e) { console.error('[delivery:repartidor]', e.message); }
+  bcast(local, 'delivery:update', { id: targetId, repartidorId, repartidorNombre });
   res.json({ ok: true, repartidorNombre });
 });
 
 app.put('/api/delivery/:id/estado', async (req, res) => {
   const targetId = req.params.id;
   const nuevoEstado = req.body.estado;
-
-  // Update in-memory if present
-  const inMem = db.delivery.find(d => String(d.id) === String(targetId));
-  if (inMem) {
-    inMem.estado = nuevoEstado || inMem.estado;
-    if (req.body.repartidorId) inMem.repartidorId = req.body.repartidorId;
-  }
-
-  // Persist to PostgreSQL (source of truth for admin panel)
-  let result = inMem;
-  const pool = getPool();
-  if (pool) {
-    try {
-      const { rows } = await pool.query('SELECT delivery FROM app_state WHERE id = 1');
-      const list = rows[0]?.delivery || [];
-      const idx = list.findIndex(d => String(d.id) === String(targetId));
-      if (idx >= 0) {
-        list[idx] = { ...list[idx], estado: nuevoEstado || list[idx].estado };
-        if (req.body.repartidorId) list[idx].repartidorId = req.body.repartidorId;
-        await pool.query('UPDATE app_state SET delivery=$1, updated_at=NOW() WHERE id=1', [JSON.stringify(list)]);
-        result = list[idx];
-      }
-    } catch(e) { console.error('[delivery:put:estado]', e.message); }
-  }
+  const local = reqLocal(req);
+  let result = null;
+  try {
+    const list = await getDeliveryList(local);
+    const idx = list.findIndex(d => String(d.id) === String(targetId));
+    if (idx >= 0) {
+      list[idx] = { ...list[idx], estado: nuevoEstado || list[idx].estado };
+      if (req.body.repartidorId) list[idx].repartidorId = req.body.repartidorId;
+      await setDeliveryList(local, list);
+      result = list[idx];
+    }
+  } catch(e) { console.error('[delivery:put:estado]', e.message); }
 
   const out = result || { id: targetId, estado: nuevoEstado };
-  bcast(reqLocal(req), 'delivery:update', out);
+  bcast(local, 'delivery:update', out);
 
   // Trigger llamado when delivery is ready for pickup
   if (nuevoEstado === 'listo') {
     const llamado = {
-      id: uuidv4(), tipo: 'delivery',
+      id: uuidv4(), tipo: 'delivery', local,
       deliveryId: targetId,
       clienteNombre: out.clienteNombre || 'Cliente',
       repartidorId:  out.repartidorId  || null,
@@ -1259,10 +1240,10 @@ app.put('/api/delivery/:id/estado', async (req, res) => {
       creadoAt: new Date().toISOString(), reconocidoAt: null
     };
     db.llamados.push(llamado);
-    bcast(reqLocal(req), 'llamado:delivery', llamado);
+    bcast(local, 'llamado:delivery', llamado);
   }
 
-  emitDashboardStats();
+  if (isDefaultLocal(local)) emitDashboardStats();
   res.json(out);
 });
 
