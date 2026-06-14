@@ -146,7 +146,10 @@
   <div class="cta-band">
     <h2>📩 Empezá a vender más con ResTito</h2>
     <p>Demostración gratis y puesta en marcha el mismo día.</p>
-    <a href="#" class="btn btn-amber" id="ctaContacto">Contactar por WhatsApp</a>
+    <div style="position:relative;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a href="https://wa.me/5493624857011?text=Hola!%20Quiero%20una%20demo%20de%20ResTito" target="_blank" class="btn btn-amber" id="ctaContacto">📱 WhatsApp 362 4857011</a>
+      <a href="mailto:zeoextreme@gmail.com?subject=Demo%20ResTito" class="btn btn-ghost">✉️ zeoextreme@gmail.com</a>
+    </div>
   </div>
 </div></section>
 
@@ -157,11 +160,6 @@
 
 <script>
   document.getElementById('yr').textContent = new Date().getFullYear();
-  // CTA WhatsApp (configurable): cambiar el número por el real
-  var WPP = ''; // ej: '5491122334455'
-  var c = document.getElementById('ctaContacto');
-  if (WPP) c.href = 'https://wa.me/' + WPP + '?text=' + encodeURIComponent('Hola! Quiero una demo de ResTito');
-  else c.href = 'mailto:bear_japy@hotmail.com?subject=Demo%20ResTito';
 </script>
 </body>
 </html>
