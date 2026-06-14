@@ -7442,28 +7442,34 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// ======= INSTALAR APP (PWA) — solo para el módulo Mozo =======
-(function(){
-  if (!/\/mozo\/?$/.test(location.pathname)) return; // solo mozo
+// ======= INSTALAR APP (PWA) =======
+function pwaInstaller(appName, btnColor){
   let dp = null;
   const wantInstall = new URLSearchParams(location.search).get('install') === '1';
-  function instrucciones(){
-    alert('Para instalar la app del Mozo:\n\n• Android (Chrome): menú ⋮ → "Instalar app".\n• iPhone (Safari): botón Compartir → "Agregar a inicio".');
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  function close(){ const c=document.getElementById('pwaCard'); if(c) c.remove(); }
+  function go(){ if(dp){ dp.prompt(); dp.userChoice.finally(function(){ dp=null; close(); }); } }
+  function card(){
+    close();
+    const inner = dp
+      ? '<button id="pwaGo" style="width:100%;background:'+btnColor+';color:#fff;border:none;border-radius:12px;padding:15px;font-weight:800;font-size:16px;cursor:pointer">📲 Instalar ahora</button>'
+      : (ios ? '<div style="font-size:14px;color:#374151;line-height:1.7;text-align:left">1) Tocá <b>Compartir</b> ⬆️ en la barra de Safari.<br>2) Elegí <b>“Agregar a inicio”</b>.</div>'
+             : '<div style="font-size:14px;color:#374151;line-height:1.7;text-align:left">Abrí el menú del navegador (⋮) y elegí <b>“Instalar app”</b> / <b>“Agregar a pantalla de inicio”</b>.</div>');
+    const w=document.createElement('div'); w.id='pwaCard';
+    w.style.cssText='position:fixed;inset:0;z-index:2147483647;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:20px;font-family:inherit';
+    w.innerHTML='<div style="background:#fff;border-radius:18px;padding:26px;max-width:340px;width:100%;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.5)"><div style="font-size:44px">📲</div><h3 style="margin:10px 0 4px;color:#111827;font-size:18px">Instalar app de '+appName+'</h3><p style="font-size:13px;color:#6b7280;margin-bottom:18px">Agregala a tu dispositivo para entrar con un toque.</p>'+inner+'<button id="pwaNo" style="margin-top:12px;background:none;border:none;color:#9ca3af;font-size:13px;cursor:pointer">Cerrar</button></div>';
+    document.body.appendChild(w);
+    const g=document.getElementById('pwaGo'); if(g) g.onclick=go;
+    document.getElementById('pwaNo').onclick=close;
+    w.onclick=function(e){ if(e.target===w) close(); };
   }
-  function doInstall(){
-    if (dp) { dp.prompt(); dp.userChoice.finally(()=>{ dp=null; const x=document.getElementById('pwaInstallBtn'); if(x) x.remove(); }); }
-    else instrucciones();
-  }
-  function showBtn(){
-    if (document.getElementById('pwaInstallBtn')) return;
-    const b=document.createElement('button'); b.id='pwaInstallBtn'; b.textContent='📲 Instalar app';
-    b.style.cssText='position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:99999;background:linear-gradient(135deg,#059669,#34d399);color:#fff;border:none;border-radius:999px;padding:13px 26px;font-weight:800;font-size:15px;box-shadow:0 8px 24px rgba(5,150,105,.5);cursor:pointer';
-    b.onclick=doInstall; document.body.appendChild(b);
-  }
-  window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); dp=e; if(wantInstall) doInstall(); else showBtn(); });
-  window.addEventListener('appinstalled', ()=>{ const x=document.getElementById('pwaInstallBtn'); if(x) x.remove(); });
-  if (wantInstall) setTimeout(()=>{ if(!dp && !window.matchMedia('(display-mode: standalone)').matches) instrucciones(); }, 1600);
-})();
+  window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); dp=e; if(wantInstall) card(); });
+  window.addEventListener('appinstalled', close);
+  if (wantInstall && !standalone) setTimeout(card, 500);
+}
+// Mozo
+(function(){ if (/\/mozo\/?$/.test(location.pathname)) pwaInstaller('Mozo', 'linear-gradient(135deg,#059669,#34d399)'); })();
 </script>
 </body>
 </html>
