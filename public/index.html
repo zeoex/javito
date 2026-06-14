@@ -2872,8 +2872,15 @@ function initApp() {
   if (tur) tur.textContent = roles[currentUser?.rol] || currentUser?.rol || '';
   // Hide usuarios for non-admin
   if (currentUser?.rol !== 'admin') document.getElementById('navUsuarios').style.display = 'none';
-  // Super-admin de ResTito: mostrar panel de Locales
-  if (currentUser?.super) { const _nl = document.getElementById('navLocales'); if (_nl) _nl.style.display = ''; }
+  // Super-admin de ResTito: solo Locales y Usuarios (no opera locales puntuales)
+  if (currentUser?.super) {
+    const _nl = document.getElementById('navLocales'); if (_nl) _nl.style.display = '';
+    const visiblesSuper = ['locales','usuarios'];
+    document.querySelectorAll('.nav-item').forEach(n => {
+      const sec = n.getAttribute('data-section');
+      if (sec && !visiblesSuper.includes(sec)) n.style.display = 'none';
+    });
+  }
   // Mesa management (create/edit/delete) only for admin and supervisor
   const esAdminRole = ['admin','supervisor'].includes(currentUser?.rol);
   document.getElementById('btnNuevaMesa').style.display = esAdminRole ? '' : 'none';
@@ -2883,6 +2890,11 @@ function initApp() {
     _populateCatSelects();
     const saved = (() => { try { return localStorage.getItem('pz_last_section'); } catch(e){} return null; })();
     const validSections = ['dashboard','mesas','delivery','productos','stock','caja','facturacion','clientes','reportes','usuarios','config','mozo-cocina'];
+    if (currentUser?.super) {
+      // Super-admin aterriza en Locales y no opera secciones de un local
+      navTo('locales', document.getElementById('navLocales'));
+      return;
+    }
     const target = (saved && validSections.includes(saved)) ? saved : 'dashboard';
     navTo(target, null);
     renderCaja();
