@@ -1658,6 +1658,15 @@ body.rol-mozo .spk-size-btn:hover{border-color:#059669;background:#ecfdf5}
             <select class="form-control" id="dlvPago" onchange="dlvRenderCart()"></select>
           </div>
         </div>
+        <div class="form-group" id="dlvMapsGrp" style="margin:0">
+          <label style="font-size:12px">📍 Ubicación exacta (Google Maps)</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input class="form-control" id="dlvMaps" placeholder="Pegá el link de Google Maps o coordenadas" oninput="dlvMapsFeedback()" style="flex:1"/>
+            <button type="button" class="btn btn-outline btn-sm" title="Pegar desde el portapapeles" onclick="dlvPegarMaps()" style="flex-shrink:0">📋 Pegar</button>
+            <a id="dlvMapsVer" class="btn btn-outline btn-sm" target="_blank" style="flex-shrink:0;display:none" title="Abrir en Maps">🗺️</a>
+          </div>
+          <small id="dlvMapsHint" style="font-size:11px;color:var(--gray)">El repartidor recibe el link listo para navegar con GPS.</small>
+        </div>
       </div>
       <!-- ABAJO: botones (catálogo) + lista de artículos -->
       <div class="dlv-bottom">
@@ -4178,7 +4187,8 @@ function verDetalleEntregado(id) {
   const envioRow = costoEnvio > 0
     ? `<div style="display:flex;justify-content:space-between;padding:7px 0;font-size:13px;color:#6b7280"><div>📦 Costo de envío</div><div>$${costoEnvio.toLocaleString('es-AR')}</div></div>` : '';
   const gpsBtn = (o.lat_cliente && o.lon_cliente)
-    ? `<a class="btn btn-outline btn-sm" href="https://www.google.com/maps?q=${o.lat_cliente},${o.lon_cliente}" target="_blank" style="margin-top:12px">🗺️ Ver en Maps</a>` : '';
+    ? `<a class="btn btn-outline btn-sm" href="https://www.google.com/maps?q=${o.lat_cliente},${o.lon_cliente}" target="_blank" style="margin-top:12px">🗺️ Ver en Maps</a>`
+    : (o.maps_url ? `<a class="btn btn-outline btn-sm" href="${o.maps_url}" target="_blank" style="margin-top:12px">🗺️ Ver en Maps</a>` : '');
   document.getElementById('modalDetalleEntregadoTitle').innerHTML = `📦 ${o.numero}${origen}`;
   document.getElementById('modalDetalleEntregadoBody').innerHTML = `
     <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:16px">
@@ -4324,7 +4334,7 @@ function renderDeliveryCard(o,stage) {
   const dirStr = o.direccion ? `<div style="font-size:11px;color:var(--gray)">📍 ${o.direccion}</div>` : '';
   const gpsBtn = (o.lat_cliente && o.lon_cliente)
     ? `<a class="btn btn-outline btn-sm" href="https://www.google.com/maps?q=${o.lat_cliente},${o.lon_cliente}" target="_blank" title="Ver en Maps">🗺️</a>`
-    : '';
+    : (o.maps_url ? `<a class="btn btn-outline btn-sm" href="${o.maps_url}" target="_blank" title="Ver en Maps">🗺️</a>` : '');
   const repartidorNombre = o.repartidorNombre || (o.repartidor ? o.repartidor : null);
   const repartidorStr = repartidorNombre
     ? `<div style="font-size:11px;color:var(--gray)">🛵 ${repartidorNombre}</div>`
@@ -4477,6 +4487,9 @@ function dlvSelectCliente(id) {
   document.getElementById('dlvCliente').dataset.clienteId = c.id;
   document.getElementById('dlvTel').value = c.telefono || '';
   document.getElementById('dlvDir').value = c.ultimaDireccion || c.direccion || '';
+  // Reusar la ubicación guardada del cliente si la tiene
+  document.getElementById('dlvMaps').value = c.ultimaMapsUrl || (c.lat && c.lon ? `https://www.google.com/maps?q=${c.lat},${c.lon}` : '');
+  dlvMapsFeedback();
   document.getElementById('dlvClienteSugg').style.display = 'none';
 }
 
@@ -4524,19 +4537,23 @@ function crearDelivery() {
   const cliente = clienteInput.value.trim();
   const tel = esMost ? '' : document.getElementById('dlvTel').value;
   const dir = esMost ? '' : document.getElementById('dlvDir').value;
+  // Ubicación Google Maps (solo delivery)
+  const mapsRaw = esMost ? '' : (document.getElementById('dlvMaps').value || '').trim();
+  const ll = mapsRaw ? parseLatLng(mapsRaw) : null;
+  const mapsUrl = !esMost && /^https?:\/\//i.test(mapsRaw) ? mapsRaw : (ll ? `https://www.google.com/maps?q=${ll.lat},${ll.lon}` : '');
   if (!cliente) { showToast('Ingresá el nombre del cliente','error'); return; }
   if (!esMost && !dir) { showToast('Completá la dirección del cliente','error'); return; }
-  // Delivery: guardar/actualizar el cliente (con dirección). Mostrador es venta al paso, no se persiste.
+  // Delivery: guardar/actualizar el cliente (con dirección y ubicación). Mostrador es venta al paso, no se persiste.
   if (!esMost) {
     const clienteIdStr = clienteInput.dataset.clienteId;
     const clienteId = clienteIdStr ? parseInt(clienteIdStr) : null;
     if (!clienteId || !clientesData.find(c => c.id === clienteId)) {
       const newCId = (clientesData.reduce((m,c)=>Math.max(m,c.id),0)||0)+1;
-      clientesData.push({id:newCId,nombre:cliente,telefono:tel,email:'',pedidos:1,total_gastado:0,ultimo:_arDate(),ultimaDireccion:dir});
+      clientesData.push({id:newCId,nombre:cliente,telefono:tel,email:'',pedidos:1,total_gastado:0,ultimo:_arDate(),ultimaDireccion:dir,ultimaMapsUrl:mapsUrl||'',lat:ll?ll.lat:null,lon:ll?ll.lon:null});
       clienteInput.dataset.clienteId = newCId;
     } else {
       const cx = clientesData.find(c => c.id === clienteId);
-      if (cx) cx.ultimaDireccion = dir;
+      if (cx) { cx.ultimaDireccion = dir; if (mapsUrl) cx.ultimaMapsUrl = mapsUrl; if (ll) { cx.lat = ll.lat; cx.lon = ll.lon; } }
     }
   }
   // Read items from the live cart
@@ -4552,6 +4569,9 @@ function crearDelivery() {
     id:newId, numero:`${esMost?'M':'D'}-${String(newId).padStart(3,'0')}`, estado:'nuevo',
     tipo: _dlvMode,
     cliente:{nombre:cliente,telefono:tel}, direccion:dir,
+    maps_url: mapsUrl || null,
+    lat_cliente: ll ? ll.lat : null,
+    lon_cliente: ll ? ll.lon : null,
     items, total: totalFinal,
     metodo_pago: mpId,
     fecha: _arDate(),
@@ -4651,11 +4671,77 @@ function _buildDeliveryHtml(o, biz) {
     </body></html>`;
 }
 
+// Extrae {lat, lon} de un link de Google Maps o de coordenadas pegadas
+function parseLatLng(text) {
+  if (!text) return null;
+  const t = String(text).trim();
+  const pats = [
+    /@(-?\d+\.\d+),(-?\d+\.\d+)/,            // .../@lat,lng,17z
+    /[?&]q=(-?\d+\.\d+),\s*(-?\d+\.\d+)/,    // ?q=lat,lng
+    /[?&]query=(-?\d+\.\d+),\s*(-?\d+\.\d+)/,// ?query=lat,lng (api=1)
+    /[?&]destination=(-?\d+\.\d+),\s*(-?\d+\.\d+)/,
+    /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,        // !3dlat!4dlng
+    /^\s*(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)\s*$/ // "lat, lng" pegado directo
+  ];
+  for (const re of pats) {
+    const m = t.match(re);
+    if (m) {
+      const lat = parseFloat(m[1]), lon = parseFloat(m[2]);
+      if (Math.abs(lat) <= 90 && Math.abs(lon) <= 180) return { lat, lon };
+    }
+  }
+  return null;
+}
+
+// Feedback en vivo del campo de ubicación + botón "ver"
+function dlvMapsFeedback() {
+  const val = (document.getElementById('dlvMaps').value || '').trim();
+  const hint = document.getElementById('dlvMapsHint');
+  const ver  = document.getElementById('dlvMapsVer');
+  if (!val) {
+    hint.textContent = 'El repartidor recibe el link listo para navegar con GPS.';
+    hint.style.color = 'var(--gray)';
+    ver.style.display = 'none';
+    return;
+  }
+  const ll = parseLatLng(val);
+  const esLink = /^https?:\/\//i.test(val);
+  if (ll) {
+    hint.textContent = `✓ Coordenadas detectadas: ${ll.lat.toFixed(5)}, ${ll.lon.toFixed(5)} — navegación GPS exacta`;
+    hint.style.color = '#16a34a';
+    ver.href = `https://www.google.com/maps?q=${ll.lat},${ll.lon}`;
+    ver.style.display = '';
+  } else if (esLink) {
+    hint.textContent = '✓ Link guardado — el repartidor lo abre directo en Maps';
+    hint.style.color = '#16a34a';
+    ver.href = val;
+    ver.style.display = '';
+  } else {
+    hint.textContent = 'No parece un link ni coordenadas válidas (igual se guarda como referencia).';
+    hint.style.color = '#e67e22';
+    ver.style.display = 'none';
+  }
+}
+
+// Pega desde el portapapeles al campo de ubicación
+async function dlvPegarMaps() {
+  try {
+    const txt = await navigator.clipboard.readText();
+    if (txt) { document.getElementById('dlvMaps').value = txt.trim(); dlvMapsFeedback(); showToast('Ubicación pegada','success'); }
+    else showToast('El portapapeles está vacío','error');
+  } catch(e) {
+    document.getElementById('dlvMaps').focus();
+    showToast('Pegá con Ctrl+V en el campo','info');
+  }
+}
+
 function abrirModalNuevoDelivery() {
   document.getElementById('dlvCliente').value = '';
   document.getElementById('dlvCliente').dataset.clienteId = '';
   document.getElementById('dlvTel').value = '';
   document.getElementById('dlvDir').value = '';
+  document.getElementById('dlvMaps').value = '';
+  dlvMapsFeedback();
   document.getElementById('dlvClienteSugg').style.display = 'none';
   const lt = document.getElementById('dlvLiveTotal');
   if (lt) lt.style.display = 'none';
@@ -4689,6 +4775,7 @@ function dlvSetMode(mode) {
   document.getElementById('dlvTelGrp').style.display        = esMost ? 'none' : '';
   document.getElementById('dlvDirGrp').style.display        = esMost ? 'none' : '';
   document.getElementById('dlvRepartidorGrp').style.display = esMost ? 'none' : '';
+  document.getElementById('dlvMapsGrp').style.display       = esMost ? 'none' : '';
   document.getElementById('dlvModalTitle').textContent = esMost ? '🧾 Nuevo Pedido Mostrador' : '🛵 Nuevo Pedido Delivery';
   document.getElementById('dlvCrearBtn').textContent   = esMost ? 'Crear Pedido' : 'Crear Pedido';
   document.getElementById('dlvCliente').placeholder    = esMost ? 'Nombre del cliente...' : 'Buscar cliente...';

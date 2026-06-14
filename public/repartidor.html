@@ -2011,7 +2011,7 @@ function buildOrderCard(p) {
     </div>`
   ).join('');
 
-  const tieneGps = !!(p.lat_cliente && p.lon_cliente);
+  const tieneGps = !!((p.lat_cliente && p.lon_cliente) || p.maps_url);
   const mapsBtn = `<button class="btn-action btn-maps" onclick="verEnMaps('${p.id}')">${tieneGps ? '🛰️ Navegar GPS' : '📍 Ver en Maps'}</button>`;
   let actionsHtml = '';
   if (p.estado === 'listo' || p.estado === 'asignado') {
@@ -2073,7 +2073,9 @@ function verEnMaps(id) {
   if (!p) return;
   const url = (p.lat_cliente && p.lon_cliente)
     ? `https://www.google.com/maps/dir/?api=1&destination=${p.lat_cliente},${p.lon_cliente}`
-    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.direccion)}`;
+    : (p.maps_url
+      ? p.maps_url
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.direccion)}`);
   window.open(url, '_blank');
 }
 
