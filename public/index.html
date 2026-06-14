@@ -4078,7 +4078,6 @@ async function imprimirCuenta(id) {
 function renderDelivery() {
   if (!_repartidoresList.length) cargarRepartidores();
   const hoy = _arDate();
-  const todayOrders = deliveryData.filter(o => o.fecha === hoy);
   const stages = [
     {key:'web',      label:'🌐 PEDIDOS WEB', cls:'pipeline-web',      filterFn: o => o.origen === 'web' && o.estado === 'nuevo'},
     {key:'nuevo',    label:'MOSTRADOR',       cls:'pipeline-nuevo',    filterFn: o => o.estado === 'nuevo' && o.origen !== 'web'},
@@ -4088,7 +4087,9 @@ function renderDelivery() {
     {key:'entregado',label:'✅ FINALIZADOS',  cls:'pipeline-entregado',filterFn: o => o.estado === 'entregado'},
   ];
   document.getElementById('deliveryPipeline').innerHTML = stages.map(s=>{
-    const orders = todayOrders.filter(s.filterFn);
+    // Activos: se muestran siempre (aunque sean de días anteriores) para no esconder pendientes
+    // y que el contador coincida con la lista. FINALIZADOS: solo los de hoy.
+    const orders = deliveryData.filter(o => s.key === 'entregado' ? (o.fecha === hoy && s.filterFn(o)) : s.filterFn(o));
     const colStyle = s.key === 'web' ? ' style="border-top:3px solid #3b82f6"' : '';
     return `<div class="pipeline-col ${s.cls}"${colStyle}>
       <div class="pipeline-header">${s.label} (${orders.length})</div>
