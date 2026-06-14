@@ -510,6 +510,8 @@ app.get('/menu',  (_req, res) => { noCache(res); res.sendFile(path.join(__dirnam
 app.get('/cocina', (_req, res) => { noCache(res); res.sendFile(path.join(__dirname, 'public', 'cocina.html')); });
 app.get('/repartidor', (_req, res) => { noCache(res); res.sendFile(path.join(__dirname, 'public', 'repartidor.html')); });
 app.get('/cliente', (_req, res) => { noCache(res); res.sendFile(path.join(__dirname, 'public', 'cliente.html')); });
+// Seguimiento de pedido en vivo (cliente final) — /t/<trackId>
+app.get('/t/:trackId', (_req, res) => { noCache(res); res.sendFile(path.join(__dirname, 'public', 'track.html')); });
 
 app.use(express.static(path.join(__dirname, 'public'), { etag: false, lastModified: false, setHeaders: (res) => { res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); } }));
 
@@ -528,6 +530,78 @@ app.get('/:local', (req, res, next) => {
   if (req.params.local.includes('.')) return next(); // dejar pasar archivos
   noCache(res);
   res.sendFile(path.join(__dirname, 'public', 'portal.html'));
+});
+
+// ─────────────────────────────────────────────
+//  SEGUIMIENTO DE PEDIDO EN VIVO (live tracking)
+//  El repartidor comparte su GPS; el cliente lo ve por una URL pública.
+// ─────────────────────────────────────────────
+const liveTracks = {}; // trackId -> { orderId, local, dest, customer, driver, pos, status, startedAt, updatedAt }
+function genTrackId() {
+  return Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 6);
+}
+// Limpieza: descarta sesiones entregadas hace +2h o inactivas +6h
+setInterval(() => {
+  const now = Date.now();
+  for (const k of Object.keys(liveTracks)) {
+    const t = liveTracks[k];
+    const age = now - (t.updatedAt || t.startedAt || now);
+    if ((t.status === 'delivered' && age > 2 * 3600e3) || age > 6 * 3600e3) delete liveTracks[k];
+  }
+}, 30 * 60e3).unref?.();
+
+// El repartidor inicia (o reutiliza) una sesión de seguimiento para un pedido
+app.post('/api/track/start', (req, res) => {
+  const { orderId, local, dest, customer, driver } = req.body || {};
+  let id = Object.keys(liveTracks).find(k => liveTracks[k].status === 'active' && String(liveTracks[k].orderId) === String(orderId));
+  if (!id) id = genTrackId();
+  const prev = liveTracks[id] || {};
+  liveTracks[id] = {
+    orderId, local: local || DEFAULT_LOCAL,
+    dest: dest || prev.dest || null,
+    customer: customer || prev.customer || {},
+    driver: driver || prev.driver || {},
+    pos: prev.pos || null,
+    status: 'active',
+    startedAt: prev.startedAt || Date.now(),
+    updatedAt: Date.now(),
+  };
+  res.json({ trackId: id });
+});
+
+// El repartidor envía su posición actual
+app.post('/api/track/:id/pos', (req, res) => {
+  const t = liveTracks[req.params.id];
+  if (!t) return res.status(404).json({ error: 'sesión no encontrada' });
+  const { lat, lng, heading, speed, acc } = req.body || {};
+  if (typeof lat !== 'number' || typeof lng !== 'number') return res.status(400).json({ error: 'lat/lng requeridos' });
+  t.pos = { lat, lng, heading: (typeof heading === 'number' ? heading : null), speed: (typeof speed === 'number' ? speed : null), acc: acc || null, ts: Date.now() };
+  t.updatedAt = Date.now();
+  io.to('T:' + req.params.id).emit('track:pos', t.pos);
+  res.json({ ok: true });
+});
+
+// El repartidor marca el pedido como entregado
+app.post('/api/track/:id/done', (req, res) => {
+  const t = liveTracks[req.params.id];
+  if (t) { t.status = 'delivered'; t.updatedAt = Date.now(); io.to('T:' + req.params.id).emit('track:done', {}); }
+  res.json({ ok: true });
+});
+
+// El cliente consulta el estado actual (carga inicial + fallback de polling)
+app.get('/api/track/:id', (req, res) => {
+  const t = liveTracks[req.params.id];
+  if (!t) return res.status(404).json({ error: 'no existe' });
+  res.json({
+    orderId: t.orderId,
+    dest: t.dest || null,
+    customer: { nombre: (t.customer && t.customer.nombre) || null },
+    driver: { nombre: (t.driver && t.driver.nombre) || null },
+    pos: t.pos || null,
+    status: t.status,
+    startedAt: t.startedAt,
+    updatedAt: t.updatedAt,
+  });
 });
 
 // Logger

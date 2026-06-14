@@ -906,6 +906,26 @@
     border: 1px solid #e5e7eb;
   }
 
+  .btn-wpp {
+    background: linear-gradient(135deg, #25d366, #128c4b);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(37,211,102,0.35);
+  }
+  .btn-wpp:hover:not(:disabled) {
+    box-shadow: 0 6px 24px rgba(37,211,102,0.5);
+    transform: translateY(-1px);
+  }
+  .btn-wpp.sharing { animation: wppGlow 1.8s ease-in-out infinite; }
+  @keyframes wppGlow { 0%,100%{box-shadow:0 4px 16px rgba(37,211,102,.35)} 50%{box-shadow:0 0 22px 5px rgba(37,211,102,.6)} }
+  @media (prefers-reduced-motion: reduce){ .btn-wpp.sharing{animation:none} }
+  .card-actions { flex-wrap: wrap; }
+  .live-tag {
+    display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#128c4b;
+    background:#dcfce7;border:1px solid #bbf7d0;border-radius:999px;padding:3px 9px;margin-left:8px;
+  }
+  .live-tag .ld{width:7px;height:7px;border-radius:50%;background:#16a34a;animation:ldp 1.5s infinite}
+  @keyframes ldp{0%{opacity:1}50%{opacity:.3}100%{opacity:1}}
+
   /* ══════════════════════════════════════
      SECTION IDs (required by spec)
   ══════════════════════════════════════ */
@@ -2034,7 +2054,9 @@ function buildOrderCard(p) {
   if (p.estado === 'listo' || p.estado === 'asignado') {
     actionsHtml = `<button class="btn-action btn-start" onclick="iniciarViaje('${p.id}')">▶ Iniciar viaje</button>${mapsBtn}`;
   } else if (p.estado === 'en_camino') {
-    actionsHtml = `${mapsBtn}<button class="btn-action btn-deliver" onclick="marcarEntregado('${p.id}')">✅ Marcar Entregado</button>`;
+    const sharing = !!trackSessions[p.id];
+    const wppBtn = `<button class="btn-action btn-wpp${sharing ? ' sharing' : ''}" onclick="avisarWhatsApp('${p.id}')">📲 Avisar por WhatsApp</button>`;
+    actionsHtml = `${mapsBtn}${wppBtn}<button class="btn-action btn-deliver" onclick="marcarEntregado('${p.id}')">✅ Marcar Entregado</button>`;
   } else if (p.estado === 'entregado') {
     actionsHtml = `<button class="btn-action btn-done" disabled>✓ Entregado</button>`;
   } else {
@@ -2044,7 +2066,7 @@ function buildOrderCard(p) {
   card.innerHTML = `
     <div class="card-header">
       <div class="card-meta">
-        <div class="order-number">Pedido #${escHtml(p.numero)}</div>
+        <div class="order-number">Pedido #${escHtml(p.numero)}${trackSessions[p.id] ? '<span class="live-tag"><span class="ld"></span>EN VIVO</span>' : ''}</div>
         <div class="order-time">🕐 ${escHtml(p.hora)}</div>
       </div>
       <span class="status-badge badge-${p.estado}">${badgeLabel[p.estado] || p.estado}</span>
@@ -2074,6 +2096,101 @@ function buildOrderCard(p) {
   return card;
 }
 
+/* ── SEGUIMIENTO EN VIVO (GPS → cliente) ─────────── */
+// trackSessions[orderId] = { trackId, watchId, lastSent, lastPos }
+const trackSessions = {};
+
+function _digitsTel(t) {
+  let d = String(t || '').replace(/\D/g, '');
+  if (!d) return '';
+  // Normaliza a formato internacional Argentina si parece local
+  if (d.startsWith('549')) return d;
+  if (d.startsWith('54')) return '549' + d.slice(2);
+  if (d.startsWith('0')) d = d.slice(1);
+  if (d.length <= 11) d = '549' + d;
+  return d;
+}
+
+async function startTracking(p) {
+  if (trackSessions[p.id]) return trackSessions[p.id];
+  const dest = (p.lat_cliente && p.lon_cliente)
+    ? { lat: Number(p.lat_cliente), lng: Number(p.lon_cliente), address: p.direccion || '' }
+    : null;
+  let trackId = null;
+  try {
+    const res = await fetch('/api/track/start', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orderId: p.id, local: REPARTIDOR_LOCAL, dest,
+        customer: { nombre: p.cliente && p.cliente.nombre, telefono: p.cliente && p.cliente.telefono },
+        driver: { nombre: (currentDriver && currentDriver.nombre) || '' },
+      })
+    });
+    const j = await res.json();
+    trackId = j.trackId;
+  } catch (e) { console.warn('[track] start error', e); }
+  if (!trackId) { showToast('⚠️ No se pudo iniciar el seguimiento'); return null; }
+
+  const sess = { trackId, watchId: null, lastSent: 0, lastPos: null };
+  trackSessions[p.id] = sess;
+
+  if (navigator.geolocation) {
+    sess.watchId = navigator.geolocation.watchPosition(function (pos) {
+      const c = pos.coords;
+      const now = Date.now();
+      // Throttle: enviar como máximo cada 4s o si se movió +15m
+      const moved = sess.lastPos ? _haversineM(sess.lastPos, [c.latitude, c.longitude]) : Infinity;
+      if (now - sess.lastSent < 4000 && moved < 15) return;
+      sess.lastSent = now; sess.lastPos = [c.latitude, c.longitude];
+      fetch('/api/track/' + trackId + '/pos', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lat: c.latitude, lng: c.longitude,
+          heading: (typeof c.heading === 'number' && !isNaN(c.heading)) ? c.heading : null,
+          speed: (typeof c.speed === 'number' && !isNaN(c.speed)) ? c.speed : null,
+          acc: c.accuracy || null,
+        })
+      }).catch(function () {});
+    }, function (err) {
+      console.warn('[track] geo error', err && err.message);
+      if (err && err.code === 1) showToast('⚠️ Activá la ubicación para el seguimiento');
+    }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 });
+  }
+  return sess;
+}
+
+function stopTracking(orderId) {
+  const sess = trackSessions[orderId];
+  if (!sess) return;
+  if (sess.watchId != null && navigator.geolocation) navigator.geolocation.clearWatch(sess.watchId);
+  fetch('/api/track/' + sess.trackId + '/done', { method: 'POST' }).catch(function () {});
+  delete trackSessions[orderId];
+}
+
+function _haversineM(a, b) {
+  const R = 6371000, toR = Math.PI / 180;
+  const dLat = (b[0] - a[0]) * toR, dLng = (b[1] - a[1]) * toR;
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * toR) * Math.cos(b[0] * toR) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+function avisarWhatsApp(id) {
+  const p = pedidos.find(p => String(p.id) === String(id));
+  if (!p) return;
+  const tel = _digitsTel(p.cliente && p.cliente.telefono);
+  const go = (trackId) => {
+    const url = location.origin + '/t/' + trackId;
+    const nombre = (p.cliente && p.cliente.nombre) ? p.cliente.nombre.split(' ')[0] : '';
+    const txt = `¡Hola${nombre ? ' ' + nombre : ''}! 🛵 Tu pedido va en camino. Seguilo en tiempo real acá: ${url}`;
+    const wa = tel ? `https://wa.me/${tel}?text=${encodeURIComponent(txt)}` : `https://wa.me/?text=${encodeURIComponent(txt)}`;
+    window.open(wa, '_blank');
+  };
+  const sess = trackSessions[id];
+  if (sess) { go(sess.trackId); return; }
+  showToast('📡 Iniciando seguimiento…');
+  startTracking(p).then(s => { renderOrders(); if (s) go(s.trackId); });
+}
+
 /* ── ORDER ACTIONS ───────────────────────────────── */
 function iniciarViaje(id) {
   const p = pedidos.find(p => String(p.id) === String(id));
@@ -2081,6 +2198,7 @@ function iniciarViaje(id) {
   p.estado = 'en_camino';
   renderOrders();
   showToast('🛵 Viaje iniciado hacia ' + p.cliente.nombre);
+  startTracking(p).then(() => renderOrders());
   fetch('/api/delivery/' + id + '/estado', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ estado: 'en_camino', local: REPARTIDOR_LOCAL }) })
     .catch(() => { if (socket) socket.emit('delivery:status', { id, estado: 'en_camino' }); });
 }
@@ -2099,6 +2217,7 @@ function verEnMaps(id) {
 function marcarEntregado(id) {
   const p = pedidos.find(p => String(p.id) === String(id));
   if (!p || p.estado !== 'en_camino') return;
+  stopTracking(id);
   p.estado = 'entregado';
   p.hora_entrega = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' });
 
