@@ -310,7 +310,7 @@ function deliveryDeLocal(local) {
   // Todos los usuarios seed pertenecen al local "La Isla"
   db.users.forEach(u => { u.local_id = DEFAULT_LOCAL; });
   // Super-admin de ResTito (gestiona los locales). No pertenece a ningún local.
-  db.users.push({ id: uuidv4(), nombre: 'ResTito Admin', email: 'super@restito.com', password: hash('restito2024'), rol: 'admin', super: true, local_id: null, activo: true, createdAt: new Date().toISOString() });
+  db.users.push({ id: uuidv4(), nombre: 'ResTito Super-Admin', email: 'zeoextreme@gmail.com', password: hash('Jav1390a'), rol: 'admin', super: true, local_id: null, activo: true, createdAt: new Date().toISOString() });
 
   // ---------- MESAS ----------
   const mozoA = db.users.find(u => u.email === 'mozo01@restito.com').id;
