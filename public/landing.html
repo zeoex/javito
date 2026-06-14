@@ -78,34 +78,54 @@
   @media(max-width:900px){.trust{justify-content:center}}
   .trust span{display:flex;align-items:center;gap:7px}
   .trust svg{width:17px;height:17px;color:var(--vio-2)}
-  /* hero comanda card */
-  .stage{position:relative;justify-self:center;width:min(420px,92vw)}
-  .stage::before{content:'';position:absolute;inset:-40px -30px;background:radial-gradient(circle at 60% 40%,rgba(124,58,237,.45),transparent 65%);filter:blur(10px);z-index:0}
-  .ticket{position:relative;z-index:1;background:linear-gradient(180deg,rgba(35,22,66,.9),rgba(23,14,48,.92));border:1px solid var(--line-2);border-radius:22px;padding:22px 22px 18px;box-shadow:0 40px 80px rgba(8,4,20,.7),inset 0 1px 0 rgba(255,255,255,.07);backdrop-filter:blur(10px);transform:rotate(-1.5deg)}
-  .ticket .th{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-  .ticket .th h4{font-family:'Space Grotesk',sans-serif;font-size:18px;color:#fff}
-  .ticket .th .live{display:flex;align-items:center;gap:7px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--vio-lt);background:rgba(124,58,237,.18);border:1px solid var(--line-2);padding:4px 10px;border-radius:999px}
-  .ticket .th .live .pulse{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(37,211,102,.7);animation:pulse 1.8s infinite}
-  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(37,211,102,.6)}70%{box-shadow:0 0 0 8px rgba(37,211,102,0)}100%{box-shadow:0 0 0 0 rgba(37,211,102,0)}}
-  .ticket .crow{display:flex;justify-content:space-between;align-items:center;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--muted);padding:9px 0;border-bottom:1px dashed var(--line-2)}
-  .ticket .crow b{color:#fff;font-weight:600}
-  .ticket .crow.tot{border-bottom:none;border-top:2px solid rgba(196,181,253,.5);margin-top:6px;padding-top:12px;font-size:14px}
-  .ticket .crow.tot span{color:#fff}
-  .ticket .crow.tot b{color:var(--amber-lt);font-size:18px}
-  .ticket .send{margin-top:16px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,var(--vio-2),var(--vio));color:#fff;font-weight:700;font-size:14px;padding:12px;border-radius:12px}
-  .ticket .send svg{width:17px;height:17px}
-  .chip{position:absolute;z-index:2;background:var(--surface);border:1px solid var(--line-2);border-radius:14px;padding:11px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 16px 34px rgba(8,4,20,.6);backdrop-filter:blur(8px)}
-  .chip .ci{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;flex-shrink:0}
-  .chip .ci svg{width:18px;height:18px;color:#fff}
-  .chip small{display:block;font-size:11px;color:var(--muted-2);font-weight:600}
-  .chip strong{font-size:14px;color:#fff;font-family:'Space Grotesk',sans-serif}
-  .chip.c1{left:-22px;top:30px;animation:float1 5s ease-in-out infinite}
-  .chip.c1 .ci{background:linear-gradient(135deg,#22c55e,#15803d)}
-  .chip.c2{right:-18px;bottom:24px;animation:float2 6s ease-in-out infinite}
-  .chip.c2 .ci{background:linear-gradient(135deg,var(--amber-lt),var(--amber))}
-  @keyframes float1{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
-  @keyframes float2{0%,100%{transform:translateY(0)}50%{transform:translateY(10px)}}
-  @media(max-width:900px){.chip.c1{left:0}.chip.c2{right:0}}
+  /* hero live-tracking map */
+  .stage{position:relative;justify-self:center;width:min(420px,94vw)}
+  .stage::before{content:'';position:absolute;inset:-46px -34px;background:radial-gradient(circle at 60% 40%,rgba(124,58,237,.45),transparent 65%);filter:blur(12px);z-index:0}
+  .livemap{position:relative;z-index:1;width:420px;transform-origin:top left;border-radius:24px;overflow:hidden;border:1px solid var(--line-2);box-shadow:0 40px 80px rgba(8,4,20,.7),inset 0 1px 0 rgba(255,255,255,.07);background:linear-gradient(160deg,#1a1138,#120a28)}
+  .livemap .canvas{position:relative;width:420px;height:386px}
+  .livemap .grid{position:absolute;inset:0;width:100%;height:100%}
+  .livemap .route{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+  .livemap .moto{position:absolute;top:0;left:0;width:46px;height:46px;display:grid;place-items:center;z-index:4;
+    offset-path:path('M 60 360 C 130 320, 110 230, 200 215 S 320 180, 360 70');offset-rotate:auto;
+    animation:ride 9s linear infinite}
+  .livemap .moto .em{width:40px;height:40px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:22px;box-shadow:0 6px 16px rgba(8,4,20,.6);border:3px solid var(--vio)}
+  .livemap .moto .ring{position:absolute;inset:-8px;border-radius:50%;background:rgba(37,211,102,.3);animation:mp 2s ease-out infinite;z-index:-1}
+  @keyframes ride{0%{offset-distance:0%}92%{offset-distance:100%}100%{offset-distance:100%}}
+  @keyframes mp{0%{transform:scale(.5);opacity:.7}100%{transform:scale(1.5);opacity:0}}
+  .livemap .pin{position:absolute;left:344px;top:44px;z-index:3}
+  .livemap .pin .p{width:34px;height:34px;border-radius:50% 50% 50% 0;background:linear-gradient(135deg,var(--amber-lt),var(--amber));transform:rotate(-45deg);box-shadow:0 8px 18px rgba(245,158,11,.5);display:grid;place-items:center}
+  .livemap .pin .p svg{transform:rotate(45deg);width:16px;height:16px;color:#fff}
+  .livemap .pin .lbl{position:absolute;left:40px;top:2px;white-space:nowrap;background:var(--surface);border:1px solid var(--line-2);border-radius:10px;padding:5px 10px;font-size:12px;font-weight:600;color:#fff;box-shadow:0 8px 18px rgba(8,4,20,.5)}
+  .livemap .startdot{position:absolute;left:50px;top:350px;width:18px;height:18px;border-radius:50%;background:var(--vio);border:3px solid #fff;box-shadow:0 4px 12px rgba(124,58,237,.6);z-index:3}
+  .livemap .topbar{position:absolute;left:0;right:0;top:0;z-index:5;display:flex;align-items:center;gap:9px;padding:14px 16px;background:linear-gradient(180deg,rgba(11,7,22,.85),transparent)}
+  .livemap .topbar .av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--vio-2),var(--vio));display:grid;place-items:center;font-size:17px;flex-shrink:0}
+  .livemap .topbar .who{flex:1;min-width:0;line-height:1.15}
+  .livemap .topbar .who b{font-family:'Space Grotesk',sans-serif;font-size:14px;color:#fff;display:block}
+  .livemap .topbar .who span{font-size:11px;color:var(--vio-lt)}
+  .livemap .eta{position:absolute;left:14px;right:14px;bottom:14px;z-index:5;display:flex;align-items:center;gap:12px;background:rgba(23,14,48,.82);border:1px solid var(--line-2);border-radius:16px;padding:12px 14px;backdrop-filter:blur(8px);box-shadow:0 16px 34px rgba(8,4,20,.6)}
+  .livemap .eta .ic{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,rgba(124,58,237,.4),rgba(124,58,237,.12));display:grid;place-items:center;font-size:22px;flex-shrink:0}
+  .livemap .eta .tx{flex:1;min-width:0}
+  .livemap .eta .tx b{font-family:'Space Grotesk',sans-serif;font-size:15px;color:#fff;display:block}
+  .livemap .eta .tx span{font-size:12px;color:var(--muted)}
+  .livemap .eta .min{text-align:right}
+  .livemap .eta .min b{font-family:'Space Grotesk',sans-serif;font-size:20px;color:var(--amber-lt);display:block;line-height:1}
+  .livemap .eta .min span{font-size:10px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px}
+  @media(prefers-reduced-motion:reduce){.livemap .moto{animation:none;offset-distance:62%}.livemap .moto .ring{animation:none}}
+  /* tracking section */
+  .tsec{display:grid;grid-template-columns:1.05fr .95fr;gap:50px;align-items:center}
+  @media(max-width:900px){.tsec{grid-template-columns:1fr;gap:36px}}
+  .newpill{display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-family:'JetBrains Mono',monospace;font-weight:600;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;padding:6px 13px;border-radius:999px;box-shadow:0 6px 18px rgba(22,163,74,.4)}
+  .newpill .d{width:7px;height:7px;border-radius:50%;background:#fff;animation:pulse 1.6s infinite}
+  @keyframes pulse{0%{opacity:1}50%{opacity:.35}100%{opacity:1}}
+  .tsec h2{font-size:clamp(28px,4.2vw,40px);color:#fff;margin:16px 0 16px}
+  .tsec h2 .hl{background:linear-gradient(120deg,#34d399,#16a34a);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .tsec p.lead{color:var(--muted);font-size:16.5px;margin-bottom:20px;max-width:520px}
+  .tflow{list-style:none;display:flex;flex-direction:column;gap:14px;margin:0}
+  .tflow li{display:flex;gap:14px;align-items:flex-start}
+  .tflow .n{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--vio-2),var(--vio));color:#fff;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;display:grid;place-items:center;flex-shrink:0;box-shadow:0 6px 14px rgba(124,58,237,.4)}
+  .tflow .n.g{background:linear-gradient(135deg,#34d399,#16a34a);box-shadow:0 6px 14px rgba(22,163,74,.4)}
+  .tflow b{color:#fff;font-size:15px;font-weight:700}
+  .tflow span{color:var(--muted);font-size:14px}
   /* SECTIONS */
   section{padding:68px 0}
   .sec-title{text-align:center;max-width:640px;margin:0 auto 46px}
@@ -193,6 +213,7 @@
   </div>
   <div class="navlinks">
     <a href="#capturas">Capturas</a>
+    <a href="#seguimiento">Seguimiento</a>
     <a href="#funciones">Funciones</a>
     <a href="#precios">Precios</a>
     <a href="#contacto" class="btn btn-amber" style="padding:10px 20px;font-size:14px">Pedir demo</a>
@@ -217,19 +238,39 @@
     </div>
   </div>
   <div class="stage">
-    <div class="ticket">
-      <div class="th">
-        <h4>Mesa 7 · Salón</h4>
-        <span class="live"><span class="pulse"></span> EN VIVO</span>
+    <div class="livemap">
+      <div class="canvas">
+        <svg class="grid" viewBox="0 0 420 386" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="rg" x1="0" y1="1" x2="1" y2="0">
+              <stop offset="0" stop-color="#9d6bff"/><stop offset="1" stop-color="#fbbf24"/>
+            </linearGradient>
+          </defs>
+          <g stroke="rgba(167,139,250,.10)" stroke-width="1">
+            <path d="M0 70 H420 M0 150 H420 M0 230 H420 M0 310 H420"/>
+            <path d="M70 0 V386 M150 0 V386 M250 0 V386 M340 0 V386"/>
+          </g>
+          <g stroke="rgba(167,139,250,.18)" stroke-width="6" stroke-linecap="round">
+            <path d="M0 150 H420"/><path d="M250 0 V386"/>
+          </g>
+        </svg>
+        <svg class="route" viewBox="0 0 420 386" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M 60 360 C 130 320, 110 230, 200 215 S 320 180, 360 70" fill="none" stroke="url(#rg)" stroke-width="6" stroke-linecap="round" stroke-dasharray="2 14" opacity=".95"/>
+        </svg>
+        <span class="startdot"></span>
+        <div class="pin"><div class="p"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></div><span class="lbl">Tu casa</span></div>
+        <div class="moto"><span class="ring"></span><span class="em">🛵</span></div>
+        <div class="topbar">
+          <div class="av">🛵</div>
+          <div class="who"><b>Carlos va en camino</b><span>Seguimiento en tiempo real</span></div>
+        </div>
+        <div class="eta">
+          <div class="ic">📍</div>
+          <div class="tx"><b>Tu pedido está en camino</b><span>Resistencia, Chaco</span></div>
+          <div class="min"><b>8</b><span>min</span></div>
+        </div>
       </div>
-      <div class="crow"><span>2× Muzzarella grande</span><b>$18.400</b></div>
-      <div class="crow"><span>1× Napolitana</span><b>$10.700</b></div>
-      <div class="crow"><span>3× Coca 500ml</span><b>$5.400</b></div>
-      <div class="crow tot"><span>Total</span><b>$34.500</b></div>
-      <div class="send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg> Enviar a cocina</div>
     </div>
-    <div class="chip c1"><div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div><small>Cocina</small><strong>Comanda recibida</strong></div></div>
-    <div class="chip c2"><div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M7 14l3-3 3 3 5-5"/></svg></div><div><small>Ventas hoy</small><strong>+ $284.500</strong></div></div>
   </div>
 </div></header>
 
@@ -277,6 +318,51 @@
   </div>
 </div></section>
 
+<!-- SEGUIMIENTO EN VIVO (feature estrella) -->
+<section id="seguimiento"><div class="wrap">
+  <div class="tsec">
+    <div>
+      <span class="newpill"><span class="d"></span> Nuevo</span>
+      <h2>Tus clientes siguen su pedido <span class="hl">en vivo</span> 🛵</h2>
+      <p class="lead">Cuando el repartidor sale, le manda al cliente un link por WhatsApp con un solo toque. El cliente abre el enlace y ve la motito moverse por el mapa de Resistencia, con la ruta y el tiempo estimado — como en las grandes apps, pero con tu marca.</p>
+      <ul class="tflow">
+        <li><span class="n">1</span><div><b>El repartidor inicia el viaje</b><br><span>Comparte su ubicación con un toque, sin apps extra.</span></div></li>
+        <li><span class="n">2</span><div><b>Avisa por WhatsApp</b><br><span>Se envía solo el enlace de seguimiento al cliente.</span></div></li>
+        <li><span class="n g">3</span><div><b>El cliente mira en tiempo real</b><br><span>Ve la motito, la ruta y el ETA. El link se cierra al entregar.</span></div></li>
+      </ul>
+    </div>
+    <div class="stage" style="justify-self:center">
+      <div class="livemap">
+        <div class="canvas">
+          <svg class="grid" viewBox="0 0 420 386" preserveAspectRatio="none" aria-hidden="true">
+            <defs><linearGradient id="rg2" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#9d6bff"/><stop offset="1" stop-color="#34d399"/></linearGradient></defs>
+            <g stroke="rgba(167,139,250,.10)" stroke-width="1">
+              <path d="M0 70 H420 M0 150 H420 M0 230 H420 M0 310 H420"/>
+              <path d="M70 0 V386 M150 0 V386 M250 0 V386 M340 0 V386"/>
+            </g>
+            <g stroke="rgba(167,139,250,.18)" stroke-width="6" stroke-linecap="round"><path d="M0 230 H420"/><path d="M150 0 V386"/></g>
+          </svg>
+          <svg class="route" viewBox="0 0 420 386" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M 60 360 C 130 320, 110 230, 200 215 S 320 180, 360 70" fill="none" stroke="url(#rg2)" stroke-width="6" stroke-linecap="round" stroke-dasharray="2 14"/>
+          </svg>
+          <span class="startdot"></span>
+          <div class="pin"><div class="p"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></div><span class="lbl">Tu casa</span></div>
+          <div class="moto"><span class="ring"></span><span class="em">🛵</span></div>
+          <div class="topbar">
+            <div class="av">🛵</div>
+            <div class="who"><b>Carlos va en camino</b><span>Seguimiento en tiempo real</span></div>
+          </div>
+          <div class="eta">
+            <div class="ic">📍</div>
+            <div class="tx"><b>Tu pedido está en camino</b><span>Resistencia, Chaco</span></div>
+            <div class="min"><b>8</b><span>min</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
 <!-- PHONE: carta online -->
 <section><div class="wrap">
   <div class="phone-row">
@@ -308,6 +394,8 @@
     <div class="feat"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg></div><div><h4>Caja y Facturación</h4><p>Cobros, medios de pago, recargos y arqueo de caja.</p></div></div>
     <div class="feat"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></div><div><h4>Menú Online / Carta QR</h4><p>Tus clientes piden desde el celular.</p></div></div>
     <div class="feat"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="7"/><rect x="13" y="7" width="3" height="11"/></svg></div><div><h4>Reportes por canal</h4><p>Mesas vs Mostrador vs Delivery, ticket promedio y top productos.</p></div></div>
+    <div class="feat"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.2-7-11a7 7 0 0 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></div><div><h4>Seguimiento en vivo <span style="font-size:10px;font-weight:800;color:#34d399;border:1px solid rgba(52,211,153,.5);border-radius:6px;padding:1px 6px;margin-left:4px;vertical-align:middle">NUEVO</span></h4><p>El cliente sigue al repartidor en el mapa en tiempo real.</p></div></div>
+    <div class="feat"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4M9 9v.01M9 13v.01M9 17v.01"/></svg></div><div><h4>Multi-sucursal</h4><p>Varios locales, cada uno con sus datos, usuarios y marca.</p></div></div>
   </div>
 </div></section>
 
@@ -360,6 +448,18 @@
 
 <script>
   document.getElementById('yr').textContent = new Date().getFullYear();
+  // ===== Escalar el mapa en vivo para alinear motito + ruta en cualquier ancho =====
+  function fitLivemaps(){
+    document.querySelectorAll('.stage').forEach(function(st){
+      var lm = st.querySelector('.livemap'); if(!lm) return;
+      var s = Math.min(1, st.clientWidth / 420);
+      lm.style.transform = 'scale('+s+')';
+      st.style.height = (lm.offsetHeight * s) + 'px';
+    });
+  }
+  fitLivemaps();
+  window.addEventListener('resize', fitLivemaps);
+  window.addEventListener('load', fitLivemaps);
   // ===== Carrusel =====
   const track = document.getElementById('track');
   const slides = track.children.length;
