@@ -113,12 +113,8 @@
   .sec-title p{color:var(--muted);font-size:16px;margin-top:12px}
   /* CAROUSEL */
   .showcase{padding-top:32px}
-  .browser{max-width:940px;margin:0 auto;border-radius:18px;overflow:hidden;background:var(--surface);border:1px solid var(--line-2);box-shadow:0 40px 90px rgba(76,29,149,.4),inset 0 1px 0 rgba(255,255,255,.05)}
-  .browser-bar{height:42px;background:#1d1438;display:flex;align-items:center;gap:7px;padding:0 16px;border-bottom:1px solid var(--line)}
-  .browser-bar i{width:11px;height:11px;border-radius:50%;display:inline-block}
-  .browser-bar i:nth-child(1){background:#ff5f56}.browser-bar i:nth-child(2){background:#ffbd2e}.browser-bar i:nth-child(3){background:#27c93f}
-  .browser-bar .url{margin-left:14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted-2);background:#0f0a1e;border:1px solid var(--line);border-radius:7px;padding:5px 13px;flex:1;max-width:380px}
-  .viewport{position:relative;aspect-ratio:1280/800;overflow:hidden;background:var(--bg)}
+  .carousel{max-width:1000px;margin:0 auto;position:relative}
+  .viewport{position:relative;aspect-ratio:1280/800;overflow:hidden;background:var(--bg);border-radius:20px;border:1px solid var(--line-2);box-shadow:0 40px 90px rgba(76,29,149,.4),inset 0 1px 0 rgba(255,255,255,.05)}
   .track{display:flex;height:100%;transition:transform .6s cubic-bezier(.45,0,.15,1)}
   .slide{min-width:100%;height:100%;position:relative}
   .slide img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block}
@@ -244,8 +240,7 @@
     <h2>Mirá ResTito en acción</h2>
     <p>Nada de maquetas: estas son pantallas del sistema funcionando.</p>
   </div>
-  <div class="browser">
-    <div class="browser-bar"><i></i><i></i><i></i><span class="url">restito-production.up.railway.app</span></div>
+  <div class="carousel">
     <div class="viewport">
       <div class="track" id="track">
         <div class="slide"><img src="/screens/reportes.png" alt="Reportes con inteligencia de negocios"><div class="cap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M7 14l3-3 3 3 5-5"/></svg> Reportes con inteligencia de negocios</div></div>
