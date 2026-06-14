@@ -4551,6 +4551,12 @@ function crearDelivery() {
   const mapsUrl = !esMost && /^https?:\/\//i.test(mapsRaw) ? mapsRaw : (ll ? `https://www.google.com/maps?q=${ll.lat},${ll.lon}` : '');
   if (!cliente) { showToast('Ingresá el nombre del cliente','error'); return; }
   if (!esMost && !dir) { showToast('Completá la dirección del cliente','error'); return; }
+  // Read items from the live cart
+  const items = _dlvCart.map(i => ({ nombre: i.nombre, qty: i.qty, precio: i.precio, size: i.size||null, nota: i.nota||'' }));
+  const total = _dlvCart.reduce((s,i)=>s + i.precio*i.qty, 0);
+  if (!items.length) { showToast('Agregá al menos un producto','error'); return; }
+  // Paso 1: confirmar emisión del pedido
+  if (!confirm(esMost ? '¿Emitir este pedido de mostrador?' : '¿Emitir este pedido de delivery?')) return;
   // Delivery: guardar/actualizar el cliente (con dirección y ubicación). Mostrador es venta al paso, no se persiste.
   if (!esMost) {
     const clienteIdStr = clienteInput.dataset.clienteId;
@@ -4564,10 +4570,6 @@ function crearDelivery() {
       if (cx) { cx.ultimaDireccion = dir; if (mapsUrl) cx.ultimaMapsUrl = mapsUrl; if (ll) { cx.lat = ll.lat; cx.lon = ll.lon; } }
     }
   }
-  // Read items from the live cart
-  const items = _dlvCart.map(i => ({ nombre: i.nombre, qty: i.qty, precio: i.precio, size: i.size||null, nota: i.nota||'' }));
-  const total = _dlvCart.reduce((s,i)=>s + i.precio*i.qty, 0);
-  if (!items.length) { showToast('Agregá al menos un producto','error'); return; }
   const mpId = document.getElementById('dlvPago').value;
   const mp = getMediosPago().find(m => m.id === mpId);
   const recargo = mp?.recargo || 0;
@@ -4586,18 +4588,21 @@ function crearDelivery() {
     repartidor: esMost ? null : (document.getElementById('dlvRepartidor').value||null),
     hora: new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Argentina/Buenos_Aires'})
   });
+  const creado = deliveryData[0];
   closeModal('modalNuevoDelivery');
   saveState();
   // Notify repartidor of the new order in real time
-  if (socket) socket.emit('delivery:broadcast', deliveryData[0]);
-  // Auto-send all items to kitchen
+  if (socket) socket.emit('delivery:broadcast', creado);
+  // Auto-send all items to kitchen (pantalla de cocina)
   apiFetch('/cocina/comanda', {
     method:'POST',
-    body: JSON.stringify({tipo:'delivery', mesa:{numero:deliveryData[0].numero}, mozo:'', cliente:cliente, items})
+    body: JSON.stringify({tipo:'delivery', mesa:{numero:creado.numero}, mozo:'', cliente:cliente, items})
   }).catch(()=>{});
   renderDelivery();
   loadDashboard();
-  showToast(`${esMost?'Pedido mostrador':'Delivery'} ${deliveryData[0].numero} creado`,'success');
+  showToast(`${esMost?'Pedido mostrador':'Delivery'} ${creado.numero} creado`,'success');
+  // Paso 2: el pedido ya quedó confirmado; ofrecer imprimir la comanda
+  if (confirm('¿Desea imprimir la comanda?')) imprimirDelivery(creado.id);
 }
 
 function epComandaDelivery(o) {
@@ -4608,12 +4613,12 @@ function epComandaDelivery(o) {
   let s = E+'@';
   s += E+'a\x01'+E+'E\x01'+G+'!\x10'+(biz.nombre||'ResTito')+NL+G+'!\x00'+E+'E\x00';
   s += SEP+NL;
-  s += E+'a\x01'+G+'!\x11'+E+'E\x01'+'DELIVERY '+o.numero+NL+G+'!\x00'+E+'E\x00';
+  s += E+'a\x01'+G+'!\x11'+E+'E\x01'+(o.tipo==='mostrador'?'MOSTRADOR ':'DELIVERY ')+o.numero+NL+G+'!\x00'+E+'E\x00';
   s += E+'a\x01'+new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'America/Argentina/Buenos_Aires'})+NL;
   s += SEP+NL+E+'a\x00';
   s += 'Cliente: '+(o.cliente.nombre||'')+NL;
   if (o.cliente.telefono) s += 'Tel: '+o.cliente.telefono+NL;
-  s += 'Dir: '+o.direccion+NL;
+  if (o.direccion) s += 'Dir: '+o.direccion+NL;
   s += SEP+NL;
   o.items.forEach(i => {
     const desc  = i.qty+'x '+i.nombre+(i.size?' ('+i.size+')':'');
@@ -4665,12 +4670,12 @@ function _buildDeliveryHtml(o, biz) {
     <style>body{font-family:monospace;padding:20px;font-size:14px}h2{text-align:center}hr{border:1px dashed #000}.total{font-size:18px;font-weight:bold}.pr{text-align:right;font-size:12px;color:#555}</style></head>
     <body>
       <h2>${biz.nombre}</h2>
-      <p style="text-align:center">DELIVERY ${o.numero}</p>
+      <p style="text-align:center">${o.tipo==='mostrador'?'MOSTRADOR':'DELIVERY'} ${o.numero}</p>
       <p style="text-align:center">${new Date().toLocaleString('es-AR',{timeZone:'America/Argentina/Buenos_Aires'})}</p>
       <hr>
       <p><b>Cliente:</b> ${o.cliente.nombre}</p>
-      <p><b>Tel:</b> ${o.cliente.telefono||''}</p>
-      <p><b>Dir:</b> ${o.direccion}</p>
+      ${o.cliente.telefono?`<p><b>Tel:</b> ${o.cliente.telefono}</p>`:''}
+      ${o.direccion?`<p><b>Dir:</b> ${o.direccion}</p>`:''}
       <hr>
       ${o.items.map(i=>`<div><b>${i.qty}x ${i.nombre}</b></div>${i.precio?`<div class="pr">$${i.precio.toLocaleString('es-AR')} x un. &nbsp;&nbsp; subt. $${(i.precio*i.qty).toLocaleString('es-AR')}</div>`:''}`).join('')}
       <hr>
