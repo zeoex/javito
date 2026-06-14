@@ -2687,16 +2687,20 @@ async function loadStateFromAPI() {
       try { localStorage.setItem('pz_categorias', JSON.stringify(categoriasData)); } catch(e) {}
     }
     if (esTenant) {
-      // Estado operacional autoritativo desde el servidor para el local
+      // Estado operacional autoritativo desde el servidor para el local (base de datos propia)
       mesasData = arr(data.mesas);
       deliveryData = arr(data.delivery).map(o => o.fecha ? o : {...o, fecha: '2000-01-01'});
       facturasData = arr(data.facturas);
       clientesData = arr(data.clientes);
+      usuariosData = arr(data.usuarios);   // usuarios propios del local (no los DEMO)
       mozoHistorial = arr(data.mozo_historial);
       if (data.caja_abierta !== null && data.caja_abierta !== undefined) cajaAbierta = data.caja_abierta === true;
       if (data.caja_inicial) cajaInicial = parseInt(data.caja_inicial) || 5000;
       cajaMoves = arr(data.caja_moves);
       cajaCierres = arr(data.caja_cierres);
+      // Configuración del negocio (medios de pago, propinas, nombre, logo) — propia del local
+      try { localStorage.setItem('pz_biz_cfg', JSON.stringify(data.biz_cfg || {})); } catch(e) {}
+      try { loadBizConfig(); } catch(e) {}
       try { localStorage.setItem('pz_saved_at', String(new Date(data.updated_at||Date.now()).getTime())); } catch(e) {}
       return;
     }
@@ -2879,6 +2883,11 @@ function initApp() {
       const sec = n.getAttribute('data-section');
       if (sec && !visiblesSuper.includes(sec)) n.style.display = 'none';
     });
+    // Branding propio del super-admin (no el logo de ningún local)
+    const _se = document.getElementById('sidebarEmoji'); if (_se) _se.textContent = '🛡️';
+    const _sn = document.getElementById('sidebarName'); if (_sn) _sn.textContent = 'ResTito';
+    const _sb = document.getElementById('sidebarBiz');  if (_sb) _sb.textContent = 'Super-Admin';
+    const _slw = document.getElementById('sidebarLogoWrap'); if (_slw) _slw.onclick = () => { navTo('locales', document.getElementById('navLocales')); closeSidebar(); };
   }
   // Mesa management (create/edit/delete) only for admin and supervisor
   const esAdminRole = ['admin','supervisor'].includes(currentUser?.rol);

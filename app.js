@@ -506,6 +506,12 @@ app.get('/:local/:page', (req, res, next) => {
   noCache(res);
   res.sendFile(path.join(__dirname, 'public', file));
 });
+// Portal por local: /<local>  → portal branded del local (acceso a todas las funciones)
+app.get('/:local', (req, res, next) => {
+  if (req.params.local.includes('.')) return next(); // dejar pasar archivos
+  noCache(res);
+  res.sendFile(path.join(__dirname, 'public', 'portal.html'));
+});
 
 // Logger
 app.use((req, _res, next) => {

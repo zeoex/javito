@@ -638,6 +638,18 @@
 <script>
 (function () {
   'use strict';
+  // Portal por local: /<local>  → branding del local + accesos a /<local>/...
+  var _m = location.pathname.match(/^\/([^\/]+)\/?$/);
+  var _local = (_m && _m[1] && _m[1] !== 'portal') ? _m[1] : null;
+  if (_local) {
+    var _map = {'/admin':'/'+_local+'/admin','/mozo':'/'+_local+'/mozo','/cocina.html':'/'+_local+'/cocina','/repartidor.html':'/'+_local+'/repartidor','/carta.html':'/'+_local+'/carta','/menu.html':'/'+_local+'/menu'};
+    Array.prototype.forEach.call(document.querySelectorAll('a.tile'), function(a){ var h=a.getAttribute('href'); if(_map[h]) a.setAttribute('href', _map[h]); });
+    fetch('/api/public/menu?local=' + encodeURIComponent(_local)).then(function(r){return r.json();}).then(function(d){
+      var biz = (d && d.biz_cfg) || {};
+      if (biz.nombre) { var bn=document.querySelector('.brand-name'); if(bn) bn.textContent=biz.nombre; document.title=biz.nombre; }
+      if (biz.logo) { var svg=document.querySelector('.brand-icon-svg'); if(svg){ var img=document.createElement('img'); img.src=biz.logo; img.alt=''; img.style.cssText='width:44px;height:44px;border-radius:12px;object-fit:cover'; svg.parentNode.replaceChild(img, svg); } }
+    }).catch(function(){});
+  }
   var grid = document.getElementById('tileGrid');
   var tiles = Array.prototype.slice.call(document.querySelectorAll('.tile'));
 
