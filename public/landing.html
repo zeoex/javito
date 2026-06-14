@@ -5,158 +5,269 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>ResTito — Sistema de gestión para restaurantes y pizzerías</title>
 <meta name="description" content="ResTito: el sistema todo-en-uno para tu restaurante o pizzería. Mesas, mostrador, delivery, cocina, caja y reportes en tiempo real. Sin instalar nada."/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Calistoga&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet"/>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  :root{--vio:#7c3aed;--vio2:#a78bfa;--amber:#f59e0b;--ink:#0f0a1e}
+  :root{
+    --paper:#FBF5EA;       /* warm cream paper */
+    --paper-2:#F3E7D3;     /* toasted cream */
+    --ink:#2B1A12;         /* espresso */
+    --ink-soft:#6B5644;    /* milky coffee */
+    --red:#C1342D;         /* tomato / appetizing red */
+    --red-dk:#8E1B16;      /* roasted pepper */
+    --gold:#B7831F;        /* mustard gold */
+    --gold-lt:#E3A93B;     /* honey */
+    --line:#E2D2B6;        /* dough crust line */
+    --green:#1f8a4c;
+  }
   html{scroll-behavior:smooth}
-  body{font-family:'Inter',-apple-system,Segoe UI,Roboto,sans-serif;color:#e7e5f0;background:#0b0716;overflow-x:hidden}
-  .wrap{max-width:1120px;margin:0 auto;padding:0 22px}
+  body{
+    font-family:'Inter',-apple-system,Segoe UI,Roboto,sans-serif;
+    color:var(--ink);background:var(--paper);overflow-x:hidden;line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(circle at 18% 12%, rgba(183,131,31,.07), transparent 40%),
+      radial-gradient(circle at 88% 8%, rgba(193,52,45,.06), transparent 42%);
+  }
+  /* subtle paper grain */
+  body::before{
+    content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+  }
+  .wrap{max-width:1140px;margin:0 auto;padding:0 24px}
   a{text-decoration:none;color:inherit}
-  .btn{display:inline-flex;align-items:center;gap:8px;padding:14px 26px;border-radius:999px;font-weight:800;font-size:15px;cursor:pointer;border:none;transition:transform .15s,box-shadow .15s}
+  h1,h2,h3,.brand-name{font-family:'Calistoga',Georgia,serif;font-weight:400;letter-spacing:.1px}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:12px;letter-spacing:2.5px;text-transform:uppercase;color:var(--red)}
+  .btn{display:inline-flex;align-items:center;gap:9px;padding:14px 26px;border-radius:14px;font-weight:700;font-size:15px;cursor:pointer;border:none;transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s;font-family:'Inter',sans-serif}
+  .btn svg{width:18px;height:18px}
   .btn:hover{transform:translateY(-2px)}
-  .btn-amber{background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff;box-shadow:0 8px 24px rgba(245,158,11,.35)}
-  .btn-ghost{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.18)}
+  .btn:active{transform:translateY(0)}
+  .btn-red{background:var(--red);color:#fff;box-shadow:0 6px 0 var(--red-dk),0 14px 26px rgba(142,27,22,.28)}
+  .btn-red:hover{box-shadow:0 4px 0 var(--red-dk),0 16px 30px rgba(142,27,22,.34)}
+  .btn-red:active{box-shadow:0 2px 0 var(--red-dk),0 8px 14px rgba(142,27,22,.3)}
+  .btn-out{background:transparent;color:var(--ink);border:2px solid var(--ink)}
+  .btn-out:hover{background:var(--ink);color:var(--paper)}
   /* NAV */
-  nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(12px);background:rgba(11,7,22,.75);border-bottom:1px solid rgba(167,139,250,.14)}
-  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:66px}
-  .brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:20px}
-  .brand .logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#4c1d95,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:20px}
-  .navlinks{display:flex;gap:26px;align-items:center;font-size:14px;font-weight:600;color:#c4b5fd}
-  .navlinks a:hover{color:#fff}
+  nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(10px);background:rgba(251,245,234,.82);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:70px}
+  .brand{display:flex;align-items:center;gap:11px}
+  .brand .logo{width:42px;height:42px;border-radius:13px;background:var(--red);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 0 var(--red-dk);transform:rotate(-4deg)}
+  .brand .logo svg{width:23px;height:23px;color:#fff}
+  .brand-name{font-size:22px;color:var(--ink)}
+  .brand-name b{color:var(--red)}
+  .navlinks{display:flex;gap:30px;align-items:center;font-size:14px;font-weight:600;color:var(--ink-soft)}
+  .navlinks a:not(.btn):hover{color:var(--red)}
   @media(max-width:820px){.navlinks a:not(.btn){display:none}}
   /* HERO */
-  .hero{position:relative;padding:72px 0 30px;text-align:center;overflow:hidden}
-  .hero::before{content:'';position:absolute;top:-220px;left:50%;transform:translateX(-50%);width:1000px;height:680px;background:radial-gradient(ellipse,rgba(124,58,237,.5),transparent 60%);z-index:0}
-  .hero .wrap{position:relative;z-index:1}
-  .tagpill{display:inline-block;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);color:#fcd34d;font-weight:700;font-size:13px;padding:6px 16px;border-radius:999px;margin-bottom:22px}
-  .hero h1{font-size:52px;font-weight:900;line-height:1.07;letter-spacing:-1px;margin-bottom:18px}
-  .hero h1 .hl{background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;background-clip:text;color:transparent}
-  .hero p.sub{font-size:19px;color:#c4b5fd;max-width:660px;margin:0 auto 30px}
-  .hero .cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
-  @media(max-width:600px){.hero h1{font-size:35px}.hero p.sub{font-size:16px}}
+  .hero{position:relative;padding:78px 0 34px;overflow:hidden}
+  .hero .wrap{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center}
+  @media(max-width:900px){.hero .wrap{grid-template-columns:1fr;text-align:center}}
+  .hero h1{font-size:clamp(38px,6vw,62px);line-height:1.02;color:var(--ink);margin:18px 0 18px}
+  .hero h1 .hl{color:var(--red);position:relative;white-space:nowrap}
+  .hero h1 .hl::after{content:'';position:absolute;left:0;right:0;bottom:6px;height:11px;background:var(--gold-lt);opacity:.5;border-radius:4px;z-index:-1;transform:rotate(-1deg)}
+  .hero p.sub{font-size:19px;color:var(--ink-soft);max-width:540px;margin-bottom:30px}
+  @media(max-width:900px){.hero p.sub{margin-left:auto;margin-right:auto}}
+  .hero .cta{display:flex;gap:14px;flex-wrap:wrap}
+  @media(max-width:900px){.hero .cta{justify-content:center}}
+  .trust{display:flex;gap:22px;margin-top:28px;flex-wrap:wrap;font-size:13px;color:var(--ink-soft);font-weight:600}
+  @media(max-width:900px){.trust{justify-content:center}}
+  .trust span{display:flex;align-items:center;gap:7px}
+  .trust svg{width:17px;height:17px;color:var(--green)}
+  /* hero plate art */
+  .plate{position:relative;justify-self:center;width:min(420px,90vw);aspect-ratio:1;display:grid;place-items:center}
+  .plate .ring{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 38% 32%,#fff,var(--paper-2));box-shadow:0 30px 60px rgba(43,26,18,.22),inset 0 0 0 14px rgba(255,255,255,.6),inset 0 0 0 16px var(--line)}
+  .plate .card{position:relative;width:78%;background:#fff;border-radius:18px;border:1px solid var(--line);box-shadow:0 22px 44px rgba(43,26,18,.18);padding:18px 18px 16px;transform:rotate(-2deg)}
+  .plate .card .crow{display:flex;justify-content:space-between;align-items:center;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-soft);padding:7px 0;border-bottom:1px dashed var(--line)}
+  .plate .card .crow b{color:var(--ink);font-weight:600}
+  .plate .card .crow.tot{border-bottom:none;border-top:2px solid var(--ink);margin-top:4px;padding-top:10px;font-size:14px}
+  .plate .card .crow.tot b{color:var(--red);font-size:16px}
+  .plate .card h4{font-family:'Calistoga',serif;font-size:17px;color:var(--ink);margin-bottom:6px}
+  .plate .badge{position:absolute;width:74px;height:74px;border-radius:50%;background:var(--gold);color:#fff;display:grid;place-items:center;text-align:center;font-family:'Calistoga',serif;font-size:12px;line-height:1.1;box-shadow:0 8px 18px rgba(183,131,31,.45);right:-12px;top:-18px;transform:rotate(8deg)}
+  /* SECTIONS */
+  section{padding:66px 0}
+  .sec-title{text-align:center;max-width:620px;margin:0 auto 44px}
+  .sec-title h2{font-size:clamp(28px,4.2vw,40px);color:var(--ink);margin-top:10px}
+  .sec-title p{color:var(--ink-soft);font-size:16px;margin-top:10px}
   /* CAROUSEL */
-  .showcase{padding:30px 0 60px}
-  .browser{max-width:920px;margin:0 auto;border-radius:16px;overflow:hidden;background:#15102a;border:1px solid rgba(167,139,250,.25);box-shadow:0 30px 80px rgba(76,29,149,.45)}
-  .browser-bar{height:38px;background:#1d1635;display:flex;align-items:center;gap:7px;padding:0 14px;border-bottom:1px solid rgba(255,255,255,.06)}
+  .showcase{padding-top:30px}
+  .browser{max-width:940px;margin:0 auto;border-radius:18px;overflow:hidden;background:#fff;border:1px solid var(--line);box-shadow:0 34px 70px rgba(43,26,18,.2)}
+  .browser-bar{height:42px;background:var(--paper-2);display:flex;align-items:center;gap:7px;padding:0 16px;border-bottom:1px solid var(--line)}
   .browser-bar i{width:11px;height:11px;border-radius:50%;display:inline-block}
-  .browser-bar i:nth-child(1){background:#ff5f56}.browser-bar i:nth-child(2){background:#ffbd2e}.browser-bar i:nth-child(3){background:#27c93f}
-  .browser-bar .url{margin-left:14px;font-size:11px;color:#8b85a8;background:#0f0a1e;border-radius:6px;padding:4px 12px;flex:1;max-width:360px}
-  .viewport{position:relative;aspect-ratio:1280/800;overflow:hidden;background:#0b0716}
-  .track{display:flex;height:100%;transition:transform .55s cubic-bezier(.4,0,.2,1)}
+  .browser-bar i:nth-child(1){background:#e0564d}.browser-bar i:nth-child(2){background:var(--gold-lt)}.browser-bar i:nth-child(3){background:#3fae6a}
+  .browser-bar .url{margin-left:14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-soft);background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:5px 13px;flex:1;max-width:380px}
+  .viewport{position:relative;aspect-ratio:1280/800;overflow:hidden;background:var(--paper)}
+  .track{display:flex;height:100%;transition:transform .6s cubic-bezier(.45,0,.15,1)}
   .slide{min-width:100%;height:100%;position:relative}
   .slide img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block}
-  .slide .cap{position:absolute;left:0;right:0;bottom:0;padding:30px 18px 14px;font-size:14px;font-weight:700;color:#fff;background:linear-gradient(transparent,rgba(8,5,16,.9))}
-  .cnav{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;background:rgba(15,10,30,.65);color:#fff;border:1px solid rgba(255,255,255,.2);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:3}
-  .cnav:hover{background:rgba(124,58,237,.8)}
-  .cnav.prev{left:10px}.cnav.next{right:10px}
-  .dots{display:flex;gap:8px;justify-content:center;margin-top:18px}
-  .dot{width:9px;height:9px;border-radius:50%;background:rgba(167,139,250,.3);cursor:pointer;transition:all .2s}
-  .dot.on{background:var(--amber);width:26px;border-radius:5px}
-  /* SECTIONS */
-  section{padding:64px 0}
-  .sec-title{text-align:center;margin-bottom:40px}
-  .sec-title h2{font-size:34px;font-weight:900;color:#fff;letter-spacing:-.5px}
-  .sec-title p{color:#a78bfa;font-size:16px;margin-top:8px}
-  .vals{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .slide .cap{position:absolute;left:0;right:0;bottom:0;padding:34px 20px 16px;font-size:14px;font-weight:700;color:#fff;display:flex;align-items:center;gap:9px;background:linear-gradient(transparent,rgba(43,26,18,.88))}
+  .slide .cap svg{width:18px;height:18px;color:var(--gold-lt)}
+  .cnav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.9);color:var(--ink);border:1px solid var(--line);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:3;box-shadow:0 6px 16px rgba(43,26,18,.2);transition:background .2s}
+  .cnav svg{width:22px;height:22px}
+  .cnav:hover{background:var(--red);color:#fff}
+  .cnav.prev{left:12px}.cnav.next{right:12px}
+  .dots{display:flex;gap:8px;justify-content:center;margin-top:20px}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--line);cursor:pointer;transition:all .25s}
+  .dot.on{background:var(--red);width:28px;border-radius:5px}
+  /* VALUES */
+  .vals{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
   @media(max-width:760px){.vals{grid-template-columns:1fr}}
-  .val{background:linear-gradient(180deg,rgba(124,58,237,.12),rgba(124,58,237,.03));border:1px solid rgba(167,139,250,.2);border-radius:18px;padding:26px}
-  .val .ic{font-size:34px;margin-bottom:12px}
-  .val h3{font-size:19px;font-weight:800;color:#fff;margin-bottom:8px}
-  .val p{color:#c4b5fd;font-size:14px}
-  /* phone showcase */
-  .phone-row{display:flex;align-items:center;gap:48px;flex-wrap:wrap;justify-content:center}
-  .phone{flex:0 0 auto;width:260px;height:540px;border-radius:36px;background:#1d1635;border:8px solid #2a2147;box-shadow:0 30px 70px rgba(76,29,149,.5);overflow:hidden;position:relative}
-  .phone::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:22px;background:#2a2147;border-radius:0 0 16px 16px;z-index:2}
+  .val{background:#fff;border:1px solid var(--line);border-radius:18px;padding:28px;position:relative;transition:transform .25s,box-shadow .25s}
+  .val:hover{transform:translateY(-4px);box-shadow:0 18px 36px rgba(43,26,18,.12)}
+  .val .ic{width:54px;height:54px;border-radius:14px;background:var(--paper-2);display:grid;place-items:center;margin-bottom:16px;color:var(--red)}
+  .val .ic svg{width:27px;height:27px}
+  .val h3{font-size:20px;color:var(--ink);margin-bottom:8px}
+  .val p{color:var(--ink-soft);font-size:14.5px}
+  /* PHONE */
+  .phone-row{display:flex;align-items:center;gap:54px;flex-wrap:wrap;justify-content:center}
+  .phone{flex:0 0 auto;width:264px;height:548px;border-radius:38px;background:#1a120c;border:9px solid #1a120c;box-shadow:0 34px 70px rgba(43,26,18,.4);overflow:hidden;position:relative}
+  .phone::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:24px;background:#1a120c;border-radius:0 0 16px 16px;z-index:2}
   .phone img{width:100%;height:100%;object-fit:cover;object-position:top center}
-  .phone-txt{flex:1;min-width:280px;max-width:420px}
-  .phone-txt h2{font-size:30px;font-weight:900;color:#fff;margin-bottom:14px}
-  .phone-txt p{color:#c4b5fd;font-size:15px;margin-bottom:10px}
-  .phone-txt li{color:#c4b5fd;font-size:15px;margin:8px 0;list-style:none;display:flex;gap:10px;align-items:flex-start}
-  /* features */
-  .feats{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  .phone-txt{flex:1;min-width:300px;max-width:440px}
+  .phone-txt h2{font-size:clamp(26px,4vw,34px);color:var(--ink);margin-bottom:16px}
+  .phone-txt p{color:var(--ink-soft);font-size:15.5px;margin-bottom:18px}
+  .phone-txt li{color:var(--ink);font-size:15px;margin:12px 0;list-style:none;display:flex;gap:11px;align-items:flex-start;font-weight:500}
+  .phone-txt li svg{width:21px;height:21px;color:var(--green);flex-shrink:0;margin-top:1px}
+  /* FEATURES */
+  .feats{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
   @media(max-width:760px){.feats{grid-template-columns:1fr}}
-  .feat{display:flex;gap:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:18px 20px}
-  .feat .fi{font-size:26px;flex-shrink:0}
-  .feat h4{font-size:16px;font-weight:800;color:#fff}
-  .feat p{color:#a78bfa;font-size:13px;margin-top:2px}
-  /* cta */
-  .cta-band{background:linear-gradient(135deg,#4c1d95,#7c3aed);border-radius:28px;padding:52px 34px;text-align:center;position:relative;overflow:hidden}
-  .cta-band::after{content:'';position:absolute;right:-80px;bottom:-80px;width:280px;height:280px;background:rgba(245,158,11,.25);border-radius:50%}
-  .cta-band h2{font-size:32px;font-weight:900;color:#fff;position:relative}
-  .cta-band p{color:#ede9fe;font-size:16px;margin:12px 0 26px;position:relative}
-  .btn-wpp{background:linear-gradient(135deg,#25d366,#128c4b);color:#fff}
-  .btn-mail{background:rgba(255,255,255,.14);color:#fff;border:1.5px solid rgba(255,255,255,.4)}
-  @keyframes glowWpp{0%,100%{box-shadow:0 0 0 0 rgba(37,211,102,.45),0 8px 22px rgba(37,211,102,.35)}50%{box-shadow:0 0 30px 7px rgba(37,211,102,.75),0 10px 30px rgba(37,211,102,.55)}}
-  @keyframes glowMail{0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,.35)}50%{box-shadow:0 0 28px 6px rgba(251,191,36,.7)}}
-  .glow-wpp{animation:glowWpp 1.7s ease-in-out infinite}.glow-mail{animation:glowMail 1.7s ease-in-out infinite}
-  @media(prefers-reduced-motion:reduce){.glow-wpp,.glow-mail,.track{animation:none}}
-  footer{padding:38px 0;text-align:center;color:#6d6a85;font-size:13px;border-top:1px solid rgba(167,139,250,.12);margin-top:20px}
-  footer .brand{justify-content:center;margin-bottom:10px;color:#a78bfa}
+  .feat{display:flex;gap:16px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px 22px;transition:border-color .2s}
+  .feat:hover{border-color:var(--gold)}
+  .feat .fi{width:46px;height:46px;border-radius:12px;background:var(--paper-2);display:grid;place-items:center;flex-shrink:0;color:var(--red)}
+  .feat .fi svg{width:24px;height:24px}
+  .feat h4{font-family:'Inter',sans-serif;font-size:16px;font-weight:800;color:var(--ink)}
+  .feat p{color:var(--ink-soft);font-size:13.5px;margin-top:3px}
+  /* PRICING */
+  .price-card{max-width:480px;margin:0 auto;background:#fff;border:2px solid var(--gold);border-radius:24px;padding:8px;position:relative;box-shadow:0 24px 50px rgba(183,131,31,.18)}
+  .price-inner{border:1px dashed var(--line);border-radius:18px;padding:36px 30px;text-align:center}
+  .price-tag{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#fff;background:var(--red);padding:6px 16px;border-radius:999px}
+  .price-card h3{font-size:30px;color:var(--ink);margin:18px 0 6px}
+  .price-card .feats-list{text-align:left;max-width:300px;margin:20px auto 24px}
+  .price-card .feats-list li{list-style:none;display:flex;gap:10px;align-items:center;color:var(--ink-soft);font-size:14.5px;margin:11px 0;font-weight:500}
+  .price-card .feats-list svg{width:19px;height:19px;color:var(--green);flex-shrink:0}
+  /* CTA */
+  .cta-band{background:var(--ink);border-radius:30px;padding:56px 36px;text-align:center;position:relative;overflow:hidden}
+  .cta-band::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 12% 20%,rgba(193,52,45,.4),transparent 35%),radial-gradient(circle at 90% 90%,rgba(183,131,31,.35),transparent 40%)}
+  .cta-band > *{position:relative}
+  .cta-band h2{font-size:clamp(28px,4vw,38px);color:var(--paper)}
+  .cta-band p{color:#d8c6ad;font-size:16.5px;margin:14px auto 28px;max-width:480px}
+  .cta-band .cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  .btn-wpp{background:var(--green);color:#fff;box-shadow:0 6px 0 #11633a}
+  .btn-mail{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.45)}
+  .btn-mail:hover{background:#fff;color:var(--ink);border-color:#fff}
+  @keyframes glowWpp{0%,100%{box-shadow:0 6px 0 #11633a,0 0 0 0 rgba(31,138,76,.5)}50%{box-shadow:0 6px 0 #11633a,0 0 30px 8px rgba(31,138,76,.6)}}
+  @keyframes glowMail{0%,100%{box-shadow:0 0 0 0 rgba(227,169,59,.0)}50%{box-shadow:0 0 26px 6px rgba(227,169,59,.55)}}
+  .glow-wpp{animation:glowWpp 1.9s ease-in-out infinite}
+  .glow-mail{animation:glowMail 1.9s ease-in-out infinite}
+  @media(prefers-reduced-motion:reduce){.glow-wpp,.glow-mail,.track,.btn{animation:none;transition:none}}
+  footer{padding:44px 0 36px;text-align:center;color:var(--ink-soft);font-size:13px;border-top:1px solid var(--line);margin-top:24px}
+  footer .brand{justify-content:center;margin-bottom:12px}
+  footer .brand-name{font-size:18px}
 </style>
 </head>
 <body>
 
 <nav><div class="wrap">
-  <div class="brand"><span class="logo">🍴</span> ResTito</div>
+  <div class="brand">
+    <span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h0a2 2 0 0 0 2-2V2M5 2v20M19 2v20M21 9c0-3-1-6-2-7v20"/></svg></span>
+    <span class="brand-name">Res<b>Tito</b></span>
+  </div>
   <div class="navlinks">
     <a href="#capturas">Capturas</a>
     <a href="#funciones">Funciones</a>
     <a href="#precios">Precios</a>
-    <a href="#contacto" class="btn btn-amber" style="padding:9px 20px;font-size:14px">Pedir demo</a>
+    <a href="#contacto" class="btn btn-red" style="padding:10px 20px;font-size:14px">Pedir demo</a>
   </div>
 </div></nav>
 
 <header class="hero"><div class="wrap">
-  <span class="tagpill">⚡ Sin instalar nada · En la nube · Tiempo real</span>
-  <h1>El sistema de gestión <span class="hl">todo‑en‑uno</span><br/>para tu restaurante o pizzería</h1>
-  <p class="sub">Mesas, mostrador, delivery, cocina, caja y reportes — todo conectado y al instante, desde el celular, la tablet o la PC.</p>
-  <div class="cta">
-    <a href="#contacto" class="btn btn-amber">🚀 Empezar ahora</a>
-    <a href="#capturas" class="btn btn-ghost">Ver capturas</a>
+  <div>
+    <span class="eyebrow">Sin instalar · En la nube · Tiempo real</span>
+    <h1>El sistema que tu <span class="hl">cocina</span> estaba esperando</h1>
+    <p class="sub">Mesas, mostrador, delivery, cocina, caja y reportes — todo conectado y al instante, desde el celular, la tablet o la PC.</p>
+    <div class="cta">
+      <a href="#contacto" class="btn btn-red">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        Empezar ahora
+      </a>
+      <a href="#capturas" class="btn btn-out">Ver capturas</a>
+    </div>
+    <div class="trust">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Puesta en marcha el mismo día</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Sin contratos atados</span>
+    </div>
+  </div>
+  <div class="plate">
+    <div class="ring"></div>
+    <div class="card">
+      <h4>Mesa 7 · Salón</h4>
+      <div class="crow"><span>2× Muzzarella grande</span><b>$18.400</b></div>
+      <div class="crow"><span>1× Napolitana</span><b>$10.700</b></div>
+      <div class="crow"><span>3× Coca 500ml</span><b>$5.400</b></div>
+      <div class="crow tot"><span>Total</span><b>$34.500</b></div>
+    </div>
+    <div class="badge">A la<br>cocina</div>
   </div>
 </div></header>
 
 <!-- CARRUSEL DE CAPTURAS REALES -->
 <section class="showcase" id="capturas"><div class="wrap">
-  <div class="sec-title"><h2>Mirá ResTito en acción</h2><p>Capturas reales del sistema</p></div>
-  <div class="browser" style="position:relative">
+  <div class="sec-title">
+    <span class="eyebrow">Capturas reales</span>
+    <h2>Mirá ResTito en acción</h2>
+    <p>Nada de maquetas: estas son pantallas del sistema funcionando.</p>
+  </div>
+  <div class="browser">
     <div class="browser-bar"><i></i><i></i><i></i><span class="url">restito-production.up.railway.app</span></div>
     <div class="viewport">
       <div class="track" id="track">
-        <div class="slide"><img src="/screens/reportes.png" alt="Reportes"><div class="cap">📊 Reportes con inteligencia de negocios</div></div>
-        <div class="slide"><img src="/screens/nuevopedido.png" alt="Nuevo pedido"><div class="cap">⚡ Toma de pedidos en segundos</div></div>
-        <div class="slide"><img src="/screens/mesas.png" alt="Mesas"><div class="cap">🪑 Control de mesas en tiempo real</div></div>
-        <div class="slide"><img src="/screens/pedidos.png" alt="Pedidos"><div class="cap">🛵 Pipeline de delivery y mostrador</div></div>
-        <div class="slide"><img src="/screens/cocina.png" alt="Cocina"><div class="cap">👨‍🍳 Pantalla de cocina sincronizada</div></div>
+        <div class="slide"><img src="/screens/reportes.png" alt="Reportes con inteligencia de negocios"><div class="cap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M7 14l3-3 3 3 5-5"/></svg> Reportes con inteligencia de negocios</div></div>
+        <div class="slide"><img src="/screens/nuevopedido.png" alt="Toma de pedidos en segundos"><div class="cap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg> Toma de pedidos en segundos</div></div>
+        <div class="slide"><img src="/screens/mesas.png" alt="Control de mesas en tiempo real"><div class="cap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> Control de mesas en tiempo real</div></div>
+        <div class="slide"><img src="/screens/pedidos.png" alt="Pipeline de delivery y mostrador"><div class="cap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18a2 2 0 1 0 4 0 2 2 0 0 0-4 0zM15 18a2 2 0 1 0 4 0 2 2 0 0 0-4 0zM3 4h2l2 11h10l2-7H7"/></svg> Pipeline de delivery y mostrador</div></div>
+        <div class="slide"><img src="/screens/cocina.png" alt="Pantalla de cocina sincronizada"><div class="cap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v6M12 3v6M16 3v6M6 9h12l-1 12H7z"/></svg> Pantalla de cocina sincronizada</div></div>
       </div>
-      <button class="cnav prev" onclick="cgo(-1)">‹</button>
-      <button class="cnav next" onclick="cgo(1)">›</button>
+      <button class="cnav prev" onclick="cgo(-1)" aria-label="Anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <button class="cnav next" onclick="cgo(1)" aria-label="Siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
     </div>
   </div>
   <div class="dots" id="dots"></div>
 </div></section>
 
 <!-- VALORES -->
-<section style="padding-top:10px"><div class="wrap">
+<section style="padding-top:14px"><div class="wrap">
   <div class="vals">
-    <div class="val"><div class="ic">🚀</div><h3>Súper rápido</h3><p>Tomá pedidos con botones por categoría y producto. Atajo F8 para cargar al instante.</p></div>
-    <div class="val"><div class="ic">🛵</div><h3>Delivery con GPS</h3><p>Pegás la ubicación de Google Maps y el repartidor navega directo.</p></div>
-    <div class="val"><div class="ic">🧠</div><h3>Decisiones con datos</h3><p>Reportes que te dicen qué canal y qué producto te dan más.</p></div>
+    <div class="val">
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg></div>
+      <h3>Súper rápido</h3>
+      <p>Cargá pedidos con botones por categoría y producto. Atajo F8 para tomar al instante.</p>
+    </div>
+    <div class="val">
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.2-7-11a7 7 0 0 1 14 0c0 5.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></div>
+      <h3>Delivery con GPS</h3>
+      <p>Pegás la ubicación de Google Maps y el repartidor navega directo, sin perderse.</p>
+    </div>
+    <div class="val">
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M7 14l3-3 3 3 5-5"/></svg></div>
+      <h3>Decisiones con datos</h3>
+      <p>Reportes que te dicen qué canal y qué producto te dejan más ganancia.</p>
+    </div>
   </div>
 </div></section>
 
 <!-- PHONE: carta online -->
 <section><div class="wrap">
   <div class="phone-row">
-    <div class="phone"><img src="/screens/carta.png" alt="Carta online"></div>
+    <div class="phone"><img src="/screens/carta.png" alt="Carta online en el celular"></div>
     <div class="phone-txt">
-      <h2>Tus clientes piden desde el celular 📲</h2>
-      <p>Cada local tiene su <b>carta QR y menú online</b> con su marca. El pedido entra directo a tu panel y a la cocina.</p>
+      <span class="eyebrow">Menú online</span>
+      <h2>Tus clientes piden desde el celular</h2>
+      <p>Cada local tiene su <b>carta QR y menú online</b> con su propia marca. El pedido entra directo a tu panel y a la cocina.</p>
       <ul>
-        <li>✅ Menú propio por local, con logo y nombre</li>
-        <li>✅ Pedido web que cae en tu pipeline en tiempo real</li>
-        <li>✅ App instalable para mozos, cocina y repartidores</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Menú propio por local, con logo y nombre</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Pedido web que cae en tu pipeline en tiempo real</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> App instalable para mozos, cocina y repartidores</li>
       </ul>
     </div>
   </div>
@@ -164,41 +275,65 @@
 
 <!-- FUNCIONES -->
 <section id="funciones"><div class="wrap">
-  <div class="sec-title"><h2>Todo lo que tu local necesita</h2><p>Reemplaza planillas, cuadernos y apps sueltas.</p></div>
+  <div class="sec-title">
+    <span class="eyebrow">Todo en un solo lugar</span>
+    <h2>Lo que tu local necesita</h2>
+    <p>Reemplaza planillas, cuadernos y apps sueltas con una sola herramienta.</p>
+  </div>
   <div class="feats">
-    <div class="feat"><div class="fi">🪑</div><div><h4>Mesas (Salón y Vereda)</h4><p>Abrí, cargá el pedido y cobrá. Vista mozo mobile-first.</p></div></div>
-    <div class="feat"><div class="fi">🧾</div><div><h4>Mostrador y Delivery</h4><p>Toma express con selector y carrito en vivo.</p></div></div>
-    <div class="feat"><div class="fi">👨‍🍳</div><div><h4>Pantalla de Cocina</h4><p>Las comandas llegan solas y en tiempo real.</p></div></div>
-    <div class="feat"><div class="fi">💵</div><div><h4>Caja y Facturación</h4><p>Cobros, medios de pago, recargos y arqueo de caja.</p></div></div>
-    <div class="feat"><div class="fi">📲</div><div><h4>Menú Online / Carta QR</h4><p>Tus clientes piden desde el celular.</p></div></div>
-    <div class="feat"><div class="fi">📊</div><div><h4>Reportes por canal</h4><p>Mesas vs Mostrador vs Delivery, ticket promedio y top productos.</p></div></div>
+    <div class="feat"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div><div><h4>Mesas (Salón y Vereda)</h4><p>Abrí, cargá el pedido y cobrá. Vista mozo mobile-first.</p></div></div>
+    <div class="feat"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 18a2 2 0 1 0 4 0 2 2 0 0 0-4 0zM15 18a2 2 0 1 0 4 0 2 2 0 0 0-4 0zM3 4h2l2 11h10l2-7H7"/></svg></div><div><h4>Mostrador y Delivery</h4><p>Toma express con selector y carrito en vivo.</p></div></div>
+    <div class="feat"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v6M12 3v6M16 3v6M6 9h12l-1 12H7z"/></svg></div><div><h4>Pantalla de Cocina</h4><p>Las comandas llegan solas y en tiempo real.</p></div></div>
+    <div class="feat"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg></div><div><h4>Caja y Facturación</h4><p>Cobros, medios de pago, recargos y arqueo de caja.</p></div></div>
+    <div class="feat"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></div><div><h4>Menú Online / Carta QR</h4><p>Tus clientes piden desde el celular.</p></div></div>
+    <div class="feat"><div class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="7"/><rect x="13" y="7" width="3" height="11"/></svg></div><div><h4>Reportes por canal</h4><p>Mesas vs Mostrador vs Delivery, ticket promedio y top productos.</p></div></div>
   </div>
 </div></section>
 
 <!-- PRECIOS -->
 <section id="precios"><div class="wrap">
-  <div class="sec-title"><h2>Simple y accesible</h2><p>Un abono mensual, sin sorpresas.</p></div>
-  <div style="max-width:460px;margin:0 auto;background:linear-gradient(180deg,rgba(245,158,11,.12),rgba(124,58,237,.06));border:1px solid rgba(245,158,11,.35);border-radius:22px;padding:34px;text-align:center">
-    <div style="font-size:13px;font-weight:800;color:#fcd34d;text-transform:uppercase;letter-spacing:1px">Plan Pro</div>
-    <div style="font-size:17px;color:#c4b5fd;margin-top:14px">Todos los módulos · Soporte · Actualizaciones</div>
-    <div style="margin-top:18px"><a href="#contacto" class="btn btn-amber">Consultar precio</a></div>
+  <div class="sec-title">
+    <span class="eyebrow">Precios</span>
+    <h2>Simple y accesible</h2>
+    <p>Un abono mensual, sin sorpresas ni costos ocultos.</p>
+  </div>
+  <div class="price-card">
+    <div class="price-inner">
+      <span class="price-tag">Plan Pro</span>
+      <h3>Todo incluido</h3>
+      <ul class="feats-list">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Todos los módulos del sistema</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Soporte y puesta en marcha</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Actualizaciones permanentes</li>
+      </ul>
+      <a href="#contacto" class="btn btn-red">Consultar precio</a>
+    </div>
   </div>
 </div></section>
 
 <!-- CONTACTO -->
 <section id="contacto"><div class="wrap">
   <div class="cta-band">
-    <h2>📩 Empezá a vender más con ResTito</h2>
-    <p>Demostración gratis y puesta en marcha el mismo día.</p>
-    <div style="position:relative;display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
-      <a href="https://wa.me/5493624857011?text=%C2%A1Hola!%20Me%20interesa%20ResTito%20para%20mi%20negocio.%20%C2%BFMe%20pas%C3%A1s%20m%C3%A1s%20informaci%C3%B3n%3F" target="_blank" class="btn btn-wpp glow-wpp">📱 WhatsApp 362 4857011</a>
-      <a href="mailto:zeoextreme@gmail.com?subject=Demo%20ResTito" class="btn btn-mail glow-mail">✉️ zeoextreme@gmail.com</a>
+    <h2>Empezá a vender más con ResTito</h2>
+    <p>Demostración gratis y puesta en marcha el mismo día. Escribinos y lo coordinamos.</p>
+    <div class="cta">
+      <a href="https://wa.me/5493624857011?text=%C2%A1Hola!%20Me%20interesa%20ResTito%20para%20mi%20negocio.%20%C2%BFMe%20pas%C3%A1s%20m%C3%A1s%20informaci%C3%B3n%3F" target="_blank" rel="noopener" class="btn btn-wpp glow-wpp">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38c1.45.79 3.08 1.21 4.79 1.21 5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm5.8 14.18c-.24.68-1.42 1.31-1.96 1.36-.5.05-1.13.07-1.83-.11-.42-.13-.96-.31-1.66-.61-2.92-1.26-4.83-4.2-4.98-4.4-.14-.2-1.19-1.58-1.19-3.01s.75-2.14 1.02-2.43c.27-.29.59-.36.78-.36.2 0 .39 0 .56.01.18.01.42-.07.66.5.24.59.82 2.02.89 2.17.07.14.12.31.02.51-.1.2-.15.31-.29.48-.14.17-.31.38-.44.51-.14.14-.29.29-.13.57.17.29.74 1.22 1.59 1.97 1.09.97 2.01 1.27 2.3 1.41.29.14.46.12.63-.07.17-.2.73-.85.92-1.14.2-.29.39-.24.66-.14.27.1 1.7.8 1.99.95.29.14.49.22.56.34.07.12.07.71-.17 1.39z"/></svg>
+        WhatsApp 362 4857011
+      </a>
+      <a href="mailto:zeoextreme@gmail.com?subject=Demo%20ResTito" class="btn btn-mail glow-mail">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+        zeoextreme@gmail.com
+      </a>
     </div>
   </div>
 </div></section>
 
 <footer><div class="wrap">
-  <div class="brand"><span class="logo" style="width:30px;height:30px;font-size:16px">🍴</span> ResTito</div>
+  <div class="brand">
+    <span class="logo" style="width:34px;height:34px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h0a2 2 0 0 0 2-2V2M5 2v20M19 2v20M21 9c0-3-1-6-2-7v20"/></svg></span>
+    <span class="brand-name">Res<b>Tito</b></span>
+  </div>
   Sistema de gestión gastronómica · © <span id="yr"></span>
 </div></footer>
 
@@ -212,7 +347,7 @@
   for (let i=0;i<slides;i++){ const d=document.createElement('div'); d.className='dot'+(i===0?' on':''); d.onclick=()=>{ idx=i; render(); reset(); }; dotsWrap.appendChild(d); }
   function render(){ track.style.transform = 'translateX(-'+(idx*100)+'%)'; [...dotsWrap.children].forEach((d,i)=>d.classList.toggle('on', i===idx)); }
   function cgo(dir){ idx=(idx+dir+slides)%slides; render(); reset(); }
-  function reset(){ clearInterval(timer); timer=setInterval(()=>cgo(1), 4500); }
+  function reset(){ clearInterval(timer); timer=setInterval(()=>cgo(1), 4800); }
   // swipe
   let sx=null; const vp=document.querySelector('.viewport');
   vp.addEventListener('touchstart',e=>sx=e.touches[0].clientX,{passive:true});
