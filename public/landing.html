@@ -8,80 +8,90 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  :root{--vio:#7c3aed;--vio2:#a78bfa;--amber:#f59e0b;--dark:#0f0a1e;--ink:#1f2937}
+  :root{--vio:#7c3aed;--vio2:#a78bfa;--amber:#f59e0b;--ink:#0f0a1e}
   html{scroll-behavior:smooth}
-  body{font-family:'Inter',-apple-system,Segoe UI,Roboto,sans-serif;color:#e7e5f0;background:#0f0a1e;line-height:1.6;overflow-x:hidden}
-  .wrap{max-width:1080px;margin:0 auto;padding:0 22px}
+  body{font-family:'Inter',-apple-system,Segoe UI,Roboto,sans-serif;color:#e7e5f0;background:#0b0716;overflow-x:hidden}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 22px}
   a{text-decoration:none;color:inherit}
   .btn{display:inline-flex;align-items:center;gap:8px;padding:14px 26px;border-radius:999px;font-weight:800;font-size:15px;cursor:pointer;border:none;transition:transform .15s,box-shadow .15s}
   .btn:hover{transform:translateY(-2px)}
   .btn-amber{background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff;box-shadow:0 8px 24px rgba(245,158,11,.35)}
   .btn-ghost{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.18)}
-  /* Botones de contacto con resplandor pulsante */
-  .btn-wpp{background:linear-gradient(135deg,#25d366,#128c4b);color:#fff}
-  .btn-mail{background:rgba(255,255,255,.14);color:#fff;border:1.5px solid rgba(255,255,255,.4)}
-  @keyframes glowWpp{0%,100%{box-shadow:0 0 0 0 rgba(37,211,102,.45),0 8px 22px rgba(37,211,102,.35)}50%{box-shadow:0 0 30px 7px rgba(37,211,102,.75),0 10px 30px rgba(37,211,102,.55)}}
-  @keyframes glowMail{0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,.35)}50%{box-shadow:0 0 28px 6px rgba(251,191,36,.7)}}
-  .glow-wpp{animation:glowWpp 1.7s ease-in-out infinite}
-  .glow-mail{animation:glowMail 1.7s ease-in-out infinite}
-  @media (prefers-reduced-motion:reduce){.glow-wpp,.glow-mail{animation:none}}
   /* NAV */
-  nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(10px);background:rgba(15,10,30,.7);border-bottom:1px solid rgba(167,139,250,.15)}
-  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
+  nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(12px);background:rgba(11,7,22,.75);border-bottom:1px solid rgba(167,139,250,.14)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:66px}
   .brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:20px}
   .brand .logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#4c1d95,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:20px}
   .navlinks{display:flex;gap:26px;align-items:center;font-size:14px;font-weight:600;color:#c4b5fd}
   .navlinks a:hover{color:#fff}
-  @media(max-width:760px){.navlinks{display:none}}
+  @media(max-width:820px){.navlinks a:not(.btn){display:none}}
   /* HERO */
-  .hero{position:relative;padding:80px 0 70px;text-align:center;overflow:hidden}
-  .hero::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:900px;height:600px;background:radial-gradient(ellipse,rgba(124,58,237,.45),transparent 60%);z-index:0}
+  .hero{position:relative;padding:72px 0 30px;text-align:center;overflow:hidden}
+  .hero::before{content:'';position:absolute;top:-220px;left:50%;transform:translateX(-50%);width:1000px;height:680px;background:radial-gradient(ellipse,rgba(124,58,237,.5),transparent 60%);z-index:0}
   .hero .wrap{position:relative;z-index:1}
-  .tagpill{display:inline-block;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);color:#fcd34d;font-weight:700;font-size:13px;padding:6px 16px;border-radius:999px;margin-bottom:24px}
-  .hero h1{font-size:54px;font-weight:900;line-height:1.07;letter-spacing:-1px;margin-bottom:20px}
+  .tagpill{display:inline-block;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);color:#fcd34d;font-weight:700;font-size:13px;padding:6px 16px;border-radius:999px;margin-bottom:22px}
+  .hero h1{font-size:52px;font-weight:900;line-height:1.07;letter-spacing:-1px;margin-bottom:18px}
   .hero h1 .hl{background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;background-clip:text;color:transparent}
-  .hero p.sub{font-size:19px;color:#c4b5fd;max-width:680px;margin:0 auto 34px}
+  .hero p.sub{font-size:19px;color:#c4b5fd;max-width:660px;margin:0 auto 30px}
   .hero .cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
-  @media(max-width:600px){.hero h1{font-size:36px}.hero p.sub{font-size:16px}}
-  /* STATS */
-  .stats{display:flex;gap:30px;justify-content:center;flex-wrap:wrap;margin-top:54px}
-  .stat{text-align:center}
-  .stat .n{font-size:30px;font-weight:900;color:#fff}
-  .stat .l{font-size:12px;color:#a78bfa;text-transform:uppercase;letter-spacing:1px;font-weight:700}
+  @media(max-width:600px){.hero h1{font-size:35px}.hero p.sub{font-size:16px}}
+  /* CAROUSEL */
+  .showcase{padding:30px 0 60px}
+  .browser{max-width:920px;margin:0 auto;border-radius:16px;overflow:hidden;background:#15102a;border:1px solid rgba(167,139,250,.25);box-shadow:0 30px 80px rgba(76,29,149,.45)}
+  .browser-bar{height:38px;background:#1d1635;display:flex;align-items:center;gap:7px;padding:0 14px;border-bottom:1px solid rgba(255,255,255,.06)}
+  .browser-bar i{width:11px;height:11px;border-radius:50%;display:inline-block}
+  .browser-bar i:nth-child(1){background:#ff5f56}.browser-bar i:nth-child(2){background:#ffbd2e}.browser-bar i:nth-child(3){background:#27c93f}
+  .browser-bar .url{margin-left:14px;font-size:11px;color:#8b85a8;background:#0f0a1e;border-radius:6px;padding:4px 12px;flex:1;max-width:360px}
+  .viewport{position:relative;aspect-ratio:1280/800;overflow:hidden;background:#0b0716}
+  .track{display:flex;height:100%;transition:transform .55s cubic-bezier(.4,0,.2,1)}
+  .slide{min-width:100%;height:100%;position:relative}
+  .slide img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block}
+  .slide .cap{position:absolute;left:0;right:0;bottom:0;padding:30px 18px 14px;font-size:14px;font-weight:700;color:#fff;background:linear-gradient(transparent,rgba(8,5,16,.9))}
+  .cnav{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;background:rgba(15,10,30,.65);color:#fff;border:1px solid rgba(255,255,255,.2);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:3}
+  .cnav:hover{background:rgba(124,58,237,.8)}
+  .cnav.prev{left:10px}.cnav.next{right:10px}
+  .dots{display:flex;gap:8px;justify-content:center;margin-top:18px}
+  .dot{width:9px;height:9px;border-radius:50%;background:rgba(167,139,250,.3);cursor:pointer;transition:all .2s}
+  .dot.on{background:var(--amber);width:26px;border-radius:5px}
   /* SECTIONS */
-  section{padding:70px 0}
-  .sec-title{text-align:center;margin-bottom:46px}
-  .sec-title h2{font-size:36px;font-weight:900;color:#fff;letter-spacing:-.5px}
+  section{padding:64px 0}
+  .sec-title{text-align:center;margin-bottom:40px}
+  .sec-title h2{font-size:34px;font-weight:900;color:#fff;letter-spacing:-.5px}
   .sec-title p{color:#a78bfa;font-size:16px;margin-top:8px}
-  /* VALUE */
   .vals{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
   @media(max-width:760px){.vals{grid-template-columns:1fr}}
   .val{background:linear-gradient(180deg,rgba(124,58,237,.12),rgba(124,58,237,.03));border:1px solid rgba(167,139,250,.2);border-radius:18px;padding:26px}
   .val .ic{font-size:34px;margin-bottom:12px}
   .val h3{font-size:19px;font-weight:800;color:#fff;margin-bottom:8px}
   .val p{color:#c4b5fd;font-size:14px}
-  /* FEATURES */
+  /* phone showcase */
+  .phone-row{display:flex;align-items:center;gap:48px;flex-wrap:wrap;justify-content:center}
+  .phone{flex:0 0 auto;width:260px;height:540px;border-radius:36px;background:#1d1635;border:8px solid #2a2147;box-shadow:0 30px 70px rgba(76,29,149,.5);overflow:hidden;position:relative}
+  .phone::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:22px;background:#2a2147;border-radius:0 0 16px 16px;z-index:2}
+  .phone img{width:100%;height:100%;object-fit:cover;object-position:top center}
+  .phone-txt{flex:1;min-width:280px;max-width:420px}
+  .phone-txt h2{font-size:30px;font-weight:900;color:#fff;margin-bottom:14px}
+  .phone-txt p{color:#c4b5fd;font-size:15px;margin-bottom:10px}
+  .phone-txt li{color:#c4b5fd;font-size:15px;margin:8px 0;list-style:none;display:flex;gap:10px;align-items:flex-start}
+  /* features */
   .feats{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
   @media(max-width:760px){.feats{grid-template-columns:1fr}}
   .feat{display:flex;gap:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:18px 20px}
   .feat .fi{font-size:26px;flex-shrink:0}
   .feat h4{font-size:16px;font-weight:800;color:#fff}
   .feat p{color:#a78bfa;font-size:13px;margin-top:2px}
-  /* HOW */
-  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;counter-reset:s}
-  @media(max-width:760px){.steps{grid-template-columns:1fr}}
-  .step{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:26px;position:relative}
-  .step::before{counter-increment:s;content:counter(s);position:absolute;top:-16px;left:24px;width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a78bfa);display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff}
-  .step h4{font-size:17px;font-weight:800;color:#fff;margin:10px 0 6px}
-  .step p{color:#c4b5fd;font-size:14px}
-  /* CTA */
-  .cta-band{background:linear-gradient(135deg,#4c1d95,#7c3aed);border-radius:28px;padding:54px 34px;text-align:center;position:relative;overflow:hidden}
+  /* cta */
+  .cta-band{background:linear-gradient(135deg,#4c1d95,#7c3aed);border-radius:28px;padding:52px 34px;text-align:center;position:relative;overflow:hidden}
   .cta-band::after{content:'';position:absolute;right:-80px;bottom:-80px;width:280px;height:280px;background:rgba(245,158,11,.25);border-radius:50%}
-  .cta-band h2{font-size:34px;font-weight:900;color:#fff;position:relative}
-  .cta-band p{color:#ede9fe;font-size:17px;margin:12px 0 28px;position:relative}
-  .cta-band .btn{position:relative}
-  /* FOOTER */
-  footer{padding:40px 0;text-align:center;color:#6d6a85;font-size:13px;border-top:1px solid rgba(167,139,250,.12);margin-top:30px}
+  .cta-band h2{font-size:32px;font-weight:900;color:#fff;position:relative}
+  .cta-band p{color:#ede9fe;font-size:16px;margin:12px 0 26px;position:relative}
+  .btn-wpp{background:linear-gradient(135deg,#25d366,#128c4b);color:#fff}
+  .btn-mail{background:rgba(255,255,255,.14);color:#fff;border:1.5px solid rgba(255,255,255,.4)}
+  @keyframes glowWpp{0%,100%{box-shadow:0 0 0 0 rgba(37,211,102,.45),0 8px 22px rgba(37,211,102,.35)}50%{box-shadow:0 0 30px 7px rgba(37,211,102,.75),0 10px 30px rgba(37,211,102,.55)}}
+  @keyframes glowMail{0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,.35)}50%{box-shadow:0 0 28px 6px rgba(251,191,36,.7)}}
+  .glow-wpp{animation:glowWpp 1.7s ease-in-out infinite}.glow-mail{animation:glowMail 1.7s ease-in-out infinite}
+  @media(prefers-reduced-motion:reduce){.glow-wpp,.glow-mail,.track{animation:none}}
+  footer{padding:38px 0;text-align:center;color:#6d6a85;font-size:13px;border-top:1px solid rgba(167,139,250,.12);margin-top:20px}
   footer .brand{justify-content:center;margin-bottom:10px;color:#a78bfa}
 </style>
 </head>
@@ -90,8 +100,8 @@
 <nav><div class="wrap">
   <div class="brand"><span class="logo">🍴</span> ResTito</div>
   <div class="navlinks">
+    <a href="#capturas">Capturas</a>
     <a href="#funciones">Funciones</a>
-    <a href="#como">Cómo funciona</a>
     <a href="#precios">Precios</a>
     <a href="#contacto" class="btn btn-amber" style="padding:9px 20px;font-size:14px">Pedir demo</a>
   </div>
@@ -100,62 +110,88 @@
 <header class="hero"><div class="wrap">
   <span class="tagpill">⚡ Sin instalar nada · En la nube · Tiempo real</span>
   <h1>El sistema de gestión <span class="hl">todo‑en‑uno</span><br/>para tu restaurante o pizzería</h1>
-  <p class="sub">Mesas, mostrador, delivery, cocina, caja y reportes — todo conectado y al instante, desde el celular, la tablet o la PC. Vendé más y trabajá más rápido.</p>
+  <p class="sub">Mesas, mostrador, delivery, cocina, caja y reportes — todo conectado y al instante, desde el celular, la tablet o la PC.</p>
   <div class="cta">
     <a href="#contacto" class="btn btn-amber">🚀 Empezar ahora</a>
-    <a href="#funciones" class="btn btn-ghost">Ver funciones</a>
-  </div>
-  <div class="stats">
-    <div class="stat"><div class="n">6+</div><div class="l">Módulos integrados</div></div>
-    <div class="stat"><div class="n">100%</div><div class="l">En tiempo real</div></div>
-    <div class="stat"><div class="n">0</div><div class="l">Instalación</div></div>
+    <a href="#capturas" class="btn btn-ghost">Ver capturas</a>
   </div>
 </div></header>
 
-<section><div class="wrap">
+<!-- CARRUSEL DE CAPTURAS REALES -->
+<section class="showcase" id="capturas"><div class="wrap">
+  <div class="sec-title"><h2>Mirá ResTito en acción</h2><p>Capturas reales del sistema</p></div>
+  <div class="browser" style="position:relative">
+    <div class="browser-bar"><i></i><i></i><i></i><span class="url">restito-production.up.railway.app</span></div>
+    <div class="viewport">
+      <div class="track" id="track">
+        <div class="slide"><img src="/screens/reportes.png" alt="Reportes"><div class="cap">📊 Reportes con inteligencia de negocios</div></div>
+        <div class="slide"><img src="/screens/nuevopedido.png" alt="Nuevo pedido"><div class="cap">⚡ Toma de pedidos en segundos</div></div>
+        <div class="slide"><img src="/screens/mesas.png" alt="Mesas"><div class="cap">🪑 Control de mesas en tiempo real</div></div>
+        <div class="slide"><img src="/screens/pedidos.png" alt="Pedidos"><div class="cap">🛵 Pipeline de delivery y mostrador</div></div>
+        <div class="slide"><img src="/screens/cocina.png" alt="Cocina"><div class="cap">👨‍🍳 Pantalla de cocina sincronizada</div></div>
+      </div>
+      <button class="cnav prev" onclick="cgo(-1)">‹</button>
+      <button class="cnav next" onclick="cgo(1)">›</button>
+    </div>
+  </div>
+  <div class="dots" id="dots"></div>
+</div></section>
+
+<!-- VALORES -->
+<section style="padding-top:10px"><div class="wrap">
   <div class="vals">
-    <div class="val"><div class="ic">🚀</div><h3>Súper rápido</h3><p>Tomá pedidos en segundos con botones por categoría y producto. Atajo F8 para cargar al instante.</p></div>
-    <div class="val"><div class="ic">🛵</div><h3>Delivery con GPS</h3><p>Pegás la ubicación de Google Maps y el repartidor navega directo, sin perder tiempo.</p></div>
-    <div class="val"><div class="ic">🧠</div><h3>Decisiones con datos</h3><p>Reportes con inteligencia de negocios: sabé qué canal y qué producto te dan más.</p></div>
+    <div class="val"><div class="ic">🚀</div><h3>Súper rápido</h3><p>Tomá pedidos con botones por categoría y producto. Atajo F8 para cargar al instante.</p></div>
+    <div class="val"><div class="ic">🛵</div><h3>Delivery con GPS</h3><p>Pegás la ubicación de Google Maps y el repartidor navega directo.</p></div>
+    <div class="val"><div class="ic">🧠</div><h3>Decisiones con datos</h3><p>Reportes que te dicen qué canal y qué producto te dan más.</p></div>
   </div>
 </div></section>
 
+<!-- PHONE: carta online -->
+<section><div class="wrap">
+  <div class="phone-row">
+    <div class="phone"><img src="/screens/carta.png" alt="Carta online"></div>
+    <div class="phone-txt">
+      <h2>Tus clientes piden desde el celular 📲</h2>
+      <p>Cada local tiene su <b>carta QR y menú online</b> con su marca. El pedido entra directo a tu panel y a la cocina.</p>
+      <ul>
+        <li>✅ Menú propio por local, con logo y nombre</li>
+        <li>✅ Pedido web que cae en tu pipeline en tiempo real</li>
+        <li>✅ App instalable para mozos, cocina y repartidores</li>
+      </ul>
+    </div>
+  </div>
+</div></section>
+
+<!-- FUNCIONES -->
 <section id="funciones"><div class="wrap">
   <div class="sec-title"><h2>Todo lo que tu local necesita</h2><p>Reemplaza planillas, cuadernos y apps sueltas.</p></div>
   <div class="feats">
-    <div class="feat"><div class="fi">🪑</div><div><h4>Mesas (Salón y Vereda)</h4><p>Abrí, cargá el pedido y cobrá. Vista para mozos mobile-first.</p></div></div>
-    <div class="feat"><div class="fi">🧾</div><div><h4>Mostrador y Delivery</h4><p>Toma de pedidos express con selector y carrito en vivo.</p></div></div>
-    <div class="feat"><div class="fi">👨‍🍳</div><div><h4>Pantalla de Cocina</h4><p>Las comandas llegan solas y en tiempo real. Cero papelitos.</p></div></div>
-    <div class="feat"><div class="fi">💵</div><div><h4>Caja y Facturación</h4><p>Cobros, medios de pago, recargos y arqueo de caja al instante.</p></div></div>
-    <div class="feat"><div class="fi">📲</div><div><h4>Menú Online / Carta QR</h4><p>Tus clientes piden desde el celular y entra directo al panel.</p></div></div>
-    <div class="feat"><div class="fi">📊</div><div><h4>Reportes por canal</h4><p>Mesas vs Mostrador vs Delivery: ventas, ticket promedio y top productos.</p></div></div>
+    <div class="feat"><div class="fi">🪑</div><div><h4>Mesas (Salón y Vereda)</h4><p>Abrí, cargá el pedido y cobrá. Vista mozo mobile-first.</p></div></div>
+    <div class="feat"><div class="fi">🧾</div><div><h4>Mostrador y Delivery</h4><p>Toma express con selector y carrito en vivo.</p></div></div>
+    <div class="feat"><div class="fi">👨‍🍳</div><div><h4>Pantalla de Cocina</h4><p>Las comandas llegan solas y en tiempo real.</p></div></div>
+    <div class="feat"><div class="fi">💵</div><div><h4>Caja y Facturación</h4><p>Cobros, medios de pago, recargos y arqueo de caja.</p></div></div>
+    <div class="feat"><div class="fi">📲</div><div><h4>Menú Online / Carta QR</h4><p>Tus clientes piden desde el celular.</p></div></div>
+    <div class="feat"><div class="fi">📊</div><div><h4>Reportes por canal</h4><p>Mesas vs Mostrador vs Delivery, ticket promedio y top productos.</p></div></div>
   </div>
 </div></section>
 
-<section id="como"><div class="wrap">
-  <div class="sec-title"><h2>Cómo funciona</h2><p>En marcha el mismo día.</p></div>
-  <div class="steps">
-    <div class="step"><h4>Te damos de alta</h4><p>Creamos tu local y cargamos tu menú. Listo para usar.</p></div>
-    <div class="step"><h4>Tu equipo entra</h4><p>Admin, mozos y repartidores con su usuario, cada uno con lo suyo.</p></div>
-    <div class="step"><h4>Vendés más</h4><p>Pedidos más rápidos, cocina sincronizada y reportes que te guían.</p></div>
-  </div>
-</div></section>
-
+<!-- PRECIOS -->
 <section id="precios"><div class="wrap">
   <div class="sec-title"><h2>Simple y accesible</h2><p>Un abono mensual, sin sorpresas.</p></div>
   <div style="max-width:460px;margin:0 auto;background:linear-gradient(180deg,rgba(245,158,11,.12),rgba(124,58,237,.06));border:1px solid rgba(245,158,11,.35);border-radius:22px;padding:34px;text-align:center">
     <div style="font-size:13px;font-weight:800;color:#fcd34d;text-transform:uppercase;letter-spacing:1px">Plan Pro</div>
-    <div style="font-size:18px;color:#c4b5fd;margin-top:14px">Todos los módulos · Soporte · Actualizaciones</div>
+    <div style="font-size:17px;color:#c4b5fd;margin-top:14px">Todos los módulos · Soporte · Actualizaciones</div>
     <div style="margin-top:18px"><a href="#contacto" class="btn btn-amber">Consultar precio</a></div>
   </div>
 </div></section>
 
+<!-- CONTACTO -->
 <section id="contacto"><div class="wrap">
   <div class="cta-band">
     <h2>📩 Empezá a vender más con ResTito</h2>
     <p>Demostración gratis y puesta en marcha el mismo día.</p>
     <div style="position:relative;display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
-      <a href="https://wa.me/5493624857011?text=%C2%A1Hola!%20Me%20interesa%20ResTito%20para%20mi%20negocio.%20%C2%BFMe%20pas%C3%A1s%20m%C3%A1s%20informaci%C3%B3n%3F" target="_blank" class="btn btn-wpp glow-wpp" id="ctaContacto">📱 WhatsApp 362 4857011</a>
+      <a href="https://wa.me/5493624857011?text=%C2%A1Hola!%20Me%20interesa%20ResTito%20para%20mi%20negocio.%20%C2%BFMe%20pas%C3%A1s%20m%C3%A1s%20informaci%C3%B3n%3F" target="_blank" class="btn btn-wpp glow-wpp">📱 WhatsApp 362 4857011</a>
       <a href="mailto:zeoextreme@gmail.com?subject=Demo%20ResTito" class="btn btn-mail glow-mail">✉️ zeoextreme@gmail.com</a>
     </div>
   </div>
@@ -168,6 +204,20 @@
 
 <script>
   document.getElementById('yr').textContent = new Date().getFullYear();
+  // ===== Carrusel =====
+  const track = document.getElementById('track');
+  const slides = track.children.length;
+  const dotsWrap = document.getElementById('dots');
+  let idx = 0, timer = null;
+  for (let i=0;i<slides;i++){ const d=document.createElement('div'); d.className='dot'+(i===0?' on':''); d.onclick=()=>{ idx=i; render(); reset(); }; dotsWrap.appendChild(d); }
+  function render(){ track.style.transform = 'translateX(-'+(idx*100)+'%)'; [...dotsWrap.children].forEach((d,i)=>d.classList.toggle('on', i===idx)); }
+  function cgo(dir){ idx=(idx+dir+slides)%slides; render(); reset(); }
+  function reset(){ clearInterval(timer); timer=setInterval(()=>cgo(1), 4500); }
+  // swipe
+  let sx=null; const vp=document.querySelector('.viewport');
+  vp.addEventListener('touchstart',e=>sx=e.touches[0].clientX,{passive:true});
+  vp.addEventListener('touchend',e=>{ if(sx===null)return; const dx=e.changedTouches[0].clientX-sx; if(Math.abs(dx)>40) cgo(dx<0?1:-1); sx=null; });
+  reset();
 </script>
 </body>
 </html>
