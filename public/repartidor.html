@@ -2072,9 +2072,7 @@ function buildOrderCard(p) {
   if (p.estado === 'listo' || p.estado === 'asignado') {
     actionsHtml = `<button class="btn-action btn-start" onclick="iniciarViaje('${p.id}')">▶ Iniciar viaje</button>${mapsBtn}`;
   } else if (p.estado === 'en_camino') {
-    const sharing = !!trackSessions[p.id];
-    const wppBtn = `<button class="btn-action btn-wpp${sharing ? ' sharing' : ''}" onclick="avisarWhatsApp('${p.id}')">📲 Avisar por WhatsApp</button>`;
-    actionsHtml = `${mapsBtn}${wppBtn}<button class="btn-action btn-deliver" onclick="marcarEntregado('${p.id}')">✅ Marcar Entregado</button>`;
+    actionsHtml = `${mapsBtn}<button class="btn-action btn-deliver" onclick="marcarEntregado('${p.id}')">✅ Marcar Entregado</button>`;
   } else if (p.estado === 'entregado') {
     actionsHtml = `<button class="btn-action btn-done" disabled>✓ Entregado</button>`;
   } else {
@@ -2158,7 +2156,7 @@ async function startTracking(p) {
     const res = await fetch('/api/track/start', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        orderId: p.id, local: REPARTIDOR_LOCAL, dest,
+        orderId: p.id, local: REPARTIDOR_LOCAL, dest, estado: 'en_camino',
         customer: { nombre: p.cliente && p.cliente.nombre, telefono: p.cliente && p.cliente.telefono },
         driver: { nombre: (currentDriver && currentDriver.nombre) || '' },
       })

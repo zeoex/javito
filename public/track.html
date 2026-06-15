@@ -106,9 +106,9 @@
     </div>
   </div>
   <div class="steps">
-    <div class="step done"><div class="ball"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div class="lbl">Confirmado</div></div>
-    <div class="step done"><div class="ball"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div class="lbl">Preparado</div></div>
-    <div class="step active" id="stepCamino"><div class="ball">🛵</div><div class="lbl">En camino</div></div>
+    <div class="step done" id="stepConfirmado"><div class="ball"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div class="lbl">Confirmado</div></div>
+    <div class="step active" id="stepPrep"><div class="ball">👨‍🍳</div><div class="lbl">En preparación</div></div>
+    <div class="step" id="stepCamino"><div class="ball">🛵</div><div class="lbl">En camino</div></div>
     <div class="step" id="stepEntregado"><div class="ball"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div><div class="lbl">Entregado</div></div>
   </div>
   <div class="dest">
@@ -299,10 +299,27 @@
   function onDone(expiresAt){
     if(status==='expired') return;
     status='delivered';
-    $('stepCamino').classList.remove('active'); $('stepCamino').classList.add('done');
-    $('stepEntregado').classList.add('active');
+    applyEstado('entregado');
     show($('ovDone'), true);
     startExpiry(expiresAt || (Date.now()+5*60e3));
+  }
+
+  // Estado del pedido (pasos): preparando → listo → en_camino → entregado
+  var curEstado=null;
+  function applyEstado(est){
+    if(!est) return;
+    curEstado=est;
+    var idx = ({preparando:1, listo:2, en_camino:2, entregado:3})[est];
+    if(idx===undefined) idx=1;
+    ['stepConfirmado','stepPrep','stepCamino','stepEntregado'].forEach(function(sid,i){
+      var s=$(sid); if(!s) return; s.classList.remove('done','active');
+      if(i<idx) s.classList.add('done'); else if(i===idx) s.classList.add('active');
+    });
+    show($('ovWait'), false); // ya tenemos info real para mostrar en la tarjeta
+    if(status==='delivered' || status==='expired') return;
+    if(est==='preparando'){ $('etaBig').textContent='Estamos preparando tu pedido'; if(!lastPos) $('etaSmall').textContent='En breve sale para tu dirección'; }
+    else if(est==='listo'){ $('etaBig').textContent='¡Tu pedido está listo!'; if(!lastPos) $('etaSmall').textContent='El repartidor está por salir'; }
+    else if(est==='en_camino' && !lastPos){ $('etaBig').textContent='Tu pedido está en camino'; $('etaSmall').textContent='Esperando la ubicación del repartidor…'; }
   }
 
   function applyState(s){
@@ -310,6 +327,7 @@
     if(s.driver && s.driver.nombre) $('greet').textContent='Tu pedido con '+s.driver.nombre;
     if(s.customer && s.customer.nombre) $('greet').textContent='Hola '+s.customer.nombre+', seguí tu pedido';
     if(s.dest) setDest(s.dest);
+    if(s.estado) applyEstado(s.estado);
     if(s.status==='delivered'){ onDone(s.expiresAt); }
     if(s.pos) onPos(s.pos);
   }
@@ -331,6 +349,7 @@
     var socket=io({ transports:['polling','websocket'] });
     socket.on('connect', function(){ socket.emit('join:room', 'T:'+TRACK_ID); });
     socket.on('track:pos', onPos);
+    socket.on('track:state', function(d){ if(d && d.estado) applyEstado(d.estado); });
     socket.on('track:done', function(d){ onDone(d && d.expiresAt); });
     socket.on('track:expired', onExpired);
   }catch(e){}
@@ -342,7 +361,7 @@
       if(r.status===410){ onExpired(); return null; }
       return r.ok?r.json():null;
     }).then(function(s){
-      if(s){ if(s.status==='delivered'){onDone(s.expiresAt);return;} if(s.pos) onPos(s.pos); if(s.dest&&!dest) setDest(s.dest); }
+      if(s){ if(s.status==='delivered'){onDone(s.expiresAt);return;} if(s.estado) applyEstado(s.estado); if(s.pos) onPos(s.pos); if(s.dest&&!dest) setDest(s.dest); }
     }).catch(function(){});
   }, 10000);
 })();

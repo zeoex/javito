@@ -536,13 +536,47 @@ app.get('/:local', (req, res, next) => {
 //  SEGUIMIENTO DE PEDIDO EN VIVO (live tracking)
 //  El repartidor comparte su GPS; el cliente lo ve por una URL pública.
 // ─────────────────────────────────────────────
-const liveTracks = {}; // trackId -> { orderId, local, dest, customer, driver, pos, status, startedAt, updatedAt, deliveredAt }
+const liveTracks = {}; // trackId -> { orderId, local, dest, customer, driver, pos, estado, status, startedAt, updatedAt, deliveredAt }
 const LINK_TTL_AFTER_DONE = 5 * 60e3; // el enlace vive 5 min tras "Entregado"
-function genTrackId() {
-  return Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 6);
+
+// ID de seguimiento DETERMINÍSTICO por pedido: mismo link siempre (admin y repartidor),
+// estable aunque se recree la sesión. No enumerable (depende del JWT_SECRET).
+function trackIdFor(local, orderId) {
+  return crypto.createHash('sha1').update(JWT_SECRET + ':' + (local || DEFAULT_LOCAL) + ':' + String(orderId)).digest('hex').slice(0, 14);
+}
+// Normaliza el estado del pedido a los pasos que ve el cliente
+function normEstado(e) {
+  if (e === 'listo') return 'listo';
+  if (e === 'en_camino') return 'en_camino';
+  if (e === 'entregado' || e === 'cancelado') return 'entregado';
+  return 'preparando'; // nuevo / en_cocina / etc.
 }
 function isExpired(t) {
   return !!(t && t.status === 'delivered' && t.deliveredAt && (Date.now() - t.deliveredAt) > LINK_TTL_AFTER_DONE);
+}
+function markDelivered(id) {
+  const t = liveTracks[id];
+  if (!t || t.status === 'delivered') return;
+  t.status = 'delivered';
+  t.estado = 'entregado';
+  t.deliveredAt = Date.now();
+  t.updatedAt = t.deliveredAt;
+  const expiresAt = t.deliveredAt + LINK_TTL_AFTER_DONE;
+  io.to('T:' + id).emit('track:done', { expiresAt });
+  setTimeout(() => {
+    if (liveTracks[id]) { io.to('T:' + id).emit('track:expired', {}); delete liveTracks[id]; }
+  }, LINK_TTL_AFTER_DONE + 1000).unref?.();
+}
+// Actualiza el estado de la sesión de seguimiento de un pedido (si existe) y lo emite al cliente
+function setTrackState(local, orderId, estado) {
+  const id = trackIdFor(local, orderId);
+  const t = liveTracks[id];
+  if (!t) return; // solo si ya se generó el link de seguimiento para ese pedido
+  const ne = normEstado(estado);
+  if (ne === 'entregado') { markDelivered(id); return; }
+  t.estado = ne;
+  t.updatedAt = Date.now();
+  io.to('T:' + id).emit('track:state', { estado: ne });
 }
 // Limpieza: descarta sesiones expiradas o inactivas hace mucho
 setInterval(() => {
@@ -554,11 +588,10 @@ setInterval(() => {
   }
 }, 60e3).unref?.();
 
-// El repartidor inicia (o reutiliza) una sesión de seguimiento para un pedido
+// El admin/repartidor inicia (o reutiliza) la sesión de seguimiento de un pedido — link estable
 app.post('/api/track/start', (req, res) => {
-  const { orderId, local, dest, customer, driver } = req.body || {};
-  let id = Object.keys(liveTracks).find(k => liveTracks[k].status === 'active' && String(liveTracks[k].orderId) === String(orderId));
-  if (!id) id = genTrackId();
+  const { orderId, local, dest, customer, driver, estado } = req.body || {};
+  const id = trackIdFor(local, orderId);
   const prev = liveTracks[id] || {};
   liveTracks[id] = {
     orderId, local: local || DEFAULT_LOCAL,
@@ -566,7 +599,9 @@ app.post('/api/track/start', (req, res) => {
     customer: customer || prev.customer || {},
     driver: driver || prev.driver || {},
     pos: prev.pos || null,
-    status: 'active',
+    estado: prev.status === 'delivered' ? 'entregado' : (normEstado(estado) || prev.estado || 'preparando'),
+    status: prev.status === 'delivered' ? 'delivered' : 'active',
+    deliveredAt: prev.deliveredAt || null,
     startedAt: prev.startedAt || Date.now(),
     updatedAt: Date.now(),
   };
@@ -575,32 +610,22 @@ app.post('/api/track/start', (req, res) => {
 
 // El repartidor envía su posición actual
 app.post('/api/track/:id/pos', (req, res) => {
-  const t = liveTracks[req.params.id];
-  if (!t) return res.status(404).json({ error: 'sesión no encontrada' });
+  let t = liveTracks[req.params.id];
+  // Resiliencia: si la sesión se perdió (reinicio), recrearla mínima para no cortar el GPS
+  if (!t) t = liveTracks[req.params.id] = { orderId: null, local: DEFAULT_LOCAL, dest: null, customer: {}, driver: {}, estado: 'en_camino', status: 'active', startedAt: Date.now() };
   if (t.status === 'delivered') return res.json({ ok: true, done: true });
   const { lat, lng, heading, speed, acc } = req.body || {};
   if (typeof lat !== 'number' || typeof lng !== 'number') return res.status(400).json({ error: 'lat/lng requeridos' });
   t.pos = { lat, lng, heading: (typeof heading === 'number' ? heading : null), speed: (typeof speed === 'number' ? speed : null), acc: acc || null, ts: Date.now() };
+  if (t.estado === 'preparando' || t.estado === 'listo') t.estado = 'en_camino'; // si llega ubicación, ya va en camino
   t.updatedAt = Date.now();
   io.to('T:' + req.params.id).emit('track:pos', t.pos);
   res.json({ ok: true });
 });
 
-// El repartidor marca el pedido como entregado → el enlace vive 5 min más
+// Marca el pedido como entregado → el enlace vive 5 min más
 app.post('/api/track/:id/done', (req, res) => {
-  const id = req.params.id;
-  const t = liveTracks[id];
-  if (t && t.status !== 'delivered') {
-    t.status = 'delivered';
-    t.deliveredAt = Date.now();
-    t.updatedAt = t.deliveredAt;
-    const expiresAt = t.deliveredAt + LINK_TTL_AFTER_DONE;
-    io.to('T:' + id).emit('track:done', { expiresAt });
-    // A los 5 min: avisar que el enlace expiró y borrar la sesión
-    setTimeout(() => {
-      if (liveTracks[id]) { io.to('T:' + id).emit('track:expired', {}); delete liveTracks[id]; }
-    }, LINK_TTL_AFTER_DONE + 1000).unref?.();
-  }
+  markDelivered(req.params.id);
   res.json({ ok: true });
 });
 
@@ -612,6 +637,7 @@ app.get('/api/track/:id', (req, res) => {
     deliveredAt: t.deliveredAt || null,
     expiresAt: t.deliveredAt ? (t.deliveredAt + LINK_TTL_AFTER_DONE) : null,
     orderId: t.orderId,
+    estado: t.estado || 'preparando',
     dest: t.dest || null,
     customer: { nombre: (t.customer && t.customer.nombre) || null },
     driver: { nombre: (t.driver && t.driver.nombre) || null },
@@ -1323,6 +1349,7 @@ app.put('/api/delivery/:id/estado', async (req, res) => {
 
   const out = result || { id: targetId, estado: nuevoEstado };
   bcast(local, 'delivery:update', out);
+  if (nuevoEstado) setTrackState(local, targetId, nuevoEstado);
 
   // Trigger llamado when delivery is ready for pickup
   if (nuevoEstado === 'listo') {
@@ -1700,6 +1727,7 @@ io.on('connection', (socket) => {
       }
     }
     bcast(L, 'delivery:update', out);
+    if (estado) setTrackState(L, id, estado);
   });
 
   // Kitchen updates comanda state — relay + sync delivery + trigger llamado when ready

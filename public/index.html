@@ -4597,7 +4597,7 @@ async function avisarEstadoWhatsApp(id) {
       const r = await fetch('/api/track/start', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          orderId: o.id, local: _adminLocal(), dest,
+          orderId: o.id, local: _adminLocal(), dest, estado: o.estado,
           customer: { nombre: o.cliente?.nombre, telefono: o.cliente?.telefono },
           driver: { nombre: o.repartidorNombre || o.repartidor || '' },
         })
