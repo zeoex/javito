@@ -1399,6 +1399,36 @@ app.put('/api/delivery/:id/estado', async (req, res) => {
   res.json(out);
 });
 
+// Editar un pedido (items / total / nota / cliente) desde el pipeline admin
+app.put('/api/delivery/:id', async (req, res) => {
+  const id = req.params.id;
+  const local = reqLocal(req);
+  const { items, total, nota, cliente, direccion, costo_envio, distancia_km, lat_cliente, lon_cliente } = req.body || {};
+  let result = null;
+  try {
+    const list = await getDeliveryList(local);
+    const idx = list.findIndex(d => String(d.id) === String(id));
+    if (idx >= 0) {
+      if (Array.isArray(items)) list[idx].items = items;
+      if (typeof total === 'number') list[idx].total = total;
+      if (typeof nota === 'string') list[idx].nota = nota;
+      if (cliente && typeof cliente === 'object') list[idx].cliente = { ...(list[idx].cliente || {}), ...cliente };
+      if (typeof direccion === 'string') list[idx].direccion = direccion;
+      if (typeof costo_envio === 'number') list[idx].costo_envio = costo_envio;
+      if (distancia_km !== undefined) list[idx].distancia_km = distancia_km;
+      if (lat_cliente !== undefined) list[idx].lat_cliente = lat_cliente;
+      if (lon_cliente !== undefined) list[idx].lon_cliente = lon_cliente;
+      list[idx].editado_at = new Date().toISOString();
+      await setDeliveryList(local, list);
+      result = list[idx];
+    }
+  } catch (e) { console.error('[delivery:put]', e.message); }
+  const out = result || { id };
+  bcast(local, 'delivery:update', out);
+  if (isDefaultLocal(local)) emitDashboardStats();
+  res.json(out);
+});
+
 // ─────────────────────────────────────────────
 //  COCINA ROUTES
 // ─────────────────────────────────────────────

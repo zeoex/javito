@@ -4542,6 +4542,9 @@ function renderDeliveryCard(o,stage) {
   const asignarBtn = stage !== 'entregado'
     ? `<button class="btn btn-outline btn-sm" onclick="asignarRepartidor('${o.id}')" title="Asignar repartidor">👤</button>`
     : '';
+  const editBtn = stage !== 'entregado'
+    ? `<button class="btn btn-outline btn-sm" onclick="editarPedido('${o.id}')" title="Editar pedido">✏️</button>`
+    : '';
   const itemsHtml = o.origen === 'web'
     ? (o.items||[]).map(i=>`<div style="font-size:11px;color:var(--gray);line-height:1.6">${i.qty}× ${i.nombre}${i.size?` (${i.size})`:''} — $${Number(i.precio*i.qty).toLocaleString()}</div>`).join('')
     : (o.items||[]).map(i=>`${i.qty}x ${i.nombre}`).join(', ');
@@ -4551,7 +4554,7 @@ function renderDeliveryCard(o,stage) {
     <div class="delivery-card-items">${itemsHtml}</div>
     ${dirStr}${repartidorStr}
     <div class="delivery-card-total">💰 $${Number(o.total||0).toLocaleString()} · ${mpLabel}${costoEnvioStr}</div>
-    <div class="delivery-card-actions">${nextBtn}${waBtn}<button class="btn btn-outline btn-sm" onclick="imprimirDelivery(${o.id})" title="Imprimir">🖨️</button>${gpsBtn}${editEnvioBtn}${asignarBtn}${cancelBtn}</div>
+    <div class="delivery-card-actions">${nextBtn}${waBtn}${editBtn}<button class="btn btn-outline btn-sm" onclick="imprimirDelivery(${o.id})" title="Imprimir">🖨️</button>${gpsBtn}${editEnvioBtn}${asignarBtn}${cancelBtn}</div>
   </div>`;
 }
 
@@ -4613,6 +4616,155 @@ async function avisarEstadoWhatsApp(id) {
   let msg = `Hola${nom}! ${estadoTxt}`;
   if (link) msg += ` Seguí tu pedido en vivo acá: ${link}`;
   openWhatsApp(waNum, msg);
+}
+
+// ===== Edición de pedidos desde el pipeline =====
+function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+let _editId = null, _editItems = [], _editEnvio = 0, _editDelivery = false;
+let _editDir = '', _editKm = null, _editLat = null, _editLon = null;
+function _haversineKm(la1, lo1, la2, lo2) {
+  const R = 6371, toR = Math.PI / 180;
+  const dLat = (la2 - la1) * toR, dLon = (lo2 - lo1) * toR;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(la1 * toR) * Math.cos(la2 * toR) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+function _editProductOptions() {
+  const opts = [];
+  (typeof productosData !== 'undefined' ? productosData : []).forEach(p => {
+    if (p.activo === false) return;
+    if (p.presentaciones && p.presentaciones.length) {
+      p.presentaciones.forEach(v => opts.push({ nombre: p.nombre, size: v.nombre, precio: Number(v.precio) || 0 }));
+    } else {
+      opts.push({ nombre: p.nombre, size: null, precio: Number(p.precio || p.precio_grande || p.precio_chica || 0) });
+    }
+  });
+  return opts;
+}
+function editarPedido(id) {
+  const o = deliveryData.find(d => String(d.id) === String(id));
+  if (!o) return;
+  _editId = id;
+  _editEnvio = Number(o.costo_envio) || 0;
+  _editItems = (o.items || []).map(i => ({ nombre: i.nombre, size: i.size || null, precio: Number(i.precio) || 0, qty: Number(i.qty) || 1, nota: i.nota || '' }));
+  _editDelivery = !!((o.lat_cliente && o.lon_cliente) || o.modo_envio === 'delivery' || (o.origen === 'web' && o.direccion));
+  _editDir = o.direccion || '';
+  _editKm = (o.distancia_km != null) ? Number(o.distancia_km) : null;
+  _editLat = (o.lat_cliente != null) ? Number(o.lat_cliente) : null;
+  _editLon = (o.lon_cliente != null) ? Number(o.lon_cliente) : null;
+  let ov = document.getElementById('editPedidoOverlay');
+  if (!ov) { ov = document.createElement('div'); ov.id = 'editPedidoOverlay'; document.body.appendChild(ov); }
+  ov.style.cssText = 'position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+  const dirBlock = _editDelivery ? `
+    <div style="margin:12px 0;padding-top:12px;border-top:1px solid #eee">
+      <label style="font-size:12px;font-weight:700;color:#6b7280;display:block;margin-bottom:6px">📍 Dirección de envío</label>
+      <input id="editDir" value="${escapeHtml(_editDir)}" placeholder="Calle, número, barrio…" style="width:100%;box-sizing:border-box;padding:9px;border:1px solid #ddd;border-radius:8px;font-size:13px" onkeydown="if(event.key==='Enter'){event.preventDefault();recalcEnvioEdit();}"/>
+      <button class="btn btn-outline btn-sm" style="margin-top:8px;width:100%" onclick="recalcEnvioEdit()">🔎 Buscar dirección y recalcular envío</button>
+      <div id="editEnvioStatus" style="font-size:12px;margin-top:7px;color:#6b7280"></div>
+    </div>` : '';
+  ov.innerHTML = `<div style="background:#fff;border-radius:16px;max-width:460px;width:100%;max-height:90vh;overflow:auto;padding:20px;color:#1f2937">
+    <h3 style="margin:0 0 4px;font-size:18px">✏️ Editar pedido ${o.numero || ''}</h3>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:14px">👤 ${escapeHtml((o.cliente && o.cliente.nombre) || '—')}</div>
+    <div id="editItemsList"></div>
+    ${dirBlock}
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <select id="editProdSel" style="flex:1;padding:9px;border:1px solid #ddd;border-radius:8px;font-size:13px"></select>
+      <button class="btn btn-outline btn-sm" onclick="editAddProduct()">+ Agregar</button>
+    </div>
+    <div id="editTotal" style="text-align:right;font-weight:800;font-size:18px;margin-top:14px;color:#111827"></div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn btn-secondary btn-sm" style="flex:1" onclick="cerrarEdicionPedido()">Cancelar</button>
+      <button class="btn btn-success btn-sm" style="flex:1" onclick="guardarEdicionPedido()">Guardar cambios</button>
+    </div>
+  </div>`;
+  ov.onclick = function (e) { if (e.target === ov) cerrarEdicionPedido(); };
+  const sel = document.getElementById('editProdSel');
+  sel.innerHTML = _editProductOptions().map((op, i) => `<option value="${i}">${escapeHtml(op.nombre)}${op.size ? ' (' + escapeHtml(op.size) + ')' : ''} — $${op.precio.toLocaleString('es-AR')}</option>`).join('');
+  renderEditItems();
+}
+function renderEditItems() {
+  const box = document.getElementById('editItemsList'); if (!box) return;
+  if (!_editItems.length) { box.innerHTML = '<div style="color:#9ca3af;font-size:13px;text-align:center;padding:12px">Sin ítems — agregá productos abajo.</div>'; }
+  else box.innerHTML = _editItems.map((i, idx) => `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #eee">
+    <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:14px">${escapeHtml(i.nombre)}${i.size ? ' <span style="color:#9ca3af;font-weight:400">(' + escapeHtml(i.size) + ')</span>' : ''}</div><div style="font-size:11px;color:#9ca3af">$${i.precio.toLocaleString('es-AR')} c/u</div></div>
+    <button class="btn btn-outline btn-sm" onclick="editItemQty(${idx},-1)">−</button>
+    <span style="min-width:22px;text-align:center;font-weight:700">${i.qty}</span>
+    <button class="btn btn-outline btn-sm" onclick="editItemQty(${idx},1)">+</button>
+    <button class="btn btn-danger btn-sm" onclick="editItemRemove(${idx})">✕</button>
+  </div>`).join('');
+  const subtotal = _editItems.reduce((s, i) => s + i.precio * i.qty, 0);
+  const tot = document.getElementById('editTotal');
+  if (tot) tot.innerHTML = `Total: $${(subtotal + _editEnvio).toLocaleString('es-AR')}` + (_editEnvio ? ` <span style="font-size:11px;color:#9ca3af;font-weight:400">(incluye envío $${_editEnvio.toLocaleString('es-AR')})</span>` : '');
+}
+function editItemQty(idx, d) { if (!_editItems[idx]) return; _editItems[idx].qty = Math.max(1, _editItems[idx].qty + d); renderEditItems(); }
+function editItemRemove(idx) { _editItems.splice(idx, 1); renderEditItems(); }
+function editAddProduct() {
+  const sel = document.getElementById('editProdSel'); if (!sel) return;
+  const op = _editProductOptions()[parseInt(sel.value)]; if (!op) return;
+  const ex = _editItems.find(i => i.nombre === op.nombre && (i.size || null) === (op.size || null));
+  if (ex) ex.qty++; else _editItems.push({ nombre: op.nombre, size: op.size, precio: op.precio, qty: 1, nota: '' });
+  renderEditItems();
+}
+function cerrarEdicionPedido() { const ov = document.getElementById('editPedidoOverlay'); if (ov) ov.remove(); _editId = null; }
+
+// Geocodifica la dirección editada y recalcula el costo de envío (mismo método que el menú web)
+async function recalcEnvioEdit() {
+  const inp = document.getElementById('editDir'); const st = document.getElementById('editEnvioStatus');
+  const dir = (inp && inp.value || '').trim();
+  if (!dir) { showToast('Escribí la dirección', 'error'); return; }
+  _editDir = dir;
+  const biz = (typeof getBizConfig === 'function') ? getBizConfig() : {};
+  const bLat = parseFloat(biz.latitud), bLon = parseFloat(biz.longitud);
+  const radio = parseFloat(biz.radioDelivery) || 10;
+  const ppk = parseFloat(biz.precioPorKm) || 0;
+  const fijo = parseFloat(biz.costoEnvio) || 0;
+  if (st) { st.textContent = '🔎 Buscando la dirección…'; st.style.color = '#6b7280'; }
+  let url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&q=' + encodeURIComponent(dir);
+  if (bLat && bLon) url += `&viewbox=${bLon - 0.5},${bLat + 0.5},${bLon + 0.5},${bLat - 0.5}`;
+  try {
+    const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    const arr = await r.json();
+    if (!arr || !arr[0] || !arr[0].lat) { if (st) { st.textContent = '⚠ No se encontró la dirección. Agregá barrio/ciudad.'; st.style.color = '#dc2626'; } return; }
+    _editLat = parseFloat(arr[0].lat); _editLon = parseFloat(arr[0].lon);
+    if (bLat && bLon) {
+      const km = _haversineKm(bLat, bLon, _editLat, _editLon);
+      _editKm = parseFloat(km.toFixed(2));
+      if (km > radio) {
+        _editEnvio = 0;
+        if (st) { st.textContent = `⛔ ${km.toFixed(1)} km — excede la cobertura (límite ${radio} km)`; st.style.color = '#dc2626'; }
+      } else {
+        _editEnvio = ppk > 0 ? Math.ceil(km * ppk) : fijo;
+        if (st) { st.textContent = `📍 ${km.toFixed(1)} km · Envío: $${_editEnvio.toLocaleString('es-AR')}`; st.style.color = '#16a34a'; }
+      }
+    } else {
+      _editEnvio = fijo;
+      if (st) { st.textContent = '📍 Dirección encontrada (sin coords del local, envío fijo)'; st.style.color = '#16a34a'; }
+    }
+    renderEditItems();
+  } catch (e) { if (st) { st.textContent = '⚠ No se pudo buscar la dirección'; st.style.color = '#dc2626'; } }
+}
+
+async function guardarEdicionPedido() {
+  if (!_editId) return;
+  if (!_editItems.length) { showToast('El pedido debe tener al menos un ítem', 'error'); return; }
+  const subtotal = _editItems.reduce((s, i) => s + i.precio * i.qty, 0);
+  const total = subtotal + _editEnvio;
+  const body = { items: _editItems, total, local: _adminLocal() };
+  if (_editDelivery) {
+    const inp = document.getElementById('editDir'); if (inp) _editDir = inp.value.trim();
+    body.direccion = _editDir; body.costo_envio = _editEnvio;
+    if (_editKm != null) body.distancia_km = _editKm;
+    if (_editLat != null) body.lat_cliente = _editLat;
+    if (_editLon != null) body.lon_cliente = _editLon;
+  }
+  try { await apiFetch('/delivery/' + _editId, { method: 'PUT', body: JSON.stringify(body) }); } catch (e) {}
+  const o = deliveryData.find(d => String(d.id) === String(_editId));
+  if (o) {
+    o.items = _editItems.slice(); o.total = total;
+    if (_editDelivery) { o.direccion = _editDir; o.costo_envio = _editEnvio; if (_editKm != null) o.distancia_km = _editKm; if (_editLat != null) o.lat_cliente = _editLat; if (_editLon != null) o.lon_cliente = _editLon; }
+  }
+  cerrarEdicionPedido();
+  renderDelivery();
+  showToast('✅ Pedido actualizado');
 }
 
 // Abre la app de WhatsApp directamente (escritorio o móvil) y, si no está instalada, abre WhatsApp Web
