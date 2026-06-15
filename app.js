@@ -1386,6 +1386,55 @@ app.post('/api/web/cliente', async (req, res) => {
   } catch (e) { console.error('[web:cliente]', e.message); res.status(500).json({ error: 'No se pudo registrar' }); }
 });
 
+// ── Cuentas de cliente (email + contraseña) para el menú online ──
+function _cliPublic(c) { return { id: c.id, nombre: c.nombre, email: c.email, telefono: c.telefono || '', ultimaDireccion: c.ultimaDireccion || c.direccion || '' }; }
+app.post('/api/web/auth/register', async (req, res) => {
+  const { nombre, email, telefono, password } = req.body || {};
+  const local = reqLocal(req);
+  if (!nombre || !email || !telefono || !password) return res.status(400).json({ error: 'Completá nombre, email, teléfono y contraseña' });
+  if (String(password).length < 4) return res.status(400).json({ error: 'La contraseña debe tener al menos 4 caracteres' });
+  const em = String(email).trim().toLowerCase();
+  try {
+    const list = await getClientesList(local);
+    let c = list.find(x => String(x.email || '').toLowerCase() === em);
+    if (c && c.password) return res.status(409).json({ error: 'Ese email ya tiene una cuenta. Iniciá sesión.' });
+    if (!c) { c = { id: Date.now(), nombre, email: em, telefono, direccion: '', ultimaDireccion: '', pedidos: 0, total_gastado: 0, origen: 'web', creado: arDate() }; list.push(c); }
+    else { c.nombre = nombre; c.telefono = telefono; c.email = em; }
+    c.password = bcrypt.hashSync(String(password), 10);
+    await setClientesList(local, list);
+    const token = jwt.sign({ type: 'cliente', cid: c.id, email: em, local }, JWT_SECRET, { expiresIn: '180d' });
+    res.json({ ok: true, token, cliente: _cliPublic(c) });
+  } catch (e) { console.error('[web:auth:register]', e.message); res.status(500).json({ error: 'No se pudo crear la cuenta' }); }
+});
+app.post('/api/web/auth/login', async (req, res) => {
+  const { email, password } = req.body || {};
+  const local = reqLocal(req);
+  const em = String(email || '').trim().toLowerCase();
+  try {
+    const list = await getClientesList(local);
+    const c = list.find(x => String(x.email || '').toLowerCase() === em);
+    if (!c || !c.password) return res.status(401).json({ error: 'Email o contraseña incorrectos' });
+    const ok = await bcrypt.compare(String(password || ''), c.password);
+    if (!ok) return res.status(401).json({ error: 'Email o contraseña incorrectos' });
+    const token = jwt.sign({ type: 'cliente', cid: c.id, email: em, local }, JWT_SECRET, { expiresIn: '180d' });
+    res.json({ ok: true, token, cliente: _cliPublic(c) });
+  } catch (e) { console.error('[web:auth:login]', e.message); res.status(500).json({ error: 'No se pudo iniciar sesión' }); }
+});
+// Datos frescos del cliente (token de cliente) — para autocompletar al volver
+app.get('/api/web/auth/me', async (req, res) => {
+  try {
+    const h = req.headers['authorization'] || '';
+    const tk = h.startsWith('Bearer ') ? h.slice(7) : null;
+    if (!tk) return res.status(401).json({ error: 'no token' });
+    const dec = jwt.verify(tk, JWT_SECRET);
+    if (dec.type !== 'cliente') return res.status(401).json({ error: 'token inválido' });
+    const list = await getClientesList(dec.local || DEFAULT_LOCAL);
+    const c = list.find(x => String(x.id) === String(dec.cid) || String(x.email || '').toLowerCase() === dec.email);
+    if (!c) return res.status(404).json({ error: 'no existe' });
+    res.json({ ok: true, cliente: _cliPublic(c) });
+  } catch (e) { res.status(401).json({ error: 'token inválido' }); }
+});
+
 // Actualizar costo de envío de un pedido web
 app.put('/api/delivery/:id/costo-envio', async (req, res) => {
   const targetId = req.params.id;
