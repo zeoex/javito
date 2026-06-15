@@ -4585,9 +4585,6 @@ async function avisarEstadoWhatsApp(id) {
   const est = o.estado;
   const esDelivery = !!((o.lat_cliente && o.lon_cliente) || o.modo_envio === 'delivery' || o.origen === 'web');
 
-  // Abrir la ventana DENTRO del gesto del click para evitar el bloqueo de pop-ups
-  const win = window.open('about:blank', '_blank');
-
   // Asegurar/reutilizar la sesión de seguimiento del pedido (mismo trackId que el repartidor)
   let link = '';
   if (esDelivery && est !== 'entregado') {
@@ -4611,12 +4608,25 @@ async function avisarEstadoWhatsApp(id) {
   if (est === 'en_camino') estadoTxt = `🛵 Tu pedido${num} está en camino.`;
   else if (est === 'listo') estadoTxt = `✅ Tu pedido${num} ya está listo${esDelivery ? ' y sale en breve' : ' para retirar'}.`;
   else if (est === 'entregado') estadoTxt = `🙌 Tu pedido${num} fue entregado. ¡Gracias por elegirnos!`;
-  else estadoTxt = `👨‍🍳 ¡Recibimos tu pedido${num}! Ya lo estamos preparando.`;
+  else estadoTxt = `🍕 ¡Recibimos tu pedido${num}! Ya lo estamos preparando.`;
 
   let msg = `Hola${nom}! ${estadoTxt}`;
   if (link) msg += ` Seguí tu pedido en vivo acá: ${link}`;
-  const url = `https://wa.me/${waNum}?text=${encodeURIComponent(msg)}`;
-  if (win) win.location.href = url; else window.open(url, '_blank');
+  openWhatsApp(waNum, msg);
+}
+
+// Abre la app de WhatsApp directamente (escritorio o móvil) y, si no está instalada, abre WhatsApp Web
+function openWhatsApp(num, text) {
+  const t = encodeURIComponent(text);
+  const app = 'whatsapp://send?phone=' + num + '&text=' + t;
+  const web = 'https://wa.me/' + num + '?text=' + t;
+  let switched = false;
+  const onblur = function () { switched = true; };
+  window.addEventListener('blur', onblur, { once: true });
+  // Intentar abrir la app instalada (no navega la página actual)
+  try { window.location.href = app; } catch (e) {}
+  // Si la app no abrió (no instalada), recurrir a WhatsApp Web
+  setTimeout(function () { window.removeEventListener('blur', onblur); if (!switched) window.open(web, '_blank'); }, 1300);
 }
 
 let _repartidoresList = [];
