@@ -1684,7 +1684,7 @@ body.rol-mozo .spk-size-btn:hover{border-color:#059669;background:#ecfdf5}
           <div class="form-group" id="dlvTelGrp" style="margin:0"><label style="font-size:12px">Teléfono</label><input class="form-control" id="dlvTel" placeholder="11-4567-8901"/></div>
           <div class="form-group" id="dlvDirGrp" style="margin:0"><label style="font-size:12px">Dirección</label>
             <input class="form-control" id="dlvDir" placeholder="Calle, número, barrio" onkeydown="if(event.key==='Enter'){event.preventDefault();dlvBuscarDireccion();}"/>
-            <button type="button" class="btn btn-outline btn-sm" style="margin-top:6px;width:100%" onclick="dlvBuscarDireccion()">🔎 Buscar dirección y calcular envío</button>
+            <button type="button" class="btn btn-outline btn-sm" style="margin-top:6px;width:100%;white-space:normal" onclick="dlvBuscarDireccion()">🔎 Buscar dirección</button>
             <div id="dlvEnvioStatus" style="font-size:11px;margin-top:5px;color:var(--gray)"></div>
           </div>
           <div class="form-group" id="dlvRepartidorGrp" style="margin:0"><label style="font-size:12px">Repartidor</label>
@@ -4662,7 +4662,7 @@ function editarPedido(id) {
     <div style="margin:12px 0;padding-top:12px;border-top:1px solid #eee">
       <label style="font-size:12px;font-weight:700;color:#6b7280;display:block;margin-bottom:6px">📍 Dirección de envío</label>
       <input id="editDir" value="${escapeHtml(_editDir)}" placeholder="Calle, número, barrio…" style="width:100%;box-sizing:border-box;padding:9px;border:1px solid #ddd;border-radius:8px;font-size:13px" onkeydown="if(event.key==='Enter'){event.preventDefault();recalcEnvioEdit();}"/>
-      <button class="btn btn-outline btn-sm" style="margin-top:8px;width:100%" onclick="recalcEnvioEdit()">🔎 Buscar dirección y recalcular envío</button>
+      <button class="btn btn-outline btn-sm" style="margin-top:8px;width:100%;white-space:normal" onclick="recalcEnvioEdit()">🔎 Buscar dirección</button>
       <div id="editEnvioStatus" style="font-size:12px;margin-top:7px;color:#6b7280"></div>
     </div>` : '';
   ov.innerHTML = `<div style="background:#fff;border-radius:16px;max-width:460px;width:100%;max-height:90vh;overflow:auto;padding:20px;color:#1f2937">
