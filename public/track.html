@@ -44,7 +44,7 @@
   .step{flex:1;text-align:center;position:relative}
   .step .ball{width:26px;height:26px;border-radius:50%;background:#ece7f6;color:#a99fc4;display:grid;place-items:center;margin:0 auto 6px;font-size:13px;font-weight:700;position:relative;z-index:2;transition:all .3s}
   .step .ball svg{width:14px;height:14px}
-  .step .lbl{font-size:11px;color:var(--muted);font-weight:600}
+  .step .lbl{font-size:9.5px;color:var(--muted);font-weight:600;line-height:1.2}
   .step::before{content:'';position:absolute;top:13px;left:-50%;width:100%;height:3px;background:#ece7f6;z-index:1}
   .step:first-child::before{display:none}
   .step.done .ball{background:var(--green);color:#fff}
@@ -106,9 +106,10 @@
     </div>
   </div>
   <div class="steps">
-    <div class="step done" id="stepConfirmado"><div class="ball"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div class="lbl">Confirmado</div></div>
-    <div class="step active" id="stepPrep"><div class="ball">👨‍🍳</div><div class="lbl">En preparación</div></div>
-    <div class="step" id="stepCamino"><div class="ball">🛵</div><div class="lbl">En camino</div></div>
+    <div class="step active" id="stepRecibido"><div class="ball">📥</div><div class="lbl">Recibido</div></div>
+    <div class="step" id="stepConfirmado"><div class="ball">✅</div><div class="lbl">Confirmado</div></div>
+    <div class="step" id="stepListo"><div class="ball">🍽️</div><div class="lbl">Listo</div></div>
+    <div class="step" id="stepCamino"><div class="ball">🛵</div><div class="lbl">Enviado</div></div>
     <div class="step" id="stepEntregado"><div class="ball"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div><div class="lbl">Entregado</div></div>
   </div>
   <div class="dest">
@@ -308,17 +309,20 @@
   var curEstado=null;
   function applyEstado(est){
     if(!est) return;
+    // compatibilidad con estados viejos
+    if(est==='preparando') est='recibido';
     curEstado=est;
-    var idx = ({preparando:1, listo:2, en_camino:2, entregado:3})[est];
-    if(idx===undefined) idx=1;
-    ['stepConfirmado','stepPrep','stepCamino','stepEntregado'].forEach(function(sid,i){
+    var idx = ({recibido:0, confirmado:1, listo:2, en_camino:3, entregado:4})[est];
+    if(idx===undefined) idx=0;
+    ['stepRecibido','stepConfirmado','stepListo','stepCamino','stepEntregado'].forEach(function(sid,i){
       var s=$(sid); if(!s) return; s.classList.remove('done','active');
       if(i<idx) s.classList.add('done'); else if(i===idx) s.classList.add('active');
     });
     show($('ovWait'), false); // ya tenemos info real para mostrar en la tarjeta
     if(status==='delivered' || status==='expired') return;
-    if(est==='preparando'){ $('etaBig').textContent='Estamos preparando tu pedido'; if(!lastPos) $('etaSmall').textContent='En breve sale para tu dirección'; }
-    else if(est==='listo'){ $('etaBig').textContent='¡Tu pedido está listo!'; if(!lastPos) $('etaSmall').textContent='El repartidor está por salir'; }
+    if(est==='recibido'){ $('etaBig').textContent='¡Recibimos tu pedido!'; if(!lastPos) $('etaSmall').textContent='En breve lo confirmamos y preparamos'; }
+    else if(est==='confirmado'){ $('etaBig').textContent='Pedido confirmado ✅'; if(!lastPos) $('etaSmall').textContent='Lo estamos preparando'; }
+    else if(est==='listo'){ $('etaBig').textContent='¡Tu pedido está listo!'; if(!lastPos) $('etaSmall').textContent='Listo para enviarse'; }
     else if(est==='en_camino' && !lastPos){ $('etaBig').textContent='Tu pedido está en camino'; $('etaSmall').textContent='Esperando la ubicación del repartidor…'; }
   }
 

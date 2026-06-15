@@ -551,10 +551,11 @@ function trackIdFor(local, orderId) {
 }
 // Normaliza el estado del pedido a los pasos que ve el cliente
 function normEstado(e) {
+  if (e === 'en_cocina') return 'confirmado';
   if (e === 'listo') return 'listo';
   if (e === 'en_camino') return 'en_camino';
   if (e === 'entregado' || e === 'cancelado') return 'entregado';
-  return 'preparando'; // nuevo / en_cocina / etc.
+  return 'recibido'; // nuevo / otros
 }
 function isExpired(t) {
   return !!(t && t.status === 'delivered' && t.deliveredAt && (Date.now() - t.deliveredAt) > LINK_TTL_AFTER_DONE);
@@ -626,7 +627,7 @@ app.post('/api/track/start', async (req, res) => {
     customer: customer || prev.customer || {},
     driver: driver || prev.driver || {},
     pos: prev.pos || null,
-    estado: prev.status === 'delivered' ? 'entregado' : (normEstado(estado) || prev.estado || 'preparando'),
+    estado: prev.status === 'delivered' ? 'entregado' : (normEstado(estado) || prev.estado || 'recibido'),
     status: prev.status === 'delivered' ? 'delivered' : 'active',
     deliveredAt: prev.deliveredAt || null,
     startedAt: prev.startedAt || Date.now(),
@@ -645,7 +646,7 @@ app.post('/api/track/:id/pos', async (req, res) => {
   const { lat, lng, heading, speed, acc } = req.body || {};
   if (typeof lat !== 'number' || typeof lng !== 'number') return res.status(400).json({ error: 'lat/lng requeridos' });
   t.pos = { lat, lng, heading: (typeof heading === 'number' ? heading : null), speed: (typeof speed === 'number' ? speed : null), acc: acc || null, ts: Date.now() };
-  if (t.estado === 'preparando' || t.estado === 'listo') t.estado = 'en_camino'; // si llega ubicación, ya va en camino
+  if (['recibido', 'confirmado', 'listo'].includes(t.estado)) t.estado = 'en_camino'; // si llega ubicación, ya va en camino
   t.updatedAt = Date.now();
   io.to('T:' + req.params.id).emit('track:pos', t.pos);
   saveTrack(req.params.id);
@@ -667,7 +668,7 @@ app.get('/api/track/:id', async (req, res) => {
     deliveredAt: t.deliveredAt || null,
     expiresAt: t.deliveredAt ? (t.deliveredAt + LINK_TTL_AFTER_DONE) : null,
     orderId: t.orderId,
-    estado: t.estado || 'preparando',
+    estado: t.estado || 'recibido',
     dest: t.dest || null,
     customer: { nombre: (t.customer && t.customer.nombre) || null },
     driver: { nombre: (t.driver && t.driver.nombre) || null },
