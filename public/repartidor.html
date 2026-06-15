@@ -2585,9 +2585,11 @@ function pwaInstaller(appName, btnColor){
     document.getElementById('pwaNo').onclick=close;
     w.onclick=function(e){ if(e.target===w) close(); };
   }
-  window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); dp=e; if(wantInstall) card(); });
+  // Capturamos el prompt diferido, pero NO mostramos nada automáticamente:
+  // la instalación se dispara solo al tocar los botones del login.
+  window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); dp=e; });
   window.addEventListener('appinstalled', close);
-  if (wantInstall && !standalone) setTimeout(card, 500);
+  void wantInstall;
   window.showPwaInstall = card;
   window.isStandalonePWA = standalone;
 }
