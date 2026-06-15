@@ -520,10 +520,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 </head>
 <body>
 
-<div id="cuentaChip" onclick="menuCuenta()" style="display:none;position:fixed;top:12px;right:12px;z-index:200;align-items:center;gap:7px;background:rgba(20,16,40,.85);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.45)">
-  <span>👤</span><span class="cuenta-nombre">Mi cuenta</span><span style="opacity:.6">▾</span>
-</div>
-
 <!-- ── HERO ── -->
 <div class="hero">
   <div class="hero-bg"></div>
@@ -586,26 +582,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 </div>
 
 <!-- ── CONFIRM WHATSAPP ── -->
-<!-- ── CUENTA DE CLIENTE (login / registro) ── -->
+<!-- ── REGISTRO DE CLIENTE ── -->
 <div class="confirmed-overlay" id="registroOverlay">
   <div class="confirmed-card">
-    <div class="confirm-title" id="authTitle">Ingresá a tu cuenta</div>
-    <div class="confirm-sub" id="authSub">Con tu cuenta tus datos quedan guardados para pedir más rápido.</div>
-    <div id="authNombreWrap" style="display:none">
-      <label class="confirm-form-label" style="margin-top:14px">Nombre y apellido</label>
-      <input type="text" class="confirm-form-input" id="authNombre" placeholder="Ej: Juan Pérez" autocomplete="name" oninput="checkAuthReady()"/>
-    </div>
+    <div class="confirm-title">👋 Registrate para pedir</div>
+    <div class="confirm-sub">Con tus datos vas a poder pedir y la próxima ya queda todo cargado.</div>
+    <label class="confirm-form-label" style="margin-top:14px">Nombre y apellido</label>
+    <input type="text" class="confirm-form-input" id="regNombre" placeholder="Ej: Juan Pérez" autocomplete="name" oninput="checkRegReady()"/>
+    <div id="regNombreErr" style="display:none;color:#f87171;font-size:12px;margin-top:4px">⚠ Ingresá nombre y apellido</div>
     <label class="confirm-form-label" style="margin-top:12px">Correo electrónico</label>
-    <input type="email" class="confirm-form-input" id="authEmail" placeholder="tucorreo@email.com" autocomplete="email" inputmode="email" oninput="checkAuthReady()"/>
-    <div id="authTelWrap" style="display:none">
-      <label class="confirm-form-label" style="margin-top:12px">WhatsApp <span style="font-weight:400;opacity:.7">(sin el 0 y sin el 15)</span></label>
-      <input type="tel" inputmode="numeric" class="confirm-form-input" id="authTel" placeholder="Ej: 3624857011" maxlength="13" oninput="this.value=this.value.replace(/\\D/g,'');checkAuthReady()"/>
-    </div>
-    <label class="confirm-form-label" style="margin-top:12px">Contraseña</label>
-    <input type="password" class="confirm-form-input" id="authPass" placeholder="Tu contraseña" autocomplete="current-password" oninput="checkAuthReady()" onkeydown="if(event.key==='Enter'){event.preventDefault();authSubmit();}"/>
-    <div id="authError" style="display:none;color:#f87171;font-size:12.5px;margin-top:10px;text-align:center"></div>
-    <button class="btn-wsp" id="btnAuth" onclick="authSubmit()" style="margin-top:18px;opacity:.5;background:linear-gradient(135deg,#7c3aed,#9d6bff)">Ingresar</button>
-    <button class="btn-secondary" id="authToggle" onclick="toggleAuthMode()" style="margin-top:10px">¿No tenés cuenta? Creá una</button>
+    <input type="email" class="confirm-form-input" id="regEmail" placeholder="tucorreo@email.com" autocomplete="email" inputmode="email" oninput="checkRegReady()"/>
+    <div id="regEmailErr" style="display:none;color:#f87171;font-size:12px;margin-top:4px">⚠ Ingresá un correo válido</div>
+    <label class="confirm-form-label" style="margin-top:12px">WhatsApp <span style="font-weight:400;opacity:.7">(sin el 0 y sin el 15)</span></label>
+    <input type="tel" inputmode="numeric" class="confirm-form-input" id="regTel" placeholder="Ej: 3624857011" autocomplete="tel" maxlength="13" oninput="this.value=this.value.replace(/\\D/g,'');checkRegReady()"/>
+    <div id="regTelErr" style="display:none;color:#f87171;font-size:12px;margin-top:4px">⚠ Ingresá tu WhatsApp sin el 0 y sin el 15</div>
+    <button class="btn-wsp" id="btnRegistro" onclick="registrarCliente()" style="margin-top:18px;opacity:.5;background:linear-gradient(135deg,#7c3aed,#9d6bff)">Continuar ✓</button>
   </div>
 </div>
 
@@ -1288,85 +1279,47 @@ function _emailOk(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e || '').
 function _regTelOk(t) { const d = String(t || '').replace(/\D/g, ''); return d && d[0] !== '0' && !d.startsWith('15') && d.length >= 8 && d.length <= 12; }
 function _regNombreOk(n) { return String(n || '').trim().split(/\s+/).filter(Boolean).length >= 2; }
 
-function _tokKey() { return 'pz_cliente_token_' + CARTA_LOCAL; }
-function getClienteToken() { try { return localStorage.getItem(_tokKey()) || ''; } catch (e) { return ''; } }
-function setClienteSession(token, cli) { if (token) localStorage.setItem(_tokKey(), token); if (cli) saveClienteProfile(cli); actualizarCuentaUI(); }
-function cerrarSesionCliente() { localStorage.removeItem(_tokKey()); localStorage.removeItem(_cliKey()); actualizarCuentaUI(); showToast('Sesión cerrada'); }
-function actualizarCuentaUI() {
-  const el = document.getElementById('cuentaChip'); if (!el) return;
-  const p = getClienteProfile(); const logged = !!getClienteToken() && p;
-  el.style.display = logged ? 'flex' : 'none';
-  if (logged) el.querySelector('.cuenta-nombre').textContent = (p.nombre || '').split(' ')[0] || 'Mi cuenta';
-}
-function menuCuenta() {
-  const p = getClienteProfile() || {};
-  if (confirm('Sesión de ' + (p.nombre || p.email || 'cliente') + '\n\n¿Cerrar sesión?')) cerrarSesionCliente();
-}
-// Al cargar: refrescar datos del cliente si hay sesión (cross-device)
-(function () {
-  actualizarCuentaUI();
-  if (getClienteToken()) {
-    fetch('/api/web/auth/me', { headers: { 'Authorization': 'Bearer ' + getClienteToken() } })
-      .then(r => r.ok ? r.json() : null)
-      .then(j => { if (j && j.cliente) { const prev = getClienteProfile() || {}; saveClienteProfile(Object.assign({ ultimaDireccion: prev.ultimaDireccion || '' }, j.cliente)); actualizarCuentaUI(); } })
-      .catch(() => {});
-  }
-})();
-
-let _authMode = 'login', _authCallback = null;
-function abrirAuth(cb) {
-  _authCallback = cb || null;
+let _regCallback = null;
+function abrirRegistro(cb) {
+  _regCallback = cb || null;
   const p = getClienteProfile();
-  document.getElementById('authEmail').value = (p && p.email) || '';
-  document.getElementById('authPass').value = '';
-  document.getElementById('authNombre').value = '';
-  document.getElementById('authTel').value = '';
-  setAuthMode('login');
+  document.getElementById('regNombre').value = (p && p.nombre) || '';
+  document.getElementById('regEmail').value = (p && p.email) || '';
+  document.getElementById('regTel').value = (p && p.telefono) || '';
+  ['regNombreErr', 'regEmailErr', 'regTelErr'].forEach(id => { const e = document.getElementById(id); if (e) e.style.display = 'none'; });
+  checkRegReady();
   document.getElementById('registroOverlay').classList.add('open');
 }
-function setAuthMode(m) {
-  _authMode = m; const reg = m === 'register';
-  document.getElementById('authNombreWrap').style.display = reg ? '' : 'none';
-  document.getElementById('authTelWrap').style.display = reg ? '' : 'none';
-  document.getElementById('authTitle').textContent = reg ? 'Creá tu cuenta' : 'Ingresá a tu cuenta';
-  document.getElementById('btnAuth').textContent = reg ? 'Crear cuenta ✓' : 'Ingresar';
-  document.getElementById('authToggle').textContent = reg ? '¿Ya tenés cuenta? Ingresá' : '¿No tenés cuenta? Creá una';
-  document.getElementById('authError').style.display = 'none';
-  checkAuthReady();
-}
-function toggleAuthMode() { setAuthMode(_authMode === 'login' ? 'register' : 'login'); }
-function checkAuthReady() {
-  const reg = _authMode === 'register';
-  let ok = _emailOk(document.getElementById('authEmail').value) && String(document.getElementById('authPass').value || '').length >= 4;
-  if (reg) ok = ok && _regNombreOk(document.getElementById('authNombre').value) && _regTelOk(document.getElementById('authTel').value);
-  const b = document.getElementById('btnAuth'); if (b) b.style.opacity = ok ? '1' : '0.5';
+function checkRegReady() {
+  const ok = _regNombreOk(document.getElementById('regNombre').value) && _emailOk(document.getElementById('regEmail').value) && _regTelOk(document.getElementById('regTel').value);
+  const b = document.getElementById('btnRegistro');
+  if (b) { b.style.opacity = ok ? '1' : '0.5'; }
   return ok;
 }
-async function authSubmit() {
-  const err = document.getElementById('authError');
-  if (!checkAuthReady()) { err.textContent = _authMode === 'register' ? 'Completá nombre, email válido, WhatsApp y contraseña (4+).' : 'Ingresá un email válido y tu contraseña.'; err.style.display = ''; return; }
-  const reg = _authMode === 'register';
-  const body = { local: CARTA_LOCAL, email: document.getElementById('authEmail').value.trim(), password: document.getElementById('authPass').value };
-  if (reg) { body.nombre = document.getElementById('authNombre').value.trim(); body.telefono = document.getElementById('authTel').value.replace(/\D/g, ''); }
-  const btn = document.getElementById('btnAuth'); const _t = btn.textContent; btn.disabled = true; btn.textContent = '…';
-  try {
-    const r = await fetch('/api/web/auth/' + (reg ? 'register' : 'login'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    const j = await r.json();
-    if (!r.ok) { err.textContent = j.error || 'No se pudo continuar'; err.style.display = ''; return; }
-    const prev = getClienteProfile() || {};
-    const cli = Object.assign({ ultimaDireccion: prev.ultimaDireccion || '' }, j.cliente);
-    setClienteSession(j.token, cli);
-    document.getElementById('registroOverlay').classList.remove('open');
-    showToast('¡Hola' + (cli.nombre ? ', ' + cli.nombre.split(' ')[0] : '') + '! 🎉');
-    const cb = _authCallback; _authCallback = null; if (typeof cb === 'function') cb();
-  } catch (e) { err.textContent = 'No se pudo conectar. Reintentá.'; err.style.display = ''; }
-  finally { btn.disabled = false; btn.textContent = _t; }
+function registrarCliente() {
+  const nombre = document.getElementById('regNombre').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const tel = document.getElementById('regTel').value.replace(/\D/g, '');
+  let bad = false;
+  document.getElementById('regNombreErr').style.display = _regNombreOk(nombre) ? 'none' : (bad = true, '');
+  document.getElementById('regEmailErr').style.display = _emailOk(email) ? 'none' : (bad = true, '');
+  document.getElementById('regTelErr').style.display = _regTelOk(tel) ? 'none' : (bad = true, '');
+  if (bad) return;
+  const prev = getClienteProfile() || {};
+  const profile = { nombre, email, telefono: tel, ultimaDireccion: prev.ultimaDireccion || '' };
+  saveClienteProfile(profile);
+  // Registrar en el servidor (lista de clientes del local)
+  fetch('/api/web/cliente', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ local: CARTA_LOCAL, nombre, email, telefono: tel }) }).catch(() => {});
+  document.getElementById('registroOverlay').classList.remove('open');
+  showToast('¡Listo' + (nombre ? ', ' + nombre.split(' ')[0] : '') + '! Ya podés pedir 🎉');
+  const cb = _regCallback; _regCallback = null;
+  if (typeof cb === 'function') cb();
 }
 
 function confirmarPedido() {
   if (!cart.length) return;
-  // Requiere cuenta: si no inició sesión, pedir login/registro primero
-  if (!getClienteToken()) { document.getElementById('cartModal').classList.remove('open'); abrirAuth(confirmarPedido); return; }
+  // Requiere registro: si no hay perfil, pedirlo primero
+  if (!getClienteProfile()) { document.getElementById('cartModal').classList.remove('open'); abrirRegistro(confirmarPedido); return; }
   document.getElementById('cartModal').classList.remove('open');
 
   const itemsHtml = cart.map(i => {
