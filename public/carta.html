@@ -485,6 +485,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 }
 .toast.show{opacity:1}
 
+/* ── Animación "vuela al carrito" ── */
+.fly-cart{
+  position:fixed;z-index:500;width:54px;height:54px;border-radius:50%;
+  background:linear-gradient(135deg,#b45309,var(--red));
+  display:flex;align-items:center;justify-content:center;font-size:27px;
+  box-shadow:0 8px 24px rgba(0,0,0,.45);overflow:hidden;pointer-events:none;
+  will-change:transform,opacity;
+  transition:transform .75s cubic-bezier(.5,-0.35,.3,1.15), opacity .75s ease;
+}
+.fly-cart img{width:100%;height:100%;object-fit:cover}
+@keyframes countPop{0%{transform:scale(1)}35%{transform:scale(1.45)}100%{transform:scale(1)}}
+.cart-bar-count.pop{animation:countPop .45s ease}
+@keyframes cartHandTap{0%,100%{transform:translate(-50%,0)}40%{transform:translate(-50%,8px)}}
+.cart-bar-hand.tap{animation:cartHandTap .45s ease 2}
+
 /* ── DESKTOP ── */
 @media(min-width:600px){
   .hero{height:300px;padding:28px 32px 32px}
@@ -911,10 +926,42 @@ document.getElementById('addModalConfirm').onclick = function () {
   if (!selectedItem || !selectedSize) return;
   const nota = document.getElementById('addModalNota').value.trim();
   const toastMsg = `${selectedItem.nombre} agregado`;
+  const foto = selectedItem.foto || '';
   addToCart(selectedItem.id, selectedSize.label, selectedSize.precio, nota);
+  flyToCart(document.getElementById('addModalConfirm'), foto); // anima hacia el carrito de arriba
   closeAddModal();
   showToast(toastMsg);
 };
+
+/* Vuela un ítem desde el botón "Agregar" hasta el rombo naranja del carrito (arriba) */
+function flyToCart(fromEl, foto) {
+  const cartBar = document.getElementById('cartBar');
+  if (!fromEl || !cartBar) return;
+  const f = fromEl.getBoundingClientRect();
+  const c = cartBar.getBoundingClientRect();
+  if (!c.width) return; // carrito aún no visible
+  const fly = document.createElement('div');
+  fly.className = 'fly-cart';
+  fly.innerHTML = foto ? `<img src="${foto}" alt="">` : '🍕';
+  fly.style.left = (f.left + f.width / 2 - 27) + 'px';
+  fly.style.top  = (f.top + f.height / 2 - 27) + 'px';
+  document.body.appendChild(fly);
+  const dx = (c.left + c.width / 2) - (f.left + f.width / 2);
+  const dy = (c.top + c.height / 2) - (f.top + f.height / 2);
+  requestAnimationFrame(function () {
+    fly.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(.22)';
+    fly.style.opacity = '.25';
+  });
+  let done = false;
+  const finish = function () {
+    if (done) return; done = true;
+    fly.remove();
+    const cnt = document.getElementById('cartBarCount');
+    if (cnt) { cnt.classList.remove('pop'); void cnt.offsetWidth; cnt.classList.add('pop'); }
+  };
+  fly.addEventListener('transitionend', finish);
+  setTimeout(finish, 900); // respaldo por si no dispara transitionend
+}
 
 /* ─── Cart operations ─── */
 function addToCart(prodId, sizeLabel, precio, nota) {
