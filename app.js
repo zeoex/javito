@@ -1351,7 +1351,8 @@ app.post('/api/web/pedido', async (req, res) => {
     modo_envio: modo_envio || 'retiro',
     distancia_km: distancia_km || null,
     lat_cliente: lat_cliente || null,
-    lon_cliente: lon_cliente || null
+    lon_cliente: lon_cliente || null,
+    comprobante: (typeof req.body.comprobante === 'string' && req.body.comprobante.startsWith('data:image')) ? req.body.comprobante : null
   };
 
   // Persistir en el local correcto (?local= o body.local), para que el admin de ese local lo vea
@@ -1361,6 +1362,18 @@ app.post('/api/web/pedido', async (req, res) => {
     list.unshift(pedido);
     await setDeliveryList(local, list);
   } catch(e) { console.error('[web:pedido]', e.message); }
+
+  // Crear la sesión de seguimiento desde ya (el cliente puede seguir el estado desde "Mis pedidos")
+  try {
+    const tid = trackIdFor(local, pedido.id);
+    liveTracks[tid] = {
+      orderId: pedido.id, local,
+      dest: (lat_cliente && lon_cliente) ? { lat: lat_cliente, lng: lon_cliente, address: pedido.direccion } : null,
+      customer: { nombre: cliente.nombre }, driver: {}, pos: null,
+      estado: 'preparando', status: 'active', deliveredAt: null, startedAt: Date.now(), updatedAt: Date.now()
+    };
+    saveTrack(tid);
+  } catch (e) {}
 
   // Guardar/actualizar el cliente en la lista del local (para autocompletar a futuro)
   try {
@@ -1454,6 +1467,33 @@ app.get('/api/web/auth/me', async (req, res) => {
     const c = list.find(x => String(x.id) === String(dec.cid) || String(x.email || '').toLowerCase() === dec.email);
     if (!c) return res.status(404).json({ error: 'no existe' });
     res.json({ ok: true, cliente: _cliPublic(c) });
+  } catch (e) { res.status(401).json({ error: 'token inválido' }); }
+});
+
+// Pedidos del cliente logueado (para "Mis pedidos" + seguimiento)
+app.get('/api/web/auth/pedidos', async (req, res) => {
+  try {
+    const h = req.headers['authorization'] || '';
+    const tk = h.startsWith('Bearer ') ? h.slice(7) : null;
+    if (!tk) return res.status(401).json({ error: 'no token' });
+    const dec = jwt.verify(tk, JWT_SECRET);
+    if (dec.type !== 'cliente') return res.status(401).json({ error: 'token inválido' });
+    const local = dec.local || DEFAULT_LOCAL;
+    const clientes = await getClientesList(local);
+    const c = clientes.find(x => String(x.id) === String(dec.cid) || String(x.email || '').toLowerCase() === dec.email);
+    const tel = c ? String(c.telefono || '').replace(/\D/g, '') : '';
+    if (!tel) return res.json({ ok: true, pedidos: [] });
+    const list = await getDeliveryList(local);
+    const mine = list
+      .filter(o => o.origen === 'web' && String((o.cliente && o.cliente.telefono) || '').replace(/\D/g, '') === tel)
+      .slice(0, 25)
+      .map(o => ({
+        id: o.id, numero: o.numero, estado: o.estado, fecha: o.fecha, hora: o.hora,
+        total: o.total, items: o.items || [], direccion: o.direccion || '',
+        modo_envio: o.modo_envio || 'retiro',
+        trackUrl: '/t/' + trackIdFor(local, o.id)
+      }));
+    res.json({ ok: true, pedidos: mine });
   } catch (e) { res.status(401).json({ error: 'token inválido' }); }
 });
 

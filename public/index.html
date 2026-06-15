@@ -4559,6 +4559,9 @@ function renderDeliveryCard(o,stage) {
   const editBtn = stage !== 'entregado'
     ? `<button class="btn btn-outline btn-sm" onclick="editarPedido('${o.id}')" title="Editar pedido">✏️</button>`
     : '';
+  const compBtn = o.comprobante
+    ? `<button class="btn btn-sm" style="background:#dcfce7;color:#15803d;border:1px solid #bbf7d0" onclick="verComprobantePago('${o.id}')" title="Ver comprobante de pago">📎 Comprob.</button>`
+    : '';
   const itemsHtml = o.origen === 'web'
     ? (o.items||[]).map(i=>`<div style="font-size:11px;color:var(--gray);line-height:1.6">${i.qty}× ${i.nombre}${i.size?` (${i.size})`:''} — $${Number(i.precio*i.qty).toLocaleString()}</div>`).join('')
     : (o.items||[]).map(i=>`${i.qty}x ${i.nombre}`).join(', ');
@@ -4568,7 +4571,7 @@ function renderDeliveryCard(o,stage) {
     <div class="delivery-card-items">${itemsHtml}</div>
     ${dirStr}${repartidorStr}
     <div class="delivery-card-total">💰 $${Number(o.total||0).toLocaleString()} · ${mpLabel}${costoEnvioStr}</div>
-    <div class="delivery-card-actions">${nextBtn}${waBtn}${editBtn}<button class="btn btn-outline btn-sm" onclick="imprimirDelivery(${o.id})" title="Imprimir">🖨️</button>${gpsBtn}${editEnvioBtn}${asignarBtn}${cancelBtn}</div>
+    <div class="delivery-card-actions">${nextBtn}${waBtn}${compBtn}${editBtn}<button class="btn btn-outline btn-sm" onclick="imprimirDelivery(${o.id})" title="Imprimir">🖨️</button>${gpsBtn}${editEnvioBtn}${asignarBtn}${cancelBtn}</div>
   </div>`;
 }
 
@@ -4630,6 +4633,17 @@ async function avisarEstadoWhatsApp(id) {
   let msg = `Hola${nom}! ${estadoTxt}`;
   if (link) msg += ` Seguí tu pedido en vivo acá: ${link}`;
   openWhatsApp(waNum, msg);
+}
+
+// Ver el comprobante de pago adjunto al pedido
+function verComprobantePago(id) {
+  const o = deliveryData.find(d => String(d.id) === String(id));
+  if (!o || !o.comprobante) return;
+  let ov = document.getElementById('compOverlay');
+  if (!ov) { ov = document.createElement('div'); ov.id = 'compOverlay'; document.body.appendChild(ov); }
+  ov.style.cssText = 'position:fixed;inset:0;z-index:4000;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:12px';
+  ov.innerHTML = `<div style="color:#fff;font-weight:700">Comprobante · ${o.numero || ''}</div><img src="${o.comprobante}" style="max-width:100%;max-height:78vh;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.6)"/><div style="display:flex;gap:10px"><a href="${o.comprobante}" download="comprobante-${o.numero || 'pedido'}.jpg" class="btn btn-sm" style="background:#fff;color:#111">⬇️ Descargar</a><button class="btn btn-sm" style="background:#374151;color:#fff" onclick="document.getElementById('compOverlay').remove()">Cerrar</button></div>`;
+  ov.onclick = e => { if (e.target === ov) ov.remove(); };
 }
 
 // ===== Edición de pedidos desde el pipeline =====

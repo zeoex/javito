@@ -611,6 +611,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
   </div>
 </div>
 
+<!-- ── MIS PEDIDOS ── -->
+<div class="confirmed-overlay" id="misPedidosOverlay">
+  <div class="confirmed-card">
+    <div class="confirm-title">📦 Mis pedidos</div>
+    <div class="confirm-sub">Seguí el estado y la ubicación de tus pedidos.</div>
+    <div id="misPedidosList" style="margin-top:14px"></div>
+    <button class="btn-secondary" onclick="document.getElementById('misPedidosOverlay').classList.remove('open')" style="margin-top:6px">Cerrar</button>
+    <button onclick="cerrarSesionCliente();document.getElementById('misPedidosOverlay').classList.remove('open')" style="margin-top:10px;width:100%;background:none;border:none;color:#f87171;font-size:12.5px;cursor:pointer;text-decoration:underline">Cerrar sesión</button>
+  </div>
+</div>
+
 <div class="confirmed-overlay" id="confirmedOverlay">
   <div class="confirmed-card">
     <div class="confirm-title">Confirmar pedido</div>
@@ -645,6 +656,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 
     <label class="confirm-glow-label">✨ Copiá el alias o CVU/CBU y envianos el comprobante para confirmar tu pedido ✨</label>
     <div class="confirm-transfer-box" id="confirmTransferBox"></div>
+
+    <label class="confirm-form-label" style="margin-top:14px">Comprobante de pago</label>
+    <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px;line-height:1.5">1) Hacé la transferencia al alias/CBU de arriba.<br>2) Sacá una captura o foto del comprobante.<br>3) Adjuntala acá 👇 (queda registrada con tu pedido).</div>
+    <input type="file" id="confirmComprobante" accept="image/*" style="display:none" onchange="onComprobante(event)"/>
+    <button type="button" id="btnComprobante" onclick="document.getElementById('confirmComprobante').click()" style="width:100%;background:rgba(124,58,237,.12);border:1.5px dashed rgba(124,58,237,.5);color:#c4b5fd;border-radius:12px;padding:13px;font-weight:700;font-size:13px;cursor:pointer">📎 Adjuntar comprobante</button>
+    <div id="comprobantePreview" style="display:none;margin-top:10px;align-items:center;gap:10px"></div>
 
     <label class="confirm-form-label">Modo de envío</label>
     <div class="confirm-radio-group" id="modeGroup">
@@ -768,7 +785,7 @@ function checkReady() {
   const hasPayment = aliasCopied || cbuCopied || (!bizAlias && !bizCbu);
   const hasMode = !!modoEnvio;
   const deliveryOk = modoEnvio !== 'delivery' || (locationOk && !coverageExceeded);
-  const ok = nombre.length > 0 && wspValid().ok && hasPayment && hasMode && deliveryOk;
+  const ok = nombre.length > 0 && wspValid().ok && hasPayment && !!comprobanteData && hasMode && deliveryOk;
   const btn = document.getElementById('btnWsp');
   if (btn) {
     // El botón queda siempre clickeable: si falta algo, al tocarlo resaltamos lo que falta.
@@ -793,6 +810,7 @@ function highlightMissing() {
   if (!wspValid().ok) { pulseMiss(document.getElementById('confirmWhatsapp')); checkWspError(); miss.push('tu WhatsApp'); first = first || document.getElementById('confirmWhatsapp'); }
   const needPay = (bizAlias || bizCbu) && !(aliasCopied || cbuCopied);
   if (needPay) { pulseMiss(document.getElementById('confirmTransferBox')); miss.push('copiar el alias o CBU'); first = first || document.getElementById('confirmTransferBox'); }
+  if (!comprobanteData) { pulseMiss(document.getElementById('btnComprobante')); miss.push('adjuntar el comprobante de pago'); first = first || document.getElementById('btnComprobante'); }
   if (!modoEnvio) { pulseMiss(document.getElementById('modeGroup')); miss.push('el modo de envío'); first = first || document.getElementById('modeGroup'); }
   else if (modoEnvio === 'delivery' && (coverageExceeded || !locationOk)) {
     const tgt = document.getElementById('addressBox');
@@ -1300,9 +1318,69 @@ function actualizarCuentaUI() {
   el.style.display = logged ? 'flex' : 'none';
   if (logged) el.querySelector('.cuenta-nombre').textContent = (p.nombre || '').split(' ')[0] || 'Mi cuenta';
 }
-function menuCuenta() {
-  const p = getClienteProfile() || {};
-  if (confirm('Sesión de ' + (p.nombre || p.email || 'cliente') + '\n\n¿Cerrar sesión?')) cerrarSesionCliente();
+function menuCuenta() { openMisPedidos(); }
+
+/* ─── Comprobante de pago ─── */
+let comprobanteData = null;
+function onComprobante(ev) {
+  const f = ev.target.files && ev.target.files[0]; if (!f) return;
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const img = new Image();
+    img.onload = function () {
+      const max = 1100; let w = img.width, h = img.height;
+      if (w > h && w > max) { h = Math.round(h * max / w); w = max; } else if (h >= w && h > max) { w = Math.round(w * max / h); h = max; }
+      const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+      cv.getContext('2d').drawImage(img, 0, 0, w, h);
+      comprobanteData = cv.toDataURL('image/jpeg', 0.72);
+      const prev = document.getElementById('comprobantePreview');
+      prev.style.display = 'flex';
+      prev.innerHTML = '';
+      const im = document.createElement('img'); im.src = comprobanteData; im.style.cssText = 'width:54px;height:54px;object-fit:cover;border-radius:8px;border:1px solid var(--border)';
+      const sp = document.createElement('span'); sp.textContent = '✓ Comprobante adjuntado'; sp.style.cssText = 'color:#34d399;font-size:13px;font-weight:600;flex:1';
+      const bt = document.createElement('button'); bt.type = 'button'; bt.textContent = 'Quitar'; bt.style.cssText = 'background:none;border:none;color:#f87171;font-size:13px;cursor:pointer'; bt.onclick = quitarComprobante;
+      prev.appendChild(im); prev.appendChild(sp); prev.appendChild(bt);
+      document.getElementById('btnComprobante').textContent = '📎 Cambiar comprobante';
+      checkReady();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(f);
+}
+function quitarComprobante() {
+  comprobanteData = null;
+  const inp = document.getElementById('confirmComprobante'); if (inp) inp.value = '';
+  const p = document.getElementById('comprobantePreview'); if (p) { p.style.display = 'none'; p.innerHTML = ''; }
+  const b = document.getElementById('btnComprobante'); if (b) b.textContent = '📎 Adjuntar comprobante';
+  checkReady();
+}
+
+/* ─── Mis pedidos ─── */
+async function openMisPedidos() {
+  const ov = document.getElementById('misPedidosOverlay'); const list = document.getElementById('misPedidosList');
+  list.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px">Cargando…</div>';
+  ov.classList.add('open');
+  try {
+    const r = await fetch('/api/web/auth/pedidos', { headers: { 'Authorization': 'Bearer ' + getClienteToken() } });
+    const j = await r.json();
+    if (!r.ok || !j.pedidos || !j.pedidos.length) { list.innerHTML = '<div style="text-align:center;color:var(--muted);padding:24px">Todavía no tenés pedidos. 🍕</div>'; return; }
+    const lbl = { nuevo: '⏳ Recibido', en_cocina: '👨‍🍳 En preparación', listo: '✅ Listo', en_camino: '🛵 En camino', entregado: '📦 Entregado', cancelado: '✖ Cancelado' };
+    list.innerHTML = '';
+    j.pedidos.forEach(o => {
+      const activo = o.estado !== 'entregado' && o.estado !== 'cancelado';
+      const card = document.createElement('div');
+      card.style.cssText = 'border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;background:rgba(255,255,255,0.03)';
+      card.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center"><b style="color:var(--text)">' + (o.numero || '') + '</b><span style="font-size:12.5px;font-weight:700;color:' + (activo ? '#34d399' : 'var(--muted)') + '">' + (lbl[o.estado] || o.estado) + '</span></div>'
+        + '<div style="font-size:12px;color:var(--muted);margin:5px 0">' + (o.fecha || '') + (o.hora ? ' · ' + o.hora : '') + ' · $' + Number(o.total || 0).toLocaleString('es-AR') + '</div>';
+      if (activo) {
+        const a = document.createElement('a'); a.href = o.trackUrl; a.target = '_blank';
+        a.textContent = '📍 Seguir mi pedido →';
+        a.style.cssText = 'display:block;text-align:center;margin-top:6px;background:linear-gradient(135deg,#7c3aed,#9d6bff);color:#fff;border-radius:9px;padding:9px;font-weight:700;font-size:13px;text-decoration:none';
+        card.appendChild(a);
+      }
+      list.appendChild(card);
+    });
+  } catch (e) { list.innerHTML = '<div style="text-align:center;color:#f87171;padding:20px">No se pudieron cargar tus pedidos.</div>'; }
 }
 // Al cargar: refrescar datos del cliente si hay sesión (cross-device)
 (function () {
@@ -1408,6 +1486,7 @@ function confirmarPedido() {
   document.getElementById('confirmNombre').value = _cli.nombre || '';
   const _wsp = document.getElementById('confirmWhatsapp'); if (_wsp) _wsp.value = _cli.telefono || '';
   document.getElementById('confirmDireccion').value = _cli.ultimaDireccion || '';
+  quitarComprobante();
   modoEnvio = '';
   aliasCopied = false;
   cbuCopied = false;
@@ -1520,6 +1599,7 @@ function enviarWhatsApp() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       local: CARTA_LOCAL,
+      comprobante: comprobanteData || null,
       cliente: { nombre, telefono: telefonoCliente, email: (_cliProf.email || ''), direccion },
       items: cart.map(i => ({ nombre: i.nombre, qty: i.qty, precio: i.precio, size: i.size || null, nota: i.nota || '' })),
       total: totalFinal,
