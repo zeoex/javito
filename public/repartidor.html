@@ -2255,24 +2255,9 @@ function _haversineM(a, b) {
   return 2 * R * Math.asin(Math.sqrt(s));
 }
 
-function avisarWhatsApp(id) {
-  const p = pedidos.find(p => String(p.id) === String(id));
-  if (!p) return;
-  const tel = _digitsTel(p.cliente && p.cliente.telefono);
-  const go = (trackId) => {
-    const url = location.origin + '/t/' + trackId;
-    const nombre = (p.cliente && p.cliente.nombre) ? p.cliente.nombre.split(' ')[0] : '';
-    const txt = `¡Hola${nombre ? ' ' + nombre : ''}! 🛵 Tu pedido va en camino. Seguilo en tiempo real acá: ${url}`;
-    const wa = tel ? `https://wa.me/${tel}?text=${encodeURIComponent(txt)}` : `https://wa.me/?text=${encodeURIComponent(txt)}`;
-    window.open(wa, '_blank');
-  };
-  const sess = trackSessions[id];
-  if (sess) { go(sess.trackId); return; }
-  showToast('📡 Iniciando seguimiento…');
-  startTracking(p).then(s => { renderOrders(); if (s) go(s.trackId); });
-}
-
 /* ── ORDER ACTIONS ───────────────────────────────── */
+// El GPS se comparte ÚNICAMENTE a partir de acá (Iniciar viaje), nunca antes,
+// para no gastar batería del repartidor mientras el pedido está en preparación.
 function iniciarViaje(id) {
   const p = pedidos.find(p => String(p.id) === String(id));
   if (!p || !['asignado','listo'].includes(p.estado)) return;
