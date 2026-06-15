@@ -4793,7 +4793,7 @@ function _editApplyCoords(lat, lon) {
   if (bLat && bLon) {
     const km = _haversineKm(bLat, bLon, lat, lon); _editKm = parseFloat(km.toFixed(2));
     if (km > radio) { _editEnvio = 0; if (st) { st.textContent = `⛔ ${km.toFixed(1)} km — excede la cobertura (límite ${radio} km)`; st.style.color = '#dc2626'; } }
-    else if (ppk > 0) { _editEnvio = Math.ceil(km * ppk); if (st) { st.textContent = `📍 ${km.toFixed(1)} km · Envío: $${_editEnvio.toLocaleString('es-AR')}`; st.style.color = '#16a34a'; } }
+    else if (ppk > 0) { _editEnvio = Math.max(1, Math.ceil(km)) * ppk; if (st) { st.textContent = `📍 ${km.toFixed(1)} km → ${Math.max(1, Math.ceil(km))} km · Envío: $${_editEnvio.toLocaleString('es-AR')}`; st.style.color = '#16a34a'; } }
     else { _editEnvio = fijo; if (st) { st.textContent = `📍 ${km.toFixed(1)} km · Envío fijo $${_editEnvio.toLocaleString('es-AR')} (configurá "Precio por km")`; st.style.color = '#b45309'; } }
   } else { _editEnvio = fijo; if (st) { st.textContent = '⚠ Falta la ubicación del local en Config para calcular por distancia'; st.style.color = '#dc2626'; } }
   renderEditItems();
@@ -5306,7 +5306,7 @@ function _dlvApplyCoords(lat, lon) {
   if (bLat && bLon) {
     const km = _haversineKm(bLat, bLon, lat, lon); _dlvKm = parseFloat(km.toFixed(2));
     if (km > radio) { _dlvEnvio = 0; if (st) { st.textContent = `⛔ ${km.toFixed(1)} km — excede la cobertura (límite ${radio} km)`; st.style.color = '#dc2626'; } }
-    else if (ppk > 0) { _dlvEnvio = Math.ceil(km * ppk); if (st) { st.textContent = `📍 ${km.toFixed(1)} km · Envío: $${_dlvEnvio.toLocaleString('es-AR')}`; st.style.color = '#16a34a'; } }
+    else if (ppk > 0) { _dlvEnvio = Math.max(1, Math.ceil(km)) * ppk; if (st) { st.textContent = `📍 ${km.toFixed(1)} km → ${Math.max(1, Math.ceil(km))} km · Envío: $${_dlvEnvio.toLocaleString('es-AR')}`; st.style.color = '#16a34a'; } }
     else { _dlvEnvio = fijo; if (st) { st.textContent = `📍 ${km.toFixed(1)} km · Envío fijo $${_dlvEnvio.toLocaleString('es-AR')} (configurá "Precio por km" para cobrar por distancia)`; st.style.color = '#b45309'; } }
   } else { _dlvEnvio = fijo; if (st) { st.textContent = '⚠ Falta la ubicación del local (Config → Ubicación del local) para calcular por distancia'; st.style.color = '#dc2626'; } }
   dlvActualizarTotal();

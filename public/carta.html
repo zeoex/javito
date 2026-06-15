@@ -1167,7 +1167,7 @@ function applyCoords(lat, lon) {
       document.getElementById('confirmTotal').textContent = formatPrice(subtotal);
     } else {
       coverageExceeded = false; locationOk = true;
-      const costo = bizPrecioPorKm > 0 ? Math.ceil(km * bizPrecioPorKm) : costoEnvio;
+      const costo = bizPrecioPorKm > 0 ? (Math.max(1, Math.ceil(km)) * bizPrecioPorKm) : costoEnvio;
       costoEnvio = costo;
       document.getElementById('confirmEnvioVal').textContent = costo > 0 ? formatPrice(costo) : 'Bonificado';
       document.getElementById('confirmTotal').textContent = formatPrice(subtotal + (costo > 0 ? costo : 0));
