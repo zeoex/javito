@@ -1258,7 +1258,6 @@ function enviarWhatsApp() {
   const telefonoCliente = wspValid().value;
 
   const number = bizWsp || '';
-  if (!number) { showToast('El negocio no tiene número de WhatsApp configurado'); return; }
 
   const esDelivery = modoEnvio === 'delivery';
   const modoTexto = esDelivery ? 'envío con delivery' : 'retiro en sucursal';
@@ -1310,7 +1309,8 @@ function enviarWhatsApp() {
   }).catch(() => {});
 
   document.getElementById('confirmedOverlay').classList.remove('open');
-  window.open(`https://wa.me/${number}?text=${encodeURIComponent(msg)}`, '_blank');
+  if (number) window.open(`https://wa.me/${number}?text=${encodeURIComponent(msg)}`, '_blank');
+  else showToast('¡Pedido enviado! El local te va a contactar.');
 
   cart = [];
   saveCart();
