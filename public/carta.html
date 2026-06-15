@@ -243,7 +243,7 @@ body{
   width:36px;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;
   margin:0 auto 20px;
 }
-.sheet-title{font-size:18px;font-weight:800;margin-bottom:4px;color:var(--text)}
+.sheet-title{font-family:var(--display);font-size:22px;font-weight:600;margin-bottom:4px;color:var(--text);letter-spacing:-.2px}
 .sheet-sub{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.45}
 
 /* ── SIZE MODAL ── */
@@ -260,8 +260,8 @@ body{
   font-family:inherit;
   transition:all .15s;
 }
-.size-btn:hover{border-color:var(--red);color:var(--accent-2)}
-.size-btn.sel{background:var(--red);border-color:var(--red);color:#fff}
+.size-btn:hover{border-color:var(--accent-2);color:var(--accent-2)}
+.size-btn.sel{background:linear-gradient(135deg,var(--accent-2),var(--red));border-color:transparent;color:#2a1500;font-weight:700;box-shadow:0 4px 14px var(--accent-glow)}
 .size-btn .size-price{font-weight:700}
 .nota-input{
   width:100%;
@@ -280,17 +280,17 @@ body{
 
 /* ── BUTTONS ── */
 .btn-primary{
-  width:100%;padding:14px;
-  background:var(--red);border:none;
+  width:100%;padding:15px;
+  background:linear-gradient(135deg,var(--accent-2),var(--red));border:none;
   border-radius:14px;
-  color:#fff;font-size:15px;font-weight:700;
+  color:#2a1500;font-size:15.5px;font-weight:800;
   cursor:pointer;margin-top:16px;
   font-family:inherit;
-  transition:opacity .15s,transform .1s;
-  box-shadow:0 3px 14px var(--accent-glow);
+  transition:box-shadow .15s,transform .12s cubic-bezier(.34,1.56,.64,1);
+  box-shadow:0 6px 18px var(--accent-glow);
 }
-.btn-primary:hover{opacity:.88}
-.btn-primary:active{transform:scale(.98)}
+.btn-primary:hover{box-shadow:0 9px 26px var(--accent-glow)}
+.btn-primary:active{transform:scale(.97)}
 .btn-primary:disabled{background:rgba(255,255,255,0.15);color:var(--muted);box-shadow:none;cursor:not-allowed}
 .btn-secondary{
   width:100%;padding:13px;
@@ -373,7 +373,7 @@ body{
 }
 .qty-btn:active{transform:scale(.88)}
 .qty-minus{background:rgba(255,255,255,0.10);color:var(--text)}
-.qty-plus{background:var(--red);color:#fff}
+.qty-plus{background:linear-gradient(135deg,var(--accent-2),var(--red));color:#2a1500}
 .qty-num{font-size:15px;font-weight:700;min-width:16px;text-align:center;color:var(--text)}
 .cart-item-price{font-size:14px;font-weight:700;color:var(--accent-2);white-space:nowrap;flex-shrink:0}
 .cart-total-row{
@@ -406,7 +406,7 @@ body{
   max-height:calc(100vh - 32px);
   overflow-y:auto;
 }
-.confirm-title{font-size:21px;font-weight:900;color:var(--text);margin-bottom:6px;text-align:center}
+.confirm-title{font-family:var(--display);font-size:24px;font-weight:600;color:var(--text);margin-bottom:6px;text-align:center;letter-spacing:-.2px}
 .confirm-sub{font-size:13px;color:var(--text-2);line-height:1.5;text-align:center;margin-bottom:4px}
 .confirm-items{
   margin:12px 0 8px;
