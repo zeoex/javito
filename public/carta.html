@@ -620,7 +620,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 
     <div id="addressBox" style="display:none;margin-top:10px">
       <label class="confirm-form-label">Dirección de envío</label>
-      <input type="text" class="confirm-form-input" id="confirmDireccion" placeholder="Calle, número, piso..."/>
+      <input type="text" class="confirm-form-input" id="confirmDireccion" placeholder="Calle, número, barrio…" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarDireccion();}"/>
+      <button type="button" onclick="buscarDireccion()" style="margin-top:8px;width:100%;background:rgba(124,58,237,.12);border:1.5px solid rgba(124,58,237,.4);color:#c4b5fd;border-radius:10px;padding:11px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">🔎 Buscar / corregir esta dirección</button>
     </div>
     <div id="locationStatus" style="display:none;font-size:12px;margin-top:8px;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,0.05)"></div>
 
@@ -1125,10 +1126,8 @@ function selectModoEnvio(modo) {
     locationOk = true; checkReady(); return;
   }
   navigator.geolocation.getCurrentPosition(pos => {
-    customerLat = pos.coords.latitude;
-    customerLon = pos.coords.longitude;
     // Auto-fill address via Nominatim reverse geocoding
-    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${customerLat}&lon=${customerLon}&format=json`)
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`)
       .then(r => r.json())
       .then(data => {
         const addr = data.address || {};
@@ -1136,35 +1135,65 @@ function selectModoEnvio(modo) {
         const dirField = document.getElementById('confirmDireccion');
         if (dirField && !dirField.value && parts.length) dirField.value = parts.join(' ');
       }).catch(() => {});
-    if (bizLat && bizLon) {
-      const km = haversineKm(bizLat, bizLon, customerLat, customerLon);
-      if (km > bizRadioDelivery) {
-        coverageExceeded = true; locationOk = false;
-        if (locStatus) { locStatus.textContent = `⛔ Excede la cobertura de envío (${km.toFixed(1)} km — límite ${bizRadioDelivery} km)`; locStatus.style.color = '#f87171'; }
-        document.getElementById('confirmEnvioVal').textContent = 'Sin cobertura';
-        document.getElementById('confirmTotal').textContent = formatPrice(subtotal);
-      } else {
-        coverageExceeded = false; locationOk = true;
-        const costo = bizPrecioPorKm > 0 ? Math.ceil(km * bizPrecioPorKm) : costoEnvio;
-        costoEnvio = costo;
-        document.getElementById('confirmEnvioVal').textContent = costo > 0 ? formatPrice(costo) : 'Bonificado';
-        document.getElementById('confirmTotal').textContent = formatPrice(subtotal + (costo > 0 ? costo : 0));
-        if (locStatus) { locStatus.textContent = `📍 ${km.toFixed(1)} km · Envío calculado`; locStatus.style.color = '#34d399'; }
-      }
-    } else {
-      locationOk = true; coverageExceeded = false;
-      document.getElementById('confirmEnvioVal').textContent = costoEnvio > 0 ? formatPrice(costoEnvio) : 'Bonificado';
-      document.getElementById('confirmTotal').textContent = formatPrice(subtotal + (costoEnvio > 0 ? costoEnvio : 0));
-      if (locStatus) { locStatus.textContent = '📍 Ubicación obtenida'; locStatus.style.color = '#34d399'; }
-    }
-    checkReady();
+    applyCoords(pos.coords.latitude, pos.coords.longitude);
   }, err => {
-    if (locStatus) { locStatus.textContent = '⚠ No se pudo obtener tu ubicación'; locStatus.style.color = '#f87171'; }
+    if (locStatus) { locStatus.textContent = '⚠ No pudimos obtener tu ubicación. Escribí tu dirección y tocá "Buscar".'; locStatus.style.color = '#f87171'; }
+    locationOk = false; coverageExceeded = false;
+    checkReady();
+  }, { timeout: 10000 });
+}
+
+// Calcula distancia / costo de envío / cobertura a partir de unas coordenadas (geo o dirección manual)
+function applyCoords(lat, lon) {
+  customerLat = lat; customerLon = lon;
+  const subtotal = cartTotal();
+  const locStatus = document.getElementById('locationStatus');
+  if (locStatus) locStatus.style.display = '';
+  if (bizLat && bizLon) {
+    const km = haversineKm(bizLat, bizLon, lat, lon);
+    if (km > bizRadioDelivery) {
+      coverageExceeded = true; locationOk = false;
+      if (locStatus) { locStatus.textContent = `⛔ Excede la cobertura de envío (${km.toFixed(1)} km — límite ${bizRadioDelivery} km)`; locStatus.style.color = '#f87171'; }
+      document.getElementById('confirmEnvioVal').textContent = 'Sin cobertura';
+      document.getElementById('confirmTotal').textContent = formatPrice(subtotal);
+    } else {
+      coverageExceeded = false; locationOk = true;
+      const costo = bizPrecioPorKm > 0 ? Math.ceil(km * bizPrecioPorKm) : costoEnvio;
+      costoEnvio = costo;
+      document.getElementById('confirmEnvioVal').textContent = costo > 0 ? formatPrice(costo) : 'Bonificado';
+      document.getElementById('confirmTotal').textContent = formatPrice(subtotal + (costo > 0 ? costo : 0));
+      if (locStatus) { locStatus.textContent = `📍 ${km.toFixed(1)} km · Envío calculado`; locStatus.style.color = '#34d399'; }
+    }
+  } else {
     locationOk = true; coverageExceeded = false;
     document.getElementById('confirmEnvioVal').textContent = costoEnvio > 0 ? formatPrice(costoEnvio) : 'Bonificado';
     document.getElementById('confirmTotal').textContent = formatPrice(subtotal + (costoEnvio > 0 ? costoEnvio : 0));
-    checkReady();
-  }, { timeout: 10000 });
+    if (locStatus) { locStatus.textContent = '📍 Ubicación cargada'; locStatus.style.color = '#34d399'; }
+  }
+  checkReady();
+}
+
+// Busca la dirección escrita manualmente (geocoding) y recalcula el envío
+async function buscarDireccion() {
+  const dir = (document.getElementById('confirmDireccion').value || '').trim();
+  const locStatus = document.getElementById('locationStatus');
+  if (!dir) { pulseMiss(document.getElementById('confirmDireccion')); showToast('Escribí tu dirección'); return; }
+  if (locStatus) { locStatus.style.display = ''; locStatus.textContent = '🔎 Buscando la dirección…'; locStatus.style.color = 'var(--muted)'; }
+  locationOk = false; checkReady();
+  let url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&q=' + encodeURIComponent(dir);
+  if (bizLat && bizLon) url += `&viewbox=${(bizLon - 0.5)},${(bizLat + 0.5)},${(bizLon + 0.5)},${(bizLat - 0.5)}`;
+  try {
+    const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    const arr = await r.json();
+    if (arr && arr[0] && arr[0].lat) {
+      applyCoords(parseFloat(arr[0].lat), parseFloat(arr[0].lon));
+    } else {
+      if (locStatus) { locStatus.textContent = '⚠ No encontramos esa dirección. Agregá el barrio o la ciudad y reintentá.'; locStatus.style.color = '#f87171'; }
+      locationOk = false; checkReady();
+    }
+  } catch (e) {
+    if (locStatus) { locStatus.textContent = '⚠ No se pudo buscar la dirección. Reintentá.'; locStatus.style.color = '#f87171'; }
+  }
 }
 
 function confirmarPedido() {
