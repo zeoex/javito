@@ -497,6 +497,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 .fly-cart img{width:100%;height:100%;object-fit:cover}
 @keyframes shakeX{0%,100%{transform:translateX(0)}15%,55%{transform:translateX(-7px)}35%,75%{transform:translateX(7px)}}
 .shake{animation:shakeX .5s ease}
+#dirSugg{position:absolute;top:100%;left:0;right:0;z-index:60;margin-top:4px;background:#1a1430;border:1px solid var(--border);border-radius:10px;max-height:230px;overflow:auto;box-shadow:0 12px 32px rgba(0,0,0,.55)}
+.sugg-item{padding:10px 12px;font-size:13px;color:#e7e5f0;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.06);line-height:1.35}
+.sugg-item:last-child{border-bottom:none}
+.sugg-item:hover,.sugg-item.on{background:rgba(124,58,237,.28)}
+.sugg-item .s2{display:block;font-size:11px;color:var(--muted)}
 .miss-highlight{box-shadow:0 0 0 2px #f87171,0 0 0 7px rgba(248,113,113,.22)!important;border-color:#f87171!important;border-radius:10px;transition:box-shadow .2s}
 @keyframes countPop{0%{transform:scale(1)}35%{transform:scale(1.45)}100%{transform:scale(1)}}
 .cart-bar-count.pop{animation:countPop .45s ease}
@@ -620,7 +625,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 
     <div id="addressBox" style="display:none;margin-top:10px">
       <label class="confirm-form-label">Dirección de envío</label>
-      <input type="text" class="confirm-form-input" id="confirmDireccion" placeholder="Calle, número, barrio…" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarDireccion();}"/>
+      <div style="position:relative">
+        <input type="text" class="confirm-form-input" id="confirmDireccion" placeholder="Empezá a escribir tu dirección…" autocomplete="off" oninput="onDirInput()" onblur="setTimeout(function(){var s=document.getElementById('dirSugg');if(s)s.style.display='none';},200)" onkeydown="if(event.key==='Enter'){event.preventDefault();buscarDireccion();}"/>
+        <div id="dirSugg" style="display:none"></div>
+      </div>
       <button type="button" onclick="buscarDireccion()" style="margin-top:8px;width:100%;background:rgba(124,58,237,.12);border:1.5px solid rgba(124,58,237,.4);color:#c4b5fd;border-radius:10px;padding:11px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">🔎 Buscar dirección</button>
     </div>
     <div id="locationStatus" style="display:none;font-size:12px;margin-top:8px;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,0.05)"></div>
@@ -1171,6 +1179,50 @@ function applyCoords(lat, lon) {
     if (locStatus) { locStatus.textContent = '📍 Ubicación cargada'; locStatus.style.color = '#34d399'; }
   }
   checkReady();
+}
+
+// Autocompletado de direcciones mientras se escribe (Nominatim, cerca del local)
+let _dirSuggTimer = null;
+function _suggLabel(a) {
+  const ad = a.address || {};
+  const linea1 = [ad.road, ad.house_number].filter(Boolean).join(' ');
+  const linea2 = [ad.suburb || ad.neighbourhood || ad.city_district, ad.town || ad.city || ad.village].filter(Boolean).join(', ');
+  const main = linea1 || (a.display_name || '').split(',')[0];
+  return { main, sub: linea2 || (a.display_name || '').split(',').slice(1, 3).join(',').trim() };
+}
+function onDirInput() {
+  clearTimeout(_dirSuggTimer);
+  locationOk = false; checkReady();
+  const v = (document.getElementById('confirmDireccion').value || '').trim();
+  const sugg = document.getElementById('dirSugg');
+  if (v.length < 4) { if (sugg) sugg.style.display = 'none'; return; }
+  _dirSuggTimer = setTimeout(() => _fetchDirSugg(v), 350);
+}
+async function _fetchDirSugg(v) {
+  const sugg = document.getElementById('dirSugg'); if (!sugg) return;
+  let url = 'https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=6&countrycodes=ar&q=' + encodeURIComponent(v);
+  if (bizLat && bizLon) url += `&viewbox=${bizLon - 0.2},${bizLat + 0.2},${bizLon + 0.2},${bizLat - 0.2}&bounded=1`;
+  try {
+    const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    const arr = await r.json();
+    if (!arr || !arr.length) { sugg.style.display = 'none'; return; }
+    sugg.innerHTML = '';
+    arr.forEach(a => {
+      const { main, sub } = _suggLabel(a);
+      const it = document.createElement('div');
+      it.className = 'sugg-item';
+      it.innerHTML = '<span></span><span class="s2"></span>';
+      it.children[0].textContent = main;
+      it.children[1].textContent = sub;
+      it.onclick = () => {
+        document.getElementById('confirmDireccion').value = sub ? (main + (main && sub ? ', ' : '') + sub) : main;
+        sugg.style.display = 'none';
+        applyCoords(parseFloat(a.lat), parseFloat(a.lon));
+      };
+      sugg.appendChild(it);
+    });
+    sugg.style.display = '';
+  } catch (e) { sugg.style.display = 'none'; }
 }
 
 // Busca la dirección escrita manualmente (geocoding) y recalcula el envío

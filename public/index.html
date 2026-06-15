@@ -1318,6 +1318,13 @@ body.rol-mozo .spk-size-btn:hover{border-color:#059669;background:#ecfdf5}
               <div class="form-group"><label>Costo de envío fijo ($)</label><input class="form-control" id="cfgCostoEnvio" type="number" min="0" value="0"/><small style="color:var(--gray);font-size:11px">Se usa cuando no hay precio por km configurado. 0 = Bonificado</small></div>
               <div class="form-group"><label>Precio por km ($)</label><input class="form-control" id="cfgPrecioPorKm" type="number" min="0" value="0" placeholder="Ej: 150"/><small style="color:var(--gray);font-size:11px">Si &gt; 0 calcula el envío automáticamente por distancia. Si es 0 usa el costo fijo</small></div>
               <div class="form-group"><label>Radio de cobertura de delivery (km)</label><input class="form-control" id="cfgRadioDelivery" type="number" min="1" value="10" placeholder="Ej: 10"/><small style="color:var(--gray);font-size:11px">Pedidos fuera de este radio se marcan como "Sin cobertura"</small></div>
+              <div class="form-group"><label>Buscar ubicación del local por dirección</label>
+                <div style="position:relative">
+                  <input class="form-control" id="cfgDirBuscar" type="text" placeholder="Escribí la dirección del local…" autocomplete="off" oninput="admDirInput('cfgDirBuscar','cfgDirSugg',_cfgSetCoords,false)" onblur="setTimeout(function(){var s=document.getElementById('cfgDirSugg');if(s)s.style.display='none';},200)"/>
+                  <div id="cfgDirSugg" class="adm-dir-sugg" style="display:none"></div>
+                </div>
+                <small style="font-size:11px;color:var(--gray)">Elegí una sugerencia para fijar el punto exacto del local (lat/lon).</small>
+              </div>
               <div class="form-group"><label>Ubicación del local (Latitud)</label><div style="display:flex;gap:8px;align-items:center"><input class="form-control" id="cfgLatitud" type="text" placeholder="Ej: -34.603722" style="flex:1"/><button class="btn btn-outline btn-sm" onclick="usarUbicacionActual()" style="white-space:nowrap">📍 Mi ubicación</button></div></div>
               <div class="form-group"><label>Ubicación del local (Longitud)</label><input class="form-control" id="cfgLongitud" type="text" placeholder="Ej: -58.381592"/></div>
               <div class="form-group"><label>Pie de recibo</label><input class="form-control" id="cfgRecibo" value="¡Gracias por su visita!"/></div>
@@ -1683,7 +1690,10 @@ body.rol-mozo .spk-size-btn:hover{border-color:#059669;background:#ecfdf5}
         <div class="dlv-client-row">
           <div class="form-group" id="dlvTelGrp" style="margin:0"><label style="font-size:12px">Teléfono</label><input class="form-control" id="dlvTel" placeholder="11-4567-8901"/></div>
           <div class="form-group" id="dlvDirGrp" style="margin:0"><label style="font-size:12px">Dirección</label>
-            <input class="form-control" id="dlvDir" placeholder="Calle, número, barrio" onkeydown="if(event.key==='Enter'){event.preventDefault();dlvBuscarDireccion();}"/>
+            <div style="position:relative">
+              <input class="form-control" id="dlvDir" placeholder="Empezá a escribir la dirección…" autocomplete="off" oninput="admDirInput('dlvDir','dlvDirSugg',_dlvApplyCoords)" onblur="setTimeout(function(){var s=document.getElementById('dlvDirSugg');if(s)s.style.display='none';},200)" onkeydown="if(event.key==='Enter'){event.preventDefault();dlvBuscarDireccion();}"/>
+              <div id="dlvDirSugg" class="adm-dir-sugg" style="display:none"></div>
+            </div>
             <button type="button" class="btn btn-outline btn-sm" style="margin-top:6px;width:100%;white-space:normal" onclick="dlvBuscarDireccion()">🔎 Buscar dirección</button>
             <div id="dlvEnvioStatus" style="font-size:11px;margin-top:5px;color:var(--gray)"></div>
           </div>
@@ -4624,6 +4634,44 @@ async function avisarEstadoWhatsApp(id) {
 
 // ===== Edición de pedidos desde el pipeline =====
 function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ===== Autocompletado de direcciones (admin: nuevo pedido y edición) =====
+(function(){
+  const s = document.createElement('style');
+  s.textContent = '.adm-dir-sugg{position:absolute;top:100%;left:0;right:0;z-index:3500;margin-top:4px;background:#fff;border:1px solid #ddd;border-radius:8px;max-height:220px;overflow:auto;box-shadow:0 10px 28px rgba(0,0,0,.18)}.adm-sugg-item{padding:9px 11px;font-size:13px;color:#1f2937;cursor:pointer;border-bottom:1px solid #f0f0f0;line-height:1.3}.adm-sugg-item:last-child{border-bottom:none}.adm-sugg-item:hover{background:#f3eafe}.adm-sugg-item .s2{display:block;font-size:11px;color:#9ca3af}';
+  document.head.appendChild(s);
+})();
+let _admDirTimer = null;
+function admDirInput(inputId, suggId, onPick, bounded) {
+  clearTimeout(_admDirTimer);
+  const inp = document.getElementById(inputId), sugg = document.getElementById(suggId);
+  const v = (inp && inp.value || '').trim();
+  if (v.length < 4) { if (sugg) sugg.style.display = 'none'; return; }
+  _admDirTimer = setTimeout(() => _admFetchSugg(v, suggId, inputId, onPick, bounded !== false), 350);
+}
+async function _admFetchSugg(v, suggId, inputId, onPick, bounded) {
+  const sugg = document.getElementById(suggId); if (!sugg) return;
+  const biz = getBizConfig(); const bLat = parseFloat(biz.latitud), bLon = parseFloat(biz.longitud);
+  let url = 'https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=6&countrycodes=ar&q=' + encodeURIComponent(v);
+  if (bounded && bLat && bLon) url += `&viewbox=${bLon - 0.2},${bLat + 0.2},${bLon + 0.2},${bLat - 0.2}&bounded=1`;
+  try {
+    const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    const arr = await r.json();
+    if (!arr || !arr.length) { sugg.style.display = 'none'; return; }
+    sugg.innerHTML = '';
+    arr.forEach(a => {
+      const ad = a.address || {};
+      const l1 = [ad.road, ad.house_number].filter(Boolean).join(' ') || (a.display_name || '').split(',')[0];
+      const l2 = [ad.suburb || ad.neighbourhood || ad.city_district, ad.town || ad.city || ad.village].filter(Boolean).join(', ');
+      const it = document.createElement('div'); it.className = 'adm-sugg-item';
+      it.innerHTML = '<span></span><span class="s2"></span>';
+      it.children[0].textContent = l1; it.children[1].textContent = l2;
+      it.onclick = () => { document.getElementById(inputId).value = l2 ? (l1 + ', ' + l2) : l1; sugg.style.display = 'none'; onPick(parseFloat(a.lat), parseFloat(a.lon)); };
+      sugg.appendChild(it);
+    });
+    sugg.style.display = '';
+  } catch (e) { sugg.style.display = 'none'; }
+}
 let _editId = null, _editItems = [], _editEnvio = 0, _editDelivery = false;
 let _editDir = '', _editKm = null, _editLat = null, _editLon = null;
 function _haversineKm(la1, lo1, la2, lo2) {
@@ -4661,7 +4709,10 @@ function editarPedido(id) {
   const dirBlock = _editDelivery ? `
     <div style="margin:12px 0;padding-top:12px;border-top:1px solid #eee">
       <label style="font-size:12px;font-weight:700;color:#6b7280;display:block;margin-bottom:6px">📍 Dirección de envío</label>
-      <input id="editDir" value="${escapeHtml(_editDir)}" placeholder="Calle, número, barrio…" style="width:100%;box-sizing:border-box;padding:9px;border:1px solid #ddd;border-radius:8px;font-size:13px" onkeydown="if(event.key==='Enter'){event.preventDefault();recalcEnvioEdit();}"/>
+      <div style="position:relative">
+        <input id="editDir" value="${escapeHtml(_editDir)}" placeholder="Empezá a escribir la dirección…" autocomplete="off" style="width:100%;box-sizing:border-box;padding:9px;border:1px solid #ddd;border-radius:8px;font-size:13px" oninput="admDirInput('editDir','editDirSugg',_editApplyCoords)" onblur="setTimeout(function(){var s=document.getElementById('editDirSugg');if(s)s.style.display='none';},200)" onkeydown="if(event.key==='Enter'){event.preventDefault();recalcEnvioEdit();}"/>
+        <div id="editDirSugg" class="adm-dir-sugg" style="display:none"></div>
+      </div>
       <button class="btn btn-outline btn-sm" style="margin-top:8px;width:100%;white-space:normal" onclick="recalcEnvioEdit()">🔎 Buscar dirección</button>
       <div id="editEnvioStatus" style="font-size:12px;margin-top:7px;color:#6b7280"></div>
     </div>` : '';
@@ -4728,23 +4779,22 @@ async function recalcEnvioEdit() {
     const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
     const arr = await r.json();
     if (!arr || !arr[0] || !arr[0].lat) { if (st) { st.textContent = '⚠ No se encontró la dirección cerca del local. Revisá calle/número.'; st.style.color = '#dc2626'; } return; }
-    _editLat = parseFloat(arr[0].lat); _editLon = parseFloat(arr[0].lon);
-    if (bLat && bLon) {
-      const km = _haversineKm(bLat, bLon, _editLat, _editLon);
-      _editKm = parseFloat(km.toFixed(2));
-      if (km > radio) {
-        _editEnvio = 0;
-        if (st) { st.textContent = `⛔ ${km.toFixed(1)} km — excede la cobertura (límite ${radio} km)`; st.style.color = '#dc2626'; }
-      } else {
-        _editEnvio = ppk > 0 ? Math.ceil(km * ppk) : fijo;
-        if (st) { st.textContent = `📍 ${km.toFixed(1)} km · Envío: $${_editEnvio.toLocaleString('es-AR')}`; st.style.color = '#16a34a'; }
-      }
-    } else {
-      _editEnvio = fijo;
-      if (st) { st.textContent = '📍 Dirección encontrada (sin coords del local, envío fijo)'; st.style.color = '#16a34a'; }
-    }
-    renderEditItems();
+    _editApplyCoords(parseFloat(arr[0].lat), parseFloat(arr[0].lon));
   } catch (e) { if (st) { st.textContent = '⚠ No se pudo buscar la dirección'; st.style.color = '#dc2626'; } }
+}
+// Calcula envío/cobertura del editor a partir de coordenadas
+function _editApplyCoords(lat, lon) {
+  _editLat = lat; _editLon = lon;
+  const biz = (typeof getBizConfig === 'function') ? getBizConfig() : {};
+  const bLat = parseFloat(biz.latitud), bLon = parseFloat(biz.longitud);
+  const radio = parseFloat(biz.radioDelivery) || 10, ppk = parseFloat(biz.precioPorKm) || 0, fijo = parseFloat(biz.costoEnvio) || 0;
+  const st = document.getElementById('editEnvioStatus');
+  if (bLat && bLon) {
+    const km = _haversineKm(bLat, bLon, lat, lon); _editKm = parseFloat(km.toFixed(2));
+    if (km > radio) { _editEnvio = 0; if (st) { st.textContent = `⛔ ${km.toFixed(1)} km — excede la cobertura (límite ${radio} km)`; st.style.color = '#dc2626'; } }
+    else { _editEnvio = ppk > 0 ? Math.ceil(km * ppk) : fijo; if (st) { st.textContent = `📍 ${km.toFixed(1)} km · Envío: $${_editEnvio.toLocaleString('es-AR')}`; st.style.color = '#16a34a'; } }
+  } else { _editEnvio = fijo; if (st) { st.textContent = '📍 Dirección encontrada (envío fijo)'; st.style.color = '#16a34a'; } }
+  renderEditItems();
 }
 
 async function guardarEdicionPedido() {
@@ -5241,14 +5291,22 @@ async function dlvBuscarDireccion() {
     const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
     const arr = await r.json();
     if (!arr || !arr[0] || !arr[0].lat) { if (st) { st.textContent = '⚠ No se encontró la dirección cerca del local. Revisá calle/número.'; st.style.color = '#dc2626'; } return; }
-    _dlvLat = parseFloat(arr[0].lat); _dlvLon = parseFloat(arr[0].lon);
-    if (bLat && bLon) {
-      const km = _haversineKm(bLat, bLon, _dlvLat, _dlvLon); _dlvKm = parseFloat(km.toFixed(2));
-      if (km > radio) { _dlvEnvio = 0; if (st) { st.textContent = `⛔ ${km.toFixed(1)} km — excede la cobertura (límite ${radio} km)`; st.style.color = '#dc2626'; } }
-      else { _dlvEnvio = ppk > 0 ? Math.ceil(km * ppk) : fijo; if (st) { st.textContent = `📍 ${km.toFixed(1)} km · Envío: $${_dlvEnvio.toLocaleString('es-AR')}`; st.style.color = '#16a34a'; } }
-    } else { _dlvEnvio = fijo; if (st) { st.textContent = '📍 Dirección encontrada (envío fijo)'; st.style.color = '#16a34a'; } }
-    dlvActualizarTotal();
+    _dlvApplyCoords(parseFloat(arr[0].lat), parseFloat(arr[0].lon));
   } catch (e) { if (st) { st.textContent = '⚠ No se pudo buscar la dirección'; st.style.color = '#dc2626'; } }
+}
+// Calcula envío/cobertura del nuevo pedido a partir de coordenadas
+function _dlvApplyCoords(lat, lon) {
+  _dlvLat = lat; _dlvLon = lon;
+  const biz = getBizConfig();
+  const bLat = parseFloat(biz.latitud), bLon = parseFloat(biz.longitud);
+  const radio = parseFloat(biz.radioDelivery) || 10, ppk = parseFloat(biz.precioPorKm) || 0, fijo = parseFloat(biz.costoEnvio) || 0;
+  const st = document.getElementById('dlvEnvioStatus');
+  if (bLat && bLon) {
+    const km = _haversineKm(bLat, bLon, lat, lon); _dlvKm = parseFloat(km.toFixed(2));
+    if (km > radio) { _dlvEnvio = 0; if (st) { st.textContent = `⛔ ${km.toFixed(1)} km — excede la cobertura (límite ${radio} km)`; st.style.color = '#dc2626'; } }
+    else { _dlvEnvio = ppk > 0 ? Math.ceil(km * ppk) : fijo; if (st) { st.textContent = `📍 ${km.toFixed(1)} km · Envío: $${_dlvEnvio.toLocaleString('es-AR')}`; st.style.color = '#16a34a'; } }
+  } else { _dlvEnvio = fijo; if (st) { st.textContent = '📍 Dirección encontrada (envío fijo)'; st.style.color = '#16a34a'; } }
+  dlvActualizarTotal();
 }
 let _clienteReturnToDelivery = false; // al guardar un cliente nuevo, volver al pedido y autocompletarlo
 
@@ -7243,6 +7301,14 @@ function removeLogoConfig() {
   _renderLogoPreview(null);
   loadBizConfig();
   showToast('Logo eliminado');
+}
+
+// Fija lat/lon del local a partir de una dirección elegida en el autocompletar
+function _cfgSetCoords(lat, lon) {
+  const la = document.getElementById('cfgLatitud'), lo = document.getElementById('cfgLongitud');
+  if (la) la.value = Number(lat).toFixed(7);
+  if (lo) lo.value = Number(lon).toFixed(7);
+  showToast('📍 Punto del local fijado — acordate de Guardar', 'success');
 }
 
 function usarUbicacionActual() {
