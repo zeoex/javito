@@ -23,6 +23,8 @@
   --accent:#d97706;
   --accent-2:#fbbf24;
   --ember:#c2410c;
+  --fresh:#a3c585;            /* verde salvia — frescura (acento secundario) */
+  --fresh-glow:rgba(132,179,94,0.30);
   --accent-glow:rgba(217,119,6,0.25);
   --accent-glow-strong:rgba(251,191,36,0.18);
   --price-color:#fbbf24;
@@ -204,8 +206,8 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opa
 .section-hdr:first-child{margin-top:4px}
 .section-hdr-bar{
   width:4px;height:26px;border-radius:3px;flex-shrink:0;
-  background:linear-gradient(to bottom, var(--accent-2), rgba(217,119,6,0.2));
-  box-shadow:0 0 10px var(--accent-glow);
+  background:linear-gradient(to bottom, var(--fresh), rgba(132,179,94,0.18));
+  box-shadow:0 0 10px var(--fresh-glow);
 }
 .section-hdr-text{
   font-family:var(--display);font-size:22px;font-weight:600;letter-spacing:-.2px;
