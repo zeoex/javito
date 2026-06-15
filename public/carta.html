@@ -4,36 +4,50 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Menú Online</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --red:#d97706;
+  --red:#e0820a;
+  --red-2:#b45309;
   --accent-2:#fbbf24;
-  --accent-glow:rgba(217,119,6,0.25);
+  --accent-glow:rgba(245,158,11,0.30);
   --dark:#1a1a2e;
-  --bg:#06060f;
+  --bg:#070611;
   --bg-2:#0c0c1a;
-  --surface:rgba(255,255,255,0.05);
-  --surface-hover:rgba(255,255,255,0.09);
+  --surface:rgba(255,255,255,0.045);
+  --surface-hover:rgba(255,255,255,0.085);
   --white:rgba(255,255,255,0.05);
-  --border:rgba(255,255,255,0.09);
-  --border-hover:rgba(255,255,255,0.20);
-  --muted:#7a7a9a;
-  --text:#f0f0ff;
-  --text-2:#9090bb;
+  --border:rgba(255,255,255,0.085);
+  --border-hover:rgba(251,191,36,0.30);
+  --muted:#8b8bad;
+  --text:#f4f3ff;
+  --text-2:#a3a3c7;
   --sheet-bg:#0e0e1e;
+  --display:'Fraunces',Georgia,serif;
 }
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:100px;-webkit-font-smoothing:antialiased}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:100px;-webkit-font-smoothing:antialiased;
+  background-image:
+    radial-gradient(700px 380px at 80% -5%, rgba(245,158,11,.10), transparent 60%),
+    radial-gradient(620px 420px at 0% 8%, rgba(124,58,237,.10), transparent 55%);
+  background-attachment:fixed;
+}
 
 /* ── HERO ── */
 .hero{
   position:relative;
-  height:240px;
+  height:250px;
   overflow:hidden;
   display:flex;
   flex-direction:column;
   justify-content:flex-end;
-  padding:20px 20px 24px;
+  padding:20px 20px 26px;
+  border-radius:0 0 26px 26px;
+  box-shadow:0 18px 40px rgba(0,0,0,.45);
 }
 .hero-bg{
   position:absolute;inset:0;
@@ -51,19 +65,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 }
 .hero-identity{display:flex;align-items:flex-end;gap:14px;position:relative;z-index:2}
 .hero-logo-wrap{
-  width:70px;height:70px;flex-shrink:0;
-  background:rgba(255,255,255,0.12);
-  border:1.5px solid rgba(255,255,255,0.22);
-  border-radius:16px;
-  box-shadow:0 4px 20px rgba(0,0,0,.5);
+  width:74px;height:74px;flex-shrink:0;
+  background:rgba(255,255,255,0.14);
+  border:1.5px solid rgba(255,255,255,0.28);
+  border-radius:18px;
+  box-shadow:0 8px 26px rgba(0,0,0,.55);
   display:flex;align-items:center;justify-content:center;overflow:hidden;
   backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
 }
 .hero-logo-wrap img{width:100%;height:100%;object-fit:cover;display:none}
-.hero-logo-wrap .hero-emoji-inner{font-size:34px;line-height:1}
+.hero-logo-wrap .hero-emoji-inner{font-size:36px;line-height:1}
 .hero-text{flex:1;min-width:0}
-.hero-text h1{font-size:26px;font-weight:900;color:#fff;letter-spacing:-.4px;line-height:1.12;margin-bottom:4px;text-shadow:0 2px 16px rgba(0,0,0,.7)}
-.hero-text p{font-size:13px;color:rgba(255,255,255,.72);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 8px rgba(0,0,0,.6)}
+.hero-text h1{font-family:var(--display);font-size:30px;font-weight:600;color:#fff;letter-spacing:-.3px;line-height:1.05;margin-bottom:5px;text-shadow:0 2px 18px rgba(0,0,0,.75)}
+.hero-text p{font-size:13px;color:rgba(255,255,255,.82);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 8px rgba(0,0,0,.6)}
 .mesa-badge{
   display:none;
   align-self:flex-start;
@@ -95,17 +109,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 .cat-nav::-webkit-scrollbar{display:none}
 .cat-pill{
   display:inline-flex;align-items:center;gap:5px;
-  padding:7px 15px;border-radius:22px;
+  padding:8px 16px;border-radius:22px;
   border:1.5px solid rgba(255,255,255,0.10);
   background:rgba(255,255,255,0.05);color:var(--text-2);
-  font-size:13px;font-weight:500;
+  font-size:13px;font-weight:600;
   white-space:nowrap;cursor:pointer;
   font-family:inherit;
-  transition:all .2s ease;flex-shrink:0;
+  transition:all .22s cubic-bezier(.34,1.56,.64,1);flex-shrink:0;
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
 }
 .cat-pill:hover{border-color:rgba(251,191,36,0.35);color:var(--accent-2);background:rgba(217,119,6,0.10)}
-.cat-pill.active{background:linear-gradient(135deg,var(--red),#b45309);border-color:transparent;color:#fff;font-weight:700;box-shadow:0 0 16px var(--accent-glow),0 2px 8px rgba(0,0,0,.4)}
+.cat-pill.active{background:linear-gradient(135deg,var(--accent-2),var(--red));border-color:transparent;color:#2a1500;font-weight:800;box-shadow:0 4px 16px var(--accent-glow);transform:translateY(-1px)}
 
 /* ── MAIN CONTENT ── */
 .content{max-width:760px;margin:0 auto;padding:20px 14px 40px}
@@ -116,35 +130,37 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
   margin:28px 0 14px;
 }
 .section-hdr:first-child{margin-top:0}
-.section-hdr-bar{width:4px;height:26px;border-radius:3px;flex-shrink:0;background:linear-gradient(to bottom,var(--accent-2),rgba(217,119,6,0.2));box-shadow:0 0 10px var(--accent-glow)}
-.section-hdr-text{font-size:19px;font-weight:800;letter-spacing:-.3px;color:var(--text)}
+.section-hdr-bar{width:4px;height:24px;border-radius:3px;flex-shrink:0;background:linear-gradient(to bottom,var(--accent-2),rgba(217,119,6,0.2));box-shadow:0 0 10px var(--accent-glow)}
+.section-hdr-text{font-family:var(--display);font-size:22px;font-weight:600;letter-spacing:-.2px;color:var(--text)}
 
 /* ── PRODUCT CARDS ── */
 .product-card{
-  background:var(--surface);
-  border-radius:16px;
+  background:linear-gradient(160deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025));
+  border-radius:18px;
   border:1px solid var(--border);
   display:flex;align-items:stretch;
   overflow:hidden;
-  margin-bottom:10px;
-  transition:border-color .2s,background .2s,transform .2s,box-shadow .2s;
-  min-height:92px;
+  margin-bottom:12px;
+  transition:border-color .2s,transform .15s cubic-bezier(.34,1.56,.64,1),box-shadow .2s;
+  min-height:96px;
   cursor:pointer;
   position:relative;
+  box-shadow:0 2px 10px rgba(0,0,0,.25);
 }
-.product-card:hover{border-color:var(--border-hover);background:var(--surface-hover);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,0,0,.4),0 0 0 1px rgba(251,191,36,0.06)}
+.product-card:hover{border-color:var(--border-hover);box-shadow:0 12px 32px rgba(0,0,0,.45),0 0 0 1px rgba(251,191,36,0.10)}
+.product-card:active{transform:scale(.985)}
 .product-card:last-child{margin-bottom:0}
 .card-body{
-  flex:1;padding:14px 15px;
+  flex:1;padding:15px 16px;
   display:flex;flex-direction:column;justify-content:center;
   min-width:0;
 }
-.card-name{font-size:15px;font-weight:700;margin-bottom:4px;line-height:1.3;color:var(--text)}
+.card-name{font-family:var(--display);font-size:17px;font-weight:600;margin-bottom:5px;line-height:1.2;color:var(--text)}
 .card-desc{
-  font-size:12px;color:var(--text-2);line-height:1.5;margin-bottom:9px;
+  font-size:12.5px;color:var(--text-2);line-height:1.5;margin-bottom:10px;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
 }
-.card-price{font-size:17px;font-weight:900;color:var(--accent-2);line-height:1;letter-spacing:-.2px;text-shadow:0 0 20px rgba(251,191,36,0.3)}
+.card-price{font-size:18px;font-weight:800;color:var(--accent-2);line-height:1;letter-spacing:-.2px;text-shadow:0 0 20px rgba(251,191,36,0.3)}
 .card-price-chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:5px;width:100%;margin-top:3px}
 .price-chip{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -158,25 +174,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 .card-footer--chips{flex-direction:column;align-items:stretch;gap:0;padding-top:8px}
 .card-footer--chips .card-add-btn{align-self:flex-end;margin-top:2px}
 .card-add-btn{
-  width:32px;height:32px;border-radius:50%;
-  background:var(--red);color:#fff;
-  font-size:20px;border:none;cursor:pointer;
+  width:40px;height:40px;border-radius:14px;
+  background:linear-gradient(135deg,var(--accent-2),var(--red));color:#2a1500;
+  font-size:23px;font-weight:700;border:none;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   line-height:1;flex-shrink:0;
-  transition:transform .1s,opacity .15s;
-  box-shadow:0 2px 8px var(--accent-glow);
+  transition:transform .12s cubic-bezier(.34,1.56,.64,1),box-shadow .15s;
+  box-shadow:0 5px 14px var(--accent-glow);
 }
-.card-add-btn:hover{opacity:.85}
-.card-add-btn:active{transform:scale(.88)}
+.card-add-btn:hover{box-shadow:0 7px 20px var(--accent-glow)}
+.card-add-btn:active{transform:scale(.86)}
 .card-media{
-  width:100px;flex-shrink:0;
+  width:104px;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(135deg,rgba(18,18,42,0.9),rgba(12,12,26,0.95));
+  background:linear-gradient(135deg,rgba(124,58,237,0.14),rgba(12,12,26,0.95));
   position:relative;overflow:hidden;
-  border-left:1px solid var(--border);
+  margin:8px 8px 8px 0;border-radius:14px;
 }
 .card-media img{width:100%;height:100%;object-fit:cover;display:none}
-.card-media .card-emoji{font-size:40px;line-height:1;filter:drop-shadow(0 2px 8px rgba(0,0,0,.5))}
+.card-media .card-emoji{font-size:42px;line-height:1;filter:drop-shadow(0 2px 8px rgba(0,0,0,.5))}
 
 /* ── LOADING / EMPTY ── */
 .loading{
