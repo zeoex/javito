@@ -716,13 +716,14 @@ function applyBizConfig(biz) {
   bizWsp = (biz.wsp || biz.tel || '').replace(/\D/g, '');
   bizAlias = biz.alias || '';
   bizCbu = biz.cbu || '';
-  costoEnvio = parseFloat(biz.costoEnvio) || 0;
-  bizLat = parseFloat(biz.latitud) || null;
-  bizLon = parseFloat(biz.longitud) || null;
-  bizRadioDelivery = parseFloat(biz.radioDelivery) || 10;
-  bizPrecioPorKm = parseFloat(biz.precioPorKm) || 0;
+  costoEnvio = _pf(biz.costoEnvio) || 0;
+  bizLat = _pf(biz.latitud);
+  bizLon = _pf(biz.longitud);
+  bizRadioDelivery = _pf(biz.radioDelivery) || 10;
+  bizPrecioPorKm = _pf(biz.precioPorKm) || 0;
 }
 
+function _pf(v){ const n = parseFloat(String(v==null?'':v).replace(',', '.')); return isNaN(n)?null:n; }
 function haversineKm(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;

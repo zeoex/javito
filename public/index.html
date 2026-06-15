@@ -4634,6 +4634,7 @@ async function avisarEstadoWhatsApp(id) {
 
 // ===== Edición de pedidos desde el pipeline =====
 function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function _pf(v){ const n = parseFloat(String(v==null?'':v).replace(',', '.')); return isNaN(n)?null:n; }
 
 // ===== Autocompletado de direcciones (admin: nuevo pedido y edición) =====
 (function(){
@@ -4786,14 +4787,15 @@ async function recalcEnvioEdit() {
 function _editApplyCoords(lat, lon) {
   _editLat = lat; _editLon = lon;
   const biz = (typeof getBizConfig === 'function') ? getBizConfig() : {};
-  const bLat = parseFloat(biz.latitud), bLon = parseFloat(biz.longitud);
-  const radio = parseFloat(biz.radioDelivery) || 10, ppk = parseFloat(biz.precioPorKm) || 0, fijo = parseFloat(biz.costoEnvio) || 0;
+  const bLat = _pf(biz.latitud), bLon = _pf(biz.longitud);
+  const radio = _pf(biz.radioDelivery) || 10, ppk = _pf(biz.precioPorKm) || 0, fijo = _pf(biz.costoEnvio) || 0;
   const st = document.getElementById('editEnvioStatus');
   if (bLat && bLon) {
     const km = _haversineKm(bLat, bLon, lat, lon); _editKm = parseFloat(km.toFixed(2));
     if (km > radio) { _editEnvio = 0; if (st) { st.textContent = `⛔ ${km.toFixed(1)} km — excede la cobertura (límite ${radio} km)`; st.style.color = '#dc2626'; } }
-    else { _editEnvio = ppk > 0 ? Math.ceil(km * ppk) : fijo; if (st) { st.textContent = `📍 ${km.toFixed(1)} km · Envío: $${_editEnvio.toLocaleString('es-AR')}`; st.style.color = '#16a34a'; } }
-  } else { _editEnvio = fijo; if (st) { st.textContent = '📍 Dirección encontrada (envío fijo)'; st.style.color = '#16a34a'; } }
+    else if (ppk > 0) { _editEnvio = Math.ceil(km * ppk); if (st) { st.textContent = `📍 ${km.toFixed(1)} km · Envío: $${_editEnvio.toLocaleString('es-AR')}`; st.style.color = '#16a34a'; } }
+    else { _editEnvio = fijo; if (st) { st.textContent = `📍 ${km.toFixed(1)} km · Envío fijo $${_editEnvio.toLocaleString('es-AR')} (configurá "Precio por km")`; st.style.color = '#b45309'; } }
+  } else { _editEnvio = fijo; if (st) { st.textContent = '⚠ Falta la ubicación del local en Config para calcular por distancia'; st.style.color = '#dc2626'; } }
   renderEditItems();
 }
 
@@ -5298,14 +5300,15 @@ async function dlvBuscarDireccion() {
 function _dlvApplyCoords(lat, lon) {
   _dlvLat = lat; _dlvLon = lon;
   const biz = getBizConfig();
-  const bLat = parseFloat(biz.latitud), bLon = parseFloat(biz.longitud);
-  const radio = parseFloat(biz.radioDelivery) || 10, ppk = parseFloat(biz.precioPorKm) || 0, fijo = parseFloat(biz.costoEnvio) || 0;
+  const bLat = _pf(biz.latitud), bLon = _pf(biz.longitud);
+  const radio = _pf(biz.radioDelivery) || 10, ppk = _pf(biz.precioPorKm) || 0, fijo = _pf(biz.costoEnvio) || 0;
   const st = document.getElementById('dlvEnvioStatus');
   if (bLat && bLon) {
     const km = _haversineKm(bLat, bLon, lat, lon); _dlvKm = parseFloat(km.toFixed(2));
     if (km > radio) { _dlvEnvio = 0; if (st) { st.textContent = `⛔ ${km.toFixed(1)} km — excede la cobertura (límite ${radio} km)`; st.style.color = '#dc2626'; } }
-    else { _dlvEnvio = ppk > 0 ? Math.ceil(km * ppk) : fijo; if (st) { st.textContent = `📍 ${km.toFixed(1)} km · Envío: $${_dlvEnvio.toLocaleString('es-AR')}`; st.style.color = '#16a34a'; } }
-  } else { _dlvEnvio = fijo; if (st) { st.textContent = '📍 Dirección encontrada (envío fijo)'; st.style.color = '#16a34a'; } }
+    else if (ppk > 0) { _dlvEnvio = Math.ceil(km * ppk); if (st) { st.textContent = `📍 ${km.toFixed(1)} km · Envío: $${_dlvEnvio.toLocaleString('es-AR')}`; st.style.color = '#16a34a'; } }
+    else { _dlvEnvio = fijo; if (st) { st.textContent = `📍 ${km.toFixed(1)} km · Envío fijo $${_dlvEnvio.toLocaleString('es-AR')} (configurá "Precio por km" para cobrar por distancia)`; st.style.color = '#b45309'; } }
+  } else { _dlvEnvio = fijo; if (st) { st.textContent = '⚠ Falta la ubicación del local (Config → Ubicación del local) para calcular por distancia'; st.style.color = '#dc2626'; } }
   dlvActualizarTotal();
 }
 let _clienteReturnToDelivery = false; // al guardar un cliente nuevo, volver al pedido y autocompletarlo
