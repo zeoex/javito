@@ -98,6 +98,11 @@ async function initPG() {
         biz_cfg JSONB DEFAULT '{}',
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
+      CREATE TABLE IF NOT EXISTS track_sessions (
+        id TEXT PRIMARY KEY,
+        data JSONB DEFAULT '{}',
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
       INSERT INTO locals (id, nombre) VALUES ('la-isla', 'La Isla')
         ON CONFLICT (id) DO NOTHING
     `);
@@ -554,6 +559,24 @@ function normEstado(e) {
 function isExpired(t) {
   return !!(t && t.status === 'delivered' && t.deliveredAt && (Date.now() - t.deliveredAt) > LINK_TTL_AFTER_DONE);
 }
+// Persistencia en DB (sobrevive a reinicios/redeploys)
+async function saveTrack(id) {
+  const pool = getPool(); if (!pool) return;
+  const t = liveTracks[id]; if (!t) return;
+  try { await pool.query(`INSERT INTO track_sessions (id, data, updated_at) VALUES ($1,$2,NOW()) ON CONFLICT (id) DO UPDATE SET data=$2, updated_at=NOW()`, [id, JSON.stringify(t)]); }
+  catch (e) { console.error('[track:save]', e.message); }
+}
+async function loadTrack(id) {
+  if (liveTracks[id]) return liveTracks[id];
+  const pool = getPool(); if (!pool) return null;
+  try { const { rows } = await pool.query('SELECT data FROM track_sessions WHERE id=$1', [id]); if (rows[0] && rows[0].data) { liveTracks[id] = rows[0].data; return liveTracks[id]; } }
+  catch (e) { console.error('[track:load]', e.message); }
+  return null;
+}
+async function deleteTrackDB(id) {
+  const pool = getPool(); if (!pool) return;
+  try { await pool.query('DELETE FROM track_sessions WHERE id=$1', [id]); } catch (e) {}
+}
 function markDelivered(id) {
   const t = liveTracks[id];
   if (!t || t.status === 'delivered') return;
@@ -561,21 +584,25 @@ function markDelivered(id) {
   t.estado = 'entregado';
   t.deliveredAt = Date.now();
   t.updatedAt = t.deliveredAt;
+  saveTrack(id);
   const expiresAt = t.deliveredAt + LINK_TTL_AFTER_DONE;
   io.to('T:' + id).emit('track:done', { expiresAt });
   setTimeout(() => {
-    if (liveTracks[id]) { io.to('T:' + id).emit('track:expired', {}); delete liveTracks[id]; }
+    io.to('T:' + id).emit('track:expired', {});
+    delete liveTracks[id];
+    deleteTrackDB(id);
   }, LINK_TTL_AFTER_DONE + 1000).unref?.();
 }
 // Actualiza el estado de la sesión de seguimiento de un pedido (si existe) y lo emite al cliente
-function setTrackState(local, orderId, estado) {
+async function setTrackState(local, orderId, estado) {
   const id = trackIdFor(local, orderId);
-  const t = liveTracks[id];
+  const t = await loadTrack(id);
   if (!t) return; // solo si ya se generó el link de seguimiento para ese pedido
   const ne = normEstado(estado);
   if (ne === 'entregado') { markDelivered(id); return; }
   t.estado = ne;
   t.updatedAt = Date.now();
+  saveTrack(id);
   io.to('T:' + id).emit('track:state', { estado: ne });
 }
 // Limpieza: descarta sesiones expiradas o inactivas hace mucho
@@ -584,15 +611,15 @@ setInterval(() => {
   for (const k of Object.keys(liveTracks)) {
     const t = liveTracks[k];
     const age = now - (t.updatedAt || t.startedAt || now);
-    if (isExpired(t) || age > 6 * 3600e3) delete liveTracks[k];
+    if (isExpired(t) || age > 6 * 3600e3) { delete liveTracks[k]; deleteTrackDB(k); }
   }
 }, 60e3).unref?.();
 
 // El admin/repartidor inicia (o reutiliza) la sesión de seguimiento de un pedido — link estable
-app.post('/api/track/start', (req, res) => {
+app.post('/api/track/start', async (req, res) => {
   const { orderId, local, dest, customer, driver, estado } = req.body || {};
   const id = trackIdFor(local, orderId);
-  const prev = liveTracks[id] || {};
+  const prev = (await loadTrack(id)) || {};
   liveTracks[id] = {
     orderId, local: local || DEFAULT_LOCAL,
     dest: dest || prev.dest || null,
@@ -605,13 +632,14 @@ app.post('/api/track/start', (req, res) => {
     startedAt: prev.startedAt || Date.now(),
     updatedAt: Date.now(),
   };
+  saveTrack(id);
   res.json({ trackId: id });
 });
 
 // El repartidor envía su posición actual
-app.post('/api/track/:id/pos', (req, res) => {
-  let t = liveTracks[req.params.id];
-  // Resiliencia: si la sesión se perdió (reinicio), recrearla mínima para no cortar el GPS
+app.post('/api/track/:id/pos', async (req, res) => {
+  let t = await loadTrack(req.params.id);
+  // Resiliencia: si la sesión se perdió, recrearla mínima para no cortar el GPS
   if (!t) t = liveTracks[req.params.id] = { orderId: null, local: DEFAULT_LOCAL, dest: null, customer: {}, driver: {}, estado: 'en_camino', status: 'active', startedAt: Date.now() };
   if (t.status === 'delivered') return res.json({ ok: true, done: true });
   const { lat, lng, heading, speed, acc } = req.body || {};
@@ -620,18 +648,20 @@ app.post('/api/track/:id/pos', (req, res) => {
   if (t.estado === 'preparando' || t.estado === 'listo') t.estado = 'en_camino'; // si llega ubicación, ya va en camino
   t.updatedAt = Date.now();
   io.to('T:' + req.params.id).emit('track:pos', t.pos);
+  saveTrack(req.params.id);
   res.json({ ok: true });
 });
 
 // Marca el pedido como entregado → el enlace vive 5 min más
-app.post('/api/track/:id/done', (req, res) => {
+app.post('/api/track/:id/done', async (req, res) => {
+  await loadTrack(req.params.id);
   markDelivered(req.params.id);
   res.json({ ok: true });
 });
 
 // El cliente consulta el estado actual (carga inicial + fallback de polling)
-app.get('/api/track/:id', (req, res) => {
-  const t = liveTracks[req.params.id];
+app.get('/api/track/:id', async (req, res) => {
+  const t = await loadTrack(req.params.id);
   if (!t || isExpired(t)) return res.status(410).json({ error: 'expirado', expired: true });
   res.json({
     deliveredAt: t.deliveredAt || null,
