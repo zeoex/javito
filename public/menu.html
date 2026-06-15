@@ -43,6 +43,9 @@ body{
     radial-gradient(620px 420px at 0% 8%, rgba(124,58,237,.10), transparent 55%);
   background-attachment:fixed;
 }
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.035;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+@keyframes cardIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.product-card{animation:none!important}}
 
 /* ── HERO ── */
 .hero{
@@ -190,7 +193,7 @@ body{
 }
 
 /* ── MAIN CONTENT ── */
-.content{max-width:760px;margin:0 auto;padding:22px 14px 48px}
+.content{max-width:760px;margin:0 auto;padding:22px 14px 48px;position:relative;z-index:1}
 
 /* ── SECTION HEADER ── */
 .section-hdr{
@@ -220,6 +223,7 @@ body{
   min-height:96px;
   position:relative;
   box-shadow:0 2px 10px rgba(0,0,0,.25);
+  animation:cardIn .5s cubic-bezier(.4,0,.2,1) both;
 }
 .product-card::before{
   content:'';position:absolute;inset:0;border-radius:inherit;
@@ -412,7 +416,8 @@ function formatPrice(n) {
   return '$' + Number(n).toLocaleString('es-AR');
 }
 
-function renderCard(item) {
+function renderCard(item, idx) {
+  const delay = Math.min((idx || 0) * 0.05, 0.5);
   const mediaBlock = item.foto
     ? `<div class="card-media"><img src="${item.foto}" alt="${item.nombre}" onload="this.style.display='block'" onerror="this.style.display='none'"></div>`
     : '';
@@ -429,7 +434,7 @@ function renderCard(item) {
   }
 
   return `
-    <div class="product-card">
+    <div class="product-card" style="animation-delay:${delay}s">
       <div class="card-body">
         <div class="card-name">${item.nombre}</div>
         ${item.desc ? `<div class="card-desc">${item.desc}</div>` : ''}
