@@ -194,42 +194,6 @@ async function setDeliveryList(local, list) {
   if (isDefaultLocal(local)) await pool.query('UPDATE app_state SET delivery=$1, updated_at=NOW() WHERE id=1', [JSON.stringify(list)]);
   else await pool.query('INSERT INTO tenant_state (local_id, delivery, updated_at) VALUES ($1,$2,NOW()) ON CONFLICT (local_id) DO UPDATE SET delivery=$2, updated_at=NOW()', [local, JSON.stringify(list)]);
 }
-// Lista de clientes por local (PG-aware)
-async function getClientesList(local) {
-  const pool = getPool();
-  if (!pool) return isDefaultLocal(local) ? (db.clientes || []) : ((db.tenants[local] && db.tenants[local].clientes) || []);
-  if (isDefaultLocal(local)) { const { rows } = await pool.query('SELECT clientes FROM app_state WHERE id = 1'); return rows[0]?.clientes || []; }
-  const { rows } = await pool.query('SELECT clientes FROM tenant_state WHERE local_id = $1', [local]); return rows[0]?.clientes || [];
-}
-async function setClientesList(local, list) {
-  if (isDefaultLocal(local)) db.clientes = list;
-  else { if (!db.tenants[local]) db.tenants[local] = emptyTenantState(); db.tenants[local].clientes = list; }
-  const pool = getPool();
-  if (!pool) return;
-  if (isDefaultLocal(local)) await pool.query('UPDATE app_state SET clientes=$1, updated_at=NOW() WHERE id=1', [JSON.stringify(list)]);
-  else await pool.query('INSERT INTO tenant_state (local_id, clientes, updated_at) VALUES ($1,$2,NOW()) ON CONFLICT (local_id) DO UPDATE SET clientes=$2, updated_at=NOW()', [local, JSON.stringify(list)]);
-}
-// Crea/actualiza un cliente (web) en el local, match por email o teléfono
-async function upsertCliente(local, data, incTotal) {
-  const list = await getClientesList(local);
-  const tel = String(data.telefono || '').replace(/\D/g, '');
-  const email = String(data.email || '').trim().toLowerCase();
-  let c = list.find(x => (email && String(x.email || '').toLowerCase() === email) || (tel && String(x.telefono || '').replace(/\D/g, '') === tel));
-  if (!c) {
-    c = { id: Date.now(), nombre: data.nombre || '', email, telefono: data.telefono || '', email_lower: email, direccion: data.direccion || '', ultimaDireccion: data.direccion || '', pedidos: 0, total_gastado: 0, origen: 'web', creado: arDate() };
-    if (data.lat != null) { c.lat = data.lat; c.lon = data.lon; }
-    list.push(c);
-  } else {
-    if (data.nombre) c.nombre = data.nombre;
-    if (email) c.email = email;
-    if (data.telefono) c.telefono = data.telefono;
-    if (data.direccion) { c.direccion = data.direccion; c.ultimaDireccion = data.direccion; }
-    if (data.lat != null) { c.lat = data.lat; c.lon = data.lon; }
-  }
-  if (typeof incTotal === 'number') { c.pedidos = (c.pedidos || 0) + 1; c.total_gastado = (c.total_gastado || 0) + incTotal; c.ultimo = arDate(); }
-  await setClientesList(local, list);
-  return c;
-}
 
 // ─────────────────────────────────────────────
 //  SEED DATA
@@ -1362,28 +1326,9 @@ app.post('/api/web/pedido', async (req, res) => {
     await setDeliveryList(local, list);
   } catch(e) { console.error('[web:pedido]', e.message); }
 
-  // Guardar/actualizar el cliente en la lista del local (para autocompletar a futuro)
-  try {
-    await upsertCliente(local, {
-      nombre: cliente.nombre, email: cliente.email, telefono: cliente.telefono,
-      direccion: cliente.direccion, lat: lat_cliente || null, lon: lon_cliente || null
-    }, total || 0);
-  } catch (e) { console.error('[web:pedido:cliente]', e.message); }
-
   // Notificar al panel admin del local en tiempo real
   bcast(local, 'delivery:update', pedido);
   res.status(201).json(pedido);
-});
-
-// Registro de cliente desde el menú online (público)
-app.post('/api/web/cliente', async (req, res) => {
-  const { nombre, email, telefono, direccion } = req.body || {};
-  if (!nombre || !email || !telefono) return res.status(400).json({ error: 'Nombre, email y teléfono requeridos' });
-  const local = reqLocal(req);
-  try {
-    const c = await upsertCliente(local, { nombre, email, telefono, direccion });
-    res.json({ ok: true, cliente: { id: c.id, nombre: c.nombre, email: c.email, telefono: c.telefono, ultimaDireccion: c.ultimaDireccion || c.direccion || '' } });
-  } catch (e) { console.error('[web:cliente]', e.message); res.status(500).json({ error: 'No se pudo registrar' }); }
 });
 
 // Actualizar costo de envío de un pedido web
