@@ -1612,6 +1612,11 @@
     <!-- ── TAB: Estadísticas / Historial ── -->
     <div class="tab-pane" id="tab-estadisticas">
 
+      <div class="stats-row" style="padding:14px 14px 4px">
+        <div class="stat-pill"><div class="stat-num" id="stat-viajes">0</div><div class="stat-lbl">Viajes realizados</div></div>
+        <div class="stat-pill"><div class="stat-num" id="stat-km">0</div><div class="stat-lbl">Km recorridos</div></div>
+      </div>
+
       <div id="section-history">
         <div class="section-header" style="padding: 16px 14px 8px">
           <span class="section-title">Historial de repartos</span>
@@ -2166,7 +2171,7 @@ async function startTracking(p) {
   } catch (e) { console.warn('[track] start error', e); }
   if (!trackId) { showToast('⚠️ No se pudo iniciar el seguimiento'); return null; }
 
-  const sess = { trackId, watchId: null, geoHandle: null, lastSent: 0, lastPos: null };
+  const sess = { trackId, watchId: null, geoHandle: null, lastSent: 0, lastPos: null, distM: 0 };
   trackSessions[p.id] = sess;
   acquireWakeLock();
 
@@ -2175,6 +2180,8 @@ async function startTracking(p) {
     // Throttle: enviar como máximo cada 4s o si se movió +15m
     const moved = sess.lastPos ? _haversineM(sess.lastPos, [c.latitude, c.longitude]) : Infinity;
     if (now - sess.lastSent < 4000 && moved < 15) return;
+    // Acumular km recorridos del viaje (descarta saltos de GPS > 3 km)
+    if (sess.lastPos && isFinite(moved) && moved < 3000) sess.distM += moved;
     sess.lastSent = now; sess.lastPos = [c.latitude, c.longitude];
     fetch('/api/track/' + trackId + '/pos', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -2283,6 +2290,9 @@ function verEnMaps(id) {
 function marcarEntregado(id) {
   const p = pedidos.find(p => String(p.id) === String(id));
   if (!p || p.estado !== 'en_camino') return;
+  // Registrar el viaje: +1 viaje y sumar los km recorridos durante el trayecto
+  const _sess = trackSessions[id];
+  registrarViaje(_sess && _sess.distM ? _sess.distM / 1000 : 0);
   stopTracking(id);
   p.estado = 'entregado';
   p.hora_entrega = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' });
@@ -2295,6 +2305,26 @@ function marcarEntregado(id) {
   showToast('✅ Pedido #' + p.numero + ' entregado!');
   fetch('/api/delivery/' + id + '/estado', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ estado: 'entregado', local: REPARTIDOR_LOCAL }) })
     .catch(() => { if (socket) socket.emit('delivery:status', { id, estado: 'entregado' }); });
+}
+
+/* ── ESTADÍSTICAS DEL REPARTIDOR (viajes + km) ───── */
+function _repStatsAll() { try { return JSON.parse(localStorage.getItem('restito_rep_stats') || '{}'); } catch (e) { return {}; } }
+function _repStatsKey() { return (currentDriver && (currentDriver.user || currentDriver.id)) || 'default'; }
+function getRepStats() { const a = _repStatsAll(); return a[_repStatsKey()] || { viajes: 0, km: 0 }; }
+function registrarViaje(km) {
+  const all = _repStatsAll();
+  const k = _repStatsKey();
+  const s = all[k] || { viajes: 0, km: 0 };
+  s.viajes = (s.viajes || 0) + 1;
+  s.km = Math.round(((s.km || 0) + (km || 0)) * 100) / 100;
+  all[k] = s;
+  localStorage.setItem('restito_rep_stats', JSON.stringify(all));
+  renderRepStats();
+}
+function renderRepStats() {
+  const s = getRepStats();
+  const v = document.getElementById('stat-viajes'); if (v) v.textContent = s.viajes || 0;
+  const km = document.getElementById('stat-km'); if (km) km.textContent = (s.km || 0).toLocaleString('es-AR', { maximumFractionDigits: 1 });
 }
 
 /* ── HISTORY ─────────────────────────────────────── */
@@ -2351,6 +2381,7 @@ function saveComment(id) {
 }
 
 function renderHistory() {
+  renderRepStats();
   const list = document.getElementById('history-list');
 
   // Merge session delivered orders into history store
