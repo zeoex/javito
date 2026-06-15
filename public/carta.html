@@ -219,6 +219,28 @@ body::before{ /* grano sutil para dar textura y calidez */
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 .empty-state{text-align:center;padding:70px 20px;color:var(--text-2);font-size:14px}
+/* ── SKELETON (carga progresiva) ── */
+.skel-hdr{height:22px;width:42%;border-radius:8px;margin:26px 0 14px;background:rgba(255,255,255,.06)}
+.skel-hdr:first-child{margin-top:4px}
+.skel-card{
+  display:flex;align-items:stretch;min-height:96px;margin-bottom:12px;
+  border-radius:18px;border:1px solid var(--border);overflow:hidden;
+  background:linear-gradient(160deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02));
+}
+.skel-card-media{width:104px;flex-shrink:0;margin:8px 8px 8px 0;border-radius:14px;background:rgba(255,255,255,.05)}
+.skel-card-body{flex:1;padding:15px 16px;display:flex;flex-direction:column;justify-content:center;gap:9px}
+.skel-line{height:12px;border-radius:6px;background:rgba(255,255,255,.06)}
+.skel-line.lg{height:15px;width:60%}
+.skel-line.sm{width:85%}
+.skel-line.price{height:16px;width:34%;margin-top:4px;background:rgba(251,191,36,.12)}
+.skel-shimmer{position:relative;overflow:hidden}
+.skel-shimmer::after{
+  content:'';position:absolute;inset:0;transform:translateX(-100%);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);
+  animation:skelSweep 1.4s infinite;
+}
+@keyframes skelSweep{100%{transform:translateX(100%)}}
+@media(prefers-reduced-motion:reduce){.skel-shimmer::after{animation:none}}
 
 /* ── FOOTER ── */
 .footer{
@@ -570,7 +592,12 @@ body::before{ /* grano sutil para dar textura y calidez */
 
 <!-- ── PRODUCTS ── -->
 <div class="content" id="menuContent">
-  <div class="loading"><div class="spinner"></div>Cargando menú…</div>
+  <div class="skel-shimmer">
+    <div class="skel-hdr"></div>
+    <div class="skel-card"><div class="skel-card-media"></div><div class="skel-card-body"><div class="skel-line lg"></div><div class="skel-line sm"></div><div class="skel-line price"></div></div></div>
+    <div class="skel-card"><div class="skel-card-media"></div><div class="skel-card-body"><div class="skel-line lg"></div><div class="skel-line sm"></div><div class="skel-line price"></div></div></div>
+    <div class="skel-card"><div class="skel-card-media"></div><div class="skel-card-body"><div class="skel-line lg"></div><div class="skel-line sm"></div><div class="skel-line price"></div></div></div>
+  </div>
 </div>
 
 <div class="footer" id="footer">
