@@ -1682,7 +1682,11 @@ body.rol-mozo .spk-size-btn:hover{border-color:#059669;background:#ecfdf5}
         </div>
         <div class="dlv-client-row">
           <div class="form-group" id="dlvTelGrp" style="margin:0"><label style="font-size:12px">Teléfono</label><input class="form-control" id="dlvTel" placeholder="11-4567-8901"/></div>
-          <div class="form-group" id="dlvDirGrp" style="margin:0"><label style="font-size:12px">Dirección</label><input class="form-control" id="dlvDir" placeholder="Av. Corrientes 1234, 3°B"/></div>
+          <div class="form-group" id="dlvDirGrp" style="margin:0"><label style="font-size:12px">Dirección</label>
+            <input class="form-control" id="dlvDir" placeholder="Calle, número, barrio" onkeydown="if(event.key==='Enter'){event.preventDefault();dlvBuscarDireccion();}"/>
+            <button type="button" class="btn btn-outline btn-sm" style="margin-top:6px;width:100%" onclick="dlvBuscarDireccion()">🔎 Buscar dirección y calcular envío</button>
+            <div id="dlvEnvioStatus" style="font-size:11px;margin-top:5px;color:var(--gray)"></div>
+          </div>
           <div class="form-group" id="dlvRepartidorGrp" style="margin:0"><label style="font-size:12px">Repartidor</label>
             <select class="form-control" id="dlvRepartidor">
               <option value="">Sin asignar</option>
@@ -4995,16 +4999,25 @@ function crearDelivery() {
   const mpId = document.getElementById('dlvPago').value;
   const mp = getMediosPago().find(m => m.id === mpId);
   const recargo = mp?.recargo || 0;
-  const totalFinal = recargo !== 0 ? Math.round(total * (1 + recargo/100)) : total;
+  const totalItems = recargo !== 0 ? Math.round(total * (1 + recargo/100)) : total;
+  // Envío calculado por dirección (solo delivery)
+  const envio = (!sinDir) ? (_dlvEnvio || 0) : 0;
+  const totalFinal = totalItems + envio;
+  // Coordenadas: priorizar la dirección geocodificada; si no, el link de Maps pegado
+  const latCli = (_dlvLat != null) ? _dlvLat : (ll ? ll.lat : null);
+  const lonCli = (_dlvLon != null) ? _dlvLon : (ll ? ll.lon : null);
+  const mapsUrlFinal = mapsUrl || ((latCli != null && lonCli != null) ? `https://www.google.com/maps?q=${latCli},${lonCli}` : '');
   const newId = deliveryData.length+1;
   const _pref = esPY ? 'PY' : (esMost ? 'M' : 'D');
   deliveryData.unshift({
     id:newId, numero:`${_pref}-${String(newId).padStart(3,'0')}`, estado:'nuevo',
     tipo: _dlvMode,
     cliente:{nombre:cliente,telefono:tel}, direccion:dir,
-    maps_url: mapsUrl || null,
-    lat_cliente: ll ? ll.lat : null,
-    lon_cliente: ll ? ll.lon : null,
+    maps_url: mapsUrlFinal || null,
+    lat_cliente: latCli,
+    lon_cliente: lonCli,
+    costo_envio: envio,
+    distancia_km: (!sinDir && _dlvKm != null) ? _dlvKm : null,
     items, total: totalFinal,
     metodo_pago: mpId,
     fecha: _arDate(),
@@ -5177,6 +5190,8 @@ function abrirModalNuevoDelivery() {
   document.getElementById('dlvTel').value = '';
   document.getElementById('dlvDir').value = '';
   document.getElementById('dlvMaps').value = '';
+  _dlvEnvio = 0; _dlvKm = null; _dlvLat = null; _dlvLon = null;
+  const _es = document.getElementById('dlvEnvioStatus'); if (_es) _es.textContent = '';
   dlvMapsFeedback();
   document.getElementById('dlvClienteSugg').style.display = 'none';
   const lt = document.getElementById('dlvLiveTotal');
@@ -5203,6 +5218,32 @@ function abrirModalNuevoDelivery() {
 let _dlvCart = [];          // {prodId, nombre, size, precio, qty, categoria, nota}
 let _dlvCatActual = null;   // categoría activa en el catálogo
 let _dlvMode = 'delivery';  // 'delivery' | 'mostrador'
+let _dlvEnvio = 0, _dlvKm = null, _dlvLat = null, _dlvLon = null; // envío calculado por dirección
+
+// Busca la dirección (geocoding) y calcula el costo de envío — igual que en la web
+async function dlvBuscarDireccion() {
+  const dir = (document.getElementById('dlvDir').value || '').trim();
+  const st = document.getElementById('dlvEnvioStatus');
+  if (!dir) { showToast('Escribí la dirección', 'error'); return; }
+  const biz = (typeof getBizConfig === 'function') ? getBizConfig() : {};
+  const bLat = parseFloat(biz.latitud), bLon = parseFloat(biz.longitud);
+  const radio = parseFloat(biz.radioDelivery) || 10, ppk = parseFloat(biz.precioPorKm) || 0, fijo = parseFloat(biz.costoEnvio) || 0;
+  if (st) { st.textContent = '🔎 Buscando la dirección…'; st.style.color = 'var(--gray)'; }
+  let url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&q=' + encodeURIComponent(dir);
+  if (bLat && bLon) url += `&viewbox=${bLon - 0.5},${bLat + 0.5},${bLon + 0.5},${bLat - 0.5}`;
+  try {
+    const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    const arr = await r.json();
+    if (!arr || !arr[0] || !arr[0].lat) { if (st) { st.textContent = '⚠ No se encontró la dirección. Agregá barrio/ciudad.'; st.style.color = '#dc2626'; } return; }
+    _dlvLat = parseFloat(arr[0].lat); _dlvLon = parseFloat(arr[0].lon);
+    if (bLat && bLon) {
+      const km = _haversineKm(bLat, bLon, _dlvLat, _dlvLon); _dlvKm = parseFloat(km.toFixed(2));
+      if (km > radio) { _dlvEnvio = 0; if (st) { st.textContent = `⛔ ${km.toFixed(1)} km — excede la cobertura (límite ${radio} km)`; st.style.color = '#dc2626'; } }
+      else { _dlvEnvio = ppk > 0 ? Math.ceil(km * ppk) : fijo; if (st) { st.textContent = `📍 ${km.toFixed(1)} km · Envío: $${_dlvEnvio.toLocaleString('es-AR')}`; st.style.color = '#16a34a'; } }
+    } else { _dlvEnvio = fijo; if (st) { st.textContent = '📍 Dirección encontrada (envío fijo)'; st.style.color = '#16a34a'; } }
+    dlvActualizarTotal();
+  } catch (e) { if (st) { st.textContent = '⚠ No se pudo buscar la dirección'; st.style.color = '#dc2626'; } }
+}
 let _clienteReturnToDelivery = false; // al guardar un cliente nuevo, volver al pedido y autocompletarlo
 
 function dlvSetMode(mode) {
@@ -5342,16 +5383,20 @@ function dlvActualizarTotal() {
   const subtotal = _dlvCart.reduce((s,i)=>s + i.precio*i.qty, 0);
   const el = document.getElementById('dlvLiveTotal');
   if (!el) return;
-  if (!subtotal) { el.style.display = 'none'; return; }
+  const envio = (_dlvMode === 'delivery') ? (_dlvEnvio || 0) : 0;
+  if (!subtotal && !envio) { el.style.display = 'none'; return; }
   const mpId  = document.getElementById('dlvPago')?.value;
   const mp    = getMediosPago().find(m => m.id === mpId);
   const rec   = mp?.recargo || 0;
-  const total = rec !== 0 ? Math.round(subtotal * (1 + rec/100)) : subtotal;
-  const diff  = Math.abs(total - subtotal);
+  const totalItems = rec !== 0 ? Math.round(subtotal * (1 + rec/100)) : subtotal;
+  const diff  = Math.abs(totalItems - subtotal);
+  const total = totalItems + envio;
+  const envioRow = envio ? `<div style="display:flex;justify-content:space-between;color:#0d6efd;margin-bottom:4px"><span>🛵 Envío${_dlvKm?` (${_dlvKm} km)`:''}</span><span>+$${envio.toLocaleString('es-AR')}</span></div>` : '';
   el.style.display = '';
-  el.innerHTML = rec !== 0
+  el.innerHTML = (rec !== 0 || envio)
     ? `<div style="display:flex;justify-content:space-between;color:#555;margin-bottom:2px"><span>Subtotal</span><span>$${subtotal.toLocaleString('es-AR')}</span></div>
-       <div style="display:flex;justify-content:space-between;color:${rec>0?'#e67e22':'#16a34a'};margin-bottom:4px"><span>${rec>0?`Recargo ${rec}%`:`Descuento ${Math.abs(rec)}%`} (${mp.nombre})</span><span>${rec>0?'+':'-'}$${diff.toLocaleString('es-AR')}</span></div>
+       ${rec !== 0 ? `<div style="display:flex;justify-content:space-between;color:${rec>0?'#e67e22':'#16a34a'};margin-bottom:4px"><span>${rec>0?`Recargo ${rec}%`:`Descuento ${Math.abs(rec)}%`} (${mp.nombre})</span><span>${rec>0?'+':'-'}$${diff.toLocaleString('es-AR')}</span></div>` : ''}
+       ${envioRow}
        <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:900;color:#1d3557;border-top:1px solid #dee2e6;padding-top:6px"><span>TOTAL</span><span>$${total.toLocaleString('es-AR')}</span></div>`
     : `<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;color:#1d3557"><span>Total</span><span>$${total.toLocaleString('es-AR')}</span></div>`;
 }
