@@ -1181,7 +1181,8 @@ async function buscarDireccion() {
   if (locStatus) { locStatus.style.display = ''; locStatus.textContent = '🔎 Buscando la dirección…'; locStatus.style.color = 'var(--muted)'; }
   locationOk = false; checkReady();
   let url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&q=' + encodeURIComponent(dir);
-  if (bizLat && bizLon) url += `&viewbox=${(bizLon - 0.5)},${(bizLat + 0.5)},${(bizLon + 0.5)},${(bizLat - 0.5)}`;
+  // Restringir a la zona del local (evita matchear calles/pueblos homónimos lejanos)
+  if (bizLat && bizLon) url += `&viewbox=${(bizLon - 0.2)},${(bizLat + 0.2)},${(bizLon + 0.2)},${(bizLat - 0.2)}&bounded=1`;
   try {
     const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
     const arr = await r.json();

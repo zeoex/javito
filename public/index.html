@@ -4723,11 +4723,11 @@ async function recalcEnvioEdit() {
   const fijo = parseFloat(biz.costoEnvio) || 0;
   if (st) { st.textContent = '🔎 Buscando la dirección…'; st.style.color = '#6b7280'; }
   let url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&q=' + encodeURIComponent(dir);
-  if (bLat && bLon) url += `&viewbox=${bLon - 0.5},${bLat + 0.5},${bLon + 0.5},${bLat - 0.5}`;
+  if (bLat && bLon) url += `&viewbox=${bLon - 0.2},${bLat + 0.2},${bLon + 0.2},${bLat - 0.2}&bounded=1`;
   try {
     const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
     const arr = await r.json();
-    if (!arr || !arr[0] || !arr[0].lat) { if (st) { st.textContent = '⚠ No se encontró la dirección. Agregá barrio/ciudad.'; st.style.color = '#dc2626'; } return; }
+    if (!arr || !arr[0] || !arr[0].lat) { if (st) { st.textContent = '⚠ No se encontró la dirección cerca del local. Revisá calle/número.'; st.style.color = '#dc2626'; } return; }
     _editLat = parseFloat(arr[0].lat); _editLon = parseFloat(arr[0].lon);
     if (bLat && bLon) {
       const km = _haversineKm(bLat, bLon, _editLat, _editLon);
@@ -5236,11 +5236,11 @@ async function dlvBuscarDireccion() {
   const radio = parseFloat(biz.radioDelivery) || 10, ppk = parseFloat(biz.precioPorKm) || 0, fijo = parseFloat(biz.costoEnvio) || 0;
   if (st) { st.textContent = '🔎 Buscando la dirección…'; st.style.color = 'var(--gray)'; }
   let url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ar&q=' + encodeURIComponent(dir);
-  if (bLat && bLon) url += `&viewbox=${bLon - 0.5},${bLat + 0.5},${bLon + 0.5},${bLat - 0.5}`;
+  if (bLat && bLon) url += `&viewbox=${bLon - 0.2},${bLat + 0.2},${bLon + 0.2},${bLat - 0.2}&bounded=1`;
   try {
     const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
     const arr = await r.json();
-    if (!arr || !arr[0] || !arr[0].lat) { if (st) { st.textContent = '⚠ No se encontró la dirección. Agregá barrio/ciudad.'; st.style.color = '#dc2626'; } return; }
+    if (!arr || !arr[0] || !arr[0].lat) { if (st) { st.textContent = '⚠ No se encontró la dirección cerca del local. Revisá calle/número.'; st.style.color = '#dc2626'; } return; }
     _dlvLat = parseFloat(arr[0].lat); _dlvLon = parseFloat(arr[0].lon);
     if (bLat && bLon) {
       const km = _haversineKm(bLat, bLon, _dlvLat, _dlvLon); _dlvKm = parseFloat(km.toFixed(2));
