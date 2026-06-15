@@ -1394,12 +1394,26 @@ function enviarWhatsApp() {
   }).catch(() => {});
 
   document.getElementById('confirmedOverlay').classList.remove('open');
-  if (number) window.open(`https://wa.me/${number}?text=${encodeURIComponent(msg)}`, '_blank');
+  if (number) abrirWhatsApp(number, msg);
   else showToast('¡Pedido enviado! El local te va a contactar.');
 
   cart = [];
   saveCart();
   updateCartBar();
+}
+
+// Abre la app de WhatsApp directamente (no la web). En desktop usa WhatsApp Web.
+function abrirWhatsApp(num, text) {
+  const t = encodeURIComponent(text);
+  const web = 'https://wa.me/' + num + '?text=' + t;
+  const isMobile = /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+  if (!isMobile) { window.open(web, '_blank'); return; }
+  // Móvil: intentar abrir la app; si no responde, ir a wa.me
+  let switched = false;
+  const onblur = function () { switched = true; };
+  window.addEventListener('blur', onblur, { once: true });
+  window.location.href = 'whatsapp://send?phone=' + num + '&text=' + t;
+  setTimeout(function () { window.removeEventListener('blur', onblur); if (!switched) window.location.href = web; }, 1000);
 }
 
 /* ─── Toast ─── */
