@@ -4999,6 +4999,10 @@ function crearDelivery() {
   const mpId = document.getElementById('dlvPago').value;
   const mp = getMediosPago().find(m => m.id === mpId);
   const recargo = mp?.recargo || 0;
+  // Repartidor: guardar nombre (no el id largo del <option>)
+  const _repSel = document.getElementById('dlvRepartidor');
+  const _repId = sinDir ? null : (_repSel.value || null);
+  const _repNombre = (sinDir || !_repId) ? null : ((_repSel.options[_repSel.selectedIndex] && _repSel.options[_repSel.selectedIndex].text) || null);
   const totalItems = recargo !== 0 ? Math.round(total * (1 + recargo/100)) : total;
   // Envío calculado por dirección (solo delivery)
   const envio = (!sinDir) ? (_dlvEnvio || 0) : 0;
@@ -5021,7 +5025,9 @@ function crearDelivery() {
     items, total: totalFinal,
     metodo_pago: mpId,
     fecha: _arDate(),
-    repartidor: sinDir ? null : (document.getElementById('dlvRepartidor').value||null),
+    repartidorId: _repId,
+    repartidorNombre: _repNombre,
+    repartidor: _repNombre,
     hora: new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Argentina/Buenos_Aires'})
   });
   const creado = deliveryData[0];
