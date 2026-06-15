@@ -74,7 +74,7 @@
   .dest-ic{background:none;border:none}
   .dest-pin{width:40px;height:40px;position:relative}
   .dest-pin .p{width:34px;height:34px;border-radius:50% 50% 50% 0;background:var(--amber);transform:rotate(-45deg);position:absolute;left:3px;top:0;box-shadow:0 6px 14px rgba(245,158,11,.5);display:grid;place-items:center}
-  .dest-pin .p svg{transform:rotate(45deg);width:16px;height:16px;color:#fff}
+  .dest-pin .p svg{transform:rotate(45deg);width:18px;height:18px;color:#fff}
   .leaflet-control-attribution{font-size:9px;opacity:.6}
   @media(prefers-reduced-motion:reduce){.moto-em .g{transition:none}.moto-pulse,.pill .dot{animation:none}}
 </style>
@@ -154,7 +154,7 @@
         maxZoom: 19, attribution: '© OpenStreetMap'
       }).addTo(map);
       motoIcon = L.divIcon({ className:'moto-ic', html:'<div class="moto-rot"><div class="moto-pulse"></div><div class="moto-em"><span class="g">🛵</span></div></div>', iconSize:[48,48], iconAnchor:[24,24] });
-      destIcon = L.divIcon({ className:'dest-ic', html:'<div class="dest-pin"><div class="p"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></div></div>', iconSize:[40,40], iconAnchor:[20,38] });
+      destIcon = L.divIcon({ className:'dest-ic', html:'<div class="dest-pin"><div class="p"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/></svg></div></div>', iconSize:[40,40], iconAnchor:[20,38] });
     } catch(e) { HAS_MAP=false; }
   }
   if (!HAS_MAP) {

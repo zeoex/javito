@@ -4608,7 +4608,7 @@ async function avisarEstadoWhatsApp(id) {
   if (est === 'en_camino') estadoTxt = `🛵 Tu pedido${num} está en camino.`;
   else if (est === 'listo') estadoTxt = `✅ Tu pedido${num} ya está listo${esDelivery ? ' y sale en breve' : ' para retirar'}.`;
   else if (est === 'entregado') estadoTxt = `🙌 Tu pedido${num} fue entregado. ¡Gracias por elegirnos!`;
-  else estadoTxt = `🍕 ¡Recibimos tu pedido${num}! Ya lo estamos preparando.`;
+  else estadoTxt = `👋 ¡Recibimos tu pedido${num}! Ya lo estamos preparando.`;
 
   let msg = `Hola${nom}! ${estadoTxt}`;
   if (link) msg += ` Seguí tu pedido en vivo acá: ${link}`;
