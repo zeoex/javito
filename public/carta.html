@@ -495,6 +495,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
   transition:transform .75s cubic-bezier(.5,-0.35,.3,1.15), opacity .75s ease;
 }
 .fly-cart img{width:100%;height:100%;object-fit:cover}
+@keyframes shakeX{0%,100%{transform:translateX(0)}15%,55%{transform:translateX(-7px)}35%,75%{transform:translateX(7px)}}
+.shake{animation:shakeX .5s ease}
+.miss-highlight{box-shadow:0 0 0 2px #f87171,0 0 0 7px rgba(248,113,113,.22)!important;border-color:#f87171!important;border-radius:10px;transition:box-shadow .2s}
 @keyframes countPop{0%{transform:scale(1)}35%{transform:scale(1.45)}100%{transform:scale(1)}}
 .cart-bar-count.pop{animation:countPop .45s ease}
 @keyframes cartHandTap{0%,100%{transform:translate(-50%,0)}40%{transform:translate(-50%,8px)}}
@@ -610,7 +613,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
     <div class="confirm-transfer-box" id="confirmTransferBox"></div>
 
     <label class="confirm-form-label">Modo de envío</label>
-    <div class="confirm-radio-group">
+    <div class="confirm-radio-group" id="modeGroup">
       <button type="button" class="confirm-radio-btn" id="modoRetiro" onclick="selectModoEnvio('retiro')">🏠 Retiro en Local</button>
       <button type="button" class="confirm-radio-btn" id="modoDelivery" onclick="selectModoEnvio('delivery')">🛵 Envío a domicilio</button>
     </div>
@@ -621,7 +624,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
     </div>
     <div id="locationStatus" style="display:none;font-size:12px;margin-top:8px;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,0.05)"></div>
 
-    <button class="btn-wsp" id="btnWsp" onclick="enviarWhatsApp()" style="margin-top:18px" disabled>
+    <button class="btn-wsp" id="btnWsp" onclick="enviarWhatsApp()" style="margin-top:18px;opacity:.5">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
       Enviar pedido por WhatsApp
     </button>
@@ -727,10 +730,37 @@ function checkReady() {
   const ok = nombre.length > 0 && wspValid().ok && hasPayment && hasMode && deliveryOk;
   const btn = document.getElementById('btnWsp');
   if (btn) {
-    btn.disabled = !ok;
-    btn.style.opacity = ok ? '1' : '0.45';
-    btn.style.cursor = ok ? 'pointer' : 'not-allowed';
+    // El botón queda siempre clickeable: si falta algo, al tocarlo resaltamos lo que falta.
+    btn.disabled = false;
+    btn.style.opacity = ok ? '1' : '0.5';
+    btn.style.cursor = 'pointer';
   }
+}
+
+/* Resalta (shake + borde rojo) los campos que faltan; devuelve qué falta */
+function pulseMiss(el) {
+  if (!el) return;
+  el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
+  el.classList.add('miss-highlight');
+  setTimeout(function () { el.classList.remove('miss-highlight'); }, 1800);
+}
+function highlightMissing() {
+  const miss = [];
+  let first = null;
+  const nombre = (document.getElementById('confirmNombre')?.value || '').trim();
+  if (!nombre) { pulseMiss(document.getElementById('confirmNombre')); checkNameError(); miss.push('tu nombre'); first = first || document.getElementById('confirmNombre'); }
+  if (!wspValid().ok) { pulseMiss(document.getElementById('confirmWhatsapp')); checkWspError(); miss.push('tu WhatsApp'); first = first || document.getElementById('confirmWhatsapp'); }
+  const needPay = (bizAlias || bizCbu) && !(aliasCopied || cbuCopied);
+  if (needPay) { pulseMiss(document.getElementById('confirmTransferBox')); miss.push('copiar el alias o CBU'); first = first || document.getElementById('confirmTransferBox'); }
+  if (!modoEnvio) { pulseMiss(document.getElementById('modeGroup')); miss.push('el modo de envío'); first = first || document.getElementById('modeGroup'); }
+  else if (modoEnvio === 'delivery' && (coverageExceeded || !locationOk)) {
+    const tgt = document.getElementById('addressBox');
+    pulseMiss(tgt); pulseMiss(document.getElementById('confirmDireccion'));
+    miss.push(coverageExceeded ? 'una dirección dentro de la cobertura' : 'tu dirección de envío');
+    first = first || tgt;
+  }
+  if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  return miss;
 }
 
 function checkNameError() {
@@ -1213,23 +1243,19 @@ function _copiarFallback(texto, cb) {
 }
 
 function enviarWhatsApp() {
-  if (!cart.length) return;
+  if (!cart.length) { showToast('Tu carrito está vacío'); return; }
+
+  // Si falta algo, resaltarlo (shake + borde rojo) y avisar qué completar
+  const faltan = highlightMissing();
+  if (faltan.length) {
+    const btn = document.getElementById('btnWsp');
+    if (btn) { btn.classList.remove('shake'); void btn.offsetWidth; btn.classList.add('shake'); setTimeout(function(){ btn.classList.remove('shake'); }, 500); }
+    showToast(faltan.length === 1 ? `Falta ${faltan[0]}` : `Te falta: ${faltan.join(', ')}`);
+    return;
+  }
 
   const nombre = document.getElementById('confirmNombre').value.trim();
-  if (!nombre) {
-    checkNameError();
-    document.getElementById('confirmNombre').focus();
-    return;
-  }
-  const wsp = wspValid();
-  if (!wsp.ok) {
-    checkWspError();
-    document.getElementById('confirmWhatsapp').focus();
-    return;
-  }
-  const telefonoCliente = wsp.value;
-  if (!modoEnvio) { showToast('Elegí el modo de envío'); return; }
-  if (coverageExceeded) { showToast('Tu dirección excede la cobertura de envío'); return; }
+  const telefonoCliente = wspValid().value;
 
   const number = bizWsp || '';
   if (!number) { showToast('El negocio no tiene número de WhatsApp configurado'); return; }
