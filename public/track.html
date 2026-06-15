@@ -106,9 +106,8 @@
     </div>
   </div>
   <div class="steps">
-    <div class="step active" id="stepRecibido"><div class="ball">📥</div><div class="lbl">Recibido</div></div>
-    <div class="step" id="stepConfirmado"><div class="ball">✅</div><div class="lbl">Confirmado</div></div>
-    <div class="step" id="stepListo"><div class="ball">🍽️</div><div class="lbl">Listo</div></div>
+    <div class="step active" id="stepConfirmado"><div class="ball">✅</div><div class="lbl">Confirmado</div></div>
+    <div class="step" id="stepListo"><div class="ball">🍽️</div><div class="lbl">Listo p/ enviar</div></div>
     <div class="step" id="stepCamino"><div class="ball">🛵</div><div class="lbl">Enviado</div></div>
     <div class="step" id="stepEntregado"><div class="ball"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg></div><div class="lbl">Entregado</div></div>
   </div>
@@ -310,19 +309,18 @@
   function applyEstado(est){
     if(!est) return;
     // compatibilidad con estados viejos
-    if(est==='preparando') est='recibido';
+    if(est==='preparando' || est==='recibido') est='confirmado';
     curEstado=est;
-    var idx = ({recibido:0, confirmado:1, listo:2, en_camino:3, entregado:4})[est];
+    var idx = ({confirmado:0, listo:1, en_camino:2, entregado:3})[est];
     if(idx===undefined) idx=0;
-    ['stepRecibido','stepConfirmado','stepListo','stepCamino','stepEntregado'].forEach(function(sid,i){
+    ['stepConfirmado','stepListo','stepCamino','stepEntregado'].forEach(function(sid,i){
       var s=$(sid); if(!s) return; s.classList.remove('done','active');
       if(i<idx) s.classList.add('done'); else if(i===idx) s.classList.add('active');
     });
     show($('ovWait'), false); // ya tenemos info real para mostrar en la tarjeta
     if(status==='delivered' || status==='expired') return;
-    if(est==='recibido'){ $('etaBig').textContent='¡Recibimos tu pedido!'; if(!lastPos) $('etaSmall').textContent='En breve lo confirmamos y preparamos'; }
-    else if(est==='confirmado'){ $('etaBig').textContent='Pedido confirmado ✅'; if(!lastPos) $('etaSmall').textContent='Lo estamos preparando'; }
-    else if(est==='listo'){ $('etaBig').textContent='¡Tu pedido está listo!'; if(!lastPos) $('etaSmall').textContent='Listo para enviarse'; }
+    if(est==='confirmado'){ $('etaBig').textContent='¡Pedido confirmado!'; if(!lastPos) $('etaSmall').textContent='Lo estamos preparando'; }
+    else if(est==='listo'){ $('etaBig').textContent='¡Listo para enviar!'; if(!lastPos) $('etaSmall').textContent='El repartidor está por salir'; }
     else if(est==='en_camino' && !lastPos){ $('etaBig').textContent='Tu pedido está en camino'; $('etaSmall').textContent='Esperando la ubicación del repartidor…'; }
   }
 
