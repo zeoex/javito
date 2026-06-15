@@ -614,7 +614,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
     <input type="tel" inputmode="numeric" class="confirm-form-input" id="confirmWhatsapp" placeholder="Ej: 3624857011" autocomplete="tel" maxlength="13" oninput="onWspInput()" onblur="checkWspError()"/>
     <div id="wspError" style="display:none;color:#f87171;font-size:12px;margin-top:4px;margin-bottom:2px">⚠ Ingresá tu WhatsApp sin el 0 y sin el 15 (ej: 3624857011)</div>
 
-    <label class="confirm-glow-label">✨ Copiá el alias o CVU/CBU y envianos el comprobante para confirmar tu pedido ✨</label>
+    <label class="confirm-glow-label" id="confirmGlowLabel">✨ Copiá el alias o CVU/CBU y envianos el comprobante para confirmar tu pedido ✨</label>
     <div class="confirm-transfer-box" id="confirmTransferBox"></div>
 
     <label class="confirm-form-label">Modo de envío</label>
@@ -747,6 +747,14 @@ function checkReady() {
     btn.style.opacity = ok ? '1' : '0.5';
     btn.style.cursor = 'pointer';
   }
+  updateGlowLabel();
+}
+// Texto dinámico con el monto final del pedido
+function updateGlowLabel() {
+  const el = document.getElementById('confirmGlowLabel'); if (!el) return;
+  const t = document.getElementById('confirmTotal');
+  const monto = (t && t.textContent && t.textContent !== '…') ? t.textContent : '';
+  el.innerHTML = '✨ Copiá el alias o CVU/CBU y envianos el comprobante para confirmar tu pedido' + (monto ? ' por un monto de <b>' + monto + '</b>' : '') + ' ✨';
 }
 
 /* Resalta (shake + borde rojo) los campos que faltan; devuelve qué falta */
