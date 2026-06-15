@@ -601,11 +601,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
       <label class="confirm-form-label" style="margin-top:12px">WhatsApp <span style="font-weight:400;opacity:.7">(sin el 0 y sin el 15)</span></label>
       <input type="tel" inputmode="numeric" class="confirm-form-input" id="authTel" placeholder="Ej: 3624857011" maxlength="13" oninput="this.value=this.value.replace(/\\D/g,'');checkAuthReady()"/>
     </div>
-    <label class="confirm-form-label" style="margin-top:12px">Contraseña</label>
+    <label class="confirm-form-label" style="margin-top:12px" id="authPassLabel">Contraseña</label>
     <input type="password" class="confirm-form-input" id="authPass" placeholder="Tu contraseña" autocomplete="current-password" oninput="checkAuthReady()" onkeydown="if(event.key==='Enter'){event.preventDefault();authSubmit();}"/>
+    <div id="authPassHint" style="display:none;font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5">La contraseña debe tener <b>mínimo 6 caracteres</b>, con <b>mayúscula</b>, <b>minúscula</b> y <b>número</b>.</div>
     <div id="authError" style="display:none;color:#f87171;font-size:12.5px;margin-top:10px;text-align:center"></div>
     <button class="btn-wsp" id="btnAuth" onclick="authSubmit()" style="margin-top:18px;opacity:.5;background:linear-gradient(135deg,#7c3aed,#9d6bff)">Ingresar</button>
-    <button class="btn-secondary" id="authToggle" onclick="toggleAuthMode()" style="margin-top:10px">¿No tenés cuenta? Creá una</button>
+    <button id="authForgot" onclick="setAuthMode('reset')" style="margin-top:12px;width:100%;background:none;border:none;color:var(--muted);font-size:12.5px;cursor:pointer;text-decoration:underline">¿Olvidaste tu contraseña?</button>
+    <button class="btn-secondary" id="authToggle" onclick="toggleAuthMode()" style="margin-top:8px">¿No tenés cuenta? Creá una</button>
   </div>
 </div>
 
@@ -1286,7 +1288,7 @@ function getClienteProfile() { try { return JSON.parse(localStorage.getItem(_cli
 function saveClienteProfile(p) { try { localStorage.setItem(_cliKey(), JSON.stringify(p)); } catch (e) {} }
 function _emailOk(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e || '').trim()); }
 function _regTelOk(t) { const d = String(t || '').replace(/\D/g, ''); return d && d[0] !== '0' && !d.startsWith('15') && d.length >= 8 && d.length <= 12; }
-function _regNombreOk(n) { return String(n || '').trim().split(/\s+/).filter(Boolean).length >= 2; }
+function _regNombreOk(n) { const w = String(n || '').trim().split(/\s+/).filter(p => /[a-záéíóúñ]{2,}/i.test(p)); return w.length >= 2; }
 
 function _tokKey() { return 'pz_cliente_token_' + CARTA_LOCAL; }
 function getClienteToken() { try { return localStorage.getItem(_tokKey()) || ''; } catch (e) { return ''; } }
@@ -1324,40 +1326,58 @@ function abrirAuth(cb) {
   setAuthMode('login');
   document.getElementById('registroOverlay').classList.add('open');
 }
+function _passOk(p) { p = String(p || ''); return p.length >= 6 && /[a-z]/.test(p) && /[A-Z]/.test(p) && /\d/.test(p); }
 function setAuthMode(m) {
-  _authMode = m; const reg = m === 'register';
+  _authMode = m;
+  const reg = m === 'register', reset = m === 'reset';
   document.getElementById('authNombreWrap').style.display = reg ? '' : 'none';
-  document.getElementById('authTelWrap').style.display = reg ? '' : 'none';
-  document.getElementById('authTitle').textContent = reg ? 'Creá tu cuenta' : 'Ingresá a tu cuenta';
-  document.getElementById('btnAuth').textContent = reg ? 'Crear cuenta ✓' : 'Ingresar';
-  document.getElementById('authToggle').textContent = reg ? '¿Ya tenés cuenta? Ingresá' : '¿No tenés cuenta? Creá una';
+  document.getElementById('authTelWrap').style.display = (reg || reset) ? '' : 'none';
+  document.getElementById('authPassHint').style.display = (reg || reset) ? '' : 'none';
+  document.getElementById('authPassLabel').textContent = reset ? 'Nueva contraseña' : 'Contraseña';
+  document.getElementById('authPass').setAttribute('autocomplete', (reg || reset) ? 'new-password' : 'current-password');
+  document.getElementById('authForgot').style.display = (m === 'login') ? '' : 'none';
+  document.getElementById('authTitle').textContent = reset ? 'Restablecer contraseña' : (reg ? 'Creá tu cuenta' : 'Ingresá a tu cuenta');
+  document.getElementById('authSub').textContent = reset ? 'Ingresá tu email y el WhatsApp con el que te registraste para crear una nueva contraseña.' : 'Con tu cuenta tus datos quedan guardados para pedir más rápido.';
+  document.getElementById('btnAuth').textContent = reset ? 'Restablecer ✓' : (reg ? 'Crear cuenta ✓' : 'Ingresar');
+  document.getElementById('authToggle').textContent = (reg || reset) ? '¿Ya tenés cuenta? Ingresá' : '¿No tenés cuenta? Creá una';
   document.getElementById('authError').style.display = 'none';
   checkAuthReady();
 }
-function toggleAuthMode() { setAuthMode(_authMode === 'login' ? 'register' : 'login'); }
+function toggleAuthMode() { setAuthMode((_authMode === 'login') ? 'register' : 'login'); }
 function checkAuthReady() {
-  const reg = _authMode === 'register';
-  let ok = _emailOk(document.getElementById('authEmail').value) && String(document.getElementById('authPass').value || '').length >= 4;
-  if (reg) ok = ok && _regNombreOk(document.getElementById('authNombre').value) && _regTelOk(document.getElementById('authTel').value);
+  const reg = _authMode === 'register', reset = _authMode === 'reset';
+  const emailOk = _emailOk(document.getElementById('authEmail').value);
+  const passVal = document.getElementById('authPass').value || '';
+  let ok;
+  if (reset) ok = emailOk && _regTelOk(document.getElementById('authTel').value) && _passOk(passVal);
+  else if (reg) ok = emailOk && _regNombreOk(document.getElementById('authNombre').value) && _regTelOk(document.getElementById('authTel').value) && _passOk(passVal);
+  else ok = emailOk && passVal.length >= 1;
   const b = document.getElementById('btnAuth'); if (b) b.style.opacity = ok ? '1' : '0.5';
   return ok;
 }
 async function authSubmit() {
   const err = document.getElementById('authError');
-  if (!checkAuthReady()) { err.textContent = _authMode === 'register' ? 'Completá nombre, email válido, WhatsApp y contraseña (4+).' : 'Ingresá un email válido y tu contraseña.'; err.style.display = ''; return; }
-  const reg = _authMode === 'register';
+  const reg = _authMode === 'register', reset = _authMode === 'reset';
+  if (!checkAuthReady()) {
+    if (reg) err.textContent = 'Revisá: nombre y apellido, email válido, WhatsApp (sin 0 ni 15) y una contraseña con mayúscula, minúscula y número (6+).';
+    else if (reset) err.textContent = 'Ingresá tu email, el WhatsApp registrado y una contraseña válida (mayúscula, minúscula y número, 6+).';
+    else err.textContent = 'Ingresá un email válido y tu contraseña.';
+    err.style.display = ''; return;
+  }
+  const endpoint = reset ? 'reset' : (reg ? 'register' : 'login');
   const body = { local: CARTA_LOCAL, email: document.getElementById('authEmail').value.trim(), password: document.getElementById('authPass').value };
-  if (reg) { body.nombre = document.getElementById('authNombre').value.trim(); body.telefono = document.getElementById('authTel').value.replace(/\D/g, ''); }
+  if (reg) body.nombre = document.getElementById('authNombre').value.trim();
+  if (reg || reset) body.telefono = document.getElementById('authTel').value.replace(/\D/g, '');
   const btn = document.getElementById('btnAuth'); const _t = btn.textContent; btn.disabled = true; btn.textContent = '…';
   try {
-    const r = await fetch('/api/web/auth/' + (reg ? 'register' : 'login'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const r = await fetch('/api/web/auth/' + endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const j = await r.json();
     if (!r.ok) { err.textContent = j.error || 'No se pudo continuar'; err.style.display = ''; return; }
     const prev = getClienteProfile() || {};
     const cli = Object.assign({ ultimaDireccion: prev.ultimaDireccion || '' }, j.cliente);
     setClienteSession(j.token, cli);
     document.getElementById('registroOverlay').classList.remove('open');
-    showToast('¡Hola' + (cli.nombre ? ', ' + cli.nombre.split(' ')[0] : '') + '! 🎉');
+    showToast(reset ? '¡Contraseña actualizada! 🔑' : ('¡Hola' + (cli.nombre ? ', ' + cli.nombre.split(' ')[0] : '') + '! 🎉'));
     const cb = _authCallback; _authCallback = null; if (typeof cb === 'function') cb();
   } catch (e) { err.textContent = 'No se pudo conectar. Reintentá.'; err.style.display = ''; }
   finally { btn.disabled = false; btn.textContent = _t; }

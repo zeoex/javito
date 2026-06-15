@@ -1388,11 +1388,13 @@ app.post('/api/web/cliente', async (req, res) => {
 
 // ── Cuentas de cliente (email + contraseña) para el menú online ──
 function _cliPublic(c) { return { id: c.id, nombre: c.nombre, email: c.email, telefono: c.telefono || '', ultimaDireccion: c.ultimaDireccion || c.direccion || '' }; }
+function _strongPass(p) { p = String(p || ''); return p.length >= 6 && /[a-z]/.test(p) && /[A-Z]/.test(p) && /\d/.test(p); }
 app.post('/api/web/auth/register', async (req, res) => {
   const { nombre, email, telefono, password } = req.body || {};
   const local = reqLocal(req);
   if (!nombre || !email || !telefono || !password) return res.status(400).json({ error: 'Completá nombre, email, teléfono y contraseña' });
-  if (String(password).length < 4) return res.status(400).json({ error: 'La contraseña debe tener al menos 4 caracteres' });
+  if (String(nombre).trim().split(/\s+/).filter(Boolean).length < 2) return res.status(400).json({ error: 'Ingresá nombre y apellido' });
+  if (!_strongPass(password)) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres, con mayúscula, minúscula y número' });
   const em = String(email).trim().toLowerCase();
   try {
     const list = await getClientesList(local);
@@ -1420,6 +1422,26 @@ app.post('/api/web/auth/login', async (req, res) => {
     res.json({ ok: true, token, cliente: _cliPublic(c) });
   } catch (e) { console.error('[web:auth:login]', e.message); res.status(500).json({ error: 'No se pudo iniciar sesión' }); }
 });
+// Restablecer contraseña: verifica email + teléfono registrado (sin servicio de email)
+app.post('/api/web/auth/reset', async (req, res) => {
+  const { email, telefono, password } = req.body || {};
+  const local = reqLocal(req);
+  if (!email || !telefono || !password) return res.status(400).json({ error: 'Completá email, teléfono y la nueva contraseña' });
+  if (!_strongPass(password)) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres, con mayúscula, minúscula y número' });
+  const em = String(email).trim().toLowerCase();
+  const tel = String(telefono).replace(/\D/g, '');
+  try {
+    const list = await getClientesList(local);
+    const c = list.find(x => String(x.email || '').toLowerCase() === em);
+    if (!c) return res.status(404).json({ error: 'No encontramos una cuenta con ese email' });
+    if (String(c.telefono || '').replace(/\D/g, '') !== tel) return res.status(401).json({ error: 'El teléfono no coincide con el de la cuenta' });
+    c.password = bcrypt.hashSync(String(password), 10);
+    await setClientesList(local, list);
+    const token = jwt.sign({ type: 'cliente', cid: c.id, email: em, local }, JWT_SECRET, { expiresIn: '180d' });
+    res.json({ ok: true, token, cliente: _cliPublic(c) });
+  } catch (e) { console.error('[web:auth:reset]', e.message); res.status(500).json({ error: 'No se pudo restablecer' }); }
+});
+
 // Datos frescos del cliente (token de cliente) — para autocompletar al volver
 app.get('/api/web/auth/me', async (req, res) => {
   try {
