@@ -724,6 +724,8 @@ function applyBizConfig(biz) {
 }
 
 function _pf(v){ const n = parseFloat(String(v==null?'':v).replace(',', '.')); return isNaN(n)?null:n; }
+// Km a cobrar: km entero superior con tolerancia de 0,1 km (3,05→3 · 3,1→4). Mínimo 1.
+function _kmCobrado(km){ const f = km - Math.floor(km); return Math.max(1, Math.floor(km) + (f >= 0.1 ? 1 : 0)); }
 function haversineKm(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -1167,7 +1169,7 @@ function applyCoords(lat, lon) {
       document.getElementById('confirmTotal').textContent = formatPrice(subtotal);
     } else {
       coverageExceeded = false; locationOk = true;
-      const costo = bizPrecioPorKm > 0 ? (Math.max(1, Math.ceil(km)) * bizPrecioPorKm) : costoEnvio;
+      const costo = bizPrecioPorKm > 0 ? (_kmCobrado(km) * bizPrecioPorKm) : costoEnvio;
       costoEnvio = costo;
       document.getElementById('confirmEnvioVal').textContent = costo > 0 ? formatPrice(costo) : 'Bonificado';
       document.getElementById('confirmTotal').textContent = formatPrice(subtotal + (costo > 0 ? costo : 0));

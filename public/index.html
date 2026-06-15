@@ -4635,6 +4635,8 @@ async function avisarEstadoWhatsApp(id) {
 // ===== Edición de pedidos desde el pipeline =====
 function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function _pf(v){ const n = parseFloat(String(v==null?'':v).replace(',', '.')); return isNaN(n)?null:n; }
+// Km a cobrar: redondea al km entero superior, con tolerancia de 0,1 km (ej: 3,05→3 · 3,1→4). Mínimo 1.
+function _kmCobrado(km){ const f = km - Math.floor(km); return Math.max(1, Math.floor(km) + (f >= 0.1 ? 1 : 0)); }
 
 // ===== Autocompletado de direcciones (admin: nuevo pedido y edición) =====
 (function(){
@@ -4793,7 +4795,7 @@ function _editApplyCoords(lat, lon) {
   if (bLat && bLon) {
     const km = _haversineKm(bLat, bLon, lat, lon); _editKm = parseFloat(km.toFixed(2));
     if (km > radio) { _editEnvio = 0; if (st) { st.textContent = `⛔ ${km.toFixed(1)} km — excede la cobertura (límite ${radio} km)`; st.style.color = '#dc2626'; } }
-    else if (ppk > 0) { _editEnvio = Math.max(1, Math.ceil(km)) * ppk; if (st) { st.textContent = `📍 ${km.toFixed(1)} km → ${Math.max(1, Math.ceil(km))} km · Envío: $${_editEnvio.toLocaleString('es-AR')}`; st.style.color = '#16a34a'; } }
+    else if (ppk > 0) { const kc = _kmCobrado(km); _editEnvio = kc * ppk; if (st) { st.textContent = `📍 ${km.toFixed(1)} km → ${kc} km · Envío: $${_editEnvio.toLocaleString('es-AR')}`; st.style.color = '#16a34a'; } }
     else { _editEnvio = fijo; if (st) { st.textContent = `📍 ${km.toFixed(1)} km · Envío fijo $${_editEnvio.toLocaleString('es-AR')} (configurá "Precio por km")`; st.style.color = '#b45309'; } }
   } else { _editEnvio = fijo; if (st) { st.textContent = '⚠ Falta la ubicación del local en Config para calcular por distancia'; st.style.color = '#dc2626'; } }
   renderEditItems();
@@ -5306,7 +5308,7 @@ function _dlvApplyCoords(lat, lon) {
   if (bLat && bLon) {
     const km = _haversineKm(bLat, bLon, lat, lon); _dlvKm = parseFloat(km.toFixed(2));
     if (km > radio) { _dlvEnvio = 0; if (st) { st.textContent = `⛔ ${km.toFixed(1)} km — excede la cobertura (límite ${radio} km)`; st.style.color = '#dc2626'; } }
-    else if (ppk > 0) { _dlvEnvio = Math.max(1, Math.ceil(km)) * ppk; if (st) { st.textContent = `📍 ${km.toFixed(1)} km → ${Math.max(1, Math.ceil(km))} km · Envío: $${_dlvEnvio.toLocaleString('es-AR')}`; st.style.color = '#16a34a'; } }
+    else if (ppk > 0) { const kc = _kmCobrado(km); _dlvEnvio = kc * ppk; if (st) { st.textContent = `📍 ${km.toFixed(1)} km → ${kc} km · Envío: $${_dlvEnvio.toLocaleString('es-AR')}`; st.style.color = '#16a34a'; } }
     else { _dlvEnvio = fijo; if (st) { st.textContent = `📍 ${km.toFixed(1)} km · Envío fijo $${_dlvEnvio.toLocaleString('es-AR')} (configurá "Precio por km" para cobrar por distancia)`; st.style.color = '#b45309'; } }
   } else { _dlvEnvio = fijo; if (st) { st.textContent = '⚠ Falta la ubicación del local (Config → Ubicación del local) para calcular por distancia'; st.style.color = '#dc2626'; } }
   dlvActualizarTotal();
